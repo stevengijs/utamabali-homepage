@@ -45,6 +45,8 @@ nav .row{display:flex;align-items:center;justify-content:space-between;height:64
 .hero p{font-size:18px;color:rgba(255,255,255,.82);margin:0 0 28px;max-width:48ch}
 .btns{display:flex;gap:12px;flex-wrap:wrap}
 .hero-note{margin-top:16px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.72);font-weight:600}
+.hero-face{width:132px;height:132px;border-radius:50%;object-fit:cover;margin:0 auto 20px;border:3px solid rgba(255,255,255,.85);box-shadow:0 6px 22px rgba(0,0,0,.35)}
+@media(max-width:600px){.hero-face{width:104px;height:104px}}
 
 /* ---- section shell ---- */
 section.pane{padding:72px 0}
