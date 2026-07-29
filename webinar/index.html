@@ -171,7 +171,7 @@
       <h2>Reserveer je plek.</h2>
       <p>Na aanmelding ontvang je direct je persoonlijke deelnamelink per e-mail. Kun je niet live meekijken? Meld je toch aan en ontvang de replay.</p>
       <!-- WEBINARGEEK_EMBED:START -->
-      <div id="mw_igSDCLkzzpK_webinargeek"></div>
+      <div id="mw_igSDCLkzzpK_webinargeek" style="max-width:560px;margin:0 auto"></div>
       <script>
         (function(w,d,stn,sa,gn,se,fse){w[gn]=w[gn]||function(){(w[gn].q = w[gn].q||[]).push(arguments)};
         se=d.createElement(stn);fse=d.getElementsByTagName(stn)[0];se.id=gn;se.async=1;
@@ -189,14 +189,33 @@
       </script>
       <a id="gateFallback" class="btn lg" style="width:100%;max-width:420px;justify-content:center" href="https://utama.webinargeek.com/de-cijfers-achter-een-bali-villa">Reserveer je gratis plek →</a>
       <script>
-        /* Toon de knop totdat het embed-formulier daadwerkelijk rendert; verberg hem daarna. */
+        /* Toon de knop alleen zolang het embed-formulier nog niet rendert.
+           Robuust: kijkt naar de hele aanmeldkaart (iframe of gevulde slot),
+           via observer én een korte polling-fallback. */
         (function(){
-          var slot = document.getElementById('mw_igSDCLkzzpK_webinargeek');
+          var card = document.querySelector('.gate-card');
           var btn = document.getElementById('gateFallback');
-          if(!slot || !btn) return;
-          var check = function(){ if(slot.childElementCount > 0){ btn.style.display = 'none'; obs.disconnect(); } };
-          var obs = new MutationObserver(check);
-          obs.observe(slot, {childList: true, subtree: true});
+          if(!card || !btn) return;
+          function embedRendered(){
+            var slot = document.getElementById('mw_igSDCLkzzpK_webinargeek');
+            if(slot && slot.childElementCount > 0) return true;
+            return !!card.querySelector('iframe');
+          }
+          var obs = null;
+          function hide(){
+            btn.style.display = 'none';
+            if(obs) obs.disconnect();
+            if(timer) clearInterval(timer);
+          }
+          function check(){ if(embedRendered()) hide(); }
+          obs = new MutationObserver(check);
+          obs.observe(card, {childList: true, subtree: true});
+          var tries = 0;
+          var timer = setInterval(function(){
+            tries++;
+            check();
+            if(tries > 60) clearInterval(timer);
+          }, 500);
           check();
         })();
       </script>
