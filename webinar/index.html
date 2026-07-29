@@ -299,9 +299,20 @@
   </div>
 </footer>
 
-<div class="stickybar">
+<div class="stickybar" id="stickybar">
   <a href="#aanmelden" class="btn">Reserveer je gratis plek →</a>
 </div>
+<script>
+  /* Verberg de sticky CTA-balk zolang de aanmeldsectie zelf in beeld is */
+  (function(){
+    var bar = document.getElementById('stickybar');
+    var gate = document.getElementById('aanmelden');
+    if(!bar || !gate || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver(function(entries){
+      bar.style.display = entries[0].isIntersecting ? 'none' : '';
+    }, {rootMargin: '0px 0px -60px 0px'}).observe(gate);
+  })();
+</script>
 
 <script>
 (function(){
