@@ -55,9 +55,10 @@ section.pane{padding:72px 0}
 /* ---- statbalk ---- */
 .stats-sec{background:var(--paper);border-bottom:1px solid var(--line)}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:0}
-@media(min-width:760px){.stats{grid-template-columns:repeat(4,1fr)}}
-.stat{padding:26px 18px;border-top:1px solid var(--line);text-align:center}
-@media(min-width:760px){.stat{border-top:none;border-right:1px solid var(--line)}.stat:last-child{border-right:none}}
+@media(min-width:760px){.stats{grid-template-columns:repeat(5,1fr)}}
+.stat{padding:26px 14px;border-top:1px solid var(--line);text-align:center}
+.stat:last-child{grid-column:1 / -1}
+@media(min-width:760px){.stat{border-top:none;border-right:1px solid var(--line)}.stat:last-child{border-right:none;grid-column:auto}}
 .stat b{display:block;font-size:34px;font-weight:800;letter-spacing:-.02em}
 .stat span{font-size:13px;color:var(--muted)}
 
