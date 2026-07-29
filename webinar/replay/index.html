@@ -102,16 +102,33 @@
         <img src="/webinar/assets/steven.jpg" alt="Steven Gijsman, oprichter UTAMA">
       </div>
       <div class="eyebrow">De volgende stap</div>
-      <h2>Plan je Villa Plan Gesprek.</h2>
-      <p>In 30 minuten maken we een persoonlijke rendementsberekening voor jouw budget en doel, kijken we welke villa's of bouwfases passen, en leggen we de juridische structuur uit. Vrijblijvend, en je zit nergens aan vast.</p>
-      <!-- CAL_EMBED:START : vervang dit blok door de embed van de agendatool
-           (bijv. Calendly of Cal.com) zodra die er is -->
-      <div class="embed-slot" style="margin-bottom:20px">
-        Hier komt de agenda-embed om direct een gesprek te plannen.<br>
-        Plak de embedcode tussen <code>CAL_EMBED:START</code> en <code>CAL_EMBED:END</code>.
+      <h2>Kies wat bij jou past.</h2>
+      <p>Drie routes, allemaal zonder verplichting.</p>
+      <div class="ladder">
+        <div class="ladder-item">
+          <b>1 · Reserveer je voorkeursvilla</b>
+          <p>Bekijk de actuele beschikbaarheid en leg je unit vast met een aanbetaling die volledig wordt verrekend bij aankoop.</p>
+          <a class="btn" href="https://invest.utamabali.com/the-maison">Bekijk beschikbaarheid →</a>
+        </div>
+        <div class="ladder-item">
+          <b>2 · Villa Plan Gesprek met Ashley</b>
+          <p>30 minuten met de sales manager die je uit de masterclass kent: een persoonlijke rendementsberekening, welke villa's of bouwfases passen, en de juridische structuur.</p>
+          <!-- CAL_EMBED:START : vervang dit blok door de embed van de agendatool
+               (bijv. Calendly of Cal.com) zodra die er is. Bouwbrief-regel: formulier
+               en agenda op EEN pagina houden. -->
+          <div class="embed-slot" style="margin-bottom:14px">
+            Hier komt de agenda-embed om direct een gesprek te plannen.<br>
+            Plak de embedcode tussen <code>CAL_EMBED:START</code> en <code>CAL_EMBED:END</code>.
+          </div>
+          <!-- CAL_EMBED:END -->
+          <a class="btn ghost" target="_blank" rel="noopener" href="https://wa.me/6281330857011?text=Hoi!%20Ik%20heb%20de%20masterclass%20gezien%20en%20wil%20graag%20een%20Villa%20Plan%20Gesprek%20met%20Ashley%20plannen.">Plan via WhatsApp</a>
+        </div>
+        <div class="ladder-item">
+          <b>3 · Niets voor jou, maar ken je iemand?</b>
+          <p>Breng iemand aan die wél investeert en ontvang onze referral-vergoeding. Zo heeft kijken alsnog waarde.</p>
+          <a class="btn ghost" href="https://invest.utamabali.com/referral">Zo werkt het referral-programma →</a>
+        </div>
       </div>
-      <!-- CAL_EMBED:END -->
-      <a class="btn ghost" target="_blank" rel="noopener" href="https://wa.me/6281330857011?text=Hoi!%20Ik%20heb%20de%20masterclass%20De%20cijfers%20achter%20een%20Bali-villa%20gezien%20en%20wil%20graag%20een%20Villa%20Plan%20Gesprek%20plannen.">Liever via WhatsApp? Stuur ons een bericht</a>
     </div>
   </div>
 </section>
@@ -139,6 +156,19 @@
     document.querySelectorAll('.replay-live').forEach(function(el){ el.style.display = 'none'; });
     document.getElementById('closedWrap').style.display = 'block';
   }
+  /* geef ?ref= door aan invest-links en voeg UTM's toe */
+  var params = new URLSearchParams(location.search);
+  var ref = params.get('ref');
+  document.querySelectorAll('a[href*="invest.utamabali.com"]').forEach(function(a){
+    try{
+      var u = new URL(a.href);
+      u.searchParams.set('utm_source','utamabali');
+      u.searchParams.set('utm_medium','webinar-replay');
+      u.searchParams.set('utm_campaign','masterclass-bali');
+      if(ref) u.searchParams.set('ref', ref);
+      a.href = u.toString();
+    }catch(e){}
+  });
   if(Date.now() >= deadline){ close(); }
   else{
     var ids = {d:'cdD',h:'cdH',m:'cdM',s:'cdS'};
