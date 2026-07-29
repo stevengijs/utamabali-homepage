@@ -1,21 +1,21 @@
 BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//UTAMA//Webinar//NL
+PRODID:-//UTAMA//Masterclass//NL
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
-UID:webinar-cijfers-bali-villa-20260806@utamabali.com
+UID:masterclass-cijfers-bali-villa-20260806@utamabali.com
 DTSTAMP:20260729T120000Z
 DTSTART:20260806T180000Z
-DTEND:20260806T190000Z
-SUMMARY:UTAMA webinar · De cijfers achter een Bali-villa
-DESCRIPTION:Je persoonlijke deelnamelink staat in je bevestigingsmail van WebinarGeek. Link kwijt? Meld je opnieuw aan via https://www.utamabali.com/webinar/
+DTEND:20260806T193000Z
+SUMMARY:UTAMA masterclass · De cijfers achter een Bali-villa
+DESCRIPTION:Je persoonlijke deelnamelink staat in je bevestigingsmail. Link kwijt? Meld je opnieuw aan via https://www.utamabali.com/webinar/
 URL:https://www.utamabali.com/webinar/
 LOCATION:Online
 BEGIN:VALARM
 TRIGGER:-PT1H
 ACTION:DISPLAY
-DESCRIPTION:UTAMA webinar begint over 1 uur
+DESCRIPTION:UTAMA masterclass begint over 1 uur
 END:VALARM
 END:VEVENT
 END:VCALENDAR

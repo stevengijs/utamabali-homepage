@@ -75,6 +75,14 @@ section.pane{padding:72px 0}
   .p-step:last-child{border-bottom:none;border-right:none}
 }
 
+/* ---- klem (probleemframe) ---- */
+.klem-grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:820px){.klem-grid{grid-template-columns:1fr 1fr 1fr;gap:20px}}
+.klem{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
+.klem h4{margin:0 0 8px;font-size:16.5px;font-weight:700}
+.klem p{margin:0;font-size:14px;line-height:1.6;color:var(--muted)}
+.klem-note{margin-top:18px;font-size:14.5px;color:var(--muted)}
+
 /* ---- donkere sectie (aanpak-patroon) ---- */
 .dark-sec{background:var(--ink);color:#fff}
 .dark-sec .sec-head h2,.dark-sec .sec-head p{color:#fff}
