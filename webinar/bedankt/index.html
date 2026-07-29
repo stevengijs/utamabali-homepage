@@ -16,7 +16,6 @@
 <nav>
   <div class="wrap row">
     <a href="https://www.utamabali.com" class="brand">UTAMA</a>
-    <a href="#projecten" class="btn ghost">Alvast rondkijken →</a>
   </div>
 </nav>
 
@@ -185,39 +184,9 @@
   </div>
 </section>
 
-<section class="pane" id="projecten" style="padding-top:0">
-  <div class="wrap">
-    <div class="sec-head">
-      <div class="eyebrow">Geen theorie, een portfolio</div>
-      <h2>Dit zijn de projecten waar we mee rekenen.</h2>
-      <p>Ruim 25 Nederlandse investeerders gingen je voor, verdeeld over vier opgeleverde projecten. Een eerder project van 15 units is volledig uitverkocht. Kijk gerust alvast rond op ons investeerdersplatform, inclusief de interactieve rendementsrekentool per project.</p>
-    </div>
-    <div class="pgrid">
-      <a href="https://invest.utamabali.com/the-maison" class="pcard">
-        <div class="img" style="background-image:url('/webinar/assets/maison.jpg')">
-          <span class="badge">In verkoop</span>
-          <span class="loc">Pererenan, Bali</span>
-          <span class="name">The Maison</span>
-        </div>
-        <div class="body">
-          <p>Zes volledig gemeubileerde designvilla's, elk met twee ensuite slaapkamers, privézwembad en rooftop. Verhuurklaar opgeleverd.</p>
-          <span class="arrow">Bekijk project →</span>
-        </div>
-      </a>
-      <a href="https://invest.utamabali.com/moka" class="pcard">
-        <div class="img" style="background-image:url('/webinar/assets/moka.jpg')">
-          <span class="badge">Laatste unit</span>
-          <span class="loc">Kedungu, Bali</span>
-          <span class="name">MOKA</span>
-        </div>
-        <div class="body">
-          <p>Boutique community met eigen café, wellness club en rooftop pool lounge, 600 meter van het strand. Nog één Signature Villa beschikbaar.</p>
-          <span class="arrow">Bekijk project →</span>
-        </div>
-      </a>
-    </div>
-  </div>
-</section>
+<!-- PROJECTEN-SECTIE bewust verwijderd (29/7, keuze Steven): de project-reveal hoort
+     ín de masterclass (bouwbrief sectie 5, deel 4). Geen aanbod, prijzen of
+     verkooplinks vóór de educatie; de bedanktpagina stuurt puur op opdagen. -->
 
 <div class="wrap">
   <div class="afm-note"><strong>Let op!</strong> U belegt buiten AFM&#8209;toezicht. Geen vergunningplicht voor deze activiteit.</div>
@@ -234,23 +203,6 @@
     </div>
   </div>
 </footer>
-
-<script>
-(function(){
-  var params = new URLSearchParams(location.search);
-  var ref = params.get('ref');
-  document.querySelectorAll('a[href*="invest.utamabali.com"]').forEach(function(a){
-    try{
-      var u = new URL(a.href);
-      u.searchParams.set('utm_source','utamabali');
-      u.searchParams.set('utm_medium','webinar-bedankt');
-      u.searchParams.set('utm_campaign','cijfers-bali-villa');
-      if(ref) u.searchParams.set('ref', ref);
-      a.href = u.toString();
-    }catch(e){}
-  });
-})();
-</script>
 
 </body>
 </html>
