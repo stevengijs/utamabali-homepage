@@ -187,10 +187,19 @@
           ]
         });
       </script>
-      <noscript>
-        <a class="btn lg" style="width:100%;max-width:420px;justify-content:center" href="https://utama.webinargeek.com/de-cijfers-achter-een-bali-villa">Reserveer je gratis plek →</a>
-      </noscript>
-      <div class="gate-note" style="margin-top:10px"><a href="https://utama.webinargeek.com/de-cijfers-achter-een-bali-villa" style="color:inherit">Laadt het formulier niet? Meld je hier aan.</a></div>
+      <a id="gateFallback" class="btn lg" style="width:100%;max-width:420px;justify-content:center" href="https://utama.webinargeek.com/de-cijfers-achter-een-bali-villa">Reserveer je gratis plek →</a>
+      <script>
+        /* Toon de knop totdat het embed-formulier daadwerkelijk rendert; verberg hem daarna. */
+        (function(){
+          var slot = document.getElementById('mw_igSDCLkzzpK_webinargeek');
+          var btn = document.getElementById('gateFallback');
+          if(!slot || !btn) return;
+          var check = function(){ if(slot.childElementCount > 0){ btn.style.display = 'none'; obs.disconnect(); } };
+          var obs = new MutationObserver(check);
+          obs.observe(slot, {childList: true, subtree: true});
+          check();
+        })();
+      </script>
       <!-- WEBINARGEEK_EMBED:END -->
       <div class="gate-note">Je ontvangt je persoonlijke deelnamelink, drie herinneringen en de replay. Meer niet.</div>
     </div>
