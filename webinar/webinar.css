@@ -188,6 +188,27 @@ body.replay-closed .closed-card{display:block}
   body.has-stickybar{padding-bottom:76px}
 }
 
+/* ---- gecentreerde layout (verzoek 29 juli): koppen en content centreren ---- */
+.hero .inner{margin:0 auto;text-align:center;max-width:62ch}
+.hero h1{margin-left:auto;margin-right:auto}
+.hero p{margin-left:auto;margin-right:auto}
+.hero .btns{justify-content:center}
+.sec-head{margin-left:auto;margin-right:auto;text-align:center}
+.klem{text-align:center}
+.klem-note{text-align:center}
+.p-step{flex-direction:column;align-items:center;text-align:center;gap:14px}
+.p-icon{margin:0 auto}
+.p-step p{margin-left:auto;margin-right:auto}
+.afeat{flex-direction:column;align-items:center;text-align:center;gap:10px}
+.afeat .nn{width:auto}
+.founder{grid-template-columns:1fr;max-width:680px;margin:0 auto;text-align:center;gap:26px}
+@media(min-width:860px){.founder{grid-template-columns:1fr;gap:26px}}
+.founder-photo{max-width:300px;margin:0 auto;width:100%}
+.founder-body p{margin-left:auto;margin-right:auto}
+.founder-body h2{margin-top:0}
+.faq{margin:0 auto}
+.wa-card{max-width:720px;margin:0 auto}
+
 /* ---- footer ---- */
 footer{border-top:1px solid var(--line);padding:34px 0;font-size:13px;color:var(--muted)}
 footer .frow{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:space-between}
