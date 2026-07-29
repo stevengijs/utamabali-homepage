@@ -203,7 +203,10 @@
           if(!card || !btn) return;
           function embedRendered(){
             var slot = document.getElementById('mw_n6lJ719GTsi_webinargeek');
-            if(slot && slot.childElementCount > 0) return true;
+            if(!slot) return false;
+            if(slot.childElementCount > 0) return true;
+            /* WebinarGeek rendert het formulier in een shadow root op de slot-div */
+            if(slot.shadowRoot && slot.shadowRoot.childElementCount > 0) return true;
             return !!card.querySelector('iframe');
           }
           var obs = null;
