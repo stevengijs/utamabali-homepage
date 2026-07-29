@@ -1,0 +1,187 @@
+/* ============================================================
+   UTAMA webinar-funnel · gedeelde stylesheet
+   Gebaseerd op het utamabali.com design system (zie
+   brochures/utamabali-homepage-design-system.md in het project).
+   Tokens en componentklassen zijn 1-op-1 overgenomen van de
+   hoofdsite; onderaan staan de webinar-specifieke componenten.
+   ============================================================ */
+
+:root{
+  --sand:#FAF5EA; --sand-2:#F1E9DB; --paper:#FEFBF6;
+  --ink:#17140F; --ink-soft:#332A1F; --ink-2:#211C14; --muted:#5B564C; --line:#E7DECD;
+  --terra:#8B5A3C; --ok:#2E7D5B; --opt:#9CA47C;
+  --shadow:rgba(0,0,0,.02) 0 0 0 1px, rgba(0,0,0,.04) 0 2px 6px 0, rgba(0,0,0,.1) 0 4px 8px 0;
+  --radius:14px; --radius-btn:8px; --radius-sheet:20px; --radius-pill:9999px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+section[id]{scroll-margin-top:76px}
+body{margin:0;background:var(--sand);color:var(--ink);font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:'Inter',system-ui,-apple-system,sans-serif;font-weight:800;letter-spacing:-.015em;line-height:1.12;margin:0}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+a{color:inherit}
+img{display:block;max-width:100%}
+
+/* ---- nav ---- */
+nav{position:sticky;top:0;z-index:50;background:rgba(250,245,234,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .row{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{font-weight:800;font-size:20px;letter-spacing:.32em;text-transform:uppercase;text-decoration:none;color:var(--ink)}
+.btn{border:none;background:var(--ink);color:#fff;font-family:inherit;font-weight:600;font-size:14.5px;padding:12px 22px;border-radius:var(--radius-btn);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.lg{padding:15px 28px;font-size:15.5px}
+.btn.ghost-light{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
+.btn.ghost-light:hover{background:#fff;color:var(--ink)}
+
+/* ---- hero ---- */
+.hero{position:relative;min-height:72vh;display:flex;align-items:flex-end;background-size:cover;background-position:center;border-bottom:1px solid var(--line)}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,20,15,.05) 0%,rgba(23,20,15,.28) 55%,rgba(23,20,15,.82) 100%)}
+.hero .inner{position:relative;z-index:1;padding:80px 0 60px;max-width:56ch}
+.eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);font-weight:700}
+.hero .eyebrow{color:rgba(255,255,255,.88)}
+.hero h1{font-size:clamp(34px,5.4vw,58px);letter-spacing:-.5px;margin:16px 0 16px;max-width:16ch;color:#fff}
+.hero p{font-size:18px;color:rgba(255,255,255,.82);margin:0 0 28px;max-width:48ch}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.hero-note{margin-top:16px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.72);font-weight:600}
+
+/* ---- section shell ---- */
+section.pane{padding:72px 0}
+.sec-head{max-width:640px;margin-bottom:36px}
+.sec-head h2{font-size:clamp(26px,3.4vw,36px);margin-bottom:14px}
+.sec-head p{font-size:16.5px;color:#4c463b;margin:0}
+
+/* ---- statbalk ---- */
+.stats-sec{background:var(--paper);border-bottom:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media(min-width:760px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{padding:26px 18px;border-top:1px solid var(--line);text-align:center}
+@media(min-width:760px){.stat{border-top:none;border-right:1px solid var(--line)}.stat:last-child{border-right:none}}
+.stat b{display:block;font-size:34px;font-weight:800;letter-spacing:-.02em}
+.stat span{font-size:13px;color:var(--muted)}
+
+/* ---- programma (proces-patroon van de hoofdsite) ---- */
+.process-sec{border-bottom:1px solid var(--line);background:var(--paper);padding:56px 0 60px}
+.process-row{display:flex;flex-direction:column;gap:0;margin-top:36px}
+.p-step{display:flex;gap:18px;padding:22px 0;border-top:1px solid var(--line)}
+.p-step:last-child{border-bottom:1px solid var(--line)}
+.p-icon{flex:none;width:44px;height:44px;border-radius:50%;background:var(--opt);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.p-body{flex:1}
+.p-num{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terra);margin-bottom:4px}
+.p-step h4{margin:0 0 5px;font-size:16.5px;font-weight:700;color:var(--ink)}
+.p-step p{margin:0;font-size:14px;line-height:1.6;color:var(--muted);max-width:52ch}
+@media(min-width:860px){
+  .process-row{flex-direction:row;align-items:stretch;border-top:1px solid var(--line);margin-top:40px}
+  .p-step{flex-direction:column;flex:1;padding:26px 20px;border-top:none;border-right:1px solid var(--line);gap:14px}
+  .p-step:last-child{border-bottom:none;border-right:none}
+}
+
+/* ---- donkere sectie (aanpak-patroon) ---- */
+.dark-sec{background:var(--ink);color:#fff}
+.dark-sec .sec-head h2,.dark-sec .sec-head p{color:#fff}
+.dark-sec .sec-head p{color:rgba(255,255,255,.68)}
+.dark-sec .sec-head .eyebrow{color:#E0875C}
+.afeat-grid{display:grid;grid-template-columns:1fr;gap:0}
+@media(min-width:760px){.afeat-grid{grid-template-columns:1fr 1fr 1fr;gap:0 40px}}
+.afeat{display:flex;gap:22px;padding:24px 0;border-top:1px solid rgba(255,255,255,.14)}
+.afeat .nn{font-weight:800;font-size:22px;color:#E0875C;flex:none;width:42px}
+.afeat h4{margin:0 0 6px;font-size:16.5px;font-weight:700}
+.afeat p{margin:0;font-size:14px;line-height:1.6;color:rgba(255,255,255,.62)}
+
+/* ---- host (founder-patroon) ---- */
+.founder{display:grid;grid-template-columns:1fr;gap:32px;align-items:center}
+@media(min-width:860px){.founder{grid-template-columns:.85fr 1.15fr;gap:52px}}
+.founder-photo{border-radius:var(--radius-sheet);overflow:hidden;box-shadow:var(--shadow)}
+.founder-photo img{width:100%;height:100%;object-fit:cover;aspect-ratio:4/5}
+.founder-body p{font-size:15.5px;color:#3f3a30;line-height:1.7;max-width:60ch;margin:0 0 16px}
+.founder-body h2{font-size:28px;margin:8px 0 18px}
+
+/* ---- aanmeldkaart / gate ---- */
+.gate-sec{background:var(--ink);padding:72px 0}
+.gate-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sheet);padding:46px 40px;text-align:center;max-width:680px;margin:0 auto}
+@media(max-width:600px){.gate-card{padding:34px 22px}}
+.gate-card h2{font-size:clamp(24px,3vw,32px);margin:10px 0 12px}
+.gate-card>p{font-size:16px;color:var(--muted);margin:0 0 26px}
+.gate-note{font-size:12.5px;color:var(--muted);margin-top:18px}
+
+/* ---- countdown ---- */
+.countdown{display:flex;justify-content:center;gap:10px;margin:0 0 26px}
+.cd-cell{background:var(--sand-2);border-radius:10px;min-width:66px;padding:10px 8px}
+.cd-cell b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.cd-cell span{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.cd-label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:12px}
+
+/* ---- embed-slots (tijdelijk, tot de echte embeds erin staan) ---- */
+.embed-slot{border:2px dashed var(--line);border-radius:var(--radius);padding:34px 20px;color:var(--muted);font-size:14px;background:#fff}
+.embed-slot code{font-size:12px;background:var(--sand-2);padding:2px 8px;border-radius:6px}
+
+/* ---- video ---- */
+.video-shell{position:relative;aspect-ratio:16/9;background:var(--ink-2);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.video-shell iframe,.video-shell .embed-slot{position:absolute;inset:0;width:100%;height:100%;border:0;display:flex;align-items:center;justify-content:center;border-radius:0}
+
+/* ---- faq ---- */
+.faq{max-width:720px}
+.faq details{border-top:1px solid var(--line);padding:4px 0}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;font-weight:700;font-size:15.5px;padding:16px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-size:20px;font-weight:600;color:var(--muted);flex:none}
+.faq details[open] summary::after{content:"–"}
+.faq details p{margin:0 0 16px;font-size:14.5px;color:var(--muted);max-width:60ch}
+
+/* ---- slot-CTA ---- */
+.cta-sec{background:var(--ink)}
+.cta-final{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sheet);padding:52px 40px;text-align:center;max-width:720px;margin:0 auto}
+.cta-final h2{font-size:clamp(24px,3vw,32px);margin-bottom:12px}
+.cta-final p{font-size:16px;color:var(--muted);margin:0 0 26px}
+.cta-faces{display:flex;justify-content:center;margin-bottom:18px}
+.cta-faces img{width:52px;height:52px;border-radius:50%;object-fit:cover;border:3px solid var(--paper);box-shadow:0 0 0 1px var(--line)}
+.cta-faces img:nth-child(2){margin-left:-14px}
+
+/* ---- bevestigingspagina ---- */
+.confirm-hero{background:var(--paper);border-bottom:1px solid var(--line);padding:84px 0 64px;text-align:center}
+.ok-badge{width:64px;height:64px;border-radius:50%;background:var(--opt);display:flex;align-items:center;justify-content:center;color:var(--ink);margin:0 auto 22px}
+.confirm-hero h1{font-size:clamp(30px,4.4vw,44px);margin:14px 0 16px}
+.confirm-hero p{font-size:16.5px;color:var(--muted);max-width:52ch;margin:0 auto}
+
+/* ---- portfolio-kaarten (pre-frame op bedanktpagina) ---- */
+.pgrid{display:grid;grid-template-columns:1fr;gap:20px}
+@media(min-width:700px){.pgrid{grid-template-columns:1fr 1fr}}
+.pcard{position:relative;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);text-decoration:none;color:inherit;background:var(--paper);display:block}
+.pcard .img{height:230px;background-size:cover;background-position:center;position:relative}
+.pcard .img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,20,15,0) 45%,rgba(23,20,15,.55) 100%)}
+.pcard .badge{position:absolute;top:14px;left:14px;z-index:1;background:rgba(254,251,246,.95);color:var(--ink);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:6px 12px;border-radius:var(--radius-pill)}
+.pcard .loc{position:absolute;left:18px;bottom:52px;z-index:1;color:#fff;font-size:12px;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+.pcard .name{position:absolute;left:18px;bottom:18px;z-index:1;color:#fff;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.pcard .body{padding:18px 20px 22px}
+.pcard .body p{margin:0;font-size:14px;color:var(--muted);line-height:1.55}
+.pcard .arrow{display:inline-flex;align-items:center;gap:5px;margin-top:12px;font-size:13.5px;font-weight:700;color:var(--ink)}
+
+/* ---- whatsapp-kaart ---- */
+.wa-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:28px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between}
+.wa-card h3{font-size:18px;margin-bottom:6px}
+.wa-card p{margin:0;font-size:14px;color:var(--muted);max-width:46ch}
+
+/* ---- AFM-melding ---- */
+.afm-note{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:14px 18px;font-size:12.5px;color:var(--muted);margin:0 0 26px}
+.afm-note strong{color:var(--ink)}
+
+/* ---- replay gesloten ---- */
+.closed-card{display:none;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sheet);padding:52px 40px;text-align:center;max-width:640px;margin:0 auto}
+.closed-card h2{font-size:26px;margin-bottom:12px}
+.closed-card p{color:var(--muted);font-size:15.5px;margin:0 0 24px}
+body.replay-closed .replay-live{display:none}
+body.replay-closed .closed-card{display:block}
+
+/* ---- sticky mobiele CTA ---- */
+.stickybar{display:none}
+@media(max-width:820px){
+  .stickybar{display:block;position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(254,251,246,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+  .stickybar .btn{width:100%;justify-content:center}
+  body.has-stickybar{padding-bottom:76px}
+}
+
+/* ---- footer ---- */
+footer{border-top:1px solid var(--line);padding:34px 0;font-size:13px;color:var(--muted)}
+footer .frow{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:space-between}
+footer a{color:var(--ink);text-decoration:none;font-weight:600}
+footer a:hover{text-decoration:underline}
