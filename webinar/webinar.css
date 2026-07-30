@@ -88,6 +88,7 @@ section.pane{padding:72px 0}
 .klem{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
 .klem h4{margin:0 0 8px;font-size:16.5px;font-weight:700}
 .klem p{margin:0;font-size:14px;line-height:1.6;color:var(--muted)}
+.klem-icon{width:44px;height:44px;border-radius:12px;background:var(--sand-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--ink)}
 .klem-note{margin-top:18px;font-size:14.5px;color:var(--muted)}
 
 /* ---- LIVE-badge ---- */
