@@ -1,0 +1,1 @@
+{"rewrites":[{"source":"/admin","destination":"https://gcpachivrwalsneuvlsa.supabase.co/functions/v1/admin"},{"source":"/admin/:path*","destination":"https://gcpachivrwalsneuvlsa.supabase.co/functions/v1/admin"}]}
