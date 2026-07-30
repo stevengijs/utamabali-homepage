@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UTAMA · Admin</title>
+<style>
+  :root{
+    --bg:#f5f6f5; --panel:#ffffff; --ink:#12211c; --muted:#5f6f68;
+    --line:#e3e7e4; --brand:#0f6b4f; --brand-2:#14b37d; --brand-ink:#0c1a15;
+    --sidebar:#0c1a15; --sidebar-ink:#cdd8d2; --sidebar-active:#12332a;
+    --danger:#c0392b; --warn:#b7791f; --ok:#0f6b4f;
+    --radius:12px; --shadow:0 1px 3px rgba(16,32,26,.08),0 8px 24px rgba(16,32,26,.05);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:14px}
+  a{color:var(--brand)}
+
+  /* ---------- Login ---------- */
+  #login{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 70% -10%,#12332a,#0c1a15)}
+  .login-card{background:var(--panel);width:360px;max-width:92vw;padding:32px;border-radius:16px;box-shadow:var(--shadow)}
+  .brand-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brand-2),var(--brand));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+  .login-card h1{font-size:19px;margin:14px 0 2px}
+  .login-card p.sub{color:var(--muted);margin:0 0 20px;font-size:13px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;outline:none}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:9px;border:1px solid transparent;font-weight:600;font-size:14px}
+  .btn-primary{background:var(--brand);color:#fff}
+  .btn-primary:hover{background:#0b573f}
+  .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+  .btn-ghost:hover{background:#f2f4f2}
+  .btn-danger{background:#fff;border-color:#eccfcb;color:var(--danger)}
+  .btn-danger:hover{background:#fbeeec}
+  .btn-sm{padding:6px 10px;font-size:13px;border-radius:8px}
+  .btn-block{width:100%}
+  .login-err{color:var(--danger);font-size:13px;min-height:18px;margin-top:4px}
+
+  /* ---------- App shell ---------- */
+  #app{display:none;height:100%}
+  .shell{display:grid;grid-template-columns:236px 1fr;height:100vh}
+  aside{background:var(--sidebar);color:var(--sidebar-ink);display:flex;flex-direction:column;padding:16px 12px}
+  .side-brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
+  .side-brand b{color:#fff;font-size:15px;letter-spacing:.3px}
+  .side-brand small{display:block;color:#6f8c81;font-size:11px;font-weight:600}
+  nav{display:flex;flex-direction:column;gap:2px;flex:1}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--sidebar-ink);text-decoration:none;font-weight:500;border:none;background:none;width:100%;text-align:left;font-size:14px}
+  .nav-item:hover{background:#12271f}
+  .nav-item.active{background:var(--sidebar-active);color:#fff}
+  .nav-item .ic{width:18px;text-align:center;opacity:.9}
+  .side-foot{border-top:1px solid #17352b;padding-top:12px;margin-top:8px}
+  .side-user{font-size:12px;color:#8fa89e;padding:0 8px 8px;word-break:break-all}
+  .side-user b{color:#e8efeb;display:block;font-size:13px}
+
+  main{overflow:auto}
+  .topbar{position:sticky;top:0;z-index:5;background:rgba(245,246,245,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
+  .topbar h2{margin:0;font-size:18px}
+  .topbar .crumb{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .content{padding:24px 28px 60px}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:8px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .stat .k{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  .stat .v{font-size:28px;font-weight:750;margin-top:6px}
+  .stat .s{font-size:12px;color:var(--muted);margin-top:2px}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:20px;overflow:hidden}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .panel-head h3{margin:0;font-size:15px}
+  .panel-head .desc{color:var(--muted);font-size:12px;margin-top:2px}
+  .toolbar{display:flex;gap:8px;align-items:center}
+  .search{padding:8px 11px;border:1px solid var(--line);border-radius:8px;min-width:200px;outline:none}
+  .search:focus{border-color:var(--brand-2)}
+
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;background:#fafbfa;position:sticky}
+  tbody tr:hover{background:#fafbfa}
+  td .row-actions{display:flex;gap:6px;justify-content:flex-end}
+  .table-wrap{overflow:auto}
+  .empty{padding:38px;text-align:center;color:var(--muted)}
+  .muted{color:var(--muted)}
+
+  .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid var(--line);background:#f2f4f2;color:#41514a;white-space:nowrap}
+  .badge.green{background:#e7f6ef;color:#0f6b4f;border-color:#c6ead9}
+  .badge.blue{background:#e8f0fb;color:#1d4ed8;border-color:#cfe0f7}
+  .badge.amber{background:#fdf3e2;color:#9a6410;border-color:#f4e2c1}
+  .badge.red{background:#fbeeec;color:#b0362a;border-color:#f0d3ce}
+  .badge.grey{background:#eef0ef;color:#5f6f68}
+
+  .chip{display:inline-block;padding:2px 8px;border-radius:7px;background:#eef4f1;color:#2c5a4a;font-size:11px;margin:1px 3px 1px 0}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(12,26,21,.45);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
+  .modal{background:#fff;border-radius:14px;width:560px;max-width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff}
+  .modal-head h3{margin:0;font-size:16px}
+  .modal-body{padding:20px}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 20px;border-top:1px solid var(--line);position:sticky;bottom:0;background:#fff}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .x{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1}
+
+  /* permission grid */
+  .perm-table{width:100%;border-collapse:collapse;margin-top:4px}
+  .perm-table th,.perm-table td{padding:9px 10px;border-bottom:1px solid var(--line)}
+  .perm-table td.center,.perm-table th.center{text-align:center}
+  .perm-table input[type=checkbox]{width:17px;height:17px;accent-color:var(--brand)}
+
+  .toast-wrap{position:fixed;bottom:22px;right:22px;z-index:60;display:flex;flex-direction:column;gap:10px}
+  .toast{background:#12211c;color:#fff;padding:12px 16px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:13.5px;max-width:340px}
+  .toast.err{background:#7a271a}
+  .toast.ok{background:#0f6b4f}
+
+  .lock-note{padding:40px;text-align:center;color:var(--muted)}
+  .readonly-tag{font-size:11px;font-weight:700;color:var(--warn);background:#fdf3e2;border:1px solid #f4e2c1;padding:3px 9px;border-radius:999px}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  @media(max-width:820px){.shell{grid-template-columns:1fr}aside{display:none}}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login">
+  <div class="login-card">
+    <div class="brand-row"><div class="logo">U</div><div><b style="font-size:15px">UTAMA</b><div style="font-size:11px;color:var(--muted);font-weight:600">TEAM ADMIN</div></div></div>
+    <h1>Sign in</h1>
+    <p class="sub">Access the team admin backend.</p>
+    <form id="loginForm">
+      <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="username" required></div>
+      <div class="field"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-primary btn-block" type="submit" id="loginBtn">Sign in</button>
+      <div class="login-err" id="loginErr"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <div class="shell">
+    <aside>
+      <div class="side-brand"><div class="logo">U</div><div><b>UTAMA</b><small>TEAM ADMIN</small></div></div>
+      <nav id="nav"></nav>
+      <div class="side-foot">
+        <div class="side-user"><b id="meName">—</b><span id="meRole"></span></div>
+        <button class="nav-item" id="changePwBtn"><span class="ic">🔑</span> Change password</button>
+        <button class="nav-item" id="logoutBtn"><span class="ic">⎋</span> Sign out</button>
+      </div>
+    </aside>
+    <main>
+      <div class="topbar"><div><div class="crumb" id="crumb">UTAMA</div><h2 id="pageTitle">Dashboard</h2></div><div id="topRight"></div></div>
+      <div class="content" id="view"></div>
+    </main>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ================= CONFIG ================= */
+const SUPABASE_URL = "https://gcpachivrwalsneuvlsa.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjcGFjaGl2cndhbHNuZXV2bHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3NTAzODUsImV4cCI6MjEwMDMyNjM4NX0.nMSFH929HMK6HinjiVwvXH5HRM_vvY5m90iv3VGOPUQ";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const PAGES = [
+  {key:'leads',    label:'Leads / CRM',           icon:'📇'},
+  {key:'content',  label:'Content Library',        icon:'🗂️'},
+  {key:'webinars', label:'Webinars & Campaigns',   icon:'🎥'},
+  {key:'users',    label:'Team & Users',           icon:'👥'},
+];
+
+/* Resource definitions drive tables + forms */
+const RES = {
+  leads:{page:'leads', table:'adm_leads', title:'Leads / CRM', single:'Lead',
+    cols:['name','company','source','status','value','owner'],
+    fields:[
+      {k:'name',label:'Name',type:'text',req:true},
+      {k:'company',label:'Company',type:'text'},
+      {k:'email',label:'Email',type:'text'},
+      {k:'phone',label:'Phone',type:'text'},
+      {k:'source',label:'Source',type:'select',opts:['Webinar','Meta Ads','YouTube','TikTok','Referral','Organic','Other']},
+      {k:'status',label:'Status',type:'select',opts:['new','contacted','qualified','won','lost']},
+      {k:'stage',label:'Stage',type:'text'},
+      {k:'value',label:'Deal value (€)',type:'number',money:true},
+      {k:'owner',label:'Owner',type:'text'},
+      {k:'notes',label:'Notes',type:'textarea'},
+    ]},
+  content:{page:'content', table:'adm_content', title:'Content Library', single:'Asset',
+    cols:['title','type','status','tags','url'],
+    fields:[
+      {k:'title',label:'Title',type:'text',req:true},
+      {k:'type',label:'Type',type:'select',opts:['ad','email','blog','video','social','doc','other']},
+      {k:'status',label:'Status',type:'select',opts:['draft','review','published','archived']},
+      {k:'tags',label:'Tags (comma separated)',type:'tags'},
+      {k:'url',label:'URL',type:'text'},
+      {k:'body',label:'Description / body',type:'textarea'},
+    ]},
+  webinars:{page:'webinars', table:'adm_webinars', title:'Webinars', single:'Webinar',
+    cols:['title','scheduled_at','status','registrations','attendees'],
+    fields:[
+      {k:'title',label:'Title',type:'text',req:true},
+      {k:'scheduled_at',label:'Scheduled at',type:'datetime'},
+      {k:'campaign',label:'Campaign',type:'text'},
+      {k:'status',label:'Status',type:'select',opts:['scheduled','live','completed','cancelled']},
+      {k:'registrations',label:'Registrations',type:'number'},
+      {k:'attendees',label:'Attendees',type:'number'},
+      {k:'notes',label:'Notes',type:'textarea'},
+    ]},
+  campaigns:{page:'webinars', table:'adm_campaigns', title:'Campaigns', single:'Campaign',
+    cols:['name','channel','status','budget','spend','leads_generated'],
+    fields:[
+      {k:'name',label:'Name',type:'text',req:true},
+      {k:'channel',label:'Channel',type:'select',opts:['Meta','YouTube','TikTok','Google','Email','Other']},
+      {k:'status',label:'Status',type:'select',opts:['active','paused','completed','draft']},
+      {k:'budget',label:'Budget (€)',type:'number',money:true},
+      {k:'spend',label:'Spend (€)',type:'number',money:true},
+      {k:'leads_generated',label:'Leads generated',type:'number'},
+      {k:'start_date',label:'Start date',type:'date'},
+      {k:'end_date',label:'End date',type:'date'},
+      {k:'notes',label:'Notes',type:'textarea'},
+    ]},
+};
+
+/* ================= STATE ================= */
+let ME = null;          // profile row
+let PERMS = {};         // {page:{can_view,can_edit}}
+let SESSION = null;
+let CURRENT = 'dashboard';
+
+/* ================= HELPERS ================= */
+const $ = s => document.querySelector(s);
+const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+function toast(msg,type){const t=el('div','toast '+(type||''),msg);$('#toasts').append(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),400);},3200);}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function money(v){if(v==null||v==='')return '—';return '€'+Number(v).toLocaleString('nl-NL');}
+function fmtDate(v){if(!v)return '—';const d=new Date(v);return d.toLocaleDateString('nl-NL',{day:'2-digit',month:'short',year:'numeric'});}
+function fmtDateTime(v){if(!v)return '—';const d=new Date(v);return d.toLocaleString('nl-NL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function toLocalInput(v){if(!v)return '';const d=new Date(v);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
+function isAdmin(){return ME && ME.is_admin;}
+function canView(p){return isAdmin() || (PERMS[p] && PERMS[p].can_view);}
+function canEdit(p){return isAdmin() || (PERMS[p] && PERMS[p].can_edit);}
+
+const STATUS_COLOR = {
+  new:'blue',contacted:'amber',qualified:'green',won:'green',lost:'red',
+  draft:'grey',review:'amber',published:'green',archived:'grey',
+  scheduled:'blue',live:'green',completed:'grey',cancelled:'red',
+  active:'green',paused:'amber'
+};
+function statusBadge(v){if(v==null||v==='')return '<span class="badge grey">—</span>';const c=STATUS_COLOR[v]||'grey';return `<span class="badge ${c}">${esc(v)}</span>`;}
+
+function cell(res,f,row){
+  const v=row[f];
+  if(f==='status')return statusBadge(v);
+  const def=RES[res].fields.find(x=>x.k===f)||{};
+  if(def.money)return money(v);
+  if(def.type==='tags'){const a=v||[];return a.length?a.map(t=>`<span class="chip">${esc(t)}</span>`).join(''):'<span class="muted">—</span>';}
+  if(def.type==='datetime')return fmtDateTime(v);
+  if(def.type==='date')return fmtDate(v);
+  if(f==='url')return v?`<a href="${esc(v)}" target="_blank" rel="noopener">link ↗</a>`:'<span class="muted">—</span>';
+  if(v==null||v==='')return '<span class="muted">—</span>';
+  return esc(v);
+}
+
+/* ================= AUTH ================= */
+sb.auth.onAuthStateChange((_e,s)=>{SESSION=s;});
+$('#loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  $('#loginErr').textContent='';
+  const btn=$('#loginBtn');btn.disabled=true;btn.textContent='Signing in…';
+  const {error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPass').value});
+  btn.disabled=false;btn.textContent='Sign in';
+  if(error){$('#loginErr').textContent=error.message;return;}
+  await boot();
+});
+$('#logoutBtn').addEventListener('click',async()=>{await sb.auth.signOut();location.reload();});
+$('#changePwBtn').addEventListener('click',openChangePw);
+
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  SESSION=session;
+  if(!session){$('#login').style.display='flex';$('#app').style.display='none';return;}
+  // load profile + perms
+  const {data:prof,error:pe}=await sb.from('adm_profiles').select('*').eq('id',session.user.id).single();
+  if(pe||!prof){$('#login').style.display='flex';$('#app').style.display='none';toast('No admin profile found for this account.','err');return;}
+  ME=prof;
+  const {data:perms}=await sb.from('adm_permissions').select('*').eq('user_id',session.user.id);
+  PERMS={};(perms||[]).forEach(p=>{PERMS[p.page]={can_view:p.can_view,can_edit:p.can_edit};});
+  $('#login').style.display='none';$('#app').style.display='block';
+  $('#meName').textContent=ME.full_name||ME.email;
+  $('#meRole').textContent=isAdmin()?'Admin':'Team member';
+  buildNav();
+  go('dashboard');
+}
+
+/* ================= NAV ================= */
+function buildNav(){
+  const nav=$('#nav');nav.innerHTML='';
+  const dash=el('button','nav-item','<span class="ic">▚</span> Dashboard');dash.onclick=()=>go('dashboard');dash.dataset.k='dashboard';nav.append(dash);
+  PAGES.forEach(p=>{
+    if(!canView(p.key))return;
+    const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${p.label}`);
+    b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);
+  });
+}
+function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>n.classList.toggle('active',n.dataset.k===k));}
+
+function go(k){
+  CURRENT=k;setActive(k);$('#topRight').innerHTML='';
+  const titles={dashboard:'Dashboard',leads:'Leads / CRM',content:'Content Library',webinars:'Webinars & Campaigns',users:'Team & Users'};
+  $('#pageTitle').textContent=titles[k]||k;
+  if(k==='dashboard')return renderDashboard();
+  if(k==='users')return renderUsers();
+  if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;}
+  if(k==='leads')return renderResource('leads');
+  if(k==='content')return renderResource('content');
+  if(k==='webinars')return renderWebinars();
+}
+
+/* ================= DASHBOARD ================= */
+async function renderDashboard(){
+  const v=$('#view');v.innerHTML='<div class="muted">Loading…</div>';
+  const jobs=[];
+  const wants={leads:canView('leads'),content:canView('content'),webinars:canView('webinars')};
+  async function count(t){const {count}=await sb.from(t).select('*',{count:'exact',head:true});return count||0;}
+  const stats=[];
+  if(wants.leads)stats.push(['Leads',await count('adm_leads'),'in the pipeline']);
+  if(wants.content)stats.push(['Content assets',await count('adm_content'),'in the library']);
+  if(wants.webinars){stats.push(['Webinars',await count('adm_webinars'),'tracked']);stats.push(['Campaigns',await count('adm_campaigns'),'tracked']);}
+  if(isAdmin()){const c=await count('adm_profiles');stats.push(['Team members',c,'with access']);}
+  let html='<div class="cards">';
+  if(!stats.length)html='<div class="panel"><div class="lock-note">Welcome! You don’t have any pages assigned yet. Ask an admin to grant you access.</div></div><div class="cards" style="display:none">';
+  stats.forEach(s=>{html+=`<div class="stat"><div class="k">${s[0]}</div><div class="v">${s[1]}</div><div class="s">${s[2]}</div></div>`;});
+  html+='</div>';
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Welcome, ${esc((ME.full_name||ME.email).split(' ')[0])} 👋</h3><div class="desc">${isAdmin()?'You have full admin access. Manage your team under “Team & Users”.':'Use the sidebar to open the areas you have access to.'}</div></div></div>
+    <div style="padding:18px"><div class="muted" style="font-size:13px">Your access:</div><div style="margin-top:8px">${accessSummaryHTML()}</div></div></div>`;
+  v.innerHTML=html;
+}
+function accessSummaryHTML(){
+  if(isAdmin())return '<span class="badge green">Admin — full access to everything</span>';
+  let out='';PAGES.forEach(p=>{const pv=PERMS[p.key];if(pv&&(pv.can_view||pv.can_edit)){out+=`<span class="badge ${pv.can_edit?'green':'blue'}" style="margin:2px">${p.label}: ${pv.can_edit?'View + Edit':'View only'}</span>`;}});
+  return out||'<span class="badge grey">No pages assigned yet</span>';
+}
+
+/* ================= GENERIC RESOURCE ================= */
+let _cache={};
+async function renderResource(resKey,mount){
+  const R=RES[resKey];const editable=canEdit(R.page);
+  const target=mount||$('#view');
+  target.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>${R.title}</h3><div class="desc">${editable?'You can view and edit these records.':'Read-only access.'}</div></div>
+    <div class="toolbar"><input class="search" id="search_${resKey}" placeholder="Search ${R.title.toLowerCase()}…">${editable?`<button class="btn btn-primary btn-sm" id="add_${resKey}">+ New ${R.single}</button>`:'<span class="readonly-tag">Read only</span>'}</div></div>
+    <div class="table-wrap" id="tw_${resKey}"><div class="empty">Loading…</div></div></div>`;
+  const {data,error}=await sb.from(R.table).select('*').order('created_at',{ascending:false});
+  if(error){$('#tw_'+resKey).innerHTML=`<div class="empty">Error: ${esc(error.message)}</div>`;return;}
+  _cache[resKey]=data||[];
+  drawTable(resKey);
+  if(editable)$('#add_'+resKey).onclick=()=>openForm(resKey,null);
+  $('#search_'+resKey).addEventListener('input',()=>drawTable(resKey));
+}
+function drawTable(resKey){
+  const R=RES[resKey];const editable=canEdit(R.page);
+  const q=($('#search_'+resKey)?.value||'').toLowerCase();
+  let rows=_cache[resKey]||[];
+  if(q)rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
+  const tw=$('#tw_'+resKey);
+  if(!rows.length){tw.innerHTML='<div class="empty">No records'+(q?' match your search.':' yet.')+'</div>';return;}
+  let h='<table><thead><tr>';
+  R.cols.forEach(c=>{const def=R.fields.find(f=>f.k===c);h+=`<th>${esc(def?def.label:c)}</th>`;});
+  h+='<th style="text-align:right">'+(editable?'Actions':'')+'</th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    h+='<tr>';R.cols.forEach(c=>{h+=`<td>${cell(resKey,c,r)}</td>`;});
+    h+='<td><div class="row-actions">';
+    if(editable){h+=`<button class="btn btn-ghost btn-sm" data-edit="${r.id}">Edit</button><button class="btn btn-danger btn-sm" data-del="${r.id}">Delete</button>`;}
+    h+='</div></td></tr>';
+  });
+  h+='</tbody></table>';tw.innerHTML=h;
+  tw.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openForm(resKey,rows.find(x=>x.id==b.dataset.edit)));
+  tw.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delRecord(resKey,b.dataset.del));
+}
+async function delRecord(resKey,id){
+  const R=RES[resKey];
+  if(!confirm('Delete this '+R.single.toLowerCase()+'? This cannot be undone.'))return;
+  const {error}=await sb.from(R.table).delete().eq('id',id);
+  if(error)return toast(error.message,'err');
+  toast(R.single+' deleted','ok');
+  _cache[resKey]=_cache[resKey].filter(x=>x.id!=id);drawTable(resKey);
+}
+
+/* ---- form modal ---- */
+function openForm(resKey,row){
+  const R=RES[resKey];const isEdit=!!row;row=row||{};
+  let body='<div class="grid2">';
+  R.fields.forEach((f,i)=>{
+    const full=(f.type==='textarea'||f.type==='tags')?' style="grid-column:1/-1"':'';
+    let val=row[f.k];
+    let input='';
+    if(f.type==='textarea')input=`<textarea id="f_${f.k}" rows="3">${esc(val||'')}</textarea>`;
+    else if(f.type==='select'){input=`<select id="f_${f.k}"><option value="">—</option>`+f.opts.map(o=>`<option ${val===o?'selected':''}>${esc(o)}</option>`).join('')+`</select>`;}
+    else if(f.type==='tags')input=`<input id="f_${f.k}" value="${esc((val||[]).join(', '))}">`;
+    else if(f.type==='number')input=`<input id="f_${f.k}" type="number" step="any" value="${val==null?'':esc(val)}">`;
+    else if(f.type==='date')input=`<input id="f_${f.k}" type="date" value="${val?String(val).slice(0,10):''}">`;
+    else if(f.type==='datetime')input=`<input id="f_${f.k}" type="datetime-local" value="${toLocalInput(val)}">`;
+    else input=`<input id="f_${f.k}" value="${esc(val||'')}">`;
+    body+=`<div class="field"${full}><label>${esc(f.label)}${f.req?' *':''}</label>${input}</div>`;
+  });
+  body+='</div>';
+  showModal(`${isEdit?'Edit':'New'} ${R.single}`,body,async()=>{
+    const payload={};let ok=true;
+    R.fields.forEach(f=>{
+      const e=$('#f_'+f.k);let v=e.value;
+      if(f.type==='tags')v=v.split(',').map(s=>s.trim()).filter(Boolean);
+      else if(f.type==='number')v=v===''?null:Number(v);
+      else if(f.type==='datetime')v=v?new Date(v).toISOString():null;
+      else if(f.type==='date')v=v||null;
+      else v=v===''?null:v;
+      if(f.req&&(v==null||v===''))ok=false;
+      payload[f.k]=v;
+    });
+    if(!ok){toast('Please fill in required fields','err');return false;}
+    let res;
+    if(isEdit)res=await sb.from(R.table).update(payload).eq('id',row.id).select().single();
+    else res=await sb.from(R.table).insert(payload).select().single();
+    if(res.error){toast(res.error.message,'err');return false;}
+    toast(R.single+(isEdit?' updated':' created'),'ok');
+    if(isEdit)_cache[resKey]=_cache[resKey].map(x=>x.id===row.id?res.data:x);
+    else _cache[resKey]=[res.data,..._cache[resKey]];
+    drawTable(resKey);return true;
+  });
+}
+
+/* ================= WEBINARS + CAMPAIGNS ================= */
+function renderWebinars(){
+  const v=$('#view');v.innerHTML='<div id="wsec"></div><div id="csec"></div>';
+  renderResource('webinars',$('#wsec'));
+  renderResource('campaigns',$('#csec'));
+}
+
+/* ================= USERS / TEAM ================= */
+async function renderUsers(){
+  const v=$('#view');
+  if(!isAdmin()){
+    // non-admin with 'users' view -> read-only roster
+    v.innerHTML='<div class="panel"><div class="panel-head"><h3>Team</h3><span class="readonly-tag">Read only</span></div><div class="table-wrap" id="tw_users"><div class="empty">Loading…</div></div></div>';
+    const {data}=await sb.from('adm_profiles').select('*').order('created_at');
+    let h='<table><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody>';
+    (data||[]).forEach(u=>{h+=`<tr><td>${esc(u.full_name||'—')}</td><td>${esc(u.email)}</td><td>${u.is_admin?'<span class="badge green">Admin</span>':'<span class="badge grey">Member</span>'}</td></tr>`;});
+    $('#tw_users').innerHTML=h+'</tbody></table>';return;
+  }
+  v.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>Team & Users</h3><div class="desc">Add people and choose exactly which pages they can view or edit.</div></div>
+     <button class="btn btn-primary btn-sm" id="addUser">+ Add user</button></div>
+     <div class="table-wrap" id="tw_users"><div class="empty">Loading…</div></div></div>`;
+  $('#addUser').onclick=()=>openUserForm();
+  await loadUsers();
+}
+async function loadUsers(){
+  const {data:profs,error}=await sb.from('adm_profiles').select('*').order('created_at');
+  if(error){$('#tw_users').innerHTML='<div class="empty">'+esc(error.message)+'</div>';return;}
+  const {data:perms}=await sb.from('adm_permissions').select('*');
+  const byUser={};(perms||[]).forEach(p=>{(byUser[p.user_id]=byUser[p.user_id]||{})[p.page]=p;});
+  let h='<table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Page access</th><th style="text-align:right">Actions</th></tr></thead><tbody>';
+  profs.forEach(u=>{
+    let access;
+    if(u.is_admin)access='<span class="badge green">Full access (admin)</span>';
+    else{const parts=PAGES.filter(p=>p.key!=='users'||true).map(p=>{const pp=byUser[u.id]&&byUser[u.id][p.key];if(!pp||(!pp.can_view&&!pp.can_edit))return null;return `<span class="badge ${pp.can_edit?'green':'blue'}">${p.label.split(' ')[0]}: ${pp.can_edit?'edit':'view'}</span>`;}).filter(Boolean);access=parts.length?parts.join(' '):'<span class="muted">none</span>';}
+    h+=`<tr><td><b>${esc(u.full_name||'—')}</b></td><td>${esc(u.email)}</td>
+      <td>${u.is_admin?'<span class="badge green">Admin</span>':'<span class="badge grey">Member</span>'}</td>
+      <td>${access}</td>
+      <td><div class="row-actions">
+        <button class="btn btn-ghost btn-sm" data-perm="${u.id}">Permissions</button>
+        <button class="btn btn-danger btn-sm" data-deluser="${u.id}" ${u.id===ME.id?'disabled title="You can’t delete yourself"':''}>Delete</button>
+      </div></td></tr>`;
+  });
+  $('#tw_users').innerHTML=h+'</tbody></table>';
+  $('#tw_users').querySelectorAll('[data-perm]').forEach(b=>b.onclick=()=>openPermForm(profs.find(x=>x.id===b.dataset.perm),byUser[b.dataset.perm]||{}));
+  $('#tw_users').querySelectorAll('[data-deluser]').forEach(b=>b.onclick=()=>deleteUser(b.dataset.deluser));
+}
+
+function permGridHTML(existing,disabled){
+  let h=`<table class="perm-table"><thead><tr><th>Page</th><th class="center">View</th><th class="center">Edit</th></tr></thead><tbody>`;
+  PAGES.forEach(p=>{
+    const e=existing&&existing[p.key];
+    h+=`<tr><td>${p.icon} ${p.label}</td>
+      <td class="center"><input type="checkbox" data-view="${p.key}" ${e&&e.can_view?'checked':''} ${disabled?'disabled':''}></td>
+      <td class="center"><input type="checkbox" data-edit="${p.key}" ${e&&e.can_edit?'checked':''} ${disabled?'disabled':''}></td></tr>`;
+  });
+  return h+'</tbody></table><div class="hint">Ticking “Edit” automatically allows viewing too. Admins always have full access to every page.</div>';
+}
+
+function openUserForm(){
+  const body=`
+    <div class="grid2">
+      <div class="field"><label>Full name</label><input id="u_name"></div>
+      <div class="field"><label>Email *</label><input id="u_email" type="email"></div>
+      <div class="field" style="grid-column:1/-1"><label>Temporary password *</label><input id="u_pass" value="${randPw()}"><div class="hint">Share this with the user; they can change it after signing in.</div></div>
+    </div>
+    <div class="field"><label style="margin-bottom:8px">Make this user an admin?</label>
+      <label style="font-weight:500"><input type="checkbox" id="u_admin"> Full access to everything (admin)</label></div>
+    <div class="field"><label>Page permissions</label>${permGridHTML(null,false)}</div>`;
+  showModal('Add user',body,async()=>{
+    const email=$('#u_email').value.trim();const password=$('#u_pass').value;const full_name=$('#u_name').value.trim();
+    if(!email||!password){toast('Email and password are required','err');return false;}
+    const permissions=PAGES.map(p=>{const view=$(`[data-view="${p.key}"]`).checked;const edit=$(`[data-edit="${p.key}"]`).checked;return {page:p.key,can_view:view||edit,can_edit:edit};});
+    const makeAdmin=$('#u_admin').checked;
+    try{
+      const r=await callFn('create',{email,password,full_name,permissions});
+      if(makeAdmin){await sb.from('adm_profiles').update({is_admin:true}).eq('id',r.id);}
+      toast('User created','ok');await loadUsers();return true;
+    }catch(err){toast(err.message,'err');return false;}
+  });
+}
+
+function openPermForm(user,existing){
+  const admin=user.is_admin;
+  const body=`
+    <div class="field"><label>User</label><div><b>${esc(user.full_name||user.email)}</b> <span class="muted">${esc(user.email)}</span></div></div>
+    <div class="field"><label style="margin-bottom:8px">Role</label>
+      <label style="font-weight:500"><input type="checkbox" id="p_admin" ${admin?'checked':''} ${user.id===ME.id?'disabled title="You can’t change your own admin role"':''}> Admin (full access to everything)</label></div>
+    <div class="field"><label>Page permissions</label><div id="permBox">${permGridHTML(existing,admin)}</div></div>
+    <div class="field" style="border-top:1px solid var(--line);padding-top:14px">
+      <label>Reset password</label>
+      <div style="display:flex;gap:8px"><input id="p_newpw" placeholder="New password"><button type="button" class="btn btn-ghost btn-sm" id="p_reset">Set password</button></div>
+    </div>`;
+  showModal('Permissions · '+esc(user.full_name||user.email),body,async()=>{
+    const makeAdmin=$('#p_admin').checked;
+    // update admin flag
+    if(makeAdmin!==admin && user.id!==ME.id){await sb.from('adm_profiles').update({is_admin:makeAdmin}).eq('id',user.id);}
+    if(!makeAdmin){
+      const rows=PAGES.map(p=>{const view=$(`[data-view="${p.key}"]`).checked;const edit=$(`[data-edit="${p.key}"]`).checked;return {user_id:user.id,page:p.key,can_view:view||edit,can_edit:edit};});
+      const {error}=await sb.from('adm_permissions').upsert(rows,{onConflict:'user_id,page'});
+      if(error){toast(error.message,'err');return false;}
+    }
+    toast('Permissions saved','ok');await loadUsers();return true;
+  });
+  // wire admin checkbox to enable/disable grid
+  setTimeout(()=>{
+    const ac=$('#p_admin');if(ac)ac.onchange=()=>{$('#permBox').innerHTML=permGridHTML(existing,ac.checked);};
+    const rb=$('#p_reset');if(rb)rb.onclick=async()=>{const pw=$('#p_newpw').value;if(!pw){toast('Enter a new password','err');return;}try{await callFn('set_password',{user_id:user.id,password:pw});toast('Password updated','ok');$('#p_newpw').value='';}catch(err){toast(err.message,'err');}};
+  },0);
+}
+
+async function deleteUser(id){
+  if(!confirm('Delete this user’s account and access? This cannot be undone.'))return;
+  try{await callFn('delete',{user_id:id});toast('User deleted','ok');await loadUsers();}
+  catch(err){toast(err.message,'err');}
+}
+
+/* call the secured edge function */
+async function callFn(action,payload){
+  const {data:{session}}=await sb.auth.getSession();
+  const res=await fetch(`${SUPABASE_URL}/functions/v1/adm-users`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`,'apikey':SUPABASE_ANON},
+    body:JSON.stringify({action,...payload})
+  });
+  let json={};try{json=await res.json();}catch(e){}
+  if(!res.ok||json.error)throw new Error(json.error||('Request failed ('+res.status+')'));
+  return json;
+}
+
+/* ================= CHANGE PASSWORD ================= */
+function openChangePw(){
+  const body=`<div class="field"><label>New password</label><input id="cp_pw" type="password" placeholder="At least 6 characters"></div>
+    <div class="field"><label>Confirm new password</label><input id="cp_pw2" type="password"></div>`;
+  showModal('Change password',body,async()=>{
+    const a=$('#cp_pw').value,b=$('#cp_pw2').value;
+    if(a.length<6){toast('Password too short','err');return false;}
+    if(a!==b){toast('Passwords don’t match','err');return false;}
+    const {error}=await sb.auth.updateUser({password:a});
+    if(error){toast(error.message,'err');return false;}
+    toast('Password changed','ok');return true;
+  });
+}
+
+/* ================= MODAL ================= */
+function showModal(title,bodyHTML,onSave){
+  const ov=$('#overlay');
+  ov.innerHTML=`<div class="modal"><div class="modal-head"><h3>${esc(title)}</h3><button class="x" id="mx">×</button></div>
+    <div class="modal-body">${bodyHTML}</div>
+    <div class="modal-foot"><button class="btn btn-ghost" id="mcancel">Cancel</button><button class="btn btn-primary" id="msave">Save</button></div></div>`;
+  ov.style.display='flex';
+  const close=()=>{ov.style.display='none';ov.innerHTML='';};
+  $('#mx').onclick=close;$('#mcancel').onclick=close;
+  ov.onclick=e=>{if(e.target===ov)close();};
+  $('#msave').onclick=async()=>{const btn=$('#msave');btn.disabled=true;btn.textContent='Saving…';const ok=await onSave();btn.disabled=false;btn.textContent='Save';if(ok!==false)close();};
+}
+function randPw(){const c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<10;i++)s+=c[Math.floor(Math.random()*c.length)];return s+'!';}
+
+/* ================= START ================= */
+boot();
+</script>
+</body>
+</html>

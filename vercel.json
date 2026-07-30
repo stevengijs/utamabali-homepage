@@ -1,1 +1,6 @@
-{"rewrites":[{"source":"/admin","destination":"https://gcpachivrwalsneuvlsa.supabase.co/functions/v1/admin"},{"source":"/admin/:path*","destination":"https://gcpachivrwalsneuvlsa.supabase.co/functions/v1/admin"}]}
+{
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/admin/", "destination": "/admin.html" }
+  ]
+}
