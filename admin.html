@@ -119,6 +119,27 @@
   .toast.err{background:#7a271a}
   .toast.ok{background:#0f6b4f}
 
+  /* analytics */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+  .seg button{border:none;background:#fff;padding:7px 14px;font-weight:600;font-size:13px;color:var(--muted)}
+  .seg button.on{background:var(--brand);color:#fff}
+  .an-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:900px){.an-grid{grid-template-columns:1fr}}
+  .anbars{display:flex;flex-direction:column;gap:10px;padding:16px 18px}
+  .anbar{display:grid;grid-template-columns:150px 1fr auto;gap:12px;align-items:center;font-size:13px}
+  .anbar-l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+  .anbar-t{background:#eef0ef;border-radius:6px;height:10px;overflow:hidden}
+  .anbar-f{height:100%;border-radius:6px;transition:width .3s}
+  .anbar-v{font-weight:700;white-space:nowrap}
+  .funnel{display:flex;flex-direction:column;gap:12px;padding:20px}
+  .fstep{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+  .fbar-wrap{display:flex;align-items:center;gap:12px}
+  .fbar{height:46px;border-radius:9px;display:flex;align-items:center;padding:0 16px;color:#fff;font-weight:750;min-width:92px;font-size:15px;transition:width .3s}
+  .fstep .fmeta{font-size:12.5px;color:var(--muted);text-align:right;white-space:nowrap}
+  .an-note{margin-bottom:16px;padding:12px 16px;background:#e8f0fb;border:1px solid #cfe0f7;border-radius:10px;color:#1d4ed8;font-size:13px}
+  .rev-row{display:flex;gap:26px;flex-wrap:wrap;padding:16px 20px;border-top:1px solid var(--line)}
+  .rev-row .rk{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  .rev-row .rv{font-size:22px;font-weight:750}
   .lock-note{padding:40px;text-align:center;color:var(--muted)}
   .readonly-tag{font-size:11px;font-weight:700;color:var(--warn);background:#fdf3e2;border:1px solid #f4e2c1;padding:3px 9px;border-radius:999px}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
@@ -171,6 +192,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 /* Permission pages (match adm_permissions.page keys) */
 const PAGES = [
+  {key:'analytics',label:'Analytics',              icon:'📊'},
   {key:'leads',    label:'Leads / CRM',            icon:'📇'},
   {key:'webinars', label:'Webinar',                icon:'🎥'},
   {key:'projects', label:'Projects',               icon:'🏗️'},
@@ -257,8 +279,8 @@ const RES = {
     ]},
 
   /* ---- WEBINAR PAGE ---- */
-  webinar_regs:{page:'webinars', table:'webinar_registrations', title:'Webinar registrations', single:'Registration', noCreate:true,
-    desc:'People who signed up via WebinarGeek.',
+  webinar_regs:{page:'webinars', table:'webinar_registrations', title:'Webinar registrations', single:'Registration', noCreate:true, readOnly:true,
+    desc:'People who signed up via WebinarGeek — synced automatically, view only.',
     cols:['name','email','attended','budget','horizon','created_at'],
     fields:[
       {k:'name',label:'Name',type:'text'},
@@ -504,9 +526,10 @@ function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',leads:'Leads / CRM',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
+  const titles={dashboard:'Dashboard',analytics:'Analytics',leads:'Leads / CRM',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
   $('#pageTitle').textContent=titles[k]||k;
   if(k==='dashboard')return renderDashboard();
+  if(k==='analytics')return renderAnalytics();
   if(k==='users')return renderUsers();
   if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;}
   if(k==='leads')return renderPeople();
@@ -519,6 +542,7 @@ async function renderDashboard(){
   const v=$('#view');v.innerHTML='<div class="muted">Loading…</div>';
   async function count(t){const {count,error}=await sb.from(t).select('*',{count:'exact',head:true});return error?'–':(count||0);}
   const stats=[];
+  if(canView('analytics')){const since=new Date(Date.now()-30*864e5).toISOString();const {count:pv}=await sb.from('analytics_events').select('*',{count:'exact',head:true}).gte('created_at',since);stats.push(['Page views (30d)',pv||0,'website analytics','analytics']);}
   if(canView('leads')){stats.push(['Leads',await count('leads'),'site inquiries & reservations','leads']);stats.push(['Contacts',await count('contacts'),'known people','leads']);}
   if(canView('webinars')){stats.push(['Webinar signups',await count('webinar_registrations'),'registrations','webinars']);}
   if(canView('projects')){stats.push(['Projects',await count('projects'),'active projects','projects']);}
@@ -538,6 +562,156 @@ function accessSummaryHTML(){
   if(isAdmin())return '<span class="badge green">Admin — full access to everything</span>';
   let out='';PAGES.forEach(p=>{const pv=PERMS[p.key];if(pv&&(pv.can_view||pv.can_edit)){out+=`<span class="badge ${pv.can_edit?'green':'blue'}" style="margin:2px">${p.label}: ${pv.can_edit?'View + Edit':'View only'}</span>`;}});
   return out||'<span class="badge grey">No pages assigned yet</span>';
+}
+
+/* ================= ANALYTICS ================= */
+let ANALYTICS_DAYS=30;
+function anInt(n){return (n||0).toLocaleString('en-US');}
+function anPct(x){if(!isFinite(x))return '—';const p=x*100;return (p>=10||p===0?p.toFixed(0):p.toFixed(1))+'%';}
+function anDur(ms){if(!ms||ms<=0)return '—';const s=Math.round(ms/1000);if(s<60)return s+'s';const m=Math.floor(s/60);return m+'m '+(s%60)+'s';}
+function anMoney(n){n=Number(n)||0;return '€'+Math.round(n).toLocaleString('nl-NL');}
+function anBars(rows,color){
+  if(!rows.length)return '<div class="empty" style="padding:22px">No data in this period yet.</div>';
+  const max=Math.max.apply(null,rows.map(r=>r.value))||1;
+  return '<div class="anbars">'+rows.map(r=>`<div class="anbar"><div class="anbar-l" title="${esc(r.label)}">${esc(r.label)}</div><div class="anbar-t"><div class="anbar-f" style="width:${Math.max(2,r.value/max*100).toFixed(1)}%;background:${color||'var(--brand-2)'}"></div></div><div class="anbar-v">${r.display!=null?r.display:anInt(r.value)}${r.sub?` <span class="muted" style="font-weight:500">${esc(r.sub)}</span>`:''}</div></div>`).join('')+'</div>';
+}
+function anLine(series){
+  const w=760,h=210,pad=26,n=series.length;
+  if(!n)return '<div class="empty" style="padding:30px">No traffic recorded yet.</div>';
+  const maxPv=Math.max(1,...series.map(s=>s.pv));
+  const X=i=>pad+(w-2*pad)*(n<=1?0.5:i/(n-1));
+  const Y=v=>(h-pad)-(h-2*pad)*(v/maxPv);
+  const path=k=>series.map((s,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(s[k]).toFixed(1)}`).join(' ');
+  const area=`M${X(0).toFixed(1)},${(h-pad)} ${series.map((s,i)=>`L${X(i).toFixed(1)},${Y(s.pv).toFixed(1)}`).join(' ')} L${X(n-1).toFixed(1)},${(h-pad)} Z`;
+  const dfmt=d=>{const p=d.split('-');return p[2]+'/'+p[1];};
+  const ticks=[0,Math.floor((n-1)/2),n-1].filter((x,i,a)=>a.indexOf(x)===i);
+  return `<div style="padding:8px 14px 4px">
+    <svg viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="none" style="display:block">
+      <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#e3e7e4"/>
+      <path d="${area}" fill="rgba(20,179,125,.10)"/>
+      <path d="${path('pv')}" fill="none" stroke="#14b37d" stroke-width="2.2"/>
+      <path d="${path('vis')}" fill="none" stroke="#0f6b4f" stroke-width="2.2" stroke-dasharray="4 3"/>
+      <text x="${pad}" y="16" font-size="11" fill="#5f6f68">max ${maxPv}</text>
+      ${ticks.map(i=>`<text x="${X(i).toFixed(1)}" y="${h-8}" font-size="10" fill="#5f6f68" text-anchor="middle">${dfmt(series[i].date)}</text>`).join('')}
+    </svg>
+    <div style="display:flex;gap:18px;justify-content:center;font-size:12px;color:var(--muted);padding:2px 0 8px">
+      <span><span style="display:inline-block;width:14px;height:3px;background:#14b37d;vertical-align:middle;margin-right:5px"></span>Page views</span>
+      <span><span style="display:inline-block;width:14px;height:0;border-top:3px dashed #0f6b4f;vertical-align:middle;margin-right:5px"></span>Unique visitors</span>
+    </div></div>`;
+}
+function anMatchProj(val,name,slug){
+  if(!val)return false;const v=String(val).toLowerCase().trim();
+  const nm=(name||'').toLowerCase().trim(),sl=(slug||'').toLowerCase().trim();
+  if(nm&&(v===nm||v.includes(nm)||nm.includes(v)))return true;
+  if(sl&&(v===sl||v.includes(sl)))return true;
+  return false;
+}
+async function renderAnalytics(){
+  const v=$('#view');
+  const tr=$('#topRight');
+  tr.innerHTML=`<div class="seg" id="anRange">${[['7','7 days'],['30','30 days'],['90','90 days']].map(([d,l])=>`<button data-d="${d}" class="${+d===ANALYTICS_DAYS?'on':''}">${l}</button>`).join('')}</div>`;
+  tr.querySelectorAll('#anRange button').forEach(b=>b.onclick=()=>{ANALYTICS_DAYS=+b.dataset.d;renderAnalytics();});
+  v.innerHTML='<div class="muted" style="padding:8px">Loading analytics…</div>';
+  const days=ANALYTICS_DAYS, since=new Date(Date.now()-days*864e5).toISOString();
+  const [evR,leadsR,purchR,webR,projR]=await Promise.all([
+    sb.from('analytics_events').select('event_id,session_id,visitor_hash,is_new_session,path,referrer_host,channel,utm_source,utm_campaign,country,device,browser,duration_ms,created_at,page_title').gte('created_at',since).order('created_at',{ascending:false}).limit(50000),
+    sb.from('leads').select('project,source_page,type,created_at').gte('created_at',since),
+    sb.from('purchases').select('project,price,deposit_amount,status,created_at'),
+    sb.from('webinar_registrations').select('call_booked,attended,created_at').gte('created_at',since),
+    sb.from('projects').select('name,slug,status,sort_order').order('sort_order',{ascending:true}),
+  ]);
+  if(evR.error){v.innerHTML=`<div class="panel"><div class="empty">Couldn’t load analytics: ${esc(evR.error.message)}</div></div>`;return;}
+  const ev=evR.data||[],leads=leadsR.data||[],webs=webR.data||[],projs=projR.data||[];
+  const purch=(purchR.data||[]).filter(x=>x.created_at&&x.created_at>=since);
+
+  const pageviews=ev.length;
+  const visitors=new Set(ev.map(e=>e.visitor_hash).filter(Boolean)).size;
+  const sessCounts={};ev.forEach(e=>{if(e.session_id)sessCounts[e.session_id]=(sessCounts[e.session_id]||0)+1;});
+  const sessions=Object.keys(sessCounts).length;
+  const bounces=Object.values(sessCounts).filter(c=>c===1).length;
+  const durs=ev.map(e=>e.duration_ms).filter(d=>d>0);
+  const avgDur=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:0;
+
+  // daily series
+  const byDay={};
+  for(let i=days-1;i>=0;i--){const d=new Date(Date.now()-i*864e5).toISOString().slice(0,10);byDay[d]={date:d,pv:0,vis:new Set()};}
+  ev.forEach(e=>{const d=(e.created_at||'').slice(0,10);if(byDay[d]){byDay[d].pv++;if(e.visitor_hash)byDay[d].vis.add(e.visitor_hash);}});
+  const series=Object.values(byDay).map(x=>({date:x.date,pv:x.pv,vis:x.vis.size}));
+
+  // top pages
+  const pageMap={};
+  ev.forEach(e=>{const p=e.path||'/';(pageMap[p]=pageMap[p]||{pv:0,vis:new Set(),dur:[],title:e.page_title});pageMap[p].pv++;if(e.visitor_hash)pageMap[p].vis.add(e.visitor_hash);if(e.duration_ms>0)pageMap[p].dur.push(e.duration_ms);});
+  const pages=Object.entries(pageMap).map(([p,x])=>({path:p,pv:x.pv,vis:x.vis.size,avg:x.dur.length?x.dur.reduce((a,b)=>a+b,0)/x.dur.length:0})).sort((a,b)=>b.pv-a.pv).slice(0,12);
+
+  // channels / referrers / campaigns / geo / devices
+  const grp=(key,uniqKey)=>{const m={};ev.forEach(e=>{const k=e[key];if(!k)return;(m[k]=m[k]||new Set()).add(e[uniqKey]||Math.random());});return Object.entries(m).map(([k,s])=>({k,n:s.size})).sort((a,b)=>b.n-a.n);};
+  const channels=grp('channel','session_id');
+  const referrers=grp('referrer_host','session_id').slice(0,8);
+  const campaigns=grp('utm_campaign','session_id').slice(0,8);
+  const countries=grp('country','visitor_hash').slice(0,8);
+  const devices=grp('device','session_id');
+  const leadSrc=(()=>{const m={};leads.forEach(l=>{const k=l.source_page||'(unknown)';m[k]=(m[k]||0)+1;});return Object.entries(m).map(([k,n])=>({k,n})).sort((a,b)=>b.n-a.n).slice(0,8);})();
+
+  // funnel + revenue
+  const nLeads=leads.length, nCalls=webs.filter(w=>w.call_booked).length, nPurch=purch.length;
+  const revenue=purch.reduce((a,x)=>a+(Number(x.price)||0),0);
+  const deposits=purch.reduce((a,x)=>a+(Number(x.deposit_amount)||0),0);
+  const fmax=Math.max(1,visitors,nLeads,nCalls,nPurch);
+  const fsteps=[{l:'Visitors',n:visitors,c:'#14b37d'},{l:'Leads / inquiries',n:nLeads,c:'#0f9d74'},{l:'Calls booked',n:nCalls,c:'#0c7a5b'},{l:'Purchases',n:nPurch,c:'#0c1a15'}];
+
+  // per project
+  const projRows=projs.map(pr=>{
+    const slug=(pr.slug||'').toLowerCase(),name=pr.name||'';
+    const pvs=slug?ev.filter(e=>(e.path||'').toLowerCase().includes('/'+slug)):[];
+    const dd=pvs.map(e=>e.duration_ms).filter(d=>d>0);
+    const buys=purch.filter(p=>anMatchProj(p.project,name,slug));
+    return {name,status:pr.status,views:pvs.length,uv:new Set(pvs.map(e=>e.visitor_hash).filter(Boolean)).size,
+      avg:dd.length?dd.reduce((a,b)=>a+b,0)/dd.length:0,
+      inq:leads.filter(l=>anMatchProj(l.project,name,slug)).length,
+      buys:buys.length,rev:buys.reduce((a,x)=>a+(Number(x.price)||0),0)};
+  }).sort((a,b)=>b.views-a.views);
+
+  // ---- render ----
+  const kpis=[
+    ['Unique visitors',anInt(visitors),days+'-day total'],
+    ['Page views',anInt(pageviews),sessions?anInt((pageviews/sessions).toFixed(1))+' per session':'—'],
+    ['Sessions',anInt(sessions),'visits'],
+    ['Avg. time on page',anDur(avgDur),'engaged'],
+    ['Bounce rate',sessions?anPct(bounces/sessions):'—','single-page visits'],
+    ['Visitor→lead',visitors?anPct(nLeads/visitors):'—',anInt(nLeads)+' leads'],
+  ];
+  let html='';
+  if(pageviews===0)html+=`<div class="an-note">📡 Tracking is live. No visits have been recorded in the last ${days} days yet — this fills in automatically as people visit the site. The funnel below still reflects your leads, calls & sales.</div>`;
+  html+='<div class="cards">'+kpis.map(k=>`<div class="stat"><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('')+'</div>';
+
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Traffic over time</h3><div class="desc">Page views and unique visitors per day.</div></div></div>${anLine(series)}</div>`;
+
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Conversion funnel to revenue</h3><div class="desc">From anonymous visitor to paying investor, last ${days} days.</div></div></div>
+    <div class="funnel">${fsteps.map((s,i)=>{const prev=i?fsteps[i-1].n:0;const conv=i&&prev?` · ${anPct(s.n/prev)} of previous`:'';return `<div class="fstep"><div class="fbar-wrap"><div class="fbar" style="width:${Math.max(8,s.n/fmax*100)}%;background:${s.c}">${anInt(s.n)}</div><div style="font-weight:650">${s.l}</div></div><div class="fmeta">${i===0?(visitors?'top of funnel':'—'):conv.replace(' · ','')}</div></div>`;}).join('')}</div>
+    <div class="rev-row"><div><div class="rk">Contracted / sold value</div><div class="rv">${anMoney(revenue)}</div></div><div><div class="rk">Deposits received</div><div class="rv">${anMoney(deposits)}</div></div><div><div class="rk">Overall visitor→sale</div><div class="rv">${visitors?anPct(nPurch/visitors):'—'}</div></div></div></div>`;
+
+  html+=`<div class="an-grid" style="margin-top:20px">
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Top pages</h3><div class="desc">Most-viewed pages & how long people stay.</div></div></div>${anBars(pages.map(p=>({label:p.path,value:p.pv,display:anInt(p.pv),sub:'· '+p.vis+' uv · '+anDur(p.avg)})),'#14b37d')}</div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Channels</h3><div class="desc">Where your sessions come from.</div></div></div>${anBars(channels.map(c=>({label:c.k,value:c.n,display:anInt(c.n),sub:'sessions'})),'#1d4ed8')}</div>
+  </div>`;
+
+  html+=`<div class="an-grid" style="margin-top:20px">
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Referrers</h3><div class="desc">External sites sending traffic.</div></div></div>${anBars(referrers.map(c=>({label:c.k,value:c.n,display:anInt(c.n),sub:'sessions'})),'#7c3aed')}</div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Campaigns (UTM)</h3><div class="desc">Tagged marketing campaigns.</div></div></div>${anBars(campaigns.map(c=>({label:c.k,value:c.n,display:anInt(c.n),sub:'sessions'})),'#0f6b4f')}</div>
+  </div>`;
+
+  html+=`<div class="an-grid" style="margin-top:20px">
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Where visitors are</h3><div class="desc">Approx. location (by timezone).</div></div></div>${anBars(countries.map(c=>({label:c.k,value:c.n,display:anInt(c.n),sub:'visitors'})),'#0891b2')}</div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Leads by landing page</h3><div class="desc">Which pages turn into inquiries.</div></div></div>${anBars(leadSrc.map(c=>({label:c.k,value:c.n,display:anInt(c.n),sub:'leads'})),'#b7791f')}</div>
+  </div>`;
+
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Interest & revenue per project</h3><div class="desc">Which projects attract attention — and convert to sales.</div></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Project</th><th>Views</th><th>Unique</th><th>Avg. time</th><th>Inquiries</th><th>View→inquiry</th><th>Sales</th><th>Revenue</th></tr></thead><tbody>
+    ${projRows.length?projRows.map(p=>`<tr><td><b>${esc(p.name)}</b> ${p.status?`<span class="badge grey">${esc(p.status)}</span>`:''}</td><td>${anInt(p.views)}</td><td>${anInt(p.uv)}</td><td>${anDur(p.avg)}</td><td>${anInt(p.inq)}</td><td>${p.views?anPct(p.inq/p.views):'—'}</td><td>${anInt(p.buys)}</td><td>${p.rev?anMoney(p.rev):'—'}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">No projects yet.</td></tr>'}
+    </tbody></table></div>
+    <div class="rev-row"><span class="muted" style="font-size:12px">Devices: ${devices.map(d=>`${esc(d.k)} ${anInt(d.n)}`).join(' · ')||'—'}</span></div></div>`;
+
+  v.innerHTML=html;
 }
 
 /* ================= GENERIC RESOURCE ================= */
@@ -667,7 +841,7 @@ function drawPeople(){
 function _sec(title,inner){return `<div style="margin-top:20px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">${title}</div>${inner}</div>`;}
 function _mt(headers,rows){ if(!rows.length)return '<div class="muted" style="font-size:13px">None.</div>'; let h='<table style="font-size:13px"><thead><tr>'+headers.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>'; rows.forEach(r=>{h+='<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>';}); return h+'</tbody></table>'; }
 async function openPerson(p){
-  showDetail(esc(p.name||p.email),'<div class="muted">Loading…</div>');
+  showDetail('Contact','<div class="muted">Loading…</div>');
   const [lr,pr,wr,dr,rr]=await Promise.all([
     sb.from('leads').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
     sb.from('purchases').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
@@ -678,11 +852,14 @@ async function openPerson(p){
   const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[];
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <a href="mailto:${esc(p.email)}" class="badge blue" style="text-decoration:none">${esc(p.email)}</a>
-        ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
-        ${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}
-        ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
+      <div>
+        <div style="font-size:18px;font-weight:750;margin-bottom:11px">${esc(p.name||p.email||'Contact')}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <a href="mailto:${esc(p.email)}" class="badge blue" style="text-decoration:none">${esc(p.email)}</a>
+          ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
+          ${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}
+          ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
+        </div>
       </div>
       ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
     </div>
