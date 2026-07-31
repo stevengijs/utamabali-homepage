@@ -734,11 +734,11 @@ async function renderAnalytics(){
     ['Avg. time on page',anDur(avgDur),'engaged'],
     ['Bounce rate',sessions?anPct(bounces/sessions):'—','single-page visits'],
     ['Visitor→lead',visitors?anPct(Math.min(1,nLeads/visitors)):'—',anInt(nLeads)+' leads'],
-    ['Brochure sign-ups',anInt(brochure.length),'brochure-aanvragen'],
+    ['Brochure sign-ups',anInt(brochure.length),'klik voor de aanvragen','leads'],
   ];
   let html='';
   if(pageviews===0)html+=`<div class="an-note">📡 Tracking is live. No visits recorded for <b>${esc(rangeLabel.toLowerCase())}</b> yet — this fills in automatically as people visit the site. The funnel below still reflects your leads, calls & sales.</div>`;
-  html+='<div class="cards">'+kpis.map(k=>`<div class="stat"><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('')+'</div>';
+  html+='<div class="cards">'+kpis.map(k=>{const g=k[3]?` data-go="${k[3]}" style="cursor:pointer"`:'';return `<div class="stat"${g}><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`;}).join('')+'</div>';
 
   html+=`<div class="panel"><div class="panel-head"><div><h3>Traffic over time</h3><div class="desc">Page views and unique visitors per day.</div></div></div>${anLine(series)}</div>`;
 
@@ -770,6 +770,7 @@ async function renderAnalytics(){
     <div class="rev-row"><span class="muted" style="font-size:12px">Devices: ${devices.map(d=>`${esc(d.k)} ${anInt(d.n)}`).join(' · ')||'—'}</span></div></div>`;
 
   v.innerHTML=html;
+  v.querySelectorAll('.stat[data-go]').forEach(x=>x.onclick=()=>go(x.dataset.go));
 }
 
 /* ================= REVENUE ================= */
