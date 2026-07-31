@@ -69,6 +69,9 @@
   .stat .k{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
   .stat .v{font-size:28px;font-weight:750;margin-top:6px}
   .stat .s{font-size:12px;color:var(--muted);margin-top:2px}
+  .stat[data-go]{transition:border-color .15s,box-shadow .15s,transform .1s}
+  .stat[data-go]:hover{border-color:var(--brand-2);box-shadow:0 6px 18px rgba(20,179,125,.18)}
+  .stat[data-go]:active{transform:translateY(1px)}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:20px;overflow:hidden}
   .panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:8px}
@@ -515,19 +518,20 @@ async function renderDashboard(){
   const v=$('#view');v.innerHTML='<div class="muted">Loading…</div>';
   async function count(t){const {count,error}=await sb.from(t).select('*',{count:'exact',head:true});return error?'–':(count||0);}
   const stats=[];
-  if(canView('leads')){stats.push(['Leads',await count('leads'),'site inquiries & reservations']);stats.push(['Contacts',await count('contacts'),'known people']);}
-  if(canView('webinars')){stats.push(['Webinar signups',await count('webinar_registrations'),'registrations']);}
-  if(canView('projects')){stats.push(['Projects',await count('projects'),'active projects']);}
-  if(canView('portal')){stats.push(['Purchases',await count('purchases'),'reservations & sales']);stats.push(['Dataroom access',await count('dataroom_access'),'grants']);}
-  if(canView('referrals')){stats.push(['Referrals',await count('referrals'),'reward entries']);}
-  if(isAdmin()){stats.push(['Team members',await count('adm_profiles'),'with access']);}
+  if(canView('leads')){stats.push(['Leads',await count('leads'),'site inquiries & reservations','leads']);stats.push(['Contacts',await count('contacts'),'known people','leads']);}
+  if(canView('webinars')){stats.push(['Webinar signups',await count('webinar_registrations'),'registrations','webinars']);}
+  if(canView('projects')){stats.push(['Projects',await count('projects'),'active projects','projects']);}
+  if(canView('portal')){stats.push(['Purchases',await count('purchases'),'reservations & sales','portal']);stats.push(['Dataroom access',await count('dataroom_access'),'grants','portal']);}
+  if(canView('referrals')){stats.push(['Referrals',await count('referrals'),'reward entries','referrals']);}
+  if(isAdmin()){stats.push(['Team members',await count('adm_profiles'),'with access','users']);}
   let html='<div class="cards">';
   if(!stats.length)html='<div class="panel"><div class="lock-note">Welcome! You don’t have any pages assigned yet. Ask an admin to grant you access.</div></div><div class="cards" style="display:none">';
-  stats.forEach(s=>{html+=`<div class="stat"><div class="k">${s[0]}</div><div class="v">${s[1]}</div><div class="s">${s[2]}</div></div>`;});
+  stats.forEach(s=>{html+=`<div class="stat" data-go="${s[3]||''}"${s[3]?' style="cursor:pointer"':''}><div class="k">${s[0]}</div><div class="v">${s[1]}</div><div class="s">${s[2]}</div></div>`;});
   html+='</div>';
   html+=`<div class="panel"><div class="panel-head"><div><h3>Welcome, ${esc((ME.full_name||ME.email).split(' ')[0])} 👋</h3><div class="desc">${isAdmin()?'You have full admin access. This is your live UTAMA data — the same database your site & portal use.':'Use the sidebar to open the areas you have access to.'}</div></div></div>
     <div style="padding:18px"><div class="muted" style="font-size:13px">Your access:</div><div style="margin-top:8px">${accessSummaryHTML()}</div></div></div>`;
   v.innerHTML=html;
+  v.querySelectorAll('.stat[data-go]').forEach(x=>{if(x.dataset.go)x.onclick=()=>go(x.dataset.go);});
 }
 function accessSummaryHTML(){
   if(isAdmin())return '<span class="badge green">Admin — full access to everything</span>';
