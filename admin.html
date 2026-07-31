@@ -744,6 +744,22 @@ async function renderAnalytics(){
       buys:buys.length,rev:buys.reduce((a,x)=>a+(Number(x.price)||0),0)};
   }).sort((a,b)=>b.views-a.views);
 
+  // Conversion: project landing page -> brochure page (by unique visitors, within the selected range).
+  // "converted" = unique visitors who viewed the project page AND reached its /brochure page (i.e. requested the brochure).
+  CONV_DATA=projs.map(pr=>{
+    const slug=(pr.slug||'').toLowerCase(),name=pr.name||'';
+    if(!slug)return null;
+    const landing=new Set(),broch=new Set();
+    ev.forEach(e=>{
+      if(!e.visitor_hash)return;
+      const p=(e.path||'').toLowerCase().split('?')[0].split('#')[0].replace(/\/+$/,'')||'/';
+      if(p==='/'+slug)landing.add(e.visitor_hash);
+      else if(p.indexOf('/'+slug+'/brochure')===0)broch.add(e.visitor_hash);
+    });
+    let conv=0;landing.forEach(h=>{if(broch.has(h))conv++;});
+    return {name,slug,landing:landing.size,brochure:broch.size,converted:conv,rate:landing.size?conv/landing.size:null};
+  }).filter(Boolean).sort((a,b)=>b.landing-a.landing);
+
   // ---- render ----
   const kpis=[
     ['Unique visitors',anInt(visitors),rangeLabel.toLowerCase()],
@@ -765,6 +781,11 @@ async function renderAnalytics(){
   html+=`<div class="panel"><div class="panel-head"><div><h3>Conversion funnel to revenue</h3><div class="desc">From anonymous visitor to paying investor · ${esc(rangeLabel.toLowerCase())}.</div></div></div>
     <div class="funnel">${fsteps.map((s,i)=>{const prev=i?fsteps[i-1].n:0;const conv=i&&prev?` · ${anPct(Math.min(1,s.n/prev))} of previous`:'';return `<div class="fstep"><div class="fbar-wrap"><div class="fbar" style="width:${Math.max(8,s.n/fmax*100)}%;background:${s.c}">${anInt(s.n)}</div><div style="font-weight:650">${s.l}</div></div><div class="fmeta">${i===0?(visitors?'top of funnel':'—'):conv.replace(' · ','')}</div></div>`;}).join('')}</div>
     <div class="rev-row"><div><div class="rk">Contracted / sold value</div><div class="rv">${anMoney(revenue)}</div></div><div><div class="rk">Deposits received</div><div class="rv">${anMoney(deposits)}</div></div><div><div class="rk">Overall visitor→sale</div><div class="rv">${visitors?anPct(Math.min(1,nPurch/visitors)):'—'}</div></div></div></div>`;
+
+  const convOpts=[['','Alle projecten']].concat(CONV_DATA.map(c=>[c.slug,c.name])).map(([v,l])=>`<option value="${esc(v)}" ${ANALYTICS_CONVPAGE===v?'selected':''}>${esc(l)}</option>`).join('');
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Conversie: landingspagina → brochure</h3><div class="desc">Welk deel van je paginabezoekers vraagt de brochure aan — dus doorstroomt naar de brochurepagina · ${esc(rangeLabel.toLowerCase())}.</div></div>
+    <div class="toolbar"><select id="conv_page" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">${convOpts}</select></div></div>
+    <div id="conv_body"></div></div>`;
 
   html+=`<div class="an-grid" style="margin-top:20px">
     <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Top pages</h3><div class="desc">Most-viewed pages & how long people stay.</div></div></div>${anBars(pages.map(p=>({label:p.path,value:p.pv,display:anInt(p.pv),sub:'· '+p.vis+' uv · '+anDur(p.avg)})),'#14b37d')}</div>
@@ -794,9 +815,29 @@ async function renderAnalytics(){
     if(x.dataset.go==='signups'){SIGNUPS_DAYS=spanDays;go('leads');}
     else go(x.dataset.go);
   });
+  drawConvPanel();
+  const cp=$('#conv_page');if(cp)cp.onchange=()=>{ANALYTICS_CONVPAGE=cp.value;drawConvPanel();};
   renderLiveVisitors();
   if(LIVE_TIMER)clearInterval(LIVE_TIMER);
   LIVE_TIMER=setInterval(renderLiveVisitors,20000);
+}
+let CONV_DATA=[],ANALYTICS_CONVPAGE='';
+function drawConvPanel(){
+  const box=$('#conv_body');if(!box)return;
+  const rows=ANALYTICS_CONVPAGE?CONV_DATA.filter(c=>c.slug===ANALYTICS_CONVPAGE):CONV_DATA;
+  if(!rows.length){box.innerHTML='<div class="empty" style="padding:22px">Nog geen bezoekers op deze pagina in deze periode.</div>';return;}
+  const pctBar=r=>{const p=r.rate==null?0:Math.round(r.rate*100);const col=p>=20?'#0f9d74':p>=8?'#b7791f':'#c2410c';
+    return `<div style="display:flex;align-items:center;gap:10px;min-width:150px"><div style="flex:1;background:#eef0ef;border-radius:6px;height:10px;overflow:hidden"><div style="height:100%;width:${Math.min(100,p)}%;background:${col};border-radius:6px"></div></div><b style="white-space:nowrap;color:${col}">${r.rate==null?'—':p+'%'}</b></div>`;};
+  let h=`<div class="table-wrap"><table><thead><tr><th>Landingspagina</th><th>Bezoekers</th><th>Naar brochure</th><th>Conversie</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    h+=`<tr><td><b>${esc(r.name)}</b><div class="muted" style="font-size:12px">/${esc(r.slug)} → /${esc(r.slug)}/brochure</div></td>`
+     +`<td style="font-weight:650">${anInt(r.landing)}</td>`
+     +`<td style="font-weight:650">${anInt(r.converted)}</td>`
+     +`<td>${pctBar(r)}</td></tr>`;
+  });
+  h+='</tbody></table></div>';
+  h+=`<div class="rev-row"><span class="muted" style="font-size:12px">"Naar brochure" = unieke bezoekers die de projectpagina bekeken én op de brochurepagina kwamen (dus de brochure aanvroegen).</span></div>`;
+  box.innerHTML=h;
 }
 let LIVE_TIMER=null;
 async function renderLiveVisitors(){
