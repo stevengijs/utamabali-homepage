@@ -81,7 +81,7 @@ async function api(action,extra){
   const r=await fetch(EP,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,token,...(extra||{})})});
   return r.json();
 }
-function refText(r){return `Project reservation deposit for Villa ${r.unit||""}, to be credited against the first payment due under the Development and Construction Agreement.`;}
+function refText(r){return `${r.project||""} ${r.unit||""} deposit`.replace(/\s+/g," ").trim();}
 function itpText(r){
   const today=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
   return `
