@@ -923,7 +923,13 @@ async function renderRevenue(){
   // deals whose project isn't in the projects table
   const known=new Set(projs.map(p=>(p.name||'').toLowerCase()));
   const orphan=sales.filter(x=>!projs.some(pr=>anMatchProj(x.project,pr.name,pr.slug)));
-  if(orphan.length){const orv=orphan.reduce((a,x)=>a+x._p,0);const odt=orphan.filter(x=>x._r!=null);rows.push({name:'Other',status:'',sold:orphan.length,soldRev:orv,recv:odt.reduce((a,x)=>a+x._r,0),toRecv:odt.reduce((a,x)=>a+Math.max(0,x._p-x._r),0),untrk:orphan.some(x=>x._r==null),askPrice:0,avail:0,remaining:0,total:orphan.length,avg:orv/orphan.length});}
+  // Deals for projects not in the active projects table (e.g. earlier sold-out projects) — group by their own name.
+  const orphanByName={};
+  orphan.forEach(x=>{const k=(x.project||'Overig').trim();(orphanByName[k]=orphanByName[k]||[]).push(x);});
+  Object.keys(orphanByName).sort().forEach(nm=>{
+    const ds=orphanByName[nm];const orv=ds.reduce((a,x)=>a+x._p,0);const odt=ds.filter(x=>x._r!=null);
+    rows.push({name:nm,status:'uitverkocht',sold:ds.length,soldRev:orv,recv:odt.reduce((a,x)=>a+x._r,0),toRecv:odt.reduce((a,x)=>a+Math.max(0,x._p-x._r),0),untrk:ds.some(x=>x._r==null),askPrice:0,avail:0,remaining:0,total:ds.length,avg:orv/ds.length});
+  });
 
   const totalRevenue=sales.reduce((a,x)=>a+x._p,0);
   const totalSold=sales.length;
