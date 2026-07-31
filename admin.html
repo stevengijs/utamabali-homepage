@@ -719,7 +719,9 @@ async function renderAnalytics(){
   const leadSrc=(()=>{const m={};leads.forEach(l=>{const k=l.source_page||'(unknown)';m[k]=(m[k]||0)+1;});return Object.entries(m).map(([k,n])=>({k,n})).sort((a,b)=>b.n-a.n).slice(0,8);})();
 
   // brochure sign-ups (leads via a /brochure page or brochure-type request)
-  const brochure=leads.filter(l=>/brochure/i.test((l.source_page||'')+' '+(l.type||'')));
+  // A brochure / interest sign-up = any lead form fill (across every project), except the two action types.
+  // (The brochure pop-up saves the lead under the project page, not a /brochure URL, so filtering on the URL misses most of them.)
+  const brochure=leads.filter(l=>{const t=(l.type||'').toLowerCase();return t!=='reservation'&&t!=='dataroom_request';});
   const brByProj=(()=>{const m={};brochure.forEach(l=>{const k=l.project||'(onbekend)';m[k]=(m[k]||0)+1;});return Object.entries(m).map(([k,n])=>({label:k,value:n,display:anInt(n)})).sort((a,b)=>b.value-a.value);})();
 
   // funnel + revenue
@@ -1059,7 +1061,7 @@ let SIGNUPS_LIMIT=25,SIGNUPS_DAYS=null;
 function drawRecentSignups(){
   const el=$('#people_banner');if(!el)return;
   const all=[];PEOPLE.forEach(p=>(p._leads||[]).forEach(l=>all.push({...l,who:p.name||p.email,email:p.email,phone:p.phone,pid:p.id})));
-  let bro=all.filter(x=>/brochure/i.test(x.source_page||''));
+  let bro=all.filter(x=>{const t=(x.type||'').toLowerCase();return t!=='reservation'&&t!=='dataroom_request';});
   if(SIGNUPS_DAYS){const cut=Date.now()-SIGNUPS_DAYS*864e5;bro=bro.filter(x=>{const t=x.created_at?new Date(x.created_at).getTime():0;return t&&t>=cut;});}
   bro.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   const total=bro.length;
