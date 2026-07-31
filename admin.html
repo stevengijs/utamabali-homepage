@@ -751,7 +751,7 @@ async function renderRevenue(){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Loading revenue…</div>';
   const [projR,purR]=await Promise.all([
     sb.from('projects').select('name,slug,status,units_total,units_available,price_start,price_current,reservation_amount,sort_order').order('sort_order',{ascending:true}),
-    sb.from('purchases').select('project,unit,status,price,deposit_amount,contract_signed_at,created_at').order('created_at',{ascending:false}),
+    sb.from('purchases').select('project,unit,buyer_name,status,price,deposit_amount,contract_signed_at,created_at').order('contract_signed_at',{ascending:false,nullsFirst:false}),
   ]);
   if(purR.error){v.innerHTML=`<div class="panel"><div class="empty">Couldn’t load revenue: ${esc(purR.error.message)}</div></div>`;return;}
   const projs=projR.data||[],P=purR.data||[];
@@ -804,10 +804,10 @@ async function renderRevenue(){
     <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Remaining inventory value</h3><div class="desc">Nog te verkopen voorraad × vraagprijs.</div></div></div>${anBars(rows.filter(r=>r.remaining>0).map(r=>({label:r.name,value:r.remaining,display:anMoney(r.remaining),sub:'· '+r.avail+' left'})),'#b7791f')}</div>
   </div>`;
 
-  const recent=P.slice(0,20);
-  html+=`<div class="panel"><div class="panel-head"><div><h3>Deals (${P.length})</h3><div class="desc">Verkochte units met hun werkelijke prijs.</div></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Project</th><th>Unit</th><th>Status</th><th>Price</th><th>Deposit</th><th>Contract date</th></tr></thead><tbody>
-    ${recent.length?recent.map(x=>`<tr><td>${esc(x.project||'—')}</td><td>${esc(x.unit||'—')}</td><td><span class="badge ${revBadgeClass(x._c)}">${esc(x.status||'—')}</span></td><td><b>${x._p?anMoney(x._p):'—'}</b></td><td>${x._d?anMoney(x._d):'—'}</td><td>${x.contract_signed_at?fmtDate(x.contract_signed_at):'—'}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">No deals yet.</td></tr>'}
+  const recent=P.slice(0,40);
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Deals (${P.length})</h3><div class="desc">Verkochte units — wie kocht welke villa, voor welke prijs en wanneer.</div></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Buyer</th><th>Project</th><th>Unit</th><th>Status</th><th>Price</th><th>Contract date</th></tr></thead><tbody>
+    ${recent.length?recent.map(x=>`<tr><td><b>${esc(x.buyer_name||'—')}</b></td><td>${esc(x.project||'—')}</td><td>${esc(x.unit||'—')}</td><td><span class="badge ${revBadgeClass(x._c)}">${esc(x.status||'—')}</span></td><td><b>${x._p?anMoney(x._p):'—'}</b></td><td>${x.contract_signed_at?fmtDate(x.contract_signed_at):'—'}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">No deals yet.</td></tr>'}
     </tbody></table></div></div>`;
 
   v.innerHTML=html;
