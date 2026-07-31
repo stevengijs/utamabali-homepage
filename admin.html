@@ -804,7 +804,7 @@ async function renderLiveVisitors(){
   const now=Date.now();
   const since=new Date(now-30*60000).toISOString();
   const {data,error}=await sb.from('analytics_events')
-    .select('session_id,visitor_hash,path,page_title,project,channel,referrer_host,utm_source,utm_campaign,country,device,browser,created_at')
+    .select('session_id,visitor_hash,site,path,page_title,project,channel,referrer_host,utm_source,utm_campaign,country,device,browser,created_at')
     .gte('created_at',since).order('created_at',{ascending:false}).limit(5000);
   if(!$('#live_visitors'))return; // navigated away while loading
   if(error){box.innerHTML=`<div class="empty" style="padding:18px">Live data niet beschikbaar: ${esc(error.message)}</div>`;return;}
@@ -817,6 +817,17 @@ async function renderLiveVisitors(){
   const n=active.length, last30=sessions.length;
   const dev=d=>({desktop:'🖥️',mobile:'📱',tablet:'📲'}[d]||'💻');
   const ago=ms=>{const s=Math.max(0,Math.round(ms/1000));if(s<15)return 'net nu';if(s<60)return s+' sec geleden';const m=Math.round(s/60);return m+' min geleden';};
+  const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-dune':'The Dune'}[s]||null);
+  const pageName=path=>{
+    let p=(path||'/').split('?')[0].split('#')[0];
+    if(p==='/'||p==='')return 'Homepage';
+    const seg=p.replace(/^\/+|\/+$/g,'').split('/');
+    let name=projName(seg[0])||({referral:'Referral',portal:'Investeerdersportaal',dataroom:'Dataroom',webinar:'Webinar',webinar3:'Webinar','the-maison-brochure':'The Maison'}[seg[0]]||seg[0].replace(/-/g,' '));
+    if(/\/brochure(\/|$)/.test(p))name+=' — Brochure';
+    else if(/\/dataroom(\/|$)/.test(p))name+=' — Dataroom';
+    else if(/\/dashboard(\/|$)/.test(p))name+=' — Dashboard';
+    return name;
+  };
   const srcOf=e=>{const c=(e.channel||'direct').toLowerCase();let detail='';
     if(e.utm_campaign)detail=e.utm_campaign;else if(e.utm_source)detail=e.utm_source;else if(e.referrer_host)detail=e.referrer_host;
     else detail={direct:'directe link',organic:'zoekmachine',social:'social',paid:'advertentie',referral:'verwijzing',campaign:'campagne',email:'e-mail',internal:'intern'}[c]||c;
@@ -828,7 +839,7 @@ async function renderLiveVisitors(){
     h+=`<div class="table-wrap" style="max-height:360px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Huidige pagina</th><th>Bron</th><th>Sinds</th></tr></thead><tbody>`;
     active.forEach(e=>{const s=srcOf(e);const loc=e.country?esc(e.country):'—';
       h+=`<tr><td><span class="live-meta">${dev(e.device)} ${esc(e.device||'—')}${e.browser?' · '+esc(e.browser):''}<br>${loc}</span></td>`
-       +`<td><div class="live-path">${esc(e.path||'/')}</div>${e.page_title?`<div class="live-ttl">${esc(e.page_title)}</div>`:''}</td>`
+       +`<td><div class="live-path">${esc(pageName(e.path))}</div><div class="live-ttl">${esc((e.site||'')+(e.path||'/'))}</div></td>`
        +`<td><span class="src-badge ${s.c}">${esc(s.c)}</span><div class="live-meta" style="margin-top:3px">${esc(s.detail)}</div></td>`
        +`<td class="live-ago">${ago(now-new Date(e.created_at).getTime())}</td></tr>`;
     });
