@@ -545,7 +545,7 @@ async function renderDashboard(){
   async function count(t){const {count,error}=await sb.from(t).select('*',{count:'exact',head:true});return error?'–':(count||0);}
   const stats=[];
   if(canView('analytics')){const since=new Date(Date.now()-30*864e5).toISOString();const {count:pv}=await sb.from('analytics_events').select('*',{count:'exact',head:true}).gte('created_at',since);stats.push(['Page views (30d)',pv||0,'website analytics','analytics']);}
-  if(canView('revenue')){const {data:pd}=await sb.from('purchases').select('status,price');const bk=(pd||[]).filter(x=>revClass(x.status)==='booked');stats.push(['Booked revenue',anMoney(bk.reduce((a,x)=>a+(Number(x.price)||0),0)),bk.length+' unit'+(bk.length===1?'':'s')+' sold','revenue']);}
+  if(canView('revenue')){const {data:pd}=await sb.from('purchases').select('status,price');const sales=(pd||[]).filter(x=>revClass(x.status)!=='lost');stats.push(['Revenue to date',anMoney(sales.reduce((a,x)=>a+(Number(x.price)||0),0)),sales.length+' unit'+(sales.length===1?'':'s')+' sold','revenue']);}
   if(canView('leads')){stats.push(['Leads',await count('leads'),'site inquiries & reservations','leads']);stats.push(['Contacts',await count('contacts'),'known people','leads']);}
   if(canView('webinars')){stats.push(['Webinar signups',await count('webinar_registrations'),'registrations','webinars']);}
   if(canView('projects')){stats.push(['Projects',await count('projects'),'active projects','projects']);}
@@ -725,58 +725,63 @@ function revClass(s){s=(s||'').toLowerCase().trim();if(REV_BOOKED.includes(s))re
 function revBadgeClass(c){return c==='booked'?'green':c==='pipeline'?'blue':c==='lost'?'red':'grey';}
 async function renderRevenue(){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Loading revenue…</div>';
-  const [purR,projR]=await Promise.all([
-    sb.from('purchases').select('project,unit,status,price,deposit_amount,contract_signed_at,deposit_paid_at,created_at').order('created_at',{ascending:false}),
-    sb.from('projects').select('name,slug,status,sort_order').order('sort_order',{ascending:true}),
+  const [projR,purR]=await Promise.all([
+    sb.from('projects').select('name,slug,status,units_total,units_available,price_start,price_current,reservation_amount,sort_order').order('sort_order',{ascending:true}),
+    sb.from('purchases').select('project,unit,status,price,deposit_amount,contract_signed_at,created_at').order('created_at',{ascending:false}),
   ]);
   if(purR.error){v.innerHTML=`<div class="panel"><div class="empty">Couldn’t load revenue: ${esc(purR.error.message)}</div></div>`;return;}
-  const P=purR.data||[],projs=projR.data||[];
+  const projs=projR.data||[],P=purR.data||[];
   P.forEach(x=>{x._c=revClass(x.status);x._p=Number(x.price)||0;x._d=Number(x.deposit_amount)||0;});
-  const booked=P.filter(x=>x._c==='booked'),pipeline=P.filter(x=>x._c==='pipeline');
-  const bookedRev=booked.reduce((a,x)=>a+x._p,0);
-  const pipeRev=pipeline.reduce((a,x)=>a+x._p,0);
-  const bookedDep=booked.reduce((a,x)=>a+x._d,0);
-  const deposits=P.reduce((a,x)=>a+x._d,0);
-  const units=booked.length;
-  const avg=units?bookedRev/units:0;
-  const outstanding=Math.max(0,bookedRev-bookedDep);
+  const sales=P.filter(x=>x._c!=='lost'&&x._c!=='pipeline');
 
-  const byProj={};
-  P.forEach(x=>{const k=x.project||'—';const b=(byProj[k]=byProj[k]||{booked:0,pipe:0,dep:0,units:0,deals:0});b.deals++;b.dep+=x._d;if(x._c==='booked'){b.booked+=x._p;b.units++;}else if(x._c==='pipeline')b.pipe+=x._p;});
-  projs.forEach(pr=>{if(pr.name&&!byProj[pr.name])byProj[pr.name]={booked:0,pipe:0,dep:0,units:0,deals:0};});
-  const projRows=Object.entries(byProj).map(([k,x])=>({name:k,...x})).sort((a,b)=>(b.booked-a.booked)||(b.pipe-a.pipe));
+  // per project: sold units & revenue come from actual deals (real per-unit prices); remaining from project inventory
+  const rows=projs.map(pr=>{
+    const deals=sales.filter(x=>anMatchProj(x.project,pr.name,pr.slug));
+    const sold=deals.length, soldRev=deals.reduce((a,x)=>a+x._p,0);
+    const askPrice=Number(pr.price_current||pr.price_start)||0;
+    const avail=(pr.units_available==null)?Math.max(0,(Number(pr.units_total)||sold)-sold):Number(pr.units_available);
+    return {name:pr.name,status:pr.status,sold,soldRev,askPrice,avail,
+      remaining:avail*askPrice, total:sold+avail, avg:sold?soldRev/sold:0};
+  });
+  // deals whose project isn't in the projects table
+  const known=new Set(projs.map(p=>(p.name||'').toLowerCase()));
+  const orphan=sales.filter(x=>!projs.some(pr=>anMatchProj(x.project,pr.name,pr.slug)));
+  if(orphan.length)rows.push({name:'Other',status:'',sold:orphan.length,soldRev:orphan.reduce((a,x)=>a+x._p,0),askPrice:0,avail:0,remaining:0,total:orphan.length,avg:orphan.reduce((a,x)=>a+x._p,0)/orphan.length});
 
-  const byStatus={};P.forEach(x=>{const s=x.status||'—';const b=(byStatus[s]=byStatus[s]||{n:0,rev:0,c:x._c});b.n++;b.rev+=x._p;});
-  const statusRows=Object.entries(byStatus).map(([s,x])=>({label:s+' ('+x.n+')',value:x.rev,display:anMoney(x.rev),c:x.c})).sort((a,b)=>b.value-a.value);
-
-  const byMonth={};booked.forEach(x=>{const d=(x.contract_signed_at||x.created_at||'').slice(0,7);if(d)byMonth[d]=(byMonth[d]||0)+x._p;});
-  const monthRows=Object.entries(byMonth).sort((a,b)=>a[0]<b[0]?-1:1).map(([m,v])=>({label:m,value:v,display:anMoney(v)}));
+  const totalRevenue=sales.reduce((a,x)=>a+x._p,0);
+  const totalSold=sales.length;
+  const remainingValue=rows.reduce((a,r)=>a+r.remaining,0);
+  const totalAvail=rows.reduce((a,r)=>a+r.avail,0);
+  const portfolioValue=totalRevenue+remainingValue;
+  const avgPrice=totalSold?totalRevenue/totalSold:0;
+  const sellThrough=(totalSold+totalAvail)?totalSold/(totalSold+totalAvail):0;
+  const deposits=sales.reduce((a,x)=>a+x._d,0);
 
   const kpis=[
-    ['Booked revenue',anMoney(bookedRev),units+' unit'+(units===1?'':'s')+' sold'],
-    ['Avg. deal size',units?anMoney(avg):'—','per sold unit'],
-    ['Deposits received',anMoney(deposits),'reservation + contract'],
-    ['Outstanding balance',anMoney(outstanding),'booked − deposits'],
-    ['Pipeline value',anMoney(pipeRev),pipeline.length+' reserved'],
-    ['Total deals',anInt(P.length),'all records'],
+    ['Revenue to date',anMoney(totalRevenue),totalSold+' unit'+(totalSold===1?'':'s')+' sold'],
+    ['Avg. sale price',totalSold?anMoney(avgPrice):'—','per sold unit'],
+    ['Remaining inventory',anMoney(remainingValue),totalAvail+' units for sale'],
+    ['Sell-through rate',anPct(sellThrough),totalSold+' of '+(totalSold+totalAvail)+' units'],
+    ['Total portfolio value',anMoney(portfolioValue),'sold + remaining'],
+    ['Deposits received',anMoney(deposits),'on logged deals'],
   ];
+
   let html='';
-  html+=`<div class="an-note">💰 Computed live from your deals (the Purchases data) — units sold × price. Booked = contracted/signed; pipeline = reserved. This can be cross-checked against Moneybird for invoiced totals.</div>`;
-  if(P.length===0)html+=`<div class="panel"><div class="empty">No deals recorded yet. As units are reserved and contracted, revenue appears here automatically.</div></div>`;
+  html+=`<div class="an-note">💰 Revenue to date = som van de werkelijke verkoopprijzen per unit (uit Deals). Remaining inventory = nog beschikbare units × huidige vraagprijs. Voeg een deal toe of pas een prijs aan, dan verandert dit mee.</div>`;
   html+='<div class="cards">'+kpis.map(k=>`<div class="stat"><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('')+'</div>';
 
-  html+=`<div class="panel"><div class="panel-head"><div><h3>Revenue by project</h3><div class="desc">Booked sales, deposits and reserved pipeline per project.</div></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Project</th><th>Units sold</th><th>Booked revenue</th><th>Avg price</th><th>Deposits</th><th>Pipeline</th><th>% of booked</th></tr></thead><tbody>
-    ${projRows.length?projRows.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${anInt(p.units)}</td><td><b>${p.booked?anMoney(p.booked):'—'}</b></td><td>${p.units?anMoney(p.booked/p.units):'—'}</td><td>${p.dep?anMoney(p.dep):'—'}</td><td>${p.pipe?anMoney(p.pipe):'—'}</td><td>${bookedRev&&p.booked?anPct(p.booked/bookedRev):'—'}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">No projects yet.</td></tr>'}
-    </tbody><tfoot><tr style="font-weight:750;background:#fafbfa"><td>Total</td><td>${anInt(units)}</td><td>${anMoney(bookedRev)}</td><td>${units?anMoney(avg):'—'}</td><td>${anMoney(deposits)}</td><td>${anMoney(pipeRev)}</td><td>100%</td></tr></tfoot></table></div></div>`;
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Revenue by project</h3><div class="desc">Gerealiseerde omzet uit verkochte units, plus resterende voorraadwaarde.</div></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Project</th><th>Status</th><th>Units sold</th><th>Sell-through</th><th>Avg. sale price</th><th>Revenue to date</th><th>Remaining value</th></tr></thead><tbody>
+    ${rows.length?rows.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${p.status?`<span class="badge grey">${esc(p.status)}</span>`:'—'}</td><td>${anInt(p.sold)} / ${anInt(p.total)}</td><td>${p.total?anPct(p.sold/p.total):'—'}</td><td>${p.sold?anMoney(p.avg):'—'}</td><td><b>${p.soldRev?anMoney(p.soldRev):'—'}</b></td><td>${p.remaining?anMoney(p.remaining):'—'}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">No projects yet.</td></tr>'}
+    </tbody><tfoot><tr style="font-weight:750;background:#fafbfa"><td>Total</td><td></td><td>${anInt(totalSold)} / ${anInt(totalSold+totalAvail)}</td><td>${anPct(sellThrough)}</td><td>${totalSold?anMoney(avgPrice):'—'}</td><td>${anMoney(totalRevenue)}</td><td>${anMoney(remainingValue)}</td></tr></tfoot></table></div></div>`;
 
   html+=`<div class="an-grid" style="margin-top:20px">
-    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Revenue by status</h3><div class="desc">Value across the deal stages.</div></div></div>${anBars(statusRows.map(r=>({label:r.label,value:r.value,display:r.display})),'#0f6b4f')}</div>
-    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Booked revenue by month</h3><div class="desc">By contract signing date.</div></div></div>${anBars(monthRows,'#14b37d')}</div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Revenue to date by project</h3><div class="desc">Gerealiseerde omzet uit verkochte units.</div></div></div>${anBars(rows.filter(r=>r.soldRev>0).map(r=>({label:r.name,value:r.soldRev,display:anMoney(r.soldRev),sub:'· '+r.sold+' sold'})),'#14b37d')}</div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Remaining inventory value</h3><div class="desc">Nog te verkopen voorraad × vraagprijs.</div></div></div>${anBars(rows.filter(r=>r.remaining>0).map(r=>({label:r.name,value:r.remaining,display:anMoney(r.remaining),sub:'· '+r.avail+' left'})),'#b7791f')}</div>
   </div>`;
 
-  const recent=P.slice(0,15);
-  html+=`<div class="panel"><div class="panel-head"><div><h3>Recent deals</h3><div class="desc">Latest ${recent.length} records.</div></div></div>
+  const recent=P.slice(0,20);
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Deals (${P.length})</h3><div class="desc">Verkochte units met hun werkelijke prijs.</div></div></div>
     <div class="table-wrap"><table><thead><tr><th>Project</th><th>Unit</th><th>Status</th><th>Price</th><th>Deposit</th><th>Contract date</th></tr></thead><tbody>
     ${recent.length?recent.map(x=>`<tr><td>${esc(x.project||'—')}</td><td>${esc(x.unit||'—')}</td><td><span class="badge ${revBadgeClass(x._c)}">${esc(x.status||'—')}</span></td><td><b>${x._p?anMoney(x._p):'—'}</b></td><td>${x._d?anMoney(x._d):'—'}</td><td>${x.contract_signed_at?fmtDate(x.contract_signed_at):'—'}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">No deals yet.</td></tr>'}
     </tbody></table></div></div>`;
@@ -883,27 +888,96 @@ function openForm(resKey,row){
 let PEOPLE=[];
 async function renderPeople(){
   const v=$('#view');
-  v.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>People <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">One record per email — click a person for all their data, activity & history.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Search people…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Loading…</div></div></div>`;
-  const [cr,lr]=await Promise.all([
+  v.innerHTML=`<div id="people_banner"></div><div class="panel"><div class="panel-head"><div><h3>People <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">One record per email — click a person for all their data, activity & history.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Search people…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Loading…</div></div></div>`;
+  const [cr,lr,dr]=await Promise.all([
     sb.from('contacts').select('*').order('last_activity_at',{ascending:false,nullsFirst:false}),
-    sb.from('leads').select('contact_id,type,project')
+    sb.from('leads').select('id,contact_id,type,project,unit,created_at,handled_at'),
+    sb.from('dataroom_access').select('contact_id,contact_email,project,granted_at'),
   ]);
   if(cr.error){$('#tw_people').innerHTML='<div class="empty">'+esc(cr.error.message)+'</div>';return;}
   const byC={};(lr.data||[]).forEach(l=>{(byC[l.contact_id]=byC[l.contact_id]||[]).push(l);});
-  PEOPLE=(cr.data||[]).map(c=>({...c,_leads:byC[c.id]||[]}));
+  const drById={},drByEmail={};(dr.data||[]).forEach(x=>{if(x.contact_id)(drById[x.contact_id]=drById[x.contact_id]||[]).push(x);const e=(x.contact_email||'').toLowerCase();if(e)(drByEmail[e]=drByEmail[e]||[]).push(x);});
+  const now=Date.now(),WK=7*864e5;
+  PEOPLE=(cr.data||[]).map(c=>{
+    const leads=byC[c.id]||[];
+    const dra=[...(drById[c.id]||[]),...(drByEmail[(c.email||'').toLowerCase()]||[])];
+    const grantedProj=new Set(dra.filter(x=>x.granted_at).map(x=>(x.project||'').toLowerCase()));
+    // OPEN action items — persist until handled_at is set (dataroom also closes when access granted)
+    const items=[];
+    leads.filter(l=>!l.handled_at).forEach(l=>{
+      if(l.type==='dataroom_request'&&!grantedProj.has((l.project||'').toLowerCase()))
+        items.push({kind:'dataroom',leadId:l.id,project:l.project||'',unit:l.unit||'',at:l.created_at});
+      else if(l.type==='reservation')
+        items.push({kind:'reservation',leadId:l.id,project:l.project||'',unit:l.unit||'',at:l.created_at});
+    });
+    const newestLead=leads.reduce((m,l)=>Math.max(m,l.created_at?new Date(l.created_at).getTime():0),0);
+    const lastAct=c.last_activity_at?new Date(c.last_activity_at).getTime():0;
+    return {...c,_leads:leads,_items:items,
+      _pending:items.filter(i=>i.kind==='dataroom').map(i=>i.project),
+      _resv:items.filter(i=>i.kind==='reservation'),
+      _isNew:(now-Math.max(lastAct,newestLead))<WK,_activeDr:grantedProj.size};
+  });
   const cel=$('#cnt_people');if(cel)cel.textContent=PEOPLE.length;
+  drawPeopleBanner();
   drawPeople();
   $('#search_people').addEventListener('input',drawPeople);
+}
+function drawPeopleBanner(){
+  const el=$('#people_banner');if(!el)return;
+  const canAct=canEdit('leads')||canEdit('portal');
+  // flatten open items, newest first
+  const items=[];
+  PEOPLE.forEach(p=>p._items.forEach(i=>items.push({...i,p})));
+  items.sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
+  const nDr=items.filter(i=>i.kind==='dataroom').length, nRes=items.filter(i=>i.kind==='reservation').length;
+  if(!items.length){el.innerHTML='';return;}
+  const parts=[];if(nDr)parts.push(`${nDr} dataroom ${nDr===1?'request':'requests'}`);if(nRes)parts.push(`${nRes} ${nRes===1?'reservation':'reservations'}`);
+  let h=`<div style="background:#fdf3e2;border:1px solid #f4e2c1;border-radius:12px;padding:14px 18px;margin-bottom:18px">
+    <div style="font-weight:750;color:#8a6410;margin-bottom:10px">🔔 Open requests — ${parts.join(' · ')} <span style="font-weight:500">(blijven staan tot ze afgehandeld zijn)</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px">`;
+  items.slice(0,10).forEach(i=>{
+    const who=esc(i.p.name||i.p.email);
+    const label=i.kind==='dataroom'
+      ? `<span class="badge amber">🔓 Dataroom</span> <b>${who}</b> <span class="muted">wil toegang tot</span> <b>${esc(i.project||'algemeen')}</b>`
+      : `<span class="badge blue">📌 Reservering</span> <b>${who}</b> <span class="muted">reserveerde</span> <b>${esc(i.project||'')}${i.unit?' · unit '+esc(i.unit):''}</b>`;
+    let btns=`<button class="btn btn-ghost btn-sm" data-openp="${i.p.id}">Open</button>`;
+    if(canAct){
+      if(i.kind==='dataroom')btns=`<button class="btn btn-primary btn-sm" data-grant="${i.p.id}" data-project="${esc(i.project)}" data-lead="${i.leadId}">Grant access</button>`+btns;
+      btns+=`<button class="btn btn-ghost btn-sm" data-done="${i.leadId}">Mark done</button>`;
+    }
+    h+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #f4e2c1;padding-top:8px"><div style="font-size:13px">${label} <span class="muted" style="font-size:11px">· ${fmtDate(i.at)}</span></div><div class="row-actions">${btns}</div></div>`;
+  });
+  if(items.length>10)h+=`<div class="muted" style="font-size:12px">+ ${items.length-10} more…</div>`;
+  h+='</div></div>';
+  el.innerHTML=h;
+  el.querySelectorAll('[data-openp]').forEach(b=>b.onclick=()=>openPerson(PEOPLE.find(x=>x.id===b.dataset.openp)));
+  el.querySelectorAll('[data-grant]').forEach(b=>b.onclick=()=>bannerGrantDataroom(b.dataset.grant,b.dataset.project,b.dataset.lead));
+  el.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>bannerMarkDone(b.dataset.done));
+}
+async function markLeadHandled(leadId){
+  const {error}=await sb.from('leads').update({handled_at:new Date().toISOString(),handled_by:(ME.full_name||ME.email)}).eq('id',leadId);
+  if(error){toast(error.message,'err');return false;}
+  return true;
+}
+async function bannerMarkDone(leadId){ if(await markLeadHandled(leadId)){toast('Marked as handled','ok');renderPeople();} }
+async function bannerGrantDataroom(personId,project,leadId){
+  const p=PEOPLE.find(x=>x.id===personId);if(!p)return;
+  const {error}=await sb.from('dataroom_access').insert({contact_id:p.id,contact_email:p.email,contact_name:p.name,project:project||null,granted_at:new Date().toISOString()});
+  if(error){toast(error.message,'err');return;}
+  if(leadId)await markLeadHandled(leadId);
+  toast('Dataroom access granted'+(project?' · '+project:''),'ok');
+  renderPeople();
 }
 function drawPeople(){
   const q=($('#search_people')?.value||'').toLowerCase();
   let rows=PEOPLE; if(q)rows=rows.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
   const tw=$('#tw_people');if(!tw)return;
   if(!rows.length){tw.innerHTML='<div class="empty">No people'+(q?' match your search.':'.')+'</div>';return;}
-  let h='<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Last activity</th></tr></thead><tbody>';
+  let h='<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Flags</th><th>Last activity</th></tr></thead><tbody>';
   rows.forEach(p=>{
     const projs=[...new Set(p._leads.map(l=>l.project).filter(Boolean))].join(', ');
-    h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
+    const flags=`${p._isNew?'<span class="badge green">NEW</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
+    h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td style="white-space:normal">${flags}</td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
   });
   tw.innerHTML=h+'</tbody></table>';
   tw.querySelectorAll('tr[data-person]').forEach(tr=>tr.onclick=()=>openPerson(PEOPLE.find(x=>x.id===tr.dataset.person)));
@@ -912,14 +986,15 @@ function _sec(title,inner){return `<div style="margin-top:20px"><div style="font
 function _mt(headers,rows){ if(!rows.length)return '<div class="muted" style="font-size:13px">None.</div>'; let h='<table style="font-size:13px"><thead><tr>'+headers.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>'; rows.forEach(r=>{h+='<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>';}); return h+'</tbody></table>'; }
 async function openPerson(p){
   showDetail('Contact','<div class="muted">Loading…</div>');
-  const [lr,pr,wr,dr,rr]=await Promise.all([
+  const [lr,pr,wr,dr,rr,projR]=await Promise.all([
     sb.from('leads').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
     sb.from('purchases').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
     sb.from('webinar_registrations').select('*').eq('email',p.email).order('created_at',{ascending:false}),
     sb.from('dataroom_access').select('*').or('contact_id.eq.'+p.id+',contact_email.eq.'+p.email),
     sb.from('referrals').select('*').or('referrer_contact_id.eq.'+p.id+',referred_contact_id.eq.'+p.id),
+    sb.from('projects').select('name,slug').order('sort_order',{ascending:true}),
   ]);
-  const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[];
+  const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[];
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
@@ -939,13 +1014,59 @@ async function openPerson(p){
     </div>
   </div>
   <hr style="border:none;border-top:1px solid var(--line);margin:22px 0 2px">`;
-  body+=_sec('Inquiries & reservations ('+leads.length+')',_mt(['Type','Project','Budget','Timeline','Source','Date'],leads.map(l=>[statusBadge(l.type),esc(l.project||'—'),esc(l.budget||'—'),esc(l.timeline||'—'),esc(l.source_page||'—'),fmtDateTime(l.created_at)])));
+  body+=_sec('Inquiries & reservations ('+leads.length+')',_mt(['Type','Project','Unit','Budget','Date','Status'],leads.map(l=>{
+    const open=(l.type==='dataroom_request'||l.type==='reservation')&&!l.handled_at;
+    return [statusBadge(l.type),esc(l.project||'—'),esc(l.unit||'—'),esc(l.budget||'—'),fmtDateTime(l.created_at),open?'<span class="badge amber">Open</span>':(l.handled_at?'<span class="badge green">Handled</span>':'—')];
+  })));
   body+=_sec('Purchases ('+purch.length+')',_mt(['Project','Unit','Status','Price','Deposit','Date'],purch.map(x=>[esc(x.project||'—'),esc(x.unit||'—'),statusBadge(x.status),money(x.price),money(x.deposit_amount),fmtDate(x.created_at)])));
   body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
-  body+=_sec('Dataroom access ('+drs.length+')',_mt(['Project','Granted','Note'],drs.map(x=>[esc(x.project||'—'),fmtDate(x.granted_at),esc(x.granted_note||'—')])));
+
+  // ----- interactive dataroom access -----
+  const manageDr=canEdit('portal')||canEdit('leads');
+  const drMap={};drs.forEach(x=>{const k=x.project||'';if(!drMap[k]||x.granted_at)drMap[k]=x;});
+  [...new Set(leads.filter(l=>l.type==='dataroom_request'&&!l.handled_at).map(l=>l.project||''))].forEach(k=>{if(!(k in drMap))drMap[k]=null;});
+  const drKeys=Object.keys(drMap);
+  let drHtml;
+  if(!drKeys.length){drHtml='<div class="muted" style="font-size:13px">Geen dataroom-toegang of verzoeken.</div>';}
+  else{
+    const rows=drKeys.map(k=>{
+      const row=drMap[k],active=!!(row&&row.granted_at);
+      const requested=leads.some(l=>l.type==='dataroom_request'&&!l.handled_at&&(l.project||'')===k);
+      const status=active?'<span class="badge green">Active</span>':(requested?'<span class="badge amber">Requested</span>':'<span class="badge grey">Off</span>');
+      const cells=[esc(k||'(algemeen)'),status,active?fmtDate(row.granted_at):'—'];
+      if(manageDr)cells.push(active
+        ?`<button class="btn btn-danger btn-sm" data-dr data-enable="0" data-project="${esc(k)}" data-id="${row?row.id:''}">Disable</button>`
+        :`<button class="btn btn-primary btn-sm" data-dr data-enable="1" data-project="${esc(k)}" data-id="${row?row.id:''}">Enable</button>`);
+      return cells;
+    });
+    drHtml=_mt(manageDr?['Project','Status','Granted','']:['Project','Status','Granted'],rows);
+  }
+  if(manageDr){
+    const opts=projList.filter(pr=>!(pr.name in drMap)).map(pr=>`<option value="${esc(pr.name)}">${esc(pr.name)}</option>`).join('');
+    if(opts)drHtml+=`<div style="margin-top:10px;display:flex;gap:8px;align-items:center"><select id="dr_grant_sel" style="max-width:240px;padding:8px 10px;border:1px solid var(--line);border-radius:8px">${opts}</select><button class="btn btn-ghost btn-sm" id="dr_grant_btn">+ Enable for project</button></div>`;
+  }
+  body+=_sec('Dataroom access',drHtml);
   body+=_sec('Referrals ('+refs.length+')',_mt(['Code','Status','Reward'],refs.map(x=>[esc(x.code||'—'),statusBadge(x.status),money(x.reward_amount)])));
   const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
   const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
+  if(mb){
+    mb.querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.project,b.dataset.enable==='1',b.dataset.id||null));
+    const gb=$('#dr_grant_btn');if(gb)gb.onclick=()=>{const s=$('#dr_grant_sel');if(s&&s.value)setDataroom(p,s.value,true,null);};
+  }
+}
+async function setDataroom(person,project,enable,rowId){
+  try{
+    if(rowId){
+      const {error}=await sb.from('dataroom_access').update({granted_at:enable?new Date().toISOString():null}).eq('id',rowId);
+      if(error)throw error;
+    }else if(enable){
+      const {error}=await sb.from('dataroom_access').insert({contact_id:person.id,contact_email:person.email,contact_name:person.name,project:project||null,granted_at:new Date().toISOString()});
+      if(error)throw error;
+    }
+    if(enable&&project){await sb.from('leads').update({handled_at:new Date().toISOString(),handled_by:(ME.full_name||ME.email)}).eq('contact_id',person.id).eq('type','dataroom_request').eq('project',project).is('handled_at',null);}
+    toast('Dataroom '+(enable?'enabled':'disabled')+(project?' · '+project:''),'ok');
+    openPerson(person);
+  }catch(err){toast(err.message||'Failed','err');}
 }
 function showDetail(title,bodyHTML){
   const ov=$('#overlay');
