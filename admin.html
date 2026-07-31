@@ -509,6 +509,7 @@ function go(k){
   if(k==='dashboard')return renderDashboard();
   if(k==='users')return renderUsers();
   if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;}
+  if(k==='leads')return renderPeople();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
 }
@@ -559,7 +560,7 @@ function drawTable(resKey){
   const q=($('#search_'+resKey)?.value||'').toLowerCase();
   let rows=_cache[resKey]||[];
   if(q)rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
-  const tw=$('#tw_'+resKey);
+  const tw=$('#tw_'+resKey);if(!tw)return;
   if(!rows.length){tw.innerHTML='<div class="empty">No records'+(q?' match your search.':' yet.')+'</div>';return;}
   let h='<table><thead><tr>';
   R.cols.forEach(c=>{const def=R.fields.find(f=>f.k===c);h+=`<th>${esc(def?def.label:c)}</th>`;});
@@ -581,8 +582,8 @@ async function delRecord(resKey,id){
   const {error}=await sb.from(R.table).delete().eq('id',id);
   if(error)return toast(error.message,'err');
   toast(R.single+' deleted','ok');
-  _cache[resKey]=_cache[resKey].filter(x=>String(x.id)!==String(id));
-  $('#cnt_'+resKey).textContent=_cache[resKey].length;drawTable(resKey);
+  _cache[resKey]=(_cache[resKey]||[]).filter(x=>String(x.id)!==String(id));
+  const _ce=$('#cnt_'+resKey);if(_ce)_ce.textContent=_cache[resKey].length;drawTable(resKey);
 }
 
 function openForm(resKey,row){
@@ -623,10 +624,72 @@ function openForm(resKey,row){
     else res=await sb.from(R.table).insert(payload).select().single();
     if(res.error){toast(res.error.message,'err');return false;}
     toast(R.single+(isEdit?' updated':' created'),'ok');
-    if(isEdit)_cache[resKey]=_cache[resKey].map(x=>String(x.id)===String(row.id)?res.data:x);
+    if(isEdit)_cache[resKey]=(_cache[resKey]||[]).map(x=>String(x.id)===String(row.id)?res.data:x);
     else _cache[resKey]=[res.data,...(_cache[resKey]||[])];
-    $('#cnt_'+resKey).textContent=_cache[resKey].length;drawTable(resKey);return true;
+    const _ce=$('#cnt_'+resKey);if(_ce)_ce.textContent=_cache[resKey].length;drawTable(resKey);
+    if(CURRENT==='leads'&&(resKey==='contacts'||resKey==='leads'))renderPeople();
+    return true;
   });
+}
+
+/* ================= PEOPLE / 360 CRM ================= */
+let PEOPLE=[];
+async function renderPeople(){
+  const v=$('#view');
+  v.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>People <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">One record per email — click a person for all their data, activity & history.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Search people…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Loading…</div></div></div>`;
+  const [cr,lr]=await Promise.all([
+    sb.from('contacts').select('*').order('last_activity_at',{ascending:false,nullsFirst:false}),
+    sb.from('leads').select('contact_id,type,project')
+  ]);
+  if(cr.error){$('#tw_people').innerHTML='<div class="empty">'+esc(cr.error.message)+'</div>';return;}
+  const byC={};(lr.data||[]).forEach(l=>{(byC[l.contact_id]=byC[l.contact_id]||[]).push(l);});
+  PEOPLE=(cr.data||[]).map(c=>({...c,_leads:byC[c.id]||[]}));
+  const cel=$('#cnt_people');if(cel)cel.textContent=PEOPLE.length;
+  drawPeople();
+  $('#search_people').addEventListener('input',drawPeople);
+}
+function drawPeople(){
+  const q=($('#search_people')?.value||'').toLowerCase();
+  let rows=PEOPLE; if(q)rows=rows.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
+  const tw=$('#tw_people');if(!tw)return;
+  if(!rows.length){tw.innerHTML='<div class="empty">No people'+(q?' match your search.':'.')+'</div>';return;}
+  let h='<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Last activity</th></tr></thead><tbody>';
+  rows.forEach(p=>{
+    const projs=[...new Set(p._leads.map(l=>l.project).filter(Boolean))].join(', ');
+    h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
+  });
+  tw.innerHTML=h+'</tbody></table>';
+  tw.querySelectorAll('tr[data-person]').forEach(tr=>tr.onclick=()=>openPerson(PEOPLE.find(x=>x.id===tr.dataset.person)));
+}
+function _sec(title,inner){return `<div style="margin-top:20px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">${title}</div>${inner}</div>`;}
+function _mt(headers,rows){ if(!rows.length)return '<div class="muted" style="font-size:13px">None.</div>'; let h='<table style="font-size:13px"><thead><tr>'+headers.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>'; rows.forEach(r=>{h+='<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>';}); return h+'</tbody></table>'; }
+async function openPerson(p){
+  showDetail(esc(p.name||p.email),'<div class="muted">Loading…</div>');
+  const [lr,pr,wr,dr,rr]=await Promise.all([
+    sb.from('leads').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
+    sb.from('purchases').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
+    sb.from('webinar_registrations').select('*').eq('email',p.email).order('created_at',{ascending:false}),
+    sb.from('dataroom_access').select('*').or('contact_id.eq.'+p.id+',contact_email.eq.'+p.email),
+    sb.from('referrals').select('*').or('referrer_contact_id.eq.'+p.id+',referred_contact_id.eq.'+p.id),
+  ]);
+  const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[];
+  let body=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="badge blue">${esc(p.email)}</span>${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}<span class="muted" style="font-size:12px;margin-left:auto">First seen ${fmtDate(p.first_seen_at)} · Last activity ${fmtDate(p.last_activity_at)}</span></div>`;
+  if(canEdit('leads'))body+=`<div style="margin-top:10px"><button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button></div>`;
+  body+=_sec('Inquiries & reservations ('+leads.length+')',_mt(['Type','Project','Budget','Timeline','Source','Date'],leads.map(l=>[statusBadge(l.type),esc(l.project||'—'),esc(l.budget||'—'),esc(l.timeline||'—'),esc(l.source_page||'—'),fmtDateTime(l.created_at)])));
+  body+=_sec('Purchases ('+purch.length+')',_mt(['Project','Unit','Status','Price','Deposit','Date'],purch.map(x=>[esc(x.project||'—'),esc(x.unit||'—'),statusBadge(x.status),money(x.price),money(x.deposit_amount),fmtDate(x.created_at)])));
+  body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
+  body+=_sec('Dataroom access ('+drs.length+')',_mt(['Project','Granted','Note'],drs.map(x=>[esc(x.project||'—'),fmtDate(x.granted_at),esc(x.granted_note||'—')])));
+  body+=_sec('Referrals ('+refs.length+')',_mt(['Code','Status','Reward'],refs.map(x=>[esc(x.code||'—'),statusBadge(x.status),money(x.reward_amount)])));
+  const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
+  const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
+}
+function showDetail(title,bodyHTML){
+  const ov=$('#overlay');
+  ov.innerHTML=`<div class="modal" style="width:760px"><div class="modal-head"><h3>${title}</h3><button class="x" id="mx">×</button></div><div class="modal-body">${bodyHTML}</div><div class="modal-foot"><button class="btn btn-ghost" id="mcancel">Close</button></div></div>`;
+  ov.style.display='flex';
+  const close=()=>{ov.style.display='none';ov.innerHTML='';};
+  $('#mx').onclick=close;$('#mcancel').onclick=close;
+  ov.onclick=e=>{if(e.target===ov)close();};
 }
 
 /* ================= USERS / TEAM ================= */
