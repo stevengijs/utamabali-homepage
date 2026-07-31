@@ -119,6 +119,15 @@
   .toast.err{background:#7a271a}
   .toast.ok{background:#0f6b4f}
 
+  /* notifications */
+  .notif-bell{position:relative;border:1px solid var(--line);background:#fff;border-radius:10px;width:40px;height:40px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .notif-bell:hover{background:#f2f4f2}
+  .notif-count{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;font-weight:800;display:none;align-items:center;justify-content:center}
+  .nrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 2px;border-bottom:1px solid var(--line)}
+  .nrow .row-actions{flex-wrap:wrap;justify-content:flex-end}
+  .ntab{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:12px}
+  .ntab button{border:none;background:#fff;padding:7px 14px;font-weight:600;font-size:13px;color:var(--muted)}
+  .ntab button.on{background:var(--brand);color:#fff}
   /* analytics */
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
   .seg button{border:none;background:#fff;padding:7px 14px;font-weight:600;font-size:13px;color:var(--muted)}
@@ -174,7 +183,7 @@
       </div>
     </aside>
     <main>
-      <div class="topbar"><div><div class="crumb" id="crumb">UTAMA</div><h2 id="pageTitle">Dashboard</h2></div><div id="topRight"></div></div>
+      <div class="topbar"><div><div class="crumb" id="crumb">UTAMA</div><h2 id="pageTitle">Dashboard</h2></div><div style="display:flex;align-items:center;gap:14px"><button id="notifBell" class="notif-bell" title="Notificaties">🔔<span class="notif-count" id="notifCount"></span></button><div id="topRight"></div></div></div>
       <div class="content" id="view"></div>
     </main>
   </div>
@@ -515,6 +524,8 @@ async function boot(){
   $('#meName').textContent=ME.full_name||ME.email;
   $('#meRole').textContent=isAdmin()?'Admin':'Team member';
   buildNav();go('dashboard');
+  const bell=$('#notifBell');if(bell)bell.onclick=openNotifications;
+  refreshNotifBadge();
 }
 
 /* ================= NAV ================= */
@@ -683,6 +694,10 @@ async function renderAnalytics(){
   const devices=grp('device','session_id');
   const leadSrc=(()=>{const m={};leads.forEach(l=>{const k=l.source_page||'(unknown)';m[k]=(m[k]||0)+1;});return Object.entries(m).map(([k,n])=>({k,n})).sort((a,b)=>b.n-a.n).slice(0,8);})();
 
+  // brochure sign-ups (leads via a /brochure page or brochure-type request)
+  const brochure=leads.filter(l=>/brochure/i.test((l.source_page||'')+' '+(l.type||'')));
+  const brByProj=(()=>{const m={};brochure.forEach(l=>{const k=l.project||'(onbekend)';m[k]=(m[k]||0)+1;});return Object.entries(m).map(([k,n])=>({label:k,value:n,display:anInt(n)})).sort((a,b)=>b.value-a.value);})();
+
   // funnel + revenue
   const nLeads=leads.length, nCalls=webs.filter(w=>w.call_booked).length, nPurch=purch.length;
   const revenue=purch.reduce((a,x)=>a+(Number(x.price)||0),0);
@@ -710,6 +725,7 @@ async function renderAnalytics(){
     ['Avg. time on page',anDur(avgDur),'engaged'],
     ['Bounce rate',sessions?anPct(bounces/sessions):'—','single-page visits'],
     ['Visitor→lead',visitors?anPct(Math.min(1,nLeads/visitors)):'—',anInt(nLeads)+' leads'],
+    ['Brochure sign-ups',anInt(brochure.length),'brochure-aanvragen'],
   ];
   let html='';
   if(pageviews===0)html+=`<div class="an-note">📡 Tracking is live. No visits recorded for <b>${esc(rangeLabel.toLowerCase())}</b> yet — this fills in automatically as people visit the site. The funnel below still reflects your leads, calls & sales.</div>`;
@@ -733,8 +749,10 @@ async function renderAnalytics(){
 
   html+=`<div class="an-grid" style="margin-top:20px">
     <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Where visitors are</h3><div class="desc">Approx. location (by timezone).</div></div></div>${anBars(countries.map(c=>({label:c.k,value:c.n,display:anInt(c.n),sub:'visitors'})),'#0891b2')}</div>
-    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Leads by landing page</h3><div class="desc">Which pages turn into inquiries.</div></div></div>${anBars(leadSrc.map(c=>({label:c.k,value:c.n,display:anInt(c.n),sub:'leads'})),'#b7791f')}</div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Brochure sign-ups per project</h3><div class="desc">Aanvragen van de digitale brochure — ${anInt(brochure.length)} totaal.</div></div></div>${anBars(brByProj,'#b7791f')}</div>
   </div>`;
+
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Leads by landing page</h3><div class="desc">Which pages turn into inquiries.</div></div></div>${anBars(leadSrc.map(c=>({label:c.k,value:c.n,display:anInt(c.n),sub:'leads'})),'#0f6b4f')}</div>`;
 
   html+=`<div class="panel"><div class="panel-head"><div><h3>Interest & revenue per project</h3><div class="desc">Which projects attract attention — and convert to sales.</div></div></div>
     <div class="table-wrap"><table><thead><tr><th>Project</th><th>Views</th><th>Unique</th><th>Avg. time</th><th>Inquiries</th><th>View→inquiry</th><th>Sales</th><th>Revenue</th></tr></thead><tbody>
@@ -1018,20 +1036,112 @@ async function markLeadHandled(leadId){
   if(error){toast(error.message,'err');return false;}
   return true;
 }
-async function bannerMarkDone(leadId){ if(await markLeadHandled(leadId)){toast('Marked as handled','ok');renderPeople();} }
+async function bannerMarkDone(leadId){ if(await markLeadHandled(leadId)){toast('Marked as handled','ok');if(CURRENT==='leads')renderPeople();refreshNotifBadge();} }
 async function bannerGrantDataroom(personId,project,leadId){
   const p=PEOPLE.find(x=>x.id===personId);if(!p)return;
   const {error}=await sb.from('dataroom_access').insert({contact_id:p.id,contact_email:p.email,contact_name:p.name,project:project||null,granted_at:new Date().toISOString()});
   if(error){toast(error.message,'err');return;}
   if(leadId)await markLeadHandled(leadId);
   toast('Dataroom access granted'+(project?' · '+project:''),'ok');
-  renderPeople();
+  if(CURRENT==='leads')renderPeople();refreshNotifBadge();
 }
 async function bannerConfirmPaid(resId,amount){
   if(!confirm('Bevestig dat de aanbetaling is ontvangen?'))return;
   const {error}=await sb.from('reservations').update({status:'deposit_paid',payment_status:'paid',paid_at:new Date().toISOString(),paid_amount:amount||null,paid_method:'bank_transfer'}).eq('id',resId);
   if(error){toast(error.message,'err');return;}
-  toast('Aanbetaling bevestigd','ok');renderPeople();
+  toast('Aanbetaling bevestigd','ok');if(CURRENT==='leads')renderPeople();refreshNotifBadge();
+}
+/* ============ NOTIFICATIONS INBOX ============ */
+async function loadActionItems(){
+  const [lr,rr,dr]=await Promise.all([
+    sb.from('leads').select('id,contact_id,type,project,unit,created_at,handled_at,name,email,phone').in('type',['dataroom_request','reservation']).order('created_at',{ascending:false}),
+    sb.from('reservations').select('id,contact_id,email,name,project,unit,deposit_amount,status,itp_signed_at,payment_status,paid_at,cleared_at,updated_at').order('updated_at',{ascending:false}),
+    sb.from('dataroom_access').select('contact_id,contact_email,project,granted_at'),
+  ]);
+  const granted=new Set();(dr.data||[]).forEach(x=>{if(!x.granted_at)return;const p=(x.project||'').toLowerCase();if(x.contact_id)granted.add(x.contact_id+'|'+p);if(x.contact_email)granted.add((x.contact_email||'').toLowerCase()+'|'+p);});
+  const open=[],done=[];
+  (lr.data||[]).forEach(l=>{
+    const base={src:'lead',id:l.id,contact_id:l.contact_id,who:l.name||l.email||'—',email:l.email,project:l.project||'',unit:l.unit||'',at:l.created_at};
+    if(l.type==='dataroom_request'){
+      const g=granted.has(l.contact_id+'|'+(l.project||'').toLowerCase())||granted.has((l.email||'').toLowerCase()+'|'+(l.project||'').toLowerCase());
+      if(l.handled_at||g)done.push({...base,kind:'dataroom',doneAt:l.handled_at});else open.push({...base,kind:'dataroom'});
+    }else{
+      if(l.handled_at)done.push({...base,kind:'reservation',doneAt:l.handled_at});else open.push({...base,kind:'reservation'});
+    }
+  });
+  (rr.data||[]).forEach(r=>{
+    const paid=(r.status==='deposit_paid'||r.payment_status==='paid');
+    const base={src:'resv',id:r.id,contact_id:r.contact_id,who:r.name||r.email||'—',email:r.email,project:r.project||'',unit:r.unit||'',amount:r.deposit_amount,at:r.itp_signed_at||r.updated_at};
+    if(!paid&&!r.cleared_at&&r.payment_status==='transfer_reported')open.push({...base,kind:'deposit'});
+    else if(!paid&&!r.cleared_at&&r.itp_signed_at)open.push({...base,kind:'itp'});
+    else if((paid||r.cleared_at)&&(r.itp_signed_at||r.payment_status))done.push({...base,kind:paid?'deposit_paid':'itp',doneAt:r.paid_at||r.cleared_at});
+  });
+  open.sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
+  done.sort((a,b)=>new Date(b.doneAt||0)-new Date(a.doneAt||0));
+  return {open,done};
+}
+async function refreshNotifBadge(){
+  try{const {open}=await loadActionItems();const el=$('#notifCount');if(el){el.textContent=open.length||'';el.style.display=open.length?'flex':'none';}}catch(e){}
+}
+function notifLabel(i){
+  const unit=i.unit?' · '+esc(i.unit):'';
+  if(i.kind==='dataroom')return `<span class="badge amber">🔓 Dataroom</span> <b>${esc(i.who)}</b> <span class="muted">wil toegang tot</span> <b>${esc(i.project||'algemeen')}</b>`;
+  if(i.kind==='reservation')return `<span class="badge blue">📌 Reserveringsaanvraag</span> <b>${esc(i.who)}</b> <span class="muted">voor</span> <b>${esc(i.project||'')}${unit}</b>`;
+  if(i.kind==='itp')return `<span class="badge blue">📝 ITP getekend</span> <b>${esc(i.who)}</b> <span class="muted">— ${esc(i.project||'')}${unit}, wacht op aanbetaling</span>`;
+  if(i.kind==='deposit')return `<span class="badge green">💶 Aanbetaling gemeld</span> <b>${esc(i.who)}</b> <span class="muted">— ${esc(i.project||'')}${unit}</span>`;
+  if(i.kind==='deposit_paid')return `<span class="badge green">✓ Aanbetaling ontvangen</span> <b>${esc(i.who)}</b> <span class="muted">— ${esc(i.project||'')}${unit}</span>`;
+  return esc(i.who);
+}
+let NOTIF_TAB='open';
+async function openNotifications(){
+  showDetail('Notificaties','<div class="muted" style="padding:10px">Laden…</div>');
+  const {open,done}=await loadActionItems();
+  const canAct=canEdit('leads')||canEdit('portal');
+  const render=()=>{
+    let h=`<div class="ntab"><button data-tab="open" class="${NOTIF_TAB==='open'?'on':''}">Open (${open.length})</button><button data-tab="done" class="${NOTIF_TAB==='done'?'on':''}">Afgehandeld</button></div>`;
+    const list=NOTIF_TAB==='open'?open:done.slice(0,40);
+    if(!list.length)h+=`<div class="muted" style="padding:14px 2px">${NOTIF_TAB==='open'?'Geen open acties. 🎉':'Nog niets afgehandeld.'}</div>`;
+    list.forEach(i=>{
+      let btns=`<button class="btn btn-ghost btn-sm" data-open="${i.contact_id||''}">Open</button>`;
+      if(NOTIF_TAB==='open'&&canAct){
+        if(i.kind==='dataroom')btns=`<button class="btn btn-primary btn-sm" data-grant="${i.contact_id}" data-project="${esc(i.project)}" data-lead="${i.id}">Grant access</button>`+btns;
+        if(i.kind==='reservation')btns=`<button class="btn btn-primary btn-sm" data-makeitp="${i.id}">Maak ITP</button>`+btns;
+        if(i.kind==='itp'||i.kind==='deposit')btns=`<button class="btn btn-primary btn-sm" data-confirm="${i.id}" data-amt="${i.amount||''}">Confirm paid</button>`+btns;
+        btns+=`<button class="btn btn-ghost btn-sm" data-complete="${i.id}:${(i.src==='lead')?'lead':'resv'}">✓ Afronden</button>`;
+      }
+      const when=NOTIF_TAB==='open'?fmtDateTime(i.at):('✓ '+fmtDate(i.doneAt));
+      h+=`<div class="nrow"><div style="font-size:13px">${notifLabel(i)} <span class="muted" style="font-size:11px">· ${when}</span></div>${NOTIF_TAB==='open'?`<div class="row-actions">${btns}</div>`:''}</div>`;
+    });
+    const mb=document.querySelector('#overlay .modal-body');if(!mb)return;
+    mb.innerHTML=h;
+    mb.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{NOTIF_TAB=b.dataset.tab;render();});
+    mb.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open){closeOverlay();openContactById(b.dataset.open);}});
+    mb.querySelectorAll('[data-grant]').forEach(b=>b.onclick=async()=>{await bannerGrantDataroom(b.dataset.grant,b.dataset.project,b.dataset.lead);afterNotifAction();});
+    mb.querySelectorAll('[data-confirm]').forEach(b=>b.onclick=async()=>{await bannerConfirmPaid(b.dataset.confirm,Number(b.dataset.amt)||null);afterNotifAction();});
+    mb.querySelectorAll('[data-makeitp]').forEach(b=>b.onclick=()=>{closeOverlay();makeItpFromReservationLead(b.dataset.makeitp);});
+    mb.querySelectorAll('[data-complete]').forEach(b=>b.onclick=async()=>{const parts=b.dataset.complete.split(':');await notifComplete(parts[0],parts[1]);openNotifications();});
+  };
+  render();
+}
+function closeOverlay(){const ov=$('#overlay');if(ov){ov.style.display='none';ov.innerHTML='';}}
+async function notifComplete(id,t){
+  if(t==='lead')await markLeadHandled(id);
+  else{const {error}=await sb.from('reservations').update({cleared_at:new Date().toISOString()}).eq('id',id);if(error){toast(error.message,'err');return;}}
+  toast('Afgerond','ok');refreshNotifBadge();if(CURRENT==='leads')renderPeople();
+}
+function afterNotifAction(){refreshNotifBadge();openNotifications();if(CURRENT==='leads')renderPeople();}
+async function openContactById(id){
+  if(!id){toast('Geen contact gekoppeld','err');return;}
+  const {data}=await sb.from('contacts').select('*').eq('id',id).single();
+  if(data)openPerson(data);else toast('Contact niet gevonden','err');
+}
+async function makeItpFromReservationLead(leadId){
+  const {data:l}=await sb.from('leads').select('*').eq('id',leadId).single();
+  if(!l){toast('Aanvraag niet gevonden','err');return;}
+  const c=l.contact_id?(await sb.from('contacts').select('*').eq('id',l.contact_id).single()).data:null;
+  const person=c||{id:l.contact_id,name:l.name,email:l.email,phone:l.phone};
+  const {data:projs}=await sb.from('projects').select('name,slug,price_current').order('sort_order',{ascending:true});
+  openReservationForm(person,projs||[],{project:l.project,unit:l.unit,leadId:l.id});
 }
 function drawPeople(){
   const q=($('#search_people')?.value||'').toLowerCase();
@@ -1083,9 +1193,17 @@ async function openPerson(p){
     </div>
   </div>
   <hr style="border:none;border-top:1px solid var(--line);margin:22px 0 2px">`;
-  body+=_sec('Inquiries & reservations ('+leads.length+')',_mt(['Type','Project','Unit','Budget','Date','Status'],leads.map(l=>{
+  const manageLeads=canEdit('leads')||canEdit('portal');
+  body+=_sec('Inquiries & reservations ('+leads.length+')',_mt(['Type','Project','Unit','Budget','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
     const open=(l.type==='dataroom_request'||l.type==='reservation')&&!l.handled_at;
-    return [statusBadge(l.type),esc(l.project||'—'),esc(l.unit||'—'),esc(l.budget||'—'),fmtDateTime(l.created_at),open?'<span class="badge amber">Open</span>':(l.handled_at?'<span class="badge green">Handled</span>':'—')];
+    const cells=[statusBadge(l.type),esc(l.project||'—'),esc(l.unit||'—'),esc(l.budget||'—'),fmtDateTime(l.created_at),open?'<span class="badge amber">Open</span>':(l.handled_at?'<span class="badge green">Handled</span>':'—')];
+    if(manageLeads){
+      let act='';
+      if(open&&l.type==='reservation')act=`<button class="btn btn-primary btn-sm" data-mkitp="${l.id}" data-mkproj="${esc(l.project||'')}" data-mkunit="${esc(l.unit||'')}">Maak ITP</button> <button class="btn btn-ghost btn-sm" data-ldone="${l.id}" title="Afronden">✓</button>`;
+      else if(open&&l.type==='dataroom_request')act=`<button class="btn btn-primary btn-sm" data-grantlead="${esc(l.project||'')}">Grant</button> <button class="btn btn-ghost btn-sm" data-ldone="${l.id}" title="Afronden">✓</button>`;
+      cells.push(act||'<span class="muted">—</span>');
+    }
+    return cells;
   })));
   body+=_sec('Purchases ('+purch.length+')',_mt(['Project','Unit','Status','Price','Deposit','Date'],purch.map(x=>[esc(x.project||'—'),esc(x.unit||'—'),statusBadge(x.status),money(x.price),money(x.deposit_amount),fmtDate(x.created_at)])));
 
@@ -1113,7 +1231,7 @@ async function openPerson(p){
           </div>
         </div></div>`;
     }).join(''):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
-  if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="newResv">+ Nieuwe reservering / aanbetaling</button></div>`;
+  if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="newResv">+ ITP opstellen / reservering</button></div>`;
   body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',resvHtml);
   body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
 
@@ -1150,6 +1268,9 @@ async function openPerson(p){
     const gb=$('#dr_grant_btn');if(gb)gb.onclick=()=>{const s=$('#dr_grant_sel');if(s&&s.value)setDataroom(p,s.value,true,null);};
     mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}toast('Reserveringslink gekopieerd','ok');});
     mb.querySelectorAll('[data-confirmpaid]').forEach(b=>b.onclick=()=>markReservationPaid(b.dataset.confirmpaid,Number(b.dataset.amt)||null,p));
+    mb.querySelectorAll('[data-mkitp]').forEach(b=>b.onclick=()=>openReservationForm(p,projList,{project:b.dataset.mkproj,unit:b.dataset.mkunit,leadId:b.dataset.mkitp}));
+    mb.querySelectorAll('[data-ldone]').forEach(b=>b.onclick=async()=>{await markLeadHandled(b.dataset.ldone);toast('Afgerond','ok');openPerson(p);});
+    mb.querySelectorAll('[data-grantlead]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.grantlead,true,null));
     mb.querySelectorAll('[data-editip]').forEach(b=>b.onclick=()=>openItpEditor(PERSON_RESV[b.dataset.editip],p));
     mb.querySelectorAll('[data-wa]').forEach(b=>b.onclick=()=>sendReservation(PERSON_RESV[b.dataset.wa],p,'whatsapp'));
     mb.querySelectorAll('[data-mail]').forEach(b=>b.onclick=()=>sendReservation(PERSON_RESV[b.dataset.mail],p,'email'));
@@ -1196,32 +1317,38 @@ async function markReservationPaid(id,amount,person){
   toast('Aanbetaling bevestigd','ok');openPerson(person);
 }
 const RESV_SITE='https://utamabali.com';
-function openReservationForm(p,projList){
-  const opts=(projList||[]).map(pr=>`<option value="${esc(pr.name)}" data-price="${pr.price_current||''}">${esc(pr.name)}</option>`).join('');
-  const body=`<div class="grid2">
+function openReservationForm(p,projList,prefill){
+  prefill=prefill||{};
+  const opts=(projList||[]).map(pr=>`<option value="${esc(pr.name)}" data-price="${pr.price_current||''}" ${prefill.project&&(prefill.project||'').toLowerCase()===(pr.name||'').toLowerCase()?'selected':''}>${esc(pr.name)}</option>`).join('');
+  const bodyH=`<div class="grid2">
     <div class="field"><label>Project</label><select id="rv_project">${opts}</select></div>
-    <div class="field"><label>Unit</label><input id="rv_unit" placeholder="bv. 2BR #3"></div>
+    <div class="field"><label>Unit</label><input id="rv_unit" placeholder="bv. 2BR #3" value="${esc(prefill.unit||'')}"></div>
     <div class="field"><label>Indicatieve koopsom (€)</label><input id="rv_price" type="number" step="any"></div>
     <div class="field"><label>Aanbetaling (€)</label><input id="rv_dep" type="number" step="any" value="5000"></div>
-  </div><div class="hint">Maakt een unieke, deelbare reserveringslink met vooringevulde ITP. De klant tekent en betaalt de aanbetaling; alles komt terug in dit profiel.</div>`;
-  showModal('Nieuwe reservering / aanbetaling',body,async()=>{
+  </div><div class="hint">De ITP wordt automatisch opgemaakt (bewerkbaar) met een deelbare link. Daarna open je meteen de ITP-editor om te versturen via WhatsApp of e-mail.</div>`;
+  showModal('ITP opstellen / reservering',bodyH,async()=>{
     const project=$('#rv_project').value;const unit=$('#rv_unit').value.trim();
     const unit_price=$('#rv_price').value?Number($('#rv_price').value):null;
     const deposit=$('#rv_dep').value?Number($('#rv_dep').value):5000;
     const token=((crypto&&crypto.randomUUID)?crypto.randomUUID():('t'+Date.now())).replace(/-/g,'')+Math.random().toString(36).slice(2,8);
     const itp_body=itpDraft({name:p.name,email:p.email,project,unit,unit_price,deposit_amount:deposit});
-    const {error}=await sb.from('reservations').insert({token,contact_id:p.id,name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit,itp_body,source:'admin',created_by:(ME.full_name||ME.email)});
+    const {data:row,error}=await sb.from('reservations').insert({token,contact_id:p.id,name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit,itp_body,source:'admin',created_by:(ME.full_name||ME.email)}).select().single();
     if(error){toast(error.message,'err');return false;}
-    toast('Reservering aangemaakt — ITP opgemaakt, klaar om te versturen','ok');openPerson(p);return true;
+    if(prefill.leadId)await markLeadHandled(prefill.leadId);
+    toast('ITP aangemaakt — bewerk en verstuur','ok');
+    setTimeout(()=>{if(row)openItpEditor(row,p);else openPerson(p);refreshNotifBadge();},60);
+    return true;
   });
   setTimeout(()=>{const ps=$('#rv_project'),pr=$('#rv_price');if(ps&&pr){const sync=()=>{const o=ps.selectedOptions[0];if(o&&o.dataset.price&&!pr.value)pr.value=o.dataset.price;};ps.onchange=sync;sync();}},0);
 }
 async function setDataroom(person,project,enable,rowId){
   try{
-    if(rowId){
-      const {error}=await sb.from('dataroom_access').update({granted_at:enable?new Date().toISOString():null}).eq('id',rowId);
+    if(!enable){
+      if(rowId){const {error}=await sb.from('dataroom_access').delete().eq('id',rowId);if(error)throw error;}
+    }else if(rowId){
+      const {error}=await sb.from('dataroom_access').update({granted_at:new Date().toISOString()}).eq('id',rowId);
       if(error)throw error;
-    }else if(enable){
+    }else{
       const {error}=await sb.from('dataroom_access').insert({contact_id:person.id,contact_email:person.email,contact_name:person.name,project:project||null,granted_at:new Date().toISOString()});
       if(error)throw error;
     }
