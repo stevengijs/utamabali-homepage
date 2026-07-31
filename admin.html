@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>UTAMA · Admin</title>
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEyUlEQVR4nLWXTahVVRTHf2uffe679/l875mmIIEUFIioGQ6kQEOCIIoIeQ6kieJAJCibNCgzm4WQkyAR0VkDHeSjBg2aqCRhkpVoHxNDKE2z58fz3Y+z91oNzrn33Xf13nd72jpsOOy99lr/vf7rrLO2AHB0LGHzsciePX7hOrZjtpWga4AUA4S5yfTeDO/OIXLkxrccYu/e0PQpzZdFn729xkaHPpEkeZagWBbADEQKS3MRadmQ1IN3WIyn5ebkG39v+fgcR8cSAVjw+Tsrk7R0Eu9HbbIaEQTEzdFrFzHFMBmqJIRwM2aN9ROvfXReOLqn9Ai1b9xQea1N1jJE0ofruBOHZTJUTnWydvYfys/5hTa1TSrltXZrKuIkxeYa7r4ltVtT0c0rr11YndrmLdgOaQTDTIjdd0lHInbinG29Y1VoBLNgOzxmK6zWEPKMmamWT2JAptp6dyIkIi1tAaIZ0ayl451rvd/nI3JWawCs8Kj5XmDVDO8SRkqDrbl6DFRDAymOrWaUfUo5mU6fu1mdTCPSBvQ+4j1R6QbVIUyGBusWP87xF3eSaSR1CZ9ePMG7Z46zqDwPgOu1u7z/zMvsWvUCDY2UXMLmrw9y4s/fGE7LRHSm4bbQerQHPgGLikcYKVUwDEEYTFIsKs29FpVKkjJSqqAYDiFFcp3EeibErABQxdQwrBWBqIVztfwYakTVlk7JJVhzXWcFoF0XEYHipNL+mIFGWnujIjZTJ3eu+bDuPvIc6ArAFQA6dNTy+ahAodN5StVpnV4ArAcFJjYdyvZ5A4vFGk062hYhp6055p4DTQ47kdGWA9yfZ6OgYLYc6EkB0zzOMG7TIUYKnudIQc+aaQbxXgpyAM2wFzr3AGjf+wARcGrUswzICxNAOfE4BVc4dWYMFFXQFdWxkWWIgc36FfRMwrwI/XVngjuNKkOlMgCrFy9DQ+BuvZazlAWeXrIMgEQc1dDgyp0J0m70tImbka0dQ4NScp7LE9c5d+V3QMg0su6xJ/nw+c0sqQzzaGU+763fxIZly8k0gsBPVy9z6cZVSuKJQbvaN7VZKAAERwyRfafGWb9sOalLCBrZvWETb617CQOGBypEVVKXALDv1DhZFhhMSnnV7CGuleVdRgyB4bTMV79+z87xg9yqTeELR/MHKgwPVPLQO8edepU3vzzM+MUzjKRlYgg9baOKjH7wel8tkBPHrdpdnlq0lFeWr2XN0idYPDSCANcmb/PDlUt88fN3/HLtD0Yqg2ifnZWM7t5iiHTtHFpi+SmrWYOprJ43JS7vW6MqasZgWqKSDkyHvZu91u/YijrQqxq2SVSl7BIGy0Pk/8dpP4KgllPWtwh4CxZE8P3uiRja2WAU8l/vMGYEbxoviPerLARD+rsL9IpXX7E0U/FeLIYLDuNAHj+sVT7/z5GX8Lx5MA6424Mctmr9rKQ+IWo2o5F46MMgaiapT6xaP3t7kMP51WzXqystKZ0kcaNWa0RA+qWjbzFTwKRcSoh6U2Jj/cT+8fOOsbFkYv/4eZusb7RGPC3eJ+Kcm9H1POhQQ5xz4n1ijXjaJusbJ/aPn2esuJwyNpZw7FhkwwY/vHrBdkG2osX1/OFIhnPnDDty+8eJQ5w4EZo+/wXvHpNUN9S3LwAAAABJRU5ErkJggg==" />
+<link rel="apple-touch-icon" href="data:image/png;base64,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" />
 <style>
   :root{
     --bg:#f5f6f5; --panel:#ffffff; --ink:#12211c; --muted:#5f6f68;
@@ -19,7 +21,6 @@
   input,select,textarea{font-family:inherit;font-size:14px}
   a{color:var(--brand)}
 
-  /* ---------- Login ---------- */
   #login{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 70% -10%,#12332a,#0c1a15)}
   .login-card{background:var(--panel);width:360px;max-width:92vw;padding:32px;border-radius:16px;box-shadow:var(--shadow)}
   .brand-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
@@ -30,6 +31,7 @@
   .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
   .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;outline:none}
   .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
+  .field input:disabled{background:#f4f6f5;color:var(--muted)}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:9px;border:1px solid transparent;font-weight:600;font-size:14px}
   .btn-primary{background:var(--brand);color:#fff}
   .btn-primary:hover{background:#0b573f}
@@ -41,9 +43,8 @@
   .btn-block{width:100%}
   .login-err{color:var(--danger);font-size:13px;min-height:18px;margin-top:4px}
 
-  /* ---------- App shell ---------- */
   #app{display:none;height:100%}
-  .shell{display:grid;grid-template-columns:236px 1fr;height:100vh}
+  .shell{display:grid;grid-template-columns:240px 1fr;height:100vh}
   aside{background:var(--sidebar);color:var(--sidebar-ink);display:flex;flex-direction:column;padding:16px 12px}
   .side-brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
   .side-brand b{color:#fff;font-size:15px;letter-spacing:.3px}
@@ -63,27 +64,28 @@
   .topbar .crumb{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
   .content{padding:24px 28px 60px}
 
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:8px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:8px}
   .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
   .stat .k{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
   .stat .v{font-size:28px;font-weight:750;margin-top:6px}
   .stat .s{font-size:12px;color:var(--muted);margin-top:2px}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:20px;overflow:hidden}
-  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:8px}
   .panel-head h3{margin:0;font-size:15px}
   .panel-head .desc{color:var(--muted);font-size:12px;margin-top:2px}
   .toolbar{display:flex;gap:8px;align-items:center}
-  .search{padding:8px 11px;border:1px solid var(--line);border-radius:8px;min-width:200px;outline:none}
+  .search{padding:8px 11px;border:1px solid var(--line);border-radius:8px;min-width:180px;outline:none}
   .search:focus{border-color:var(--brand-2)}
+  .count-pill{font-size:11px;font-weight:700;color:var(--muted);background:#eef0ef;border:1px solid var(--line);padding:3px 8px;border-radius:999px}
 
   table{width:100%;border-collapse:collapse}
-  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
-  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;background:#fafbfa;position:sticky}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;background:#fafbfa}
   tbody tr:hover{background:#fafbfa}
   td .row-actions{display:flex;gap:6px;justify-content:flex-end}
-  .table-wrap{overflow:auto}
-  .empty{padding:38px;text-align:center;color:var(--muted)}
+  .table-wrap{overflow:auto;max-height:70vh}
+  .empty{padding:34px;text-align:center;color:var(--muted)}
   .muted{color:var(--muted)}
 
   .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid var(--line);background:#f2f4f2;color:#41514a;white-space:nowrap}
@@ -95,9 +97,8 @@
 
   .chip{display:inline-block;padding:2px 8px;border-radius:7px;background:#eef4f1;color:#2c5a4a;font-size:11px;margin:1px 3px 1px 0}
 
-  /* modal */
   .overlay{position:fixed;inset:0;background:rgba(12,26,21,.45);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
-  .modal{background:#fff;border-radius:14px;width:560px;max-width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal{background:#fff;border-radius:14px;width:600px;max-width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
   .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff}
   .modal-head h3{margin:0;font-size:16px}
   .modal-body{padding:20px}
@@ -105,7 +106,6 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .x{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1}
 
-  /* permission grid */
   .perm-table{width:100%;border-collapse:collapse;margin-top:4px}
   .perm-table th,.perm-table td{padding:9px 10px;border-bottom:1px solid var(--line)}
   .perm-table td.center,.perm-table th.center{text-align:center}
@@ -124,7 +124,6 @@
 </head>
 <body>
 
-<!-- ============ LOGIN ============ -->
 <div id="login">
   <div class="login-card">
     <div class="brand-row"><div class="logo">U</div><div><b style="font-size:15px">UTAMA</b><div style="font-size:11px;color:var(--muted);font-weight:600">TEAM ADMIN</div></div></div>
@@ -139,7 +138,6 @@
   </div>
 </div>
 
-<!-- ============ APP ============ -->
 <div id="app">
   <div class="shell">
     <aside>
@@ -168,75 +166,264 @@ const SUPABASE_URL = "https://gcpachivrwalsneuvlsa.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjcGFjaGl2cndhbHNuZXV2bHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3NTAzODUsImV4cCI6MjEwMDMyNjM4NX0.nMSFH929HMK6HinjiVwvXH5HRM_vvY5m90iv3VGOPUQ";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
+/* Permission pages (match adm_permissions.page keys) */
 const PAGES = [
-  {key:'leads',    label:'Leads / CRM',           icon:'📇'},
-  {key:'content',  label:'Content Library',        icon:'🗂️'},
-  {key:'webinars', label:'Webinars & Campaigns',   icon:'🎥'},
+  {key:'leads',    label:'Leads / CRM',            icon:'📇'},
+  {key:'webinars', label:'Webinar',                icon:'🎥'},
+  {key:'projects', label:'Projects',               icon:'🏗️'},
+  {key:'portal',   label:'Portal & Investors',     icon:'🏝️'},
+  {key:'referrals',label:'Referrals',              icon:'🎁'},
   {key:'users',    label:'Team & Users',           icon:'👥'},
 ];
+/* Which live tables render under each page (stacked) */
+const PAGE_RES = {
+  leads:    ['leads','contacts'],
+  webinars: ['webinar_regs','webinar_sessions'],
+  projects: ['projects'],
+  portal:   ['purchases','returns','dataroom_access','dataroom_docs','milestones','construction_updates'],
+  referrals:['referrals','referral_visits'],
+};
 
-/* Resource definitions drive tables + forms */
+/* read-only timestamp column helper */
+const TS = k => ({k,label:k==='granted_at'?'Granted':k==='last_activity_at'?'Last activity':'Created',type:'datetime',ro:true});
+
+/* Live-data resource definitions */
 const RES = {
-  leads:{page:'leads', table:'adm_leads', title:'Leads / CRM', single:'Lead',
-    cols:['name','company','source','status','value','owner'],
+  /* ---- PROJECTS PAGE ---- */
+  projects:{page:'projects', table:'projects', title:'Projects', single:'Project', orderBy:'sort_order', asc:true,
+    desc:'Master data per project — the single source of truth (edit here or via Claude).',
+    cols:['name','location','status','units_available','price_current'],
     fields:[
       {k:'name',label:'Name',type:'text',req:true},
-      {k:'company',label:'Company',type:'text'},
+      {k:'slug',label:'Slug (URL)',type:'text'},
+      {k:'location',label:'Location',type:'text'},
+      {k:'status',label:'Status',type:'select',opts:['in_ontwikkeling','in_verkoop','uitverkocht','afgerond']},
+      {k:'tagline',label:'Tagline',type:'text'},
+      {k:'description',label:'Description',type:'textarea'},
+      {k:'units_total',label:'Units total',type:'number'},
+      {k:'units_available',label:'Units available',type:'number'},
+      {k:'price_start',label:'Start price (€)',type:'number',money:true},
+      {k:'price_current',label:'Current price (€)',type:'number',money:true},
+      {k:'price_next',label:'Next price (€)',type:'number',money:true},
+      {k:'price_next_date',label:'Next price from',type:'date'},
+      {k:'yield_min',label:'Yield min %',type:'number'},
+      {k:'yield_max',label:'Yield max %',type:'number'},
+      {k:'payback_years',label:'Payback (years)',type:'number'},
+      {k:'lease_structure',label:'Lease structure',type:'text'},
+      {k:'reservation_amount',label:'Reservation deposit (€)',type:'number',money:true},
+      {k:'planning_start',label:'Planning: start',type:'date'},
+      {k:'planning_casco',label:'Planning: casco',type:'date'},
+      {k:'planning_finish',label:'Planning: finish',type:'date'},
+      {k:'planning_delivery',label:'Planning: delivery',type:'date'},
+      {k:'management_notes',label:'Management & costs',type:'textarea'},
+      {k:'tax_notes',label:'Tax notes',type:'textarea'},
+      {k:'brochure_url',label:'Brochure URL',type:'text'},
+      {k:'portal_url',label:'Portal URL',type:'text'},
+      {k:'sort_order',label:'Sort order',type:'number'},
+      TS('created_at'),
+    ]},
+
+  /* ---- LEADS PAGE ---- */
+  leads:{page:'leads', table:'leads', title:'Leads', single:'Lead', noCreate:true,
+    desc:'Website inquiries, reservations & dataroom requests.',
+    cols:['name','email','type','project','budget','created_at'],
+    fields:[
+      {k:'name',label:'Name',type:'text'},
       {k:'email',label:'Email',type:'text'},
       {k:'phone',label:'Phone',type:'text'},
-      {k:'source',label:'Source',type:'select',opts:['Webinar','Meta Ads','YouTube','TikTok','Referral','Organic','Other']},
-      {k:'status',label:'Status',type:'select',opts:['new','contacted','qualified','won','lost']},
-      {k:'stage',label:'Stage',type:'text'},
-      {k:'value',label:'Deal value (€)',type:'number',money:true},
-      {k:'owner',label:'Owner',type:'text'},
-      {k:'notes',label:'Notes',type:'textarea'},
+      {k:'type',label:'Type',type:'select',opts:['inquiry','reservation','dataroom_request']},
+      {k:'project',label:'Project',type:'text'},
+      {k:'unit',label:'Unit',type:'text'},
+      {k:'budget',label:'Budget',type:'text'},
+      {k:'timeline',label:'Timeline',type:'text'},
+      {k:'source_page',label:'Source page',type:'text'},
+      {k:'lang',label:'Language',type:'text'},
+      {k:'contact_id',label:'Contact ID',type:'text'},
+      TS('created_at'),
     ]},
-  content:{page:'content', table:'adm_content', title:'Content Library', single:'Asset',
-    cols:['title','type','status','tags','url'],
+  contacts:{page:'leads', table:'contacts', title:'Contacts', single:'Contact',
+    desc:'Everyone known to UTAMA (site, portal, referrals).',
+    cols:['name','email','phone','referral_code','last_activity_at'],
+    fields:[
+      {k:'name',label:'Name',type:'text'},
+      {k:'email',label:'Email',type:'text',req:true},
+      {k:'phone',label:'Phone',type:'text'},
+      {k:'locale',label:'Locale',type:'text'},
+      {k:'referral_code',label:'Referral code',type:'text'},
+      TS('last_activity_at'), TS('created_at'),
+    ]},
+
+  /* ---- WEBINAR PAGE ---- */
+  webinar_regs:{page:'webinars', table:'webinar_registrations', title:'Webinar registrations', single:'Registration', noCreate:true,
+    desc:'People who signed up via WebinarGeek.',
+    cols:['name','email','attended','budget','horizon','created_at'],
+    fields:[
+      {k:'name',label:'Name',type:'text'},
+      {k:'email',label:'Email',type:'text',req:true},
+      {k:'whatsapp',label:'WhatsApp',type:'text'},
+      {k:'budget',label:'Budget',type:'text'},
+      {k:'horizon',label:'Horizon',type:'text'},
+      {k:'attended',label:'Attended',type:'bool'},
+      {k:'watch_minutes',label:'Watch minutes',type:'number'},
+      {k:'cta_clicked',label:'CTA clicked',type:'bool'},
+      {k:'call_booked',label:'Call booked',type:'bool'},
+      {k:'last_event',label:'Last event',type:'text'},
+      {k:'utm_source',label:'UTM source',type:'text'},
+      {k:'utm_medium',label:'UTM medium',type:'text'},
+      {k:'utm_campaign',label:'UTM campaign',type:'text'},
+      {k:'watch_url',label:'Watch URL',type:'text'},
+      {k:'session_id',label:'Session ID',type:'text'},
+      TS('created_at'),
+    ]},
+  webinar_sessions:{page:'webinars', table:'webinar_sessions', title:'Webinar sessions', single:'Session',
+    desc:'The webinar(s) themselves.',
+    cols:['title','starts_at','status','platform'],
     fields:[
       {k:'title',label:'Title',type:'text',req:true},
-      {k:'type',label:'Type',type:'select',opts:['ad','email','blog','video','social','doc','other']},
-      {k:'status',label:'Status',type:'select',opts:['draft','review','published','archived']},
-      {k:'tags',label:'Tags (comma separated)',type:'tags'},
-      {k:'url',label:'URL',type:'text'},
-      {k:'body',label:'Description / body',type:'textarea'},
+      {k:'starts_at',label:'Starts at',type:'datetime'},
+      {k:'platform',label:'Platform',type:'text'},
+      {k:'platform_webinar_id',label:'Platform webinar ID',type:'text'},
+      {k:'platform_broadcast_id',label:'Broadcast ID',type:'text'},
+      {k:'replay_url',label:'Replay URL',type:'text'},
+      {k:'replay_until',label:'Replay until',type:'datetime'},
+      {k:'status',label:'Status',type:'text'},
+      TS('created_at'),
     ]},
-  webinars:{page:'webinars', table:'adm_webinars', title:'Webinars', single:'Webinar',
-    cols:['title','scheduled_at','status','registrations','attendees'],
+
+  /* ---- PORTAL PAGE ---- */
+  purchases:{page:'portal', table:'purchases', title:'Purchases', single:'Purchase', noCreate:true,
+    desc:'Reservations, contracts & completed sales.',
+    cols:['project','unit','status','price','created_at'],
+    fields:[
+      {k:'project',label:'Project',type:'text',req:true},
+      {k:'unit',label:'Unit',type:'text'},
+      {k:'status',label:'Status',type:'select',opts:['reserved','contracted','completed','cancelled']},
+      {k:'price',label:'Price (€)',type:'number',money:true},
+      {k:'deposit_amount',label:'Deposit (€)',type:'number',money:true},
+      {k:'deposit_paid_at',label:'Deposit paid at',type:'datetime'},
+      {k:'contract_signed_at',label:'Contract signed at',type:'datetime'},
+      {k:'notes',label:'Notes',type:'textarea'},
+      {k:'contact_id',label:'Contact ID',type:'text'},
+      TS('created_at'),
+    ]},
+  payments:{page:'portal', table:'payment_schedule', title:'Payment schedule', single:'Payment', noCreate:true, orderBy:'due_date', asc:true,
+    desc:'Installments per purchase.',
+    cols:['label','agreement','amount_eur','status','due_date'],
+    fields:[
+      {k:'label',label:'Label',type:'text',req:true},
+      {k:'agreement',label:'Agreement',type:'select',opts:['construction','leasehold','furniture','other']},
+      {k:'installment_no',label:'Installment #',type:'number'},
+      {k:'amount_eur',label:'Amount (€)',type:'number',money:true},
+      {k:'pct',label:'Percent',type:'number'},
+      {k:'due_date',label:'Due date',type:'date'},
+      {k:'status',label:'Status',type:'select',opts:['pending','invoiced','paid','overdue']},
+      {k:'invoiced_at',label:'Invoiced at',type:'datetime'},
+      {k:'paid_at',label:'Paid at',type:'datetime'},
+      {k:'purchase_id',label:'Purchase ID',type:'text'},
+      {k:'sort_order',label:'Sort order',type:'number'},
+      TS('created_at'),
+    ]},
+  returns:{page:'portal', table:'returns_snapshots', title:'Returns snapshots', single:'Snapshot', noCreate:true,
+    desc:'Projected / actual yield per purchase.',
+    cols:['period','is_projection','projected_net_yield_pct','occupancy_pct','adr_eur'],
+    fields:[
+      {k:'period',label:'Period',type:'text',req:true},
+      {k:'is_projection',label:'Projection',type:'bool'},
+      {k:'projected_net_yield_pct',label:'Net yield %',type:'number'},
+      {k:'occupancy_pct',label:'Occupancy %',type:'number'},
+      {k:'adr_eur',label:'ADR (€)',type:'number',money:true},
+      {k:'gross_income_eur',label:'Gross income (€)',type:'number',money:true},
+      {k:'net_income_eur',label:'Net income (€)',type:'number',money:true},
+      {k:'notes',label:'Notes',type:'textarea'},
+      {k:'purchase_id',label:'Purchase ID',type:'text'},
+      TS('created_at'),
+    ]},
+  dataroom_access:{page:'portal', table:'dataroom_access', title:'Dataroom access', single:'Access grant', orderBy:'granted_at', noCreate:true,
+    desc:'Who can see the deal room.',
+    cols:['contact_name','contact_email','project','granted_at'],
+    fields:[
+      {k:'contact_name',label:'Contact name',type:'text'},
+      {k:'contact_email',label:'Contact email',type:'text'},
+      {k:'project',label:'Project',type:'text',req:true},
+      {k:'granted_note',label:'Note',type:'textarea'},
+      {k:'contact_id',label:'Contact ID',type:'text'},
+      TS('granted_at'),
+    ]},
+  dataroom_docs:{page:'portal', table:'dataroom_documents', title:'Dataroom documents', single:'Document', orderBy:'sort_order', asc:true,
+    desc:'Files shown in the deal room.',
+    cols:['title','project','category','sort_order'],
     fields:[
       {k:'title',label:'Title',type:'text',req:true},
-      {k:'scheduled_at',label:'Scheduled at',type:'datetime'},
-      {k:'campaign',label:'Campaign',type:'text'},
-      {k:'status',label:'Status',type:'select',opts:['scheduled','live','completed','cancelled']},
-      {k:'registrations',label:'Registrations',type:'number'},
-      {k:'attendees',label:'Attendees',type:'number'},
-      {k:'notes',label:'Notes',type:'textarea'},
+      {k:'project',label:'Project',type:'text',req:true},
+      {k:'category',label:'Category',type:'select',opts:['due_diligence','contract_voorbeeld','overig']},
+      {k:'description',label:'Description',type:'textarea'},
+      {k:'drive_file_id',label:'Drive file ID',type:'text'},
+      {k:'sort_order',label:'Sort order',type:'number'},
+      TS('created_at'),
     ]},
-  campaigns:{page:'webinars', table:'adm_campaigns', title:'Campaigns', single:'Campaign',
-    cols:['name','channel','status','budget','spend','leads_generated'],
+  milestones:{page:'portal', table:'construction_milestones', title:'Construction milestones', single:'Milestone', orderBy:'sort_order', asc:true,
+    desc:'Build phases per project.',
+    cols:['title','project','phase','status','pct_complete'],
     fields:[
-      {k:'name',label:'Name',type:'text',req:true},
-      {k:'channel',label:'Channel',type:'select',opts:['Meta','YouTube','TikTok','Google','Email','Other']},
-      {k:'status',label:'Status',type:'select',opts:['active','paused','completed','draft']},
-      {k:'budget',label:'Budget (€)',type:'number',money:true},
-      {k:'spend',label:'Spend (€)',type:'number',money:true},
-      {k:'leads_generated',label:'Leads generated',type:'number'},
-      {k:'start_date',label:'Start date',type:'date'},
-      {k:'end_date',label:'End date',type:'date'},
-      {k:'notes',label:'Notes',type:'textarea'},
+      {k:'project',label:'Project',type:'text',req:true},
+      {k:'phase',label:'Phase',type:'text'},
+      {k:'title',label:'Title',type:'text',req:true},
+      {k:'description',label:'Description',type:'textarea'},
+      {k:'planned_start',label:'Planned start',type:'date'},
+      {k:'planned_end',label:'Planned end',type:'date'},
+      {k:'actual_start',label:'Actual start',type:'date'},
+      {k:'actual_end',label:'Actual end',type:'date'},
+      {k:'status',label:'Status',type:'select',opts:['planned','in_progress','completed','delayed']},
+      {k:'pct_complete',label:'% complete',type:'number'},
+      {k:'sort_order',label:'Sort order',type:'number'},
+      TS('created_at'),
+    ]},
+  construction_updates:{page:'portal', table:'construction_updates', title:'Construction updates', single:'Update', orderBy:'update_date',
+    desc:'Progress posts investors see in the portal.',
+    cols:['title','project','update_date','overall_pct','is_published'],
+    fields:[
+      {k:'project',label:'Project',type:'text',req:true},
+      {k:'update_date',label:'Date',type:'date',req:true},
+      {k:'title',label:'Title',type:'text'},
+      {k:'body',label:'Body',type:'textarea'},
+      {k:'overall_pct',label:'Overall %',type:'number'},
+      {k:'planned_pct',label:'Planned %',type:'number'},
+      {k:'photo_urls',label:'Photo URLs (comma separated)',type:'tags'},
+      {k:'is_published',label:'Published',type:'bool'},
+      TS('created_at'),
+    ]},
+  referrals:{page:'referrals', table:'referrals', title:'Referrals', single:'Referral', noCreate:true,
+    desc:'Referral program rewards.',
+    cols:['code','status','reward_amount','created_at'],
+    fields:[
+      {k:'code',label:'Code',type:'text',req:true},
+      {k:'referrer_contact_id',label:'Referrer ID',type:'text'},
+      {k:'referred_contact_id',label:'Referred ID',type:'text'},
+      {k:'purchase_id',label:'Purchase ID',type:'text'},
+      {k:'reward_amount',label:'Reward (€)',type:'number',money:true},
+      {k:'status',label:'Status',type:'select',opts:['pending','eligible','paid','void']},
+      {k:'eligible_at',label:'Eligible at',type:'datetime'},
+      {k:'paid_at',label:'Paid at',type:'datetime'},
+      TS('created_at'),
+    ]},
+  referral_visits:{page:'referrals', table:'referral_visits', title:'Referral visits', single:'Visit', noCreate:true,
+    desc:'Tracked clicks on referral links.',
+    cols:['code','source_page','created_at'],
+    fields:[
+      {k:'code',label:'Code',type:'text',req:true},
+      {k:'source_page',label:'Source page',type:'text'},
+      TS('created_at'),
     ]},
 };
 
 /* ================= STATE ================= */
-let ME = null;          // profile row
-let PERMS = {};         // {page:{can_view,can_edit}}
-let SESSION = null;
-let CURRENT = 'dashboard';
+let ME=null, PERMS={}, SESSION=null, CURRENT='dashboard';
+let _cache={};
 
 /* ================= HELPERS ================= */
 const $ = s => document.querySelector(s);
 const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
-function toast(msg,type){const t=el('div','toast '+(type||''),msg);$('#toasts').append(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),400);},3200);}
+function toast(msg,type){const t=el('div','toast '+(type||''),msg);$('#toasts').append(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),400);},3600);}
 function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function money(v){if(v==null||v==='')return '—';return '€'+Number(v).toLocaleString('nl-NL');}
 function fmtDate(v){if(!v)return '—';const d=new Date(v);return d.toLocaleDateString('nl-NL',{day:'2-digit',month:'short',year:'numeric'});}
@@ -245,24 +432,34 @@ function toLocalInput(v){if(!v)return '';const d=new Date(v);const p=n=>String(n
 function isAdmin(){return ME && ME.is_admin;}
 function canView(p){return isAdmin() || (PERMS[p] && PERMS[p].can_view);}
 function canEdit(p){return isAdmin() || (PERMS[p] && PERMS[p].can_edit);}
+function shortId(v){return v?String(v).slice(0,8)+'…':'—';}
 
 const STATUS_COLOR = {
-  new:'blue',contacted:'amber',qualified:'green',won:'green',lost:'red',
-  draft:'grey',review:'amber',published:'green',archived:'grey',
-  scheduled:'blue',live:'green',completed:'grey',cancelled:'red',
-  active:'green',paused:'amber'
+  new:'blue',inquiry:'blue',contacted:'amber',qualified:'green',won:'green',lost:'red',
+  reservation:'amber',dataroom_request:'blue',
+  reserved:'amber',contracted:'blue',completed:'green',cancelled:'red',
+  pending:'amber',invoiced:'blue',paid:'green',overdue:'red',
+  planned:'grey',in_progress:'blue',delayed:'red',
+  eligible:'blue',void:'grey',
+  scheduled:'blue',live:'green',draft:'grey',review:'amber',published:'green',archived:'grey',active:'green',paused:'amber',
+  in_ontwikkeling:'amber',in_verkoop:'green',uitverkocht:'grey',afgerond:'grey',
+  due_diligence:'blue',contract_voorbeeld:'amber',overig:'grey',
+  construction:'blue',leasehold:'amber',furniture:'green',other:'grey'
 };
 function statusBadge(v){if(v==null||v==='')return '<span class="badge grey">—</span>';const c=STATUS_COLOR[v]||'grey';return `<span class="badge ${c}">${esc(v)}</span>`;}
+function boolBadge(v){return v?'<span class="badge green">Yes</span>':'<span class="badge grey">No</span>';}
 
-function cell(res,f,row){
+function cell(resKey,f,row){
   const v=row[f];
-  if(f==='status')return statusBadge(v);
-  const def=RES[res].fields.find(x=>x.k===f)||{};
+  const def=(RES[resKey].fields.find(x=>x.k===f))||{};
+  if(f==='status'||f==='type'||f==='category'||f==='agreement')return statusBadge(v);
+  if(def.type==='bool')return boolBadge(v);
   if(def.money)return money(v);
   if(def.type==='tags'){const a=v||[];return a.length?a.map(t=>`<span class="chip">${esc(t)}</span>`).join(''):'<span class="muted">—</span>';}
   if(def.type==='datetime')return fmtDateTime(v);
   if(def.type==='date')return fmtDate(v);
-  if(f==='url')return v?`<a href="${esc(v)}" target="_blank" rel="noopener">link ↗</a>`:'<span class="muted">—</span>';
+  if(f.endsWith('_id'))return `<span class="muted" title="${esc(v)}">${shortId(v)}</span>`;
+  if(f==='url'||f.endsWith('_url'))return v?`<a href="${esc(v)}" target="_blank" rel="noopener">link ↗</a>`:'<span class="muted">—</span>';
   if(v==null||v==='')return '<span class="muted">—</span>';
   return esc(v);
 }
@@ -270,8 +467,7 @@ function cell(res,f,row){
 /* ================= AUTH ================= */
 sb.auth.onAuthStateChange((_e,s)=>{SESSION=s;});
 $('#loginForm').addEventListener('submit',async e=>{
-  e.preventDefault();
-  $('#loginErr').textContent='';
+  e.preventDefault();$('#loginErr').textContent='';
   const btn=$('#loginBtn');btn.disabled=true;btn.textContent='Signing in…';
   const {error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPass').value});
   btn.disabled=false;btn.textContent='Sign in';
@@ -282,10 +478,8 @@ $('#logoutBtn').addEventListener('click',async()=>{await sb.auth.signOut();locat
 $('#changePwBtn').addEventListener('click',openChangePw);
 
 async function boot(){
-  const {data:{session}}=await sb.auth.getSession();
-  SESSION=session;
+  const {data:{session}}=await sb.auth.getSession();SESSION=session;
   if(!session){$('#login').style.display='flex';$('#app').style.display='none';return;}
-  // load profile + perms
   const {data:prof,error:pe}=await sb.from('adm_profiles').select('*').eq('id',session.user.id).single();
   if(pe||!prof){$('#login').style.display='flex';$('#app').style.display='none';toast('No admin profile found for this account.','err');return;}
   ME=prof;
@@ -294,50 +488,44 @@ async function boot(){
   $('#login').style.display='none';$('#app').style.display='block';
   $('#meName').textContent=ME.full_name||ME.email;
   $('#meRole').textContent=isAdmin()?'Admin':'Team member';
-  buildNav();
-  go('dashboard');
+  buildNav();go('dashboard');
 }
 
 /* ================= NAV ================= */
 function buildNav(){
   const nav=$('#nav');nav.innerHTML='';
   const dash=el('button','nav-item','<span class="ic">▚</span> Dashboard');dash.onclick=()=>go('dashboard');dash.dataset.k='dashboard';nav.append(dash);
-  PAGES.forEach(p=>{
-    if(!canView(p.key))return;
-    const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${p.label}`);
-    b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);
-  });
+  PAGES.forEach(p=>{if(!canView(p.key))return;const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${p.label}`);b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);});
 }
 function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>n.classList.toggle('active',n.dataset.k===k));}
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',leads:'Leads / CRM',content:'Content Library',webinars:'Webinars & Campaigns',users:'Team & Users'};
+  const titles={dashboard:'Dashboard',leads:'Leads / CRM',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
   $('#pageTitle').textContent=titles[k]||k;
   if(k==='dashboard')return renderDashboard();
   if(k==='users')return renderUsers();
   if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;}
-  if(k==='leads')return renderResource('leads');
-  if(k==='content')return renderResource('content');
-  if(k==='webinars')return renderWebinars();
+  const v=$('#view');v.innerHTML='';
+  (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
 }
 
 /* ================= DASHBOARD ================= */
 async function renderDashboard(){
   const v=$('#view');v.innerHTML='<div class="muted">Loading…</div>';
-  const jobs=[];
-  const wants={leads:canView('leads'),content:canView('content'),webinars:canView('webinars')};
-  async function count(t){const {count}=await sb.from(t).select('*',{count:'exact',head:true});return count||0;}
+  async function count(t){const {count,error}=await sb.from(t).select('*',{count:'exact',head:true});return error?'–':(count||0);}
   const stats=[];
-  if(wants.leads)stats.push(['Leads',await count('adm_leads'),'in the pipeline']);
-  if(wants.content)stats.push(['Content assets',await count('adm_content'),'in the library']);
-  if(wants.webinars){stats.push(['Webinars',await count('adm_webinars'),'tracked']);stats.push(['Campaigns',await count('adm_campaigns'),'tracked']);}
-  if(isAdmin()){const c=await count('adm_profiles');stats.push(['Team members',c,'with access']);}
+  if(canView('leads')){stats.push(['Leads',await count('leads'),'site inquiries & reservations']);stats.push(['Contacts',await count('contacts'),'known people']);}
+  if(canView('webinars')){stats.push(['Webinar signups',await count('webinar_registrations'),'registrations']);}
+  if(canView('projects')){stats.push(['Projects',await count('projects'),'active projects']);}
+  if(canView('portal')){stats.push(['Purchases',await count('purchases'),'reservations & sales']);stats.push(['Dataroom access',await count('dataroom_access'),'grants']);}
+  if(canView('referrals')){stats.push(['Referrals',await count('referrals'),'reward entries']);}
+  if(isAdmin()){stats.push(['Team members',await count('adm_profiles'),'with access']);}
   let html='<div class="cards">';
   if(!stats.length)html='<div class="panel"><div class="lock-note">Welcome! You don’t have any pages assigned yet. Ask an admin to grant you access.</div></div><div class="cards" style="display:none">';
   stats.forEach(s=>{html+=`<div class="stat"><div class="k">${s[0]}</div><div class="v">${s[1]}</div><div class="s">${s[2]}</div></div>`;});
   html+='</div>';
-  html+=`<div class="panel"><div class="panel-head"><div><h3>Welcome, ${esc((ME.full_name||ME.email).split(' ')[0])} 👋</h3><div class="desc">${isAdmin()?'You have full admin access. Manage your team under “Team & Users”.':'Use the sidebar to open the areas you have access to.'}</div></div></div>
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Welcome, ${esc((ME.full_name||ME.email).split(' ')[0])} 👋</h3><div class="desc">${isAdmin()?'You have full admin access. This is your live UTAMA data — the same database your site & portal use.':'Use the sidebar to open the areas you have access to.'}</div></div></div>
     <div style="padding:18px"><div class="muted" style="font-size:13px">Your access:</div><div style="margin-top:8px">${accessSummaryHTML()}</div></div></div>`;
   v.innerHTML=html;
 }
@@ -348,18 +536,18 @@ function accessSummaryHTML(){
 }
 
 /* ================= GENERIC RESOURCE ================= */
-let _cache={};
 async function renderResource(resKey,mount){
-  const R=RES[resKey];const editable=canEdit(R.page);
-  const target=mount||$('#view');
-  target.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>${R.title}</h3><div class="desc">${editable?'You can view and edit these records.':'Read-only access.'}</div></div>
-    <div class="toolbar"><input class="search" id="search_${resKey}" placeholder="Search ${R.title.toLowerCase()}…">${editable?`<button class="btn btn-primary btn-sm" id="add_${resKey}">+ New ${R.single}</button>`:'<span class="readonly-tag">Read only</span>'}</div></div>
+  const R=RES[resKey];const editable=canEdit(R.page);const canCreate=editable&&!R.noCreate;
+  mount.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>${R.title} <span class="count-pill" id="cnt_${resKey}">…</span></h3><div class="desc">${R.desc||''}</div></div>
+    <div class="toolbar"><input class="search" id="search_${resKey}" placeholder="Search…">${canCreate?`<button class="btn btn-primary btn-sm" id="add_${resKey}">+ New ${R.single}</button>`:(editable?'':'<span class="readonly-tag">Read only</span>')}</div></div>
     <div class="table-wrap" id="tw_${resKey}"><div class="empty">Loading…</div></div></div>`;
-  const {data,error}=await sb.from(R.table).select('*').order('created_at',{ascending:false});
-  if(error){$('#tw_'+resKey).innerHTML=`<div class="empty">Error: ${esc(error.message)}</div>`;return;}
+  const ob=R.orderBy||'created_at';
+  const {data,error}=await sb.from(R.table).select('*').order(ob,{ascending:!!R.asc,nullsFirst:false});
+  if(error){$('#tw_'+resKey).innerHTML=`<div class="empty">Error: ${esc(error.message)}</div>`;const c=$('#cnt_'+resKey);if(c)c.textContent='!';return;}
   _cache[resKey]=data||[];
+  $('#cnt_'+resKey).textContent=_cache[resKey].length;
   drawTable(resKey);
-  if(editable)$('#add_'+resKey).onclick=()=>openForm(resKey,null);
+  if(canCreate)$('#add_'+resKey).onclick=()=>openForm(resKey,null);
   $('#search_'+resKey).addEventListener('input',()=>drawTable(resKey));
 }
 function drawTable(resKey){
@@ -373,47 +561,51 @@ function drawTable(resKey){
   R.cols.forEach(c=>{const def=R.fields.find(f=>f.k===c);h+=`<th>${esc(def?def.label:c)}</th>`;});
   h+='<th style="text-align:right">'+(editable?'Actions':'')+'</th></tr></thead><tbody>';
   rows.forEach(r=>{
-    h+='<tr>';R.cols.forEach(c=>{h+=`<td>${cell(resKey,c,r)}</td>`;});
+    h+=`<tr data-row="${r.id}" style="cursor:pointer">`;R.cols.forEach(c=>{h+=`<td>${cell(resKey,c,r)}</td>`;});
     h+='<td><div class="row-actions">';
-    if(editable){h+=`<button class="btn btn-ghost btn-sm" data-edit="${r.id}">Edit</button><button class="btn btn-danger btn-sm" data-del="${r.id}">Delete</button>`;}
+    if(editable){h+=`<button class="btn btn-ghost btn-sm" data-edit="${r.id}">Open</button><button class="btn btn-danger btn-sm" data-del="${r.id}">Delete</button>`;}
     h+='</div></td></tr>';
   });
   h+='</tbody></table>';tw.innerHTML=h;
-  tw.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openForm(resKey,rows.find(x=>x.id==b.dataset.edit)));
+  tw.querySelectorAll('tr[data-row]').forEach(tr=>tr.onclick=(e)=>{if(e.target.closest('.row-actions'))return;openForm(resKey,rows.find(x=>String(x.id)===tr.dataset.row));});
+  tw.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openForm(resKey,rows.find(x=>String(x.id)===b.dataset.edit)));
   tw.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delRecord(resKey,b.dataset.del));
 }
 async function delRecord(resKey,id){
   const R=RES[resKey];
-  if(!confirm('Delete this '+R.single.toLowerCase()+'? This cannot be undone.'))return;
+  if(!confirm('Delete this '+R.single.toLowerCase()+'? This changes your live data and cannot be undone.'))return;
   const {error}=await sb.from(R.table).delete().eq('id',id);
   if(error)return toast(error.message,'err');
   toast(R.single+' deleted','ok');
-  _cache[resKey]=_cache[resKey].filter(x=>x.id!=id);drawTable(resKey);
+  _cache[resKey]=_cache[resKey].filter(x=>String(x.id)!==String(id));
+  $('#cnt_'+resKey).textContent=_cache[resKey].length;drawTable(resKey);
 }
 
-/* ---- form modal ---- */
 function openForm(resKey,row){
   const R=RES[resKey];const isEdit=!!row;row=row||{};
+  const editFields=R.fields.filter(f=>!f.ro||isEdit);
   let body='<div class="grid2">';
-  R.fields.forEach((f,i)=>{
+  editFields.forEach(f=>{
     const full=(f.type==='textarea'||f.type==='tags')?' style="grid-column:1/-1"':'';
-    let val=row[f.k];
+    const val=row[f.k];const dis=f.ro?' disabled':'';
     let input='';
-    if(f.type==='textarea')input=`<textarea id="f_${f.k}" rows="3">${esc(val||'')}</textarea>`;
-    else if(f.type==='select'){input=`<select id="f_${f.k}"><option value="">—</option>`+f.opts.map(o=>`<option ${val===o?'selected':''}>${esc(o)}</option>`).join('')+`</select>`;}
-    else if(f.type==='tags')input=`<input id="f_${f.k}" value="${esc((val||[]).join(', '))}">`;
-    else if(f.type==='number')input=`<input id="f_${f.k}" type="number" step="any" value="${val==null?'':esc(val)}">`;
-    else if(f.type==='date')input=`<input id="f_${f.k}" type="date" value="${val?String(val).slice(0,10):''}">`;
-    else if(f.type==='datetime')input=`<input id="f_${f.k}" type="datetime-local" value="${toLocalInput(val)}">`;
-    else input=`<input id="f_${f.k}" value="${esc(val||'')}">`;
+    if(f.type==='textarea')input=`<textarea id="f_${f.k}" rows="3"${dis}>${esc(val||'')}</textarea>`;
+    else if(f.type==='select')input=`<select id="f_${f.k}"${dis}><option value="">—</option>`+f.opts.map(o=>`<option ${val===o?'selected':''}>${esc(o)}</option>`).join('')+`</select>`;
+    else if(f.type==='bool')input=`<select id="f_${f.k}"${dis}><option value="false" ${!val?'selected':''}>No</option><option value="true" ${val?'selected':''}>Yes</option></select>`;
+    else if(f.type==='tags')input=`<input id="f_${f.k}" value="${esc((val||[]).join(', '))}"${dis}>`;
+    else if(f.type==='number')input=`<input id="f_${f.k}" type="number" step="any" value="${val==null?'':esc(val)}"${dis}>`;
+    else if(f.type==='date')input=`<input id="f_${f.k}" type="date" value="${val?String(val).slice(0,10):''}"${dis}>`;
+    else if(f.type==='datetime')input=`<input id="f_${f.k}" type="datetime-local" value="${toLocalInput(val)}"${dis}>`;
+    else input=`<input id="f_${f.k}" value="${esc(val==null?'':val)}"${dis}>`;
     body+=`<div class="field"${full}><label>${esc(f.label)}${f.req?' *':''}</label>${input}</div>`;
   });
   body+='</div>';
   showModal(`${isEdit?'Edit':'New'} ${R.single}`,body,async()=>{
     const payload={};let ok=true;
-    R.fields.forEach(f=>{
-      const e=$('#f_'+f.k);let v=e.value;
+    R.fields.filter(f=>!f.ro).forEach(f=>{
+      const e=$('#f_'+f.k);if(!e)return;let v=e.value;
       if(f.type==='tags')v=v.split(',').map(s=>s.trim()).filter(Boolean);
+      else if(f.type==='bool')v=(v==='true');
       else if(f.type==='number')v=v===''?null:Number(v);
       else if(f.type==='datetime')v=v?new Date(v).toISOString():null;
       else if(f.type==='date')v=v||null;
@@ -427,24 +619,16 @@ function openForm(resKey,row){
     else res=await sb.from(R.table).insert(payload).select().single();
     if(res.error){toast(res.error.message,'err');return false;}
     toast(R.single+(isEdit?' updated':' created'),'ok');
-    if(isEdit)_cache[resKey]=_cache[resKey].map(x=>x.id===row.id?res.data:x);
-    else _cache[resKey]=[res.data,..._cache[resKey]];
-    drawTable(resKey);return true;
+    if(isEdit)_cache[resKey]=_cache[resKey].map(x=>String(x.id)===String(row.id)?res.data:x);
+    else _cache[resKey]=[res.data,...(_cache[resKey]||[])];
+    $('#cnt_'+resKey).textContent=_cache[resKey].length;drawTable(resKey);return true;
   });
-}
-
-/* ================= WEBINARS + CAMPAIGNS ================= */
-function renderWebinars(){
-  const v=$('#view');v.innerHTML='<div id="wsec"></div><div id="csec"></div>';
-  renderResource('webinars',$('#wsec'));
-  renderResource('campaigns',$('#csec'));
 }
 
 /* ================= USERS / TEAM ================= */
 async function renderUsers(){
   const v=$('#view');
   if(!isAdmin()){
-    // non-admin with 'users' view -> read-only roster
     v.innerHTML='<div class="panel"><div class="panel-head"><h3>Team</h3><span class="readonly-tag">Read only</span></div><div class="table-wrap" id="tw_users"><div class="empty">Loading…</div></div></div>';
     const {data}=await sb.from('adm_profiles').select('*').order('created_at');
     let h='<table><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody>';
@@ -466,10 +650,10 @@ async function loadUsers(){
   profs.forEach(u=>{
     let access;
     if(u.is_admin)access='<span class="badge green">Full access (admin)</span>';
-    else{const parts=PAGES.filter(p=>p.key!=='users'||true).map(p=>{const pp=byUser[u.id]&&byUser[u.id][p.key];if(!pp||(!pp.can_view&&!pp.can_edit))return null;return `<span class="badge ${pp.can_edit?'green':'blue'}">${p.label.split(' ')[0]}: ${pp.can_edit?'edit':'view'}</span>`;}).filter(Boolean);access=parts.length?parts.join(' '):'<span class="muted">none</span>';}
+    else{const parts=PAGES.map(p=>{const pp=byUser[u.id]&&byUser[u.id][p.key];if(!pp||(!pp.can_view&&!pp.can_edit))return null;return `<span class="badge ${pp.can_edit?'green':'blue'}">${p.label.split(' ')[0]}: ${pp.can_edit?'edit':'view'}</span>`;}).filter(Boolean);access=parts.length?parts.join(' '):'<span class="muted">none</span>';}
     h+=`<tr><td><b>${esc(u.full_name||'—')}</b></td><td>${esc(u.email)}</td>
       <td>${u.is_admin?'<span class="badge green">Admin</span>':'<span class="badge grey">Member</span>'}</td>
-      <td>${access}</td>
+      <td style="white-space:normal">${access}</td>
       <td><div class="row-actions">
         <button class="btn btn-ghost btn-sm" data-perm="${u.id}">Permissions</button>
         <button class="btn btn-danger btn-sm" data-deluser="${u.id}" ${u.id===ME.id?'disabled title="You can’t delete yourself"':''}>Delete</button>
@@ -479,24 +663,20 @@ async function loadUsers(){
   $('#tw_users').querySelectorAll('[data-perm]').forEach(b=>b.onclick=()=>openPermForm(profs.find(x=>x.id===b.dataset.perm),byUser[b.dataset.perm]||{}));
   $('#tw_users').querySelectorAll('[data-deluser]').forEach(b=>b.onclick=()=>deleteUser(b.dataset.deluser));
 }
-
 function permGridHTML(existing,disabled){
   let h=`<table class="perm-table"><thead><tr><th>Page</th><th class="center">View</th><th class="center">Edit</th></tr></thead><tbody>`;
-  PAGES.forEach(p=>{
-    const e=existing&&existing[p.key];
+  PAGES.forEach(p=>{const e=existing&&existing[p.key];
     h+=`<tr><td>${p.icon} ${p.label}</td>
       <td class="center"><input type="checkbox" data-view="${p.key}" ${e&&e.can_view?'checked':''} ${disabled?'disabled':''}></td>
-      <td class="center"><input type="checkbox" data-edit="${p.key}" ${e&&e.can_edit?'checked':''} ${disabled?'disabled':''}></td></tr>`;
-  });
+      <td class="center"><input type="checkbox" data-edit="${p.key}" ${e&&e.can_edit?'checked':''} ${disabled?'disabled':''}></td></tr>`;});
   return h+'</tbody></table><div class="hint">Ticking “Edit” automatically allows viewing too. Admins always have full access to every page.</div>';
 }
-
 function openUserForm(){
   const body=`
     <div class="grid2">
       <div class="field"><label>Full name</label><input id="u_name"></div>
       <div class="field"><label>Email *</label><input id="u_email" type="email"></div>
-      <div class="field" style="grid-column:1/-1"><label>Temporary password *</label><input id="u_pass" value="${randPw()}"><div class="hint">Share this with the user; they can change it after signing in.</div></div>
+      <div class="field" style="grid-column:1/-1"><label>Temporary password *</label><input id="u_pass" value="${randPw()}"><div class="hint">Share this with the user; they change it after signing in.</div></div>
     </div>
     <div class="field"><label style="margin-bottom:8px">Make this user an admin?</label>
       <label style="font-weight:500"><input type="checkbox" id="u_admin"> Full access to everything (admin)</label></div>
@@ -506,14 +686,12 @@ function openUserForm(){
     if(!email||!password){toast('Email and password are required','err');return false;}
     const permissions=PAGES.map(p=>{const view=$(`[data-view="${p.key}"]`).checked;const edit=$(`[data-edit="${p.key}"]`).checked;return {page:p.key,can_view:view||edit,can_edit:edit};});
     const makeAdmin=$('#u_admin').checked;
-    try{
-      const r=await callFn('create',{email,password,full_name,permissions});
+    try{const r=await callFn('create',{email,password,full_name,permissions});
       if(makeAdmin){await sb.from('adm_profiles').update({is_admin:true}).eq('id',r.id);}
       toast('User created','ok');await loadUsers();return true;
     }catch(err){toast(err.message,'err');return false;}
   });
 }
-
 function openPermForm(user,existing){
   const admin=user.is_admin;
   const body=`
@@ -527,7 +705,6 @@ function openPermForm(user,existing){
     </div>`;
   showModal('Permissions · '+esc(user.full_name||user.email),body,async()=>{
     const makeAdmin=$('#p_admin').checked;
-    // update admin flag
     if(makeAdmin!==admin && user.id!==ME.id){await sb.from('adm_profiles').update({is_admin:makeAdmin}).eq('id',user.id);}
     if(!makeAdmin){
       const rows=PAGES.map(p=>{const view=$(`[data-view="${p.key}"]`).checked;const edit=$(`[data-edit="${p.key}"]`).checked;return {user_id:user.id,page:p.key,can_view:view||edit,can_edit:edit};});
@@ -536,27 +713,20 @@ function openPermForm(user,existing){
     }
     toast('Permissions saved','ok');await loadUsers();return true;
   });
-  // wire admin checkbox to enable/disable grid
   setTimeout(()=>{
     const ac=$('#p_admin');if(ac)ac.onchange=()=>{$('#permBox').innerHTML=permGridHTML(existing,ac.checked);};
     const rb=$('#p_reset');if(rb)rb.onclick=async()=>{const pw=$('#p_newpw').value;if(!pw){toast('Enter a new password','err');return;}try{await callFn('set_password',{user_id:user.id,password:pw});toast('Password updated','ok');$('#p_newpw').value='';}catch(err){toast(err.message,'err');}};
   },0);
 }
-
 async function deleteUser(id){
   if(!confirm('Delete this user’s account and access? This cannot be undone.'))return;
-  try{await callFn('delete',{user_id:id});toast('User deleted','ok');await loadUsers();}
-  catch(err){toast(err.message,'err');}
+  try{await callFn('delete',{user_id:id});toast('User deleted','ok');await loadUsers();}catch(err){toast(err.message,'err');}
 }
-
-/* call the secured edge function */
 async function callFn(action,payload){
   const {data:{session}}=await sb.auth.getSession();
-  const res=await fetch(`${SUPABASE_URL}/functions/v1/adm-users`,{
-    method:'POST',
+  const res=await fetch(`${SUPABASE_URL}/functions/v1/adm-users`,{method:'POST',
     headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`,'apikey':SUPABASE_ANON},
-    body:JSON.stringify({action,...payload})
-  });
+    body:JSON.stringify({action,...payload})});
   let json={};try{json=await res.json();}catch(e){}
   if(!res.ok||json.error)throw new Error(json.error||('Request failed ('+res.status+')'));
   return json;
