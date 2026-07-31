@@ -193,8 +193,8 @@ const TS = k => ({k,label:k==='granted_at'?'Granted':k==='last_activity_at'?'Las
 /* Live-data resource definitions */
 const RES = {
   /* ---- PROJECTS PAGE ---- */
-  projects:{page:'projects', table:'projects', title:'Projects', single:'Project', orderBy:'sort_order', asc:true,
-    desc:'Master data per project — the single source of truth (edit here or via Claude).',
+  projects:{page:'projects', table:'projects', title:'Projects', single:'Project', orderBy:'sort_order', asc:true, readOnly:true,
+    desc:'Master data per project — the single source of truth. View only here; changes are made via Claude so they sync everywhere (utamabali.com, invest. and the brochures).',
     cols:['name','location','status','units_available','price_current'],
     fields:[
       {k:'name',label:'Name',type:'text',req:true},
@@ -542,7 +542,7 @@ function accessSummaryHTML(){
 
 /* ================= GENERIC RESOURCE ================= */
 async function renderResource(resKey,mount){
-  const R=RES[resKey];const editable=canEdit(R.page);const canCreate=editable&&!R.noCreate;
+  const R=RES[resKey];const editable=canEdit(R.page)&&!R.readOnly;const canCreate=editable&&!R.noCreate;
   mount.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>${R.title} <span class="count-pill" id="cnt_${resKey}">…</span></h3><div class="desc">${R.desc||''}</div></div>
     <div class="toolbar"><input class="search" id="search_${resKey}" placeholder="Search…">${canCreate?`<button class="btn btn-primary btn-sm" id="add_${resKey}">+ New ${R.single}</button>`:(editable?'':'<span class="readonly-tag">Read only</span>')}</div></div>
     <div class="table-wrap" id="tw_${resKey}"><div class="empty">Loading…</div></div></div>`;
@@ -556,7 +556,7 @@ async function renderResource(resKey,mount){
   $('#search_'+resKey).addEventListener('input',()=>drawTable(resKey));
 }
 function drawTable(resKey){
-  const R=RES[resKey];const editable=canEdit(R.page);
+  const R=RES[resKey];const editable=canEdit(R.page)&&!R.readOnly;
   const q=($('#search_'+resKey)?.value||'').toLowerCase();
   let rows=_cache[resKey]||[];
   if(q)rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
@@ -587,12 +587,14 @@ async function delRecord(resKey,id){
 }
 
 function openForm(resKey,row){
-  const R=RES[resKey];const isEdit=!!row;row=row||{};
+  const R=RES[resKey];const ro=!!R.readOnly;const isEdit=!!row;row=row||{};
   const editFields=R.fields.filter(f=>!f.ro||isEdit);
-  let body='<div class="grid2">';
+  let body='';
+  if(ro)body+=`<div class="lock-note" style="margin-bottom:16px">🔒 View only. Project data is changed via Claude so it stays in sync everywhere (utamabali.com, invest. and the brochures).</div>`;
+  body+='<div class="grid2">';
   editFields.forEach(f=>{
     const full=(f.type==='textarea'||f.type==='tags')?' style="grid-column:1/-1"':'';
-    const val=row[f.k];const dis=f.ro?' disabled':'';
+    const val=row[f.k];const dis=(f.ro||ro)?' disabled':'';
     let input='';
     if(f.type==='textarea')input=`<textarea id="f_${f.k}" rows="3"${dis}>${esc(val||'')}</textarea>`;
     else if(f.type==='select')input=`<select id="f_${f.k}"${dis}><option value="">—</option>`+f.opts.map(o=>`<option ${val===o?'selected':''}>${esc(o)}</option>`).join('')+`</select>`;
@@ -605,6 +607,7 @@ function openForm(resKey,row){
     body+=`<div class="field"${full}><label>${esc(f.label)}${f.req?' *':''}</label>${input}</div>`;
   });
   body+='</div>';
+  if(ro){showDetail(`${esc(R.single)}${row[R.fields[0].k]?' · '+esc(row[R.fields[0].k]):''}`,body);return;}
   showModal(`${isEdit?'Edit':'New'} ${R.single}`,body,async()=>{
     const payload={};let ok=true;
     R.fields.filter(f=>!f.ro).forEach(f=>{
@@ -673,8 +676,22 @@ async function openPerson(p){
     sb.from('referrals').select('*').or('referrer_contact_id.eq.'+p.id+',referred_contact_id.eq.'+p.id),
   ]);
   const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[];
-  let body=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="badge blue">${esc(p.email)}</span>${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}<span class="muted" style="font-size:12px;margin-left:auto">First seen ${fmtDate(p.first_seen_at)} · Last activity ${fmtDate(p.last_activity_at)}</span></div>`;
-  if(canEdit('leads'))body+=`<div style="margin-top:10px"><button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button></div>`;
+  let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <a href="mailto:${esc(p.email)}" class="badge blue" style="text-decoration:none">${esc(p.email)}</a>
+        ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
+        ${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}
+        ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
+      </div>
+      ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
+    </div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:14px">
+      <span class="muted" style="font-size:12px"><b style="color:var(--ink,#111);font-weight:600">${leads.length}</b> inquiries · <b style="color:var(--ink,#111);font-weight:600">${purch.length}</b> purchases · <b style="color:var(--ink,#111);font-weight:600">${webs.length}</b> webinars</span>
+      <span class="muted" style="font-size:12px;margin-left:auto">First seen ${fmtDate(p.first_seen_at)} · Last activity ${fmtDate(p.last_activity_at)}</span>
+    </div>
+  </div>
+  <hr style="border:none;border-top:1px solid var(--line);margin:22px 0 2px">`;
   body+=_sec('Inquiries & reservations ('+leads.length+')',_mt(['Type','Project','Budget','Timeline','Source','Date'],leads.map(l=>[statusBadge(l.type),esc(l.project||'—'),esc(l.budget||'—'),esc(l.timeline||'—'),esc(l.source_page||'—'),fmtDateTime(l.created_at)])));
   body+=_sec('Purchases ('+purch.length+')',_mt(['Project','Unit','Status','Price','Deposit','Date'],purch.map(x=>[esc(x.project||'—'),esc(x.unit||'—'),statusBadge(x.status),money(x.price),money(x.deposit_amount),fmtDate(x.created_at)])));
   body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
