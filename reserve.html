@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Reserveer je unit · UTAMA</title>
+<style>
+  :root{--bg:#f5f6f5;--panel:#fff;--ink:#12211c;--muted:#5f6f68;--line:#e3e7e4;--brand:#0f6b4f;--brand2:#14b37d;--danger:#c0392b;--radius:14px}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1000px 500px at 70% -10%,#12332a,#0c1a15);min-height:100vh;color:var(--ink);font-size:15px;line-height:1.5;padding:24px 16px}
+  .wrap{max-width:640px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:18px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brand2),var(--brand));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+  .brand b{color:#fff;letter-spacing:.5px}
+  .card{background:var(--panel);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;margin-bottom:18px}
+  .card-h{padding:18px 22px;border-bottom:1px solid var(--line)}
+  .card-h h1{font-size:19px;margin:0}
+  .card-h .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .card-b{padding:22px}
+  .sum{display:flex;flex-wrap:wrap;gap:14px 26px;background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+  .sum .k{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700}
+  .sum .v{font-size:16px;font-weight:700}
+  .steps{display:flex;gap:8px;margin-bottom:20px}
+  .step{flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding:8px 4px;border-radius:9px;background:#eef0ef;border:1px solid var(--line)}
+  .step.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .step.done{background:#e7f6ef;color:var(--brand);border-color:#c6ead9}
+  .itp{border:1px solid var(--line);border-radius:12px;padding:18px 20px;max-height:340px;overflow:auto;font-size:13.5px;background:#fff}
+  .itp h2{font-size:15px;margin:0 0 4px}
+  .itp h3{font-size:13px;margin:16px 0 4px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  .itp p{margin:6px 0}
+  .field{margin:16px 0}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .field input[type=text]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:15px;outline:none}
+  .field input:focus{border-color:var(--brand2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
+  .check{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;margin:14px 0}
+  .check input{width:20px;height:20px;margin-top:1px;accent-color:var(--brand)}
+  .btn{display:block;width:100%;padding:15px;border:none;border-radius:11px;background:var(--brand);color:#fff;font-weight:750;font-size:16px;cursor:pointer}
+  .btn:hover{background:#0b573f}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-2{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .muted{color:var(--muted)}
+  .note{font-size:12px;color:var(--muted);margin-top:12px;text-align:center}
+  .err{background:#fbeeec;border:1px solid #f0d3ce;color:#a3271b;border-radius:10px;padding:12px 14px;font-size:13.5px;margin:12px 0}
+  .ok-badge{display:inline-flex;align-items:center;gap:7px;background:#e7f6ef;color:var(--brand);border:1px solid #c6ead9;border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px}
+  .center{text-align:center}
+  .big-ok{width:64px;height:64px;border-radius:50%;background:#e7f6ef;color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 14px}
+  .pay-methods{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .pm{font-size:11px;font-weight:700;color:var(--muted);background:#f2f4f2;border:1px solid var(--line);border-radius:7px;padding:4px 9px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><div class="logo">U</div><b>UTAMA</b></div>
+  <div class="card">
+    <div class="card-h"><h1 id="title">Reserveer je unit</h1><div class="sub" id="subtitle">Bevestig en beveilig je unit met een aanbetaling.</div></div>
+    <div class="card-b" id="body"><div class="center muted" style="padding:30px">Laden…</div></div>
+  </div>
+  <div class="note">Beveiligd · UTAMA Bali · Betaling via Mollie (iDEAL, creditcard)</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const EP="https://gcpachivrwalsneuvlsa.supabase.co/functions/v1/reservation";
+const token=new URLSearchParams(location.search).get("token");
+const $=s=>document.querySelector(s);
+const body=$("#body");
+let RES=null;
+function euro(n){n=Number(n)||0;return "€"+n.toLocaleString("nl-NL");}
+function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+async function api(action,extra){
+  const r=await fetch(EP,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,token,...(extra||{})})});
+  return r.json();
+}
+function itpText(r){
+  const today=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
+  return {today, html:`
+    <h2>Intentieverklaring tot aankoop (ITP)</h2>
+    <p class="muted">Opgesteld op ${today}</p>
+    <h3>Partijen</h3>
+    <p><b>Verkoper:</b> UTAMA Bali<br><b>Koper:</b> ${esc(r.name||"—")}${r.email?` (${esc(r.email)})`:""}</p>
+    <h3>Object</h3>
+    <p><b>Project:</b> ${esc(r.project||"—")}<br><b>Unit:</b> ${esc(r.unit||"—")}${r.unit_price?`<br><b>Indicatieve koopsom:</b> ${euro(r.unit_price)}`:""}</p>
+    <h3>Reserveringsdeposit</h3>
+    <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> om de bovengenoemde unit te reserveren. Met deze aanbetaling wordt de unit voor de koper vastgehouden en uit de verkoop gehaald.</p>
+    <h3>Vervolg</h3>
+    <p>Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.</p>
+    <h3>Voorwaarden deposit</h3>
+    <p>De aanbetaling wordt in mindering gebracht op de totale koopsom. Restitutievoorwaarden worden vastgelegd in de definitieve overeenkomst. Deze tekst is een concept en kan door UTAMA worden aangepast.</p>
+  `};
+}
+function steps(active){
+  const s=[["1","ITP"],["2","Onder&shy;tekenen"],["3","Aanbetaling"]];
+  return `<div class="steps">${s.map((x,i)=>{const n=i+1;const cls=n<active?"done":(n===active?"on":"");return `<div class="step ${cls}">${n<active?"✓ ":""}${x[1]}</div>`;}).join("")}</div>`;
+}
+function summary(r){
+  return `<div class="sum">
+    <div><div class="k">Project</div><div class="v">${esc(r.project||"—")}</div></div>
+    <div><div class="k">Unit</div><div class="v">${esc(r.unit||"—")}</div></div>
+    <div><div class="k">Aanbetaling</div><div class="v">${euro(r.deposit_amount)}</div></div>
+  </div>`;
+}
+function render(){
+  const r=RES;
+  if(!r){body.innerHTML='<div class="err">Reservering niet gevonden. Controleer je link of neem contact met ons op.</div>';return;}
+  if(r.status==="deposit_paid"||r.payment_status==="paid"){
+    body.innerHTML=`<div class="center" style="padding:16px 0">
+      <div class="big-ok">✓</div>
+      <h2 style="margin:0 0 6px">Je unit is gereserveerd!</h2>
+      <p class="muted">We hebben je aanbetaling van ${euro(r.deposit_amount)} ontvangen en je ITP is ondertekend. Je ontvangt een bevestiging per e-mail. We nemen contact op voor de vervolgstappen.</p>
+      <div style="margin-top:16px" class="ok-badge">${esc(r.project||"")} · ${esc(r.unit||"")}</div>
+    </div>`;
+    return;
+  }
+  const signed=!!r.itp_signed_at;
+  const it=itpText(r);
+  let h=summary(r)+steps(signed?3:1);
+  h+=`<div class="itp" id="itpbox">${it.html}</div>`;
+  if(!signed){
+    h+=`<div class="field" style="margin-top:18px"><label>Volledige naam (digitale handtekening)</label><input type="text" id="signer" placeholder="Voor- en achternaam" value="${esc(r.name||"")}"></div>
+      <label class="check"><input type="checkbox" id="agree"><span>Ik heb de intentieverklaring gelezen en ga akkoord met de reservering en de aanbetaling van ${euro(r.deposit_amount)}.</span></label>
+      <div id="msg"></div>
+      <button class="btn" id="signBtn">Onderteken de ITP</button>
+      <div class="note">Ondertekenen legt je intentie vast met tijdstempel. Betalen doe je in de volgende stap.</div>`;
+  }else{
+    h+=`<div style="margin:16px 0"><span class="ok-badge">✓ ITP ondertekend door ${esc(r.itp_signer_name||r.name||"")}</span></div>
+      <div id="msg"></div>
+      <button class="btn" id="payBtn">Betaal ${euro(r.deposit_amount)} aanbetaling</button>
+      <div class="pay-methods"><span class="pm">iDEAL</span><span class="pm">Creditcard</span><span class="pm">Bancontact</span></div>
+      <div class="note">Je wordt doorgestuurd naar een beveiligde betaalpagina.</div>`;
+  }
+  body.innerHTML=h;
+  const sb=$("#signBtn");
+  if(sb)sb.onclick=doSign;
+  const pb=$("#payBtn");
+  if(pb)pb.onclick=doPay;
+}
+function makePdf(r,signer){
+  try{
+    const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"pt",format:"a4"});
+    const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
+    doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("UTAMA — Intentieverklaring tot aankoop",M,y);y+=26;
+    doc.setFont("helvetica","normal");doc.setFontSize(10.5);doc.setTextColor(90);
+    const lines=[
+      "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
+      "PARTIJEN","Verkoper: UTAMA Bali","Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
+      "OBJECT","Project: "+(r.project||"—"),"Unit: "+(r.unit||"—"),(r.unit_price?"Indicatieve koopsom: €"+Number(r.unit_price).toLocaleString("nl-NL"):""),"",
+      "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL"),
+      "Met deze aanbetaling wordt de unit voor de koper gereserveerd en uit de verkoop gehaald.","",
+      "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de","notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.","",
+      "VOORWAARDEN","De aanbetaling wordt in mindering gebracht op de totale koopsom. Restitutievoorwaarden","worden vastgelegd in de definitieve overeenkomst.","",
+      "ONDERTEKENING","Digitaal ondertekend door: "+signer,"Datum: "+new Date().toLocaleString("nl-NL")
+    ];
+    doc.setTextColor(30);
+    lines.forEach(t=>{const wrapped=doc.splitTextToSize(t,W);wrapped.forEach(w=>{if(y>780){doc.addPage();y=64;}doc.text(w,M,y);y+=15;});});
+    return doc.output("datauristring").split(",")[1];
+  }catch(e){return null;}
+}
+async function doSign(){
+  const signer=($("#signer").value||"").trim();const agree=$("#agree").checked;const msg=$("#msg");
+  if(!signer){msg.innerHTML='<div class="err">Vul je volledige naam in.</div>';return;}
+  if(!agree){msg.innerHTML='<div class="err">Vink het akkoord aan om te ondertekenen.</div>';return;}
+  const btn=$("#signBtn");btn.disabled=true;btn.textContent="Bezig…";
+  const pdf=makePdf(RES,signer);
+  const res=await api("sign",{signer_name:signer,pdf_base64:pdf});
+  if(res&&res.ok){RES=await api("get");render();}
+  else{btn.disabled=false;btn.textContent="Onderteken de ITP";msg.innerHTML='<div class="err">'+esc((res&&res.error)||"Er ging iets mis.")+'</div>';}
+}
+async function doPay(){
+  const btn=$("#payBtn");btn.disabled=true;btn.textContent="Bezig…";const msg=$("#msg");
+  const res=await api("create_payment",{});
+  if(res&&res.checkout){location.href=res.checkout;return;}
+  btn.disabled=false;btn.textContent="Betaal "+euro(RES.deposit_amount)+" aanbetaling";
+  const m=(res&&res.error)||"";
+  if(/Mollie|geconfigureerd/i.test(m)){
+    msg.innerHTML='<div class="ok-badge" style="background:#e8f0fb;color:#1d4ed8;border-color:#cfe0f7">✓ Je ITP is opgeslagen — we activeren de online betaling binnenkort en nemen contact op.</div>';
+  }else{
+    msg.innerHTML='<div class="err">'+esc(m||"Er ging iets mis.")+'</div>';
+  }
+}
+(async function(){
+  if(!token){body.innerHTML='<div class="err">Geen reservering opgegeven.</div>';return;}
+  RES=await api("get");
+  // if returning from Mollie but webhook not processed yet, poll briefly
+  if(RES&&RES.status!=="deposit_paid"&&new URLSearchParams(location.search).has("token")&&RES.payment_status==="open"){
+    for(let i=0;i<4&&RES.payment_status==="open";i++){await new Promise(r=>setTimeout(r,1500));RES=await api("get");}
+  }
+  render();
+})();
+</script>
+</body>
+</html>

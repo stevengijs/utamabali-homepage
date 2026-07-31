@@ -1010,15 +1010,16 @@ function _sec(title,inner){return `<div style="margin-top:20px"><div style="font
 function _mt(headers,rows){ if(!rows.length)return '<div class="muted" style="font-size:13px">None.</div>'; let h='<table style="font-size:13px"><thead><tr>'+headers.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>'; rows.forEach(r=>{h+='<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>';}); return h+'</tbody></table>'; }
 async function openPerson(p){
   showDetail('Contact','<div class="muted">Loading…</div>');
-  const [lr,pr,wr,dr,rr,projR]=await Promise.all([
+  const [lr,pr,wr,dr,rr,projR,rvR]=await Promise.all([
     sb.from('leads').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
     sb.from('purchases').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
     sb.from('webinar_registrations').select('*').eq('email',p.email).order('created_at',{ascending:false}),
     sb.from('dataroom_access').select('*').or('contact_id.eq.'+p.id+',contact_email.eq.'+p.email),
     sb.from('referrals').select('*').or('referrer_contact_id.eq.'+p.id+',referred_contact_id.eq.'+p.id),
-    sb.from('projects').select('name,slug').order('sort_order',{ascending:true}),
+    sb.from('projects').select('name,slug,price_current').order('sort_order',{ascending:true}),
+    sb.from('reservations').select('*').or('contact_id.eq.'+p.id+',email.eq.'+p.email).order('created_at',{ascending:false}),
   ]);
-  const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[];
+  const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[],resvs=rvR.data||[];
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
@@ -1043,6 +1044,17 @@ async function openPerson(p){
     return [statusBadge(l.type),esc(l.project||'—'),esc(l.unit||'—'),esc(l.budget||'—'),fmtDateTime(l.created_at),open?'<span class="badge amber">Open</span>':(l.handled_at?'<span class="badge green">Handled</span>':'—')];
   })));
   body+=_sec('Purchases ('+purch.length+')',_mt(['Project','Unit','Status','Price','Deposit','Date'],purch.map(x=>[esc(x.project||'—'),esc(x.unit||'—'),statusBadge(x.status),money(x.price),money(x.deposit_amount),fmtDate(x.created_at)])));
+
+  // reservations & €5K deposit flow
+  const manageResv=canEdit('portal')||canEdit('leads');
+  let resvHtml=resvs.length?_mt(['Project','Unit','Deposit','ITP','Payment','Link'],resvs.map(r=>[
+      esc(r.project||'—'),esc(r.unit||'—'),money(r.deposit_amount),
+      r.itp_signed_at?'<span class="badge green">signed</span>':'<span class="badge grey">—</span>',
+      (r.status==='deposit_paid'||r.payment_status==='paid')?'<span class="badge green">paid</span>':'<span class="badge amber">'+esc(r.payment_status||'open')+'</span>',
+      `<button class="btn btn-ghost btn-sm" data-copy="${RESV_SITE}/reserve.html?token=${esc(r.token)}">Copy link</button>`
+    ])):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
+  if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="newResv">+ Nieuwe reservering / aanbetaling</button></div>`;
+  body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',resvHtml);
   body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
 
   // ----- interactive dataroom access -----
@@ -1076,7 +1088,29 @@ async function openPerson(p){
   if(mb){
     mb.querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.project,b.dataset.enable==='1',b.dataset.id||null));
     const gb=$('#dr_grant_btn');if(gb)gb.onclick=()=>{const s=$('#dr_grant_sel');if(s&&s.value)setDataroom(p,s.value,true,null);};
+    mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}toast('Reserveringslink gekopieerd','ok');});
+    const nr=$('#newResv');if(nr)nr.onclick=()=>openReservationForm(p,projList);
   }
+}
+const RESV_SITE='https://utamabali.com';
+function openReservationForm(p,projList){
+  const opts=(projList||[]).map(pr=>`<option value="${esc(pr.name)}" data-price="${pr.price_current||''}">${esc(pr.name)}</option>`).join('');
+  const body=`<div class="grid2">
+    <div class="field"><label>Project</label><select id="rv_project">${opts}</select></div>
+    <div class="field"><label>Unit</label><input id="rv_unit" placeholder="bv. 2BR #3"></div>
+    <div class="field"><label>Indicatieve koopsom (€)</label><input id="rv_price" type="number" step="any"></div>
+    <div class="field"><label>Aanbetaling (€)</label><input id="rv_dep" type="number" step="any" value="5000"></div>
+  </div><div class="hint">Maakt een unieke, deelbare reserveringslink met vooringevulde ITP. De klant tekent en betaalt de aanbetaling; alles komt terug in dit profiel.</div>`;
+  showModal('Nieuwe reservering / aanbetaling',body,async()=>{
+    const project=$('#rv_project').value;const unit=$('#rv_unit').value.trim();
+    const unit_price=$('#rv_price').value?Number($('#rv_price').value):null;
+    const deposit=$('#rv_dep').value?Number($('#rv_dep').value):5000;
+    const token=((crypto&&crypto.randomUUID)?crypto.randomUUID():('t'+Date.now())).replace(/-/g,'')+Math.random().toString(36).slice(2,8);
+    const {error}=await sb.from('reservations').insert({token,contact_id:p.id,name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit,source:'admin',created_by:(ME.full_name||ME.email)});
+    if(error){toast(error.message,'err');return false;}
+    toast('Reservering aangemaakt — link staat in het profiel','ok');openPerson(p);return true;
+  });
+  setTimeout(()=>{const ps=$('#rv_project'),pr=$('#rv_price');if(ps&&pr){const sync=()=>{const o=ps.selectedOptions[0];if(o&&o.dataset.price&&!pr.value)pr.value=o.dataset.price;};ps.onchange=sync;sync();}},0);
 }
 async function setDataroom(person,project,enable,rowId){
   try{
