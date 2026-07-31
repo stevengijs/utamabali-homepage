@@ -771,7 +771,7 @@ async function renderAnalytics(){
 
   v.innerHTML=html;
   v.querySelectorAll('.stat[data-go]').forEach(x=>x.onclick=()=>{
-    if(x.dataset.go==='signups'){SIGNUPS_SINCE=since;SIGNUPS_UNTIL=until;SIGNUPS_LABEL=rangeLabel;go('leads');}
+    if(x.dataset.go==='signups'){SIGNUPS_DAYS=spanDays;go('leads');}
     else go(x.dataset.go);
   });
 }
@@ -996,22 +996,22 @@ async function renderPeople(){
   drawPeople();
   $('#search_people').addEventListener('input',drawPeople);
 }
-let SIGNUPS_LIMIT=25,SIGNUPS_SINCE=null,SIGNUPS_UNTIL=null,SIGNUPS_LABEL=null;
+let SIGNUPS_LIMIT=25,SIGNUPS_DAYS=null;
 function drawRecentSignups(){
   const el=$('#people_banner');if(!el)return;
   const all=[];PEOPLE.forEach(p=>(p._leads||[]).forEach(l=>all.push({...l,who:p.name||p.email,email:p.email,phone:p.phone,pid:p.id})));
   let bro=all.filter(x=>/brochure/i.test(x.source_page||''));
-  if(SIGNUPS_SINCE)bro=bro.filter(x=>x.created_at&&x.created_at>=SIGNUPS_SINCE&&(!SIGNUPS_UNTIL||x.created_at<=SIGNUPS_UNTIL));
+  if(SIGNUPS_DAYS){const cut=Date.now()-SIGNUPS_DAYS*864e5;bro=bro.filter(x=>{const t=x.created_at?new Date(x.created_at).getTime():0;return t&&t>=cut;});}
   bro.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   const total=bro.length;
   const shown=bro.slice(0,SIGNUPS_LIMIT);
   const th='position:sticky;top:0;background:#fafbfa;z-index:1';
   const opts=[10,25,50,100,500].map(n=>`<option value="${n}" ${n===SIGNUPS_LIMIT?'selected':''}>${n}</option>`).join('');
-  const chip=SIGNUPS_SINCE?` <span class="badge blue" id="signups_clear" style="cursor:pointer">Periode: ${esc(SIGNUPS_LABEL||'')} · wis ✕</span>`:'';
-  let h=`<div class="panel" style="margin-top:0;margin-bottom:18px"><div class="panel-head"><div><h3>Laatste brochure sign-ups <span class="count-pill">${total}</span></h3><div class="desc">Brochure-aanvragen — klik op een regel om het contact te openen.${chip}</div></div>
-      <div class="toolbar"><span class="muted" style="font-size:12px">Toon</span><select id="signups_limit" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">${opts}</select></div></div>
+  const perOpts=[['','Alle periodes'],['7','7 dagen'],['30','30 dagen'],['90','90 dagen']].map(([v,l])=>`<option value="${v}" ${String(SIGNUPS_DAYS||'')===v?'selected':''}>${l}</option>`).join('');
+  let h=`<div class="panel" style="margin-top:0;margin-bottom:18px"><div class="panel-head"><div><h3>Laatste brochure sign-ups <span class="count-pill">${total}</span></h3><div class="desc">Brochure-aanvragen — klik op een regel om het contact te openen.</div></div>
+      <div class="toolbar"><select id="signups_period" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">${perOpts}</select><span class="muted" style="font-size:12px">Toon</span><select id="signups_limit" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">${opts}</select></div></div>
     <div class="table-wrap" style="max-height:360px"><table><thead><tr><th style="${th}">Wie</th><th style="${th}">E-mail</th><th style="${th}">Telefoon</th><th style="${th}">Project</th><th style="${th}">Wanneer</th></tr></thead><tbody>`;
-  if(!shown.length)h+='<tr><td colspan="5" class="empty">Nog geen brochure-aanvragen.</td></tr>';
+  if(!shown.length)h+='<tr><td colspan="5" class="empty">Geen brochure-aanvragen in deze periode.</td></tr>';
   shown.forEach(l=>{
     h+=`<tr data-openp="${l.pid}" style="cursor:pointer"><td><b>${esc(l.who||'—')}</b></td><td>${l.email?`<a href="mailto:${esc(l.email)}" onclick="event.stopPropagation()">${esc(l.email)}</a>`:'—'}</td><td>${l.phone?`<a href="https://wa.me/${(l.phone||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#0f6b4f">${esc(l.phone)}</a>`:'—'}</td><td>${esc(l.project||'—')}</td><td>${fmtDateTime(l.created_at)}</td></tr>`;
   });
@@ -1020,7 +1020,7 @@ function drawRecentSignups(){
   h+='</div>';
   el.innerHTML=h;
   const sel=$('#signups_limit');if(sel)sel.onchange=()=>{SIGNUPS_LIMIT=Number(sel.value);drawRecentSignups();};
-  const clr=$('#signups_clear');if(clr)clr.onclick=()=>{SIGNUPS_SINCE=null;SIGNUPS_UNTIL=null;SIGNUPS_LABEL=null;drawRecentSignups();};
+  const per=$('#signups_period');if(per)per.onchange=()=>{SIGNUPS_DAYS=per.value?Number(per.value):null;drawRecentSignups();};
   el.querySelectorAll('[data-openp]').forEach(tr=>tr.onclick=()=>openPerson(PEOPLE.find(x=>x.id===tr.dataset.openp)));
 }
 function drawPeopleBanner(){
