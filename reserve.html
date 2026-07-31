@@ -84,6 +84,9 @@ async function api(action,extra){
 function refText(r){return `${r.project||""} ${r.unit||""} deposit`.replace(/\s+/g," ").trim();}
 function itpText(r){
   const today=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
+  if(r.itp_body&&r.itp_body.trim()){
+    return `<h2>Intentieverklaring tot aankoop (ITP)</h2><p class="muted">Opgesteld op ${today}</p><div style="white-space:pre-wrap">${esc(r.itp_body)}</div>`;
+  }
   return `
     <h2>Intentieverklaring tot aankoop (ITP)</h2>
     <p class="muted">Opgesteld op ${today}</p>
@@ -176,7 +179,11 @@ function makePdf(r,signer){
     const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
     doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("UTAMA — Intentieverklaring tot aankoop",M,y);y+=26;
     doc.setFont("helvetica","normal");doc.setFontSize(10.5);doc.setTextColor(30);
-    const lines=[
+    const lines=(r.itp_body&&r.itp_body.trim())?[
+      "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
+      ...r.itp_body.split("\n"),"",
+      "ONDERTEKENING","Digitaal ondertekend door: "+signer,"Datum: "+new Date().toLocaleString("nl-NL")
+    ]:[
       "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
       "PARTIJEN","Verkoper: PT Bali Utama Property","Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
       "OBJECT","Project: "+(r.project||"—"),"Unit: "+(r.unit||"—"),(r.unit_price?"Indicatieve koopsom: €"+Number(r.unit_price).toLocaleString("nl-NL"):""),"",

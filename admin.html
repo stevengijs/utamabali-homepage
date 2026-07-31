@@ -546,6 +546,7 @@ async function renderDashboard(){
   const stats=[];
   if(canView('analytics')){const since=new Date(Date.now()-30*864e5).toISOString();const {count:pv}=await sb.from('analytics_events').select('*',{count:'exact',head:true}).gte('created_at',since);stats.push(['Page views (30d)',pv||0,'website analytics','analytics']);}
   if(canView('revenue')){const {data:pd}=await sb.from('purchases').select('status,price');const sales=(pd||[]).filter(x=>revClass(x.status)!=='lost');stats.push(['Revenue to date',anMoney(sales.reduce((a,x)=>a+(Number(x.price)||0),0)),sales.length+' unit'+(sales.length===1?'':'s')+' sold','revenue']);}
+  if(canView('leads')){const {data:rd}=await sb.from('reservations').select('status,itp_signed_at,payment_status');const open=(rd||[]).filter(x=>x.itp_signed_at&&x.status!=='deposit_paid'&&x.payment_status!=='paid');if(open.length)stats.push(['ITP getekend · open',open.length,'wacht op aanbetaling','leads']);}
   if(canView('leads')){stats.push(['Leads',await count('leads'),'site inquiries & reservations','leads']);stats.push(['Contacts',await count('contacts'),'known people','leads']);}
   if(canView('webinars')){stats.push(['Webinar signups',await count('webinar_registrations'),'registrations','webinars']);}
   if(canView('projects')){stats.push(['Projects',await count('projects'),'active projects','projects']);}
@@ -913,14 +914,16 @@ let PEOPLE=[];
 async function renderPeople(){
   const v=$('#view');
   v.innerHTML=`<div id="people_banner"></div><div class="panel"><div class="panel-head"><div><h3>People <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">One record per email — click a person for all their data, activity & history.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Search people…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Loading…</div></div></div>`;
-  const [cr,lr,dr]=await Promise.all([
+  const [cr,lr,dr,rv]=await Promise.all([
     sb.from('contacts').select('*').order('last_activity_at',{ascending:false,nullsFirst:false}),
     sb.from('leads').select('id,contact_id,type,project,unit,created_at,handled_at'),
     sb.from('dataroom_access').select('contact_id,contact_email,project,granted_at'),
+    sb.from('reservations').select('id,contact_id,email,project,unit,deposit_amount,status,itp_signed_at,itp_signer_name,payment_status'),
   ]);
   if(cr.error){$('#tw_people').innerHTML='<div class="empty">'+esc(cr.error.message)+'</div>';return;}
   const byC={};(lr.data||[]).forEach(l=>{(byC[l.contact_id]=byC[l.contact_id]||[]).push(l);});
   const drById={},drByEmail={};(dr.data||[]).forEach(x=>{if(x.contact_id)(drById[x.contact_id]=drById[x.contact_id]||[]).push(x);const e=(x.contact_email||'').toLowerCase();if(e)(drByEmail[e]=drByEmail[e]||[]).push(x);});
+  const rvById={},rvByEmail={};(rv.data||[]).forEach(x=>{if(x.contact_id)(rvById[x.contact_id]=rvById[x.contact_id]||[]).push(x);const e=(x.email||'').toLowerCase();if(e)(rvByEmail[e]=rvByEmail[e]||[]).push(x);});
   const now=Date.now(),WK=7*864e5;
   PEOPLE=(cr.data||[]).map(c=>{
     const leads=byC[c.id]||[];
@@ -934,11 +937,24 @@ async function renderPeople(){
       else if(l.type==='reservation')
         items.push({kind:'reservation',leadId:l.id,project:l.project||'',unit:l.unit||'',at:l.created_at});
     });
+    const myRes=[...(rvById[c.id]||[]),...(rvByEmail[(c.email||'').toLowerCase()]||[])];
+    const seenRv=new Set();
+    myRes.forEach(rvw=>{
+      if(seenRv.has(rvw.id))return;seenRv.add(rvw.id);
+      const paid=(rvw.status==='deposit_paid'||rvw.payment_status==='paid');
+      if(paid)return;
+      if(rvw.payment_status==='transfer_reported')
+        items.push({kind:'deposit',resId:rvw.id,project:rvw.project||'',unit:rvw.unit||'',amount:rvw.deposit_amount,at:rvw.itp_signed_at});
+      else if(rvw.itp_signed_at)
+        items.push({kind:'itp',resId:rvw.id,project:rvw.project||'',unit:rvw.unit||'',amount:rvw.deposit_amount,at:rvw.itp_signed_at});
+    });
     const newestLead=leads.reduce((m,l)=>Math.max(m,l.created_at?new Date(l.created_at).getTime():0),0);
     const lastAct=c.last_activity_at?new Date(c.last_activity_at).getTime():0;
     return {...c,_leads:leads,_items:items,
       _pending:items.filter(i=>i.kind==='dataroom').map(i=>i.project),
       _resv:items.filter(i=>i.kind==='reservation'),
+      _itp:items.filter(i=>i.kind==='itp').length,
+      _deposit:items.filter(i=>i.kind==='deposit').length,
       _isNew:(now-Math.max(lastAct,newestLead))<WK,_activeDr:grantedProj.size};
   });
   const cel=$('#cnt_people');if(cel)cel.textContent=PEOPLE.length;
@@ -953,30 +969,46 @@ function drawPeopleBanner(){
   const items=[];
   PEOPLE.forEach(p=>p._items.forEach(i=>items.push({...i,p})));
   items.sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
-  const nDr=items.filter(i=>i.kind==='dataroom').length, nRes=items.filter(i=>i.kind==='reservation').length;
+  const cnt=k=>items.filter(i=>i.kind===k).length;
+  const nDr=cnt('dataroom'),nRes=cnt('reservation'),nItp=cnt('itp'),nDep=cnt('deposit');
   if(!items.length){el.innerHTML='';return;}
-  const parts=[];if(nDr)parts.push(`${nDr} dataroom ${nDr===1?'request':'requests'}`);if(nRes)parts.push(`${nRes} ${nRes===1?'reservation':'reservations'}`);
+  const parts=[];
+  if(nDep)parts.push(`${nDep} aanbetaling${nDep===1?'':'en'} gemeld`);
+  if(nItp)parts.push(`${nItp} ITP getekend`);
+  if(nDr)parts.push(`${nDr} dataroom`);
+  if(nRes)parts.push(`${nRes} reservering${nRes===1?'':'en'}`);
   let h=`<div style="background:#fdf3e2;border:1px solid #f4e2c1;border-radius:12px;padding:14px 18px;margin-bottom:18px">
-    <div style="font-weight:750;color:#8a6410;margin-bottom:10px">🔔 Open requests — ${parts.join(' · ')} <span style="font-weight:500">(blijven staan tot ze afgehandeld zijn)</span></div>
+    <div style="font-weight:750;color:#8a6410;margin-bottom:10px">🔔 Open acties — ${parts.join(' · ')} <span style="font-weight:500">(blijven staan tot ze afgehandeld zijn)</span></div>
     <div style="display:flex;flex-direction:column;gap:8px">`;
-  items.slice(0,10).forEach(i=>{
+  // priority: deposit reported, then itp signed, then dataroom, then reservation
+  const rank={deposit:0,itp:1,dataroom:2,reservation:3};
+  items.sort((a,b)=>(rank[a.kind]-rank[b.kind])||(new Date(b.at||0)-new Date(a.at||0)));
+  items.slice(0,12).forEach(i=>{
     const who=esc(i.p.name||i.p.email);
-    const label=i.kind==='dataroom'
-      ? `<span class="badge amber">🔓 Dataroom</span> <b>${who}</b> <span class="muted">wil toegang tot</span> <b>${esc(i.project||'algemeen')}</b>`
-      : `<span class="badge blue">📌 Reservering</span> <b>${who}</b> <span class="muted">reserveerde</span> <b>${esc(i.project||'')}${i.unit?' · unit '+esc(i.unit):''}</b>`;
-    let btns=`<button class="btn btn-ghost btn-sm" data-openp="${i.p.id}">Open</button>`;
-    if(canAct){
-      if(i.kind==='dataroom')btns=`<button class="btn btn-primary btn-sm" data-grant="${i.p.id}" data-project="${esc(i.project)}" data-lead="${i.leadId}">Grant access</button>`+btns;
-      btns+=`<button class="btn btn-ghost btn-sm" data-done="${i.leadId}">Mark done</button>`;
+    const unit=i.unit?' · '+esc(i.unit):'';
+    let label,btns=`<button class="btn btn-ghost btn-sm" data-openp="${i.p.id}">Open</button>`;
+    if(i.kind==='deposit'){
+      label=`<span class="badge green">💶 Aanbetaling gemeld</span> <b>${who}</b> <span class="muted">meldde de aanbetaling voor</span> <b>${esc(i.project||'')}${unit}</b>`;
+      if(canAct)btns=`<button class="btn btn-primary btn-sm" data-confirm="${i.resId}" data-amt="${i.amount||''}">Confirm paid</button>`+btns;
+    }else if(i.kind==='itp'){
+      label=`<span class="badge blue">📝 ITP getekend</span> <b>${who}</b> <span class="muted">tekende de ITP voor</span> <b>${esc(i.project||'')}${unit}</b> <span class="muted">— wacht op aanbetaling</span>`;
+      if(canAct)btns=`<button class="btn btn-primary btn-sm" data-confirm="${i.resId}" data-amt="${i.amount||''}">Confirm paid</button>`+btns;
+    }else if(i.kind==='dataroom'){
+      label=`<span class="badge amber">🔓 Dataroom</span> <b>${who}</b> <span class="muted">wil toegang tot</span> <b>${esc(i.project||'algemeen')}</b>`;
+      if(canAct){btns=`<button class="btn btn-primary btn-sm" data-grant="${i.p.id}" data-project="${esc(i.project)}" data-lead="${i.leadId}">Grant access</button>`+btns+`<button class="btn btn-ghost btn-sm" data-done="${i.leadId}">Mark done</button>`;}
+    }else{
+      label=`<span class="badge blue">📌 Reservering</span> <b>${who}</b> <span class="muted">reserveerde</span> <b>${esc(i.project||'')}${unit}</b>`;
+      if(canAct)btns+=`<button class="btn btn-ghost btn-sm" data-done="${i.leadId}">Mark done</button>`;
     }
     h+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #f4e2c1;padding-top:8px"><div style="font-size:13px">${label} <span class="muted" style="font-size:11px">· ${fmtDate(i.at)}</span></div><div class="row-actions">${btns}</div></div>`;
   });
-  if(items.length>10)h+=`<div class="muted" style="font-size:12px">+ ${items.length-10} more…</div>`;
+  if(items.length>12)h+=`<div class="muted" style="font-size:12px">+ ${items.length-12} more…</div>`;
   h+='</div></div>';
   el.innerHTML=h;
   el.querySelectorAll('[data-openp]').forEach(b=>b.onclick=()=>openPerson(PEOPLE.find(x=>x.id===b.dataset.openp)));
   el.querySelectorAll('[data-grant]').forEach(b=>b.onclick=()=>bannerGrantDataroom(b.dataset.grant,b.dataset.project,b.dataset.lead));
   el.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>bannerMarkDone(b.dataset.done));
+  el.querySelectorAll('[data-confirm]').forEach(b=>b.onclick=()=>bannerConfirmPaid(b.dataset.confirm,Number(b.dataset.amt)||null));
 }
 async function markLeadHandled(leadId){
   const {error}=await sb.from('leads').update({handled_at:new Date().toISOString(),handled_by:(ME.full_name||ME.email)}).eq('id',leadId);
@@ -992,6 +1024,12 @@ async function bannerGrantDataroom(personId,project,leadId){
   toast('Dataroom access granted'+(project?' · '+project:''),'ok');
   renderPeople();
 }
+async function bannerConfirmPaid(resId,amount){
+  if(!confirm('Bevestig dat de aanbetaling is ontvangen?'))return;
+  const {error}=await sb.from('reservations').update({status:'deposit_paid',payment_status:'paid',paid_at:new Date().toISOString(),paid_amount:amount||null,paid_method:'bank_transfer'}).eq('id',resId);
+  if(error){toast(error.message,'err');return;}
+  toast('Aanbetaling bevestigd','ok');renderPeople();
+}
 function drawPeople(){
   const q=($('#search_people')?.value||'').toLowerCase();
   let rows=PEOPLE; if(q)rows=rows.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
@@ -1000,7 +1038,7 @@ function drawPeople(){
   let h='<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Flags</th><th>Last activity</th></tr></thead><tbody>';
   rows.forEach(p=>{
     const projs=[...new Set(p._leads.map(l=>l.project).filter(Boolean))].join(', ');
-    const flags=`${p._isNew?'<span class="badge green">NEW</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
+    const flags=`${p._isNew?'<span class="badge green">NEW</span> ':''}${p._deposit?'<span class="badge green">💶 aanbetaling gemeld</span> ':''}${p._itp?'<span class="badge blue">📝 ITP getekend</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
     h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td style="white-space:normal">${flags}</td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
   });
   tw.innerHTML=h+'</tbody></table>';
@@ -1031,7 +1069,10 @@ async function openPerson(p){
           ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
         </div>
       </div>
-      ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
+      <div class="row-actions" style="flex-wrap:wrap">
+        ${p.phone?`<a class="btn btn-ghost btn-sm" style="text-decoration:none;color:#0f6b4f;border-color:#c6ead9" href="https://wa.me/${(p.phone||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener">💬 WhatsApp</a>`:''}
+        ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
+      </div>
     </div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:14px">
       <span class="muted" style="font-size:12px"><b style="color:var(--ink,#111);font-weight:600">${leads.length}</b> inquiries · <b style="color:var(--ink,#111);font-weight:600">${purch.length}</b> purchases · <b style="color:var(--ink,#111);font-weight:600">${webs.length}</b> webinars</span>
@@ -1052,15 +1093,23 @@ async function openPerson(p){
     if(r.payment_status==='transfer_reported')return '<span class="badge amber">transfer reported</span>';
     return '<span class="badge grey">'+esc(r.payment_status||'open')+'</span>';
   };
-  let resvHtml=resvs.length?_mt(['Project','Unit','Deposit','ITP','Payment','Link',manageResv?'Action':''],resvs.map(r=>{
+  PERSON_RESV={};resvs.forEach(r=>PERSON_RESV[r.id]=r);
+  let resvHtml=resvs.length?resvs.map(r=>{
+      const link=RESV_SITE+'/reserve.html?token='+r.token;
       const paid=(r.status==='deposit_paid'||r.payment_status==='paid');
-      const cells=[esc(r.project||'—'),esc(r.unit||'—'),money(r.deposit_amount),
-        r.itp_signed_at?'<span class="badge green">signed</span>':'<span class="badge grey">—</span>',
-        payBadge(r),
-        `<button class="btn btn-ghost btn-sm" data-copy="${RESV_SITE}/reserve.html?token=${esc(r.token)}">Copy link</button>`];
-      if(manageResv)cells.push(paid?'<span class="muted" style="font-size:12px">'+fmtDate(r.paid_at)+'</span>':`<button class="btn btn-primary btn-sm" data-confirmpaid="${r.id}" data-amt="${r.deposit_amount||''}">Confirm paid</button>`);
-      return cells;
-    })):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
+      return `<div style="border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+          <div style="font-size:13px"><b>${esc(r.project||'—')} · ${esc(r.unit||'—')}</b> <span class="muted">${money(r.deposit_amount)} deposit</span><br>
+            ITP: ${r.itp_signed_at?'<span class="badge green">getekend '+fmtDate(r.itp_signed_at)+'</span>':(r.itp_body?'<span class="badge blue">opgemaakt</span>':'<span class="badge grey">concept</span>')} · Betaling: ${payBadge(r)}${r.sent_at?' · <span class="muted">verstuurd '+fmtDate(r.sent_at)+(r.sent_via?' ('+esc(r.sent_via)+')':'')+'</span>':''}</div>
+          <div class="row-actions" style="flex-wrap:wrap;justify-content:flex-end">
+            ${manageResv?`<button class="btn btn-ghost btn-sm" data-editip="${r.id}">ITP opmaken</button>`:''}
+            ${manageResv&&(r.phone||p.phone)?`<button class="btn btn-ghost btn-sm" style="color:#0f6b4f" data-wa="${r.id}">WhatsApp</button>`:''}
+            ${manageResv&&(r.email||p.email)?`<button class="btn btn-ghost btn-sm" data-mail="${r.id}">E-mail</button>`:''}
+            <button class="btn btn-ghost btn-sm" data-copy="${link}">Link</button>
+            ${(!paid&&manageResv)?`<button class="btn btn-primary btn-sm" data-confirmpaid="${r.id}" data-amt="${r.deposit_amount||''}">Confirm paid</button>`:''}
+          </div>
+        </div></div>`;
+    }).join(''):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
   if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="newResv">+ Nieuwe reservering / aanbetaling</button></div>`;
   body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',resvHtml);
   body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
@@ -1098,8 +1147,44 @@ async function openPerson(p){
     const gb=$('#dr_grant_btn');if(gb)gb.onclick=()=>{const s=$('#dr_grant_sel');if(s&&s.value)setDataroom(p,s.value,true,null);};
     mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}toast('Reserveringslink gekopieerd','ok');});
     mb.querySelectorAll('[data-confirmpaid]').forEach(b=>b.onclick=()=>markReservationPaid(b.dataset.confirmpaid,Number(b.dataset.amt)||null,p));
+    mb.querySelectorAll('[data-editip]').forEach(b=>b.onclick=()=>openItpEditor(PERSON_RESV[b.dataset.editip],p));
+    mb.querySelectorAll('[data-wa]').forEach(b=>b.onclick=()=>sendReservation(PERSON_RESV[b.dataset.wa],p,'whatsapp'));
+    mb.querySelectorAll('[data-mail]').forEach(b=>b.onclick=()=>sendReservation(PERSON_RESV[b.dataset.mail],p,'email'));
     const nr=$('#newResv');if(nr)nr.onclick=()=>openReservationForm(p,projList);
   }
+}
+let PERSON_RESV={};
+function itpDraft(r){
+  const price=r.unit_price?`\nIndicatieve koopsom: €${Number(r.unit_price).toLocaleString('nl-NL')}`:'';
+  const dep=Number(r.deposit_amount||5000).toLocaleString('nl-NL');
+  return `PARTIJEN\nVerkoper: PT Bali Utama Property\nKoper: ${r.name||''}${r.email?' ('+r.email+')':''}\n\nOBJECT\nProject: ${r.project||''}\nUnit: ${r.unit||''}${price}\n\nRESERVERINGSDEPOSIT\nDe koper betaalt een reserveringsdeposit van €${dep} aan PT Bali Utama Property om de unit te reserveren. Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.\n\nVERVOLG\nHet restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.\n\nVOORWAARDEN\nDe aanbetaling is volledig retourneerbaar indien het papierwerk aan onze kant niet blijkt te kloppen. Je reservering zet de huidige prijs vast.`;
+}
+function openItpEditor(r,person){
+  if(!r)return;
+  const bodyH=`<div class="field"><label>ITP-tekst — automatisch opgemaakt, vrij te bewerken door je team</label>
+    <textarea id="itp_body" rows="16" style="font-family:inherit;font-size:13px">${esc(r.itp_body||itpDraft(r))}</textarea></div>
+    <div class="hint">Dit is wat de klant op de reserveringspagina ziet en digitaal tekent. Verstuur de link daarna via WhatsApp of e-mail.</div>`;
+  showModal('ITP opmaken · '+esc(r.project||'')+' '+esc(r.unit||''),bodyH,async()=>{
+    const {error}=await sb.from('reservations').update({itp_body:$('#itp_body').value}).eq('id',r.id);
+    if(error){toast(error.message,'err');return false;}
+    toast('ITP opgeslagen','ok');openPerson(person);return true;
+  });
+}
+async function sendReservation(r,person,via){
+  if(!r)return;
+  const link=RESV_SITE+'/reserve.html?token='+r.token;
+  const dep='€'+Number(r.deposit_amount||5000).toLocaleString('nl-NL');
+  const msg=`Hoi ${r.name||person.name||''},\n\nHier is je intentieverklaring voor ${r.project||''} ${r.unit||''}. Bekijk en teken hem, en rond je reservering af met de aanbetaling van ${dep} via deze link:\n${link}\n\nVragen? Stuur gerust een berichtje.\n\nGroet, UTAMA`;
+  if(via==='whatsapp'){
+    const digits=((r.phone||person.phone||'')+'').replace(/[^0-9]/g,'');
+    if(!digits){toast('Geen telefoonnummer bekend','err');return;}
+    window.open('https://wa.me/'+digits+'?text='+encodeURIComponent(msg),'_blank');
+  }else{
+    const to=r.email||person.email||'';
+    window.open('mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent('Je intentieverklaring — UTAMA '+(r.project||''))+'&body='+encodeURIComponent(msg),'_blank');
+  }
+  await sb.from('reservations').update({sent_at:new Date().toISOString(),sent_via:via}).eq('id',r.id);
+  toast('Klaargezet om te versturen via '+(via==='whatsapp'?'WhatsApp':'e-mail'),'ok');
 }
 async function markReservationPaid(id,amount,person){
   if(!confirm('Bevestig dat de aanbetaling is ontvangen? De reservering wordt op "deposit paid" gezet.'))return;
@@ -1121,9 +1206,10 @@ function openReservationForm(p,projList){
     const unit_price=$('#rv_price').value?Number($('#rv_price').value):null;
     const deposit=$('#rv_dep').value?Number($('#rv_dep').value):5000;
     const token=((crypto&&crypto.randomUUID)?crypto.randomUUID():('t'+Date.now())).replace(/-/g,'')+Math.random().toString(36).slice(2,8);
-    const {error}=await sb.from('reservations').insert({token,contact_id:p.id,name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit,source:'admin',created_by:(ME.full_name||ME.email)});
+    const itp_body=itpDraft({name:p.name,email:p.email,project,unit,unit_price,deposit_amount:deposit});
+    const {error}=await sb.from('reservations').insert({token,contact_id:p.id,name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit,itp_body,source:'admin',created_by:(ME.full_name||ME.email)});
     if(error){toast(error.message,'err');return false;}
-    toast('Reservering aangemaakt — link staat in het profiel','ok');openPerson(p);return true;
+    toast('Reservering aangemaakt — ITP opgemaakt, klaar om te versturen','ok');openPerson(p);return true;
   });
   setTimeout(()=>{const ps=$('#rv_project'),pr=$('#rv_price');if(ps&&pr){const sync=()=>{const o=ps.selectedOptions[0];if(o&&o.dataset.price&&!pr.value)pr.value=o.dataset.price;};ps.onchange=sync;sync();}},0);
 }
