@@ -119,6 +119,14 @@
   .toast.err{background:#7a271a}
   .toast.ok{background:#0f6b4f}
 
+  /* rich text ITP editor */
+  .rte-tb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .rte-tb button{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 10px;font-size:13px;cursor:pointer;min-width:32px}
+  .rte-tb button:hover{background:#f2f4f2}
+  .rte{border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-height:280px;max-height:50vh;overflow:auto;font-size:13px;line-height:1.55;outline:none}
+  .rte:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.12)}
+  .rte p{margin:0 0 10px}
+  .itp-view p{margin:0 0 10px}
   /* notifications */
   .notif-bell{position:relative;border:1px solid var(--line);background:#fff;border-radius:10px;width:40px;height:40px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
   .notif-bell:hover{background:#f2f4f2}
@@ -980,9 +988,22 @@ async function renderPeople(){
       _isNew:(now-Math.max(lastAct,newestLead))<WK,_activeDr:grantedProj.size};
   });
   const cel=$('#cnt_people');if(cel)cel.textContent=PEOPLE.length;
-  drawPeopleBanner();
+  drawRecentSignups();
   drawPeople();
   $('#search_people').addEventListener('input',drawPeople);
+}
+function drawRecentSignups(){
+  const el=$('#people_banner');if(!el)return;
+  const all=[];PEOPLE.forEach(p=>(p._leads||[]).forEach(l=>all.push({...l,who:p.name||p.email,pid:p.id})));
+  all.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  const recent=all.slice(0,8);
+  if(!recent.length){el.innerHTML='';return;}
+  let h=`<div class="panel" style="margin-top:0;margin-bottom:18px"><div class="panel-head"><div><h3>Laatste sign-ups</h3><div class="desc">De ${recent.length} meest recente aanvragen & interesse — klik om te openen.</div></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Wie</th><th>Type</th><th>Project</th><th>Unit</th><th>Wanneer</th></tr></thead><tbody>`;
+  recent.forEach(l=>{h+=`<tr data-openp="${l.pid}" style="cursor:pointer"><td><b>${esc(l.who||'—')}</b></td><td>${leadTypeBadge(l.type)}</td><td>${esc(l.project||'—')}</td><td>${esc(l.unit||'—')}</td><td>${fmtDateTime(l.created_at)}</td></tr>`;});
+  h+='</tbody></table></div></div>';
+  el.innerHTML=h;
+  el.querySelectorAll('[data-openp]').forEach(tr=>tr.onclick=()=>openPerson(PEOPLE.find(x=>x.id===tr.dataset.openp)));
 }
 function drawPeopleBanner(){
   const el=$('#people_banner');if(!el)return;
@@ -1161,6 +1182,8 @@ function drawPeople(){
 }
 function _sec(title,inner){return `<div style="margin-top:20px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">${title}</div>${inner}</div>`;}
 function _mt(headers,rows){ if(!rows.length)return '<div class="muted" style="font-size:13px">None.</div>'; let h='<table style="font-size:13px"><thead><tr>'+headers.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>'; rows.forEach(r=>{h+='<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>';}); return h+'</tbody></table>'; }
+function _hint(t){return `<div class="muted" style="font-size:12px;margin:-4px 0 8px">${t}</div>`;}
+function leadTypeBadge(t){const m={inquiry:['blue','Inquiry'],reservation:['amber','Reserveringsaanvraag'],dataroom_request:['blue','Dataroom-aanvraag']};const x=m[t]||['grey',t||'—'];return `<span class="badge ${x[0]}">${esc(x[1])}</span>`;}
 async function openPerson(p){
   showDetail('Contact','<div class="muted">Loading…</div>');
   const [lr,pr,wr,dr,rr,projR,rvR]=await Promise.all([
@@ -1196,13 +1219,15 @@ async function openPerson(p){
   </div>
   <hr style="border:none;border-top:1px solid var(--line);margin:22px 0 2px">`;
   const manageLeads=canEdit('leads')||canEdit('portal');
-  body+=_sec('Inquiries & reservations ('+leads.length+')',_mt(['Type','Project','Unit','Budget','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
+  body+=_sec('Aanvragen & interesse ('+leads.length+')',_hint('Binnengekomen via de site: vragen, reserveringsaanvragen en dataroom-verzoeken. Klik "Maak ITP" om er een reservering van te maken.')+_mt(['Type','Project','Unit','Budget','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
     const open=(l.type==='dataroom_request'||l.type==='reservation')&&!l.handled_at;
-    const cells=[statusBadge(l.type),esc(l.project||'—'),esc(l.unit||'—'),esc(l.budget||'—'),fmtDateTime(l.created_at),open?'<span class="badge amber">Open</span>':(l.handled_at?'<span class="badge green">Handled</span>':'—')];
+    const cells=[leadTypeBadge(l.type),esc(l.project||'—'),esc(l.unit||'—'),esc(l.budget||'—'),fmtDateTime(l.created_at),open?'<span class="badge amber">Open</span>':(l.handled_at?'<span class="badge green">Afgehandeld</span>':'—')];
     if(manageLeads){
       let act='';
       if(open&&l.type==='reservation')act=`<button class="btn btn-primary btn-sm" data-mkitp="${l.id}" data-mkproj="${esc(l.project||'')}" data-mkunit="${esc(l.unit||'')}">Maak ITP</button> <button class="btn btn-ghost btn-sm" data-ldone="${l.id}" title="Afronden">✓</button>`;
       else if(open&&l.type==='dataroom_request')act=`<button class="btn btn-primary btn-sm" data-grantlead="${esc(l.project||'')}">Grant</button> <button class="btn btn-ghost btn-sm" data-ldone="${l.id}" title="Afronden">✓</button>`;
+      else if(l.handled_at&&l.type==='reservation')act='<span class="muted" style="font-size:12px">→ zie reservering hieronder</span>';
+      else if(l.handled_at&&l.type==='dataroom_request')act='<span class="muted" style="font-size:12px">✓ toegang geregeld</span>';
       cells.push(act||'<span class="muted">—</span>');
     }
     return cells;
@@ -1234,7 +1259,7 @@ async function openPerson(p){
         </div></div>`;
     }).join(''):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
   if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-ghost btn-sm" id="newResv">+ Nieuwe reservering</button></div>`;
-  body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',resvHtml);
+  body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',_hint('De ITP + €5.000-aanbetaling die je van een aanvraag maakt. Hier open, verstuur en bevestig je alles.')+resvHtml);
   body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
 
   // ----- interactive dataroom access -----
@@ -1282,21 +1307,46 @@ async function openPerson(p){
 }
 let PERSON_RESV={};
 function itpDraft(r){
-  const price=r.unit_price?`\nIndicatieve koopsom: €${Number(r.unit_price).toLocaleString('nl-NL')}`:'';
-  const dep=Number(r.deposit_amount||5000).toLocaleString('nl-NL');
-  return `PARTIJEN\nVerkoper: PT Bali Utama Property\nKoper: ${r.name||''}${r.email?' ('+r.email+')':''}\n\nOBJECT\nProject: ${r.project||''}\nUnit: ${r.unit||''}${price}\n\nRESERVERINGSDEPOSIT\nDe koper betaalt een reserveringsdeposit van €${dep} aan PT Bali Utama Property om de unit te reserveren. Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.\n\nVERVOLG\nHet restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.\n\nVOORWAARDEN\nDe aanbetaling is volledig retourneerbaar indien het papierwerk aan onze kant niet blijkt te kloppen. Je reservering zet de huidige prijs vast.`;
+  const dep='€'+Number(r.deposit_amount||5000).toLocaleString('nl-NL');
+  const price=r.unit_price?'<br>Indicatieve koopsom: €'+Number(r.unit_price).toLocaleString('nl-NL'):'';
+  return `<p><b>PARTIJEN</b><br>Verkoper: PT Bali Utama Property<br>Koper: ${esc(r.name||'')}${r.email?' ('+esc(r.email)+')':''}</p>`
+    +`<p><b>OBJECT</b><br>Project: ${esc(r.project||'')}<br>Unit: ${esc(r.unit||'')}${price}</p>`
+    +`<p><b>RESERVERINGSDEPOSIT</b><br>De koper betaalt een reserveringsdeposit van ${dep} aan PT Bali Utama Property om de unit te reserveren. Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.</p>`
+    +`<p><b>VERVOLG</b><br>Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.</p>`
+    +`<p><b>VOORWAARDEN</b><br>De aanbetaling is volledig retourneerbaar indien het papierwerk aan onze kant niet blijkt te kloppen. Je reservering zet de huidige prijs vast.</p>`;
 }
+/* upgrade any legacy plain-text ITP to HTML (bold ALL-CAPS heading lines) */
+function itpToHtml(body){
+  if(!body)return '';
+  if(/<\w+[^>]*>/.test(body))return body;
+  return body.split('\n').map(line=>{const t=line.trim();if(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44)return '<b>'+esc(t)+'</b>';return esc(line);}).join('<br>');
+}
+function htmlToPlain(h){return (h||'').replace(/<\/(p|div|h[1-6])>/gi,'\n\n').replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/\n{3,}/g,'\n\n').trim();}
+function isHeadingLine(t){t=(t||'').trim();return !!(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44);}
 function openItpEditor(r,person){
   if(!r)return;
   const signedWarn=r.itp_signed_at?`<div class="an-note" style="margin-bottom:12px">⚠️ Deze ITP is al getekend door de klant op ${fmtDateTime(r.itp_signed_at)}. Pas je de tekst aan, dan wijkt die af van wat de klant ondertekende — verstuur 'm dan opnieuw ter bevestiging.</div>`:'';
-  const bodyH=signedWarn+`<div class="field"><label>ITP-tekst — automatisch opgemaakt, vrij te bewerken door je team</label>
-    <textarea id="itp_body" rows="15" style="font-family:inherit;font-size:13px">${esc(r.itp_body||itpDraft(r))}</textarea></div>
-    <div class="hint">Dit is wat de klant op de reserveringspagina ziet en digitaal tekent. Verstuur de link daarna via WhatsApp of e-mail.</div>`;
+  const html=itpToHtml(r.itp_body)||itpDraft(r);
+  const bodyH=signedWarn+`<div class="field"><label>ITP-tekst — opgemaakt, vrij te bewerken (kopjes staan vet)</label>
+    <div class="rte-tb">
+      <button type="button" data-cmd="bold" title="Vet"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Cursief"><i>I</i></button>
+      <button type="button" data-cmd="underline" title="Onderstreept"><u>U</u></button>
+      <button type="button" data-cmd="insertUnorderedList" title="Opsomming">• lijst</button>
+      <button type="button" data-heading title="Maak kopje (vet, hoofdletters)">Kopje</button>
+    </div>
+    <div id="itp_edit" contenteditable="true" class="rte">${html}</div></div>
+    <div class="hint">Dit is wat de klant op de reserveringspagina ziet en digitaal tekent. Selecteer tekst en klik op een knop om op te maken.</div>`;
   showModal('ITP bewerken · '+esc(r.project||'')+' '+esc(r.unit||''),bodyH,async()=>{
-    const {error}=await sb.from('reservations').update({itp_body:$('#itp_body').value}).eq('id',r.id);
+    const html=$('#itp_edit').innerHTML;
+    const {error}=await sb.from('reservations').update({itp_body:html}).eq('id',r.id);
     if(error){toast(error.message,'err');return false;}
     toast('ITP opgeslagen','ok');if(person&&person.id)openPerson(person);else openReservation(r.id);return true;
   });
+  setTimeout(()=>{
+    document.querySelectorAll('.rte-tb [data-cmd]').forEach(b=>b.onmousedown=e=>{e.preventDefault();document.execCommand(b.dataset.cmd,false,null);});
+    const hb=document.querySelector('.rte-tb [data-heading]');if(hb)hb.onmousedown=e=>{e.preventDefault();const sel=window.getSelection&&window.getSelection().toString();if(sel){document.execCommand('bold');}else{document.execCommand('insertHTML',false,'<b>KOPJE</b><br>');}};
+  },0);
 }
 function itpStatusLine(r){
   const paid=(r.status==='deposit_paid'||r.payment_status==='paid');
@@ -1318,7 +1368,7 @@ async function openReservation(id){
       <div class="muted" style="font-size:13px;margin-top:2px">${esc(r.project||'')} · ${esc(r.unit||'')} · aanbetaling ${money(r.deposit_amount)}${r.email?' · '+esc(r.email):''}${r.phone?' · '+esc(r.phone):''}</div>
       ${itpStatusLine(r)}
     </div>`;
-  h+=_sec('ITP-tekst',`<div class="itp-view" style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;white-space:pre-wrap;font-size:13px;max-height:300px;overflow:auto">${esc(r.itp_body||itpDraft(r))}</div>`);
+  h+=_sec('ITP-tekst',`<div class="itp-view" style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.55;max-height:300px;overflow:auto">${itpToHtml(r.itp_body)||itpDraft(r)}</div>`);
   h+=`<div class="row-actions" style="flex-wrap:wrap;justify-content:flex-start;gap:8px;margin-top:16px">
       <button class="btn btn-ghost btn-sm" data-dlpdf="${r.id}">⬇︎ Download PDF</button>
       ${manage?`<button class="btn btn-ghost btn-sm" data-editip2="${r.id}">ITP bewerken</button>`:''}
@@ -1343,11 +1393,11 @@ function downloadItpPdf(r){
   const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4'});
   const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
   doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('UTAMA — Intentieverklaring tot aankoop',M,y);y+=26;
-  doc.setFont('helvetica','normal');doc.setFontSize(10.5);doc.setTextColor(30);
-  const body=r.itp_body||itpDraft(r);
+  doc.setFontSize(10.5);doc.setTextColor(30);
+  const body=htmlToPlain(itpToHtml(r.itp_body)||itpDraft(r));
   const lines=['Opgesteld op '+new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'}),'',...body.split('\n')];
   if(r.itp_signed_at)lines.push('','ONDERTEKENING','Digitaal ondertekend door: '+(r.itp_signer_name||''),'Datum: '+fmtDateTime(r.itp_signed_at),'Verificatie-hash: '+(r.itp_hash||''));
-  lines.forEach(t=>{const w=doc.splitTextToSize(t,W);w.forEach(x=>{if(y>790){doc.addPage();y=64;}doc.text(x,M,y);y+=15;});});
+  lines.forEach(t=>{doc.setFont('helvetica',isHeadingLine(t)?'bold':'normal');const w=doc.splitTextToSize(t,W);w.forEach(x=>{if(y>790){doc.addPage();y=64;}doc.text(x,M,y);y+=15;});});
   doc.save('ITP-'+((r.project||'')+'-'+(r.unit||'')).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')+'.pdf');
   toast('ITP-PDF gedownload','ok');
 }

@@ -77,6 +77,9 @@ const body=$("#body");
 let RES=null;
 function euro(n){n=Number(n)||0;return "€"+n.toLocaleString("nl-NL");}
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function itpToHtml(body){if(!body)return "";if(/<\w+[^>]*>/.test(body))return body;return body.split("\n").map(line=>{const t=line.trim();if(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44)return "<b>"+esc(t)+"</b>";return esc(line);}).join("<br>");}
+function htmlToPlain(h){return (h||"").replace(/<\/(p|div|h[1-6])>/gi,"\n\n").replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/\n{3,}/g,"\n\n").trim();}
+function isHeadingLine(t){t=(t||"").trim();return !!(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44);}
 async function api(action,extra){
   const r=await fetch(EP,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,token,...(extra||{})})});
   return r.json();
@@ -85,7 +88,7 @@ function refText(r){return `${r.project||""} ${r.unit||""} deposit`.replace(/\s+
 function itpText(r){
   const today=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
   if(r.itp_body&&r.itp_body.trim()){
-    return `<h2>Intentieverklaring tot aankoop (ITP)</h2><p class="muted">Opgesteld op ${today}</p><div style="white-space:pre-wrap">${esc(r.itp_body)}</div>`;
+    return `<h2>Intentieverklaring tot aankoop (ITP)</h2><p class="muted">Opgesteld op ${today}</p><div>${itpToHtml(r.itp_body)}</div>`;
   }
   return `
     <h2>Intentieverklaring tot aankoop (ITP)</h2>
@@ -181,7 +184,7 @@ function makePdf(r,signer){
     doc.setFont("helvetica","normal");doc.setFontSize(10.5);doc.setTextColor(30);
     const lines=(r.itp_body&&r.itp_body.trim())?[
       "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
-      ...r.itp_body.split("\n"),"",
+      ...htmlToPlain(itpToHtml(r.itp_body)).split("\n"),"",
       "ONDERTEKENING","Digitaal ondertekend door: "+signer,"Datum: "+new Date().toLocaleString("nl-NL")
     ]:[
       "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
@@ -193,7 +196,7 @@ function makePdf(r,signer){
       "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
       "ONDERTEKENING","Digitaal ondertekend door: "+signer,"Datum: "+new Date().toLocaleString("nl-NL")
     ];
-    lines.forEach(t=>{const wrapped=doc.splitTextToSize(t,W);wrapped.forEach(w=>{if(y>780){doc.addPage();y=64;}doc.text(w,M,y);y+=15;});});
+    lines.forEach(t=>{doc.setFont("helvetica",isHeadingLine(t)?"bold":"normal");const wrapped=doc.splitTextToSize(t,W);wrapped.forEach(w=>{if(y>780){doc.addPage();y=64;}doc.text(w,M,y);y+=15;});});
     return doc.output("datauristring").split(",")[1];
   }catch(e){return null;}
 }
