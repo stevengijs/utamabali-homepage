@@ -946,7 +946,7 @@ async function renderPeople(){
   v.innerHTML=`<div id="people_banner"></div><div class="panel"><div class="panel-head"><div><h3>People <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">One record per email — click a person for all their data, activity & history.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Search people…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Loading…</div></div></div>`;
   const [cr,lr,dr,rv]=await Promise.all([
     sb.from('contacts').select('*').order('last_activity_at',{ascending:false,nullsFirst:false}),
-    sb.from('leads').select('id,contact_id,type,project,unit,created_at,handled_at'),
+    sb.from('leads').select('id,contact_id,type,project,unit,source_page,created_at,handled_at'),
     sb.from('dataroom_access').select('contact_id,contact_email,project,granted_at'),
     sb.from('reservations').select('id,contact_id,email,project,unit,deposit_amount,status,itp_signed_at,itp_signer_name,payment_status'),
   ]);
@@ -994,13 +994,17 @@ async function renderPeople(){
 }
 function drawRecentSignups(){
   const el=$('#people_banner');if(!el)return;
-  const all=[];PEOPLE.forEach(p=>(p._leads||[]).forEach(l=>all.push({...l,who:p.name||p.email,pid:p.id})));
-  all.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
-  const recent=all.slice(0,8);
-  if(!recent.length){el.innerHTML='';return;}
-  let h=`<div class="panel" style="margin-top:0;margin-bottom:18px"><div class="panel-head"><div><h3>Laatste sign-ups</h3><div class="desc">De ${recent.length} meest recente aanvragen & interesse — klik om te openen.</div></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Wie</th><th>Type</th><th>Project</th><th>Unit</th><th>Wanneer</th></tr></thead><tbody>`;
-  recent.forEach(l=>{h+=`<tr data-openp="${l.pid}" style="cursor:pointer"><td><b>${esc(l.who||'—')}</b></td><td>${leadTypeBadge(l.type)}</td><td>${esc(l.project||'—')}</td><td>${esc(l.unit||'—')}</td><td>${fmtDateTime(l.created_at)}</td></tr>`;});
+  const all=[];PEOPLE.forEach(p=>(p._leads||[]).forEach(l=>all.push({...l,who:p.name||p.email,email:p.email,phone:p.phone,pid:p.id})));
+  // brochure sign-ups only = brochure-page requests
+  const bro=all.filter(x=>/brochure/i.test(x.source_page||''));
+  bro.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  const recent=bro.slice(0,8);
+  let h=`<div class="panel" style="margin-top:0;margin-bottom:18px"><div class="panel-head"><div><h3>Laatste brochure sign-ups</h3><div class="desc">De meest recente brochure-aanvragen — klik om het contact te openen.</div></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Wie</th><th>E-mail</th><th>Telefoon</th><th>Project</th><th>Wanneer</th></tr></thead><tbody>`;
+  if(!recent.length){h+='<tr><td colspan="5" class="empty">Nog geen brochure-aanvragen.</td></tr>';}
+  recent.forEach(l=>{
+    h+=`<tr data-openp="${l.pid}" style="cursor:pointer"><td><b>${esc(l.who||'—')}</b></td><td>${l.email?`<a href="mailto:${esc(l.email)}" onclick="event.stopPropagation()">${esc(l.email)}</a>`:'—'}</td><td>${l.phone?`<a href="https://wa.me/${(l.phone||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#0f6b4f">${esc(l.phone)}</a>`:'—'}</td><td>${esc(l.project||'—')}</td><td>${fmtDateTime(l.created_at)}</td></tr>`;
+  });
   h+='</tbody></table></div></div>';
   el.innerHTML=h;
   el.querySelectorAll('[data-openp]').forEach(tr=>tr.onclick=()=>openPerson(PEOPLE.find(x=>x.id===tr.dataset.openp)));
