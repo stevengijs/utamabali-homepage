@@ -568,7 +568,18 @@ function accessSummaryHTML(){
 }
 
 /* ================= ANALYTICS ================= */
-let ANALYTICS_DAYS=30;
+let ANALYTICS_RANGE='30d';
+let ANALYTICS_CUSTOM={from:null,to:null};
+function anRangeCalc(){
+  const startOfDay=dt=>{const x=new Date(dt);x.setHours(0,0,0,0);return x;};
+  const today0=startOfDay(new Date());const r=ANALYTICS_RANGE;
+  let since,until,label;
+  if(r==='today'){since=today0;until=new Date();label='Today';}
+  else if(r==='yesterday'){until=today0;since=new Date(today0.getTime()-864e5);label='Yesterday';}
+  else if(r==='custom'&&ANALYTICS_CUSTOM.from&&ANALYTICS_CUSTOM.to){since=startOfDay(ANALYTICS_CUSTOM.from);until=new Date(startOfDay(ANALYTICS_CUSTOM.to).getTime()+864e5-1);label=ANALYTICS_CUSTOM.from+' → '+ANALYTICS_CUSTOM.to;}
+  else{const n=parseInt(r)||30;since=new Date(Date.now()-n*864e5);until=new Date();label='Last '+n+' days';}
+  return {since,until,label};
+}
 function anInt(n){return (n||0).toLocaleString('en-US');}
 function anPct(x){if(!isFinite(x))return '—';const p=x*100;return (p>=10||p===0?p.toFixed(0):p.toFixed(1))+'%';}
 function anDur(ms){if(!ms||ms<=0)return '—';const s=Math.round(ms/1000);if(s<60)return s+'s';const m=Math.floor(s/60);return m+'m '+(s%60)+'s';}
@@ -612,20 +623,32 @@ function anMatchProj(val,name,slug){
 async function renderAnalytics(){
   const v=$('#view');
   const tr=$('#topRight');
-  tr.innerHTML=`<div class="seg" id="anRange">${[['7','7 days'],['30','30 days'],['90','90 days']].map(([d,l])=>`<button data-d="${d}" class="${+d===ANALYTICS_DAYS?'on':''}">${l}</button>`).join('')}</div>`;
-  tr.querySelectorAll('#anRange button').forEach(b=>b.onclick=()=>{ANALYTICS_DAYS=+b.dataset.d;renderAnalytics();});
+  const R=ANALYTICS_RANGE;
+  const presets=[['today','Today'],['yesterday','Yesterday'],['7d','7 days'],['30d','30 days'],['90d','90 days'],['custom','Custom']];
+  tr.innerHTML=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+    <div class="seg" id="anRange">${presets.map(([k,l])=>`<button data-r="${k}" class="${k===R?'on':''}">${l}</button>`).join('')}</div>
+    ${R==='custom'?`<div style="display:flex;gap:6px;align-items:center">
+      <input type="date" id="an_from" value="${ANALYTICS_CUSTOM.from||''}" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px">
+      <span class="muted">→</span>
+      <input type="date" id="an_to" value="${ANALYTICS_CUSTOM.to||''}" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px">
+      <button class="btn btn-primary btn-sm" id="an_apply">Apply</button></div>`:''}
+  </div>`;
+  tr.querySelectorAll('#anRange button').forEach(b=>b.onclick=()=>{ANALYTICS_RANGE=b.dataset.r;renderAnalytics();});
+  if(R==='custom'){const ap=$('#an_apply');if(ap)ap.onclick=()=>{const f=$('#an_from').value,t=$('#an_to').value;if(!f||!t){toast('Kies een begin- en einddatum','err');return;}ANALYTICS_CUSTOM={from:f,to:t};renderAnalytics();};}
   v.innerHTML='<div class="muted" style="padding:8px">Loading analytics…</div>';
-  const days=ANALYTICS_DAYS, since=new Date(Date.now()-days*864e5).toISOString();
+  const {since:sinceD,until:untilD,label:rangeLabel}=anRangeCalc();
+  const since=sinceD.toISOString(),until=untilD.toISOString();
+  const spanDays=Math.max(1,Math.round((untilD-sinceD)/864e5));
   const [evR,leadsR,purchR,webR,projR]=await Promise.all([
-    sb.from('analytics_events').select('event_id,session_id,visitor_hash,is_new_session,path,referrer_host,channel,utm_source,utm_campaign,country,device,browser,duration_ms,created_at,page_title').gte('created_at',since).order('created_at',{ascending:false}).limit(50000),
-    sb.from('leads').select('project,source_page,type,created_at').gte('created_at',since),
+    sb.from('analytics_events').select('event_id,session_id,visitor_hash,is_new_session,path,referrer_host,channel,utm_source,utm_campaign,country,device,browser,duration_ms,created_at,page_title').gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).limit(50000),
+    sb.from('leads').select('project,source_page,type,created_at').gte('created_at',since).lte('created_at',until),
     sb.from('purchases').select('project,price,deposit_amount,status,created_at'),
-    sb.from('webinar_registrations').select('call_booked,attended,created_at').gte('created_at',since),
+    sb.from('webinar_registrations').select('call_booked,attended,created_at').gte('created_at',since).lte('created_at',until),
     sb.from('projects').select('name,slug,status,sort_order').order('sort_order',{ascending:true}),
   ]);
   if(evR.error){v.innerHTML=`<div class="panel"><div class="empty">Couldn’t load analytics: ${esc(evR.error.message)}</div></div>`;return;}
   const ev=evR.data||[],leads=leadsR.data||[],webs=webR.data||[],projs=projR.data||[];
-  const purch=(purchR.data||[]).filter(x=>x.created_at&&x.created_at>=since);
+  const purch=(purchR.data||[]).filter(x=>x.created_at&&x.created_at>=since&&x.created_at<=until);
 
   const pageviews=ev.length;
   const visitors=new Set(ev.map(e=>e.visitor_hash).filter(Boolean)).size;
@@ -635,11 +658,12 @@ async function renderAnalytics(){
   const durs=ev.map(e=>e.duration_ms).filter(d=>d>0);
   const avgDur=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:0;
 
-  // daily series
+  // daily series across the selected range (capped to keep the chart readable)
   const byDay={};
-  for(let i=days-1;i>=0;i--){const d=new Date(Date.now()-i*864e5).toISOString().slice(0,10);byDay[d]={date:d,pv:0,vis:new Set()};}
+  const d0=new Date(sinceD);d0.setHours(0,0,0,0);
+  const dayKeys=[];for(let t=d0.getTime();t<=untilD.getTime()&&dayKeys.length<200;t+=864e5){const d=new Date(t).toISOString().slice(0,10);dayKeys.push(d);byDay[d]={date:d,pv:0,vis:new Set()};}
   ev.forEach(e=>{const d=(e.created_at||'').slice(0,10);if(byDay[d]){byDay[d].pv++;if(e.visitor_hash)byDay[d].vis.add(e.visitor_hash);}});
-  const series=Object.values(byDay).map(x=>({date:x.date,pv:x.pv,vis:x.vis.size}));
+  const series=dayKeys.map(d=>({date:d,pv:byDay[d].pv,vis:byDay[d].vis.size}));
 
   // top pages
   const pageMap={};
@@ -676,7 +700,7 @@ async function renderAnalytics(){
 
   // ---- render ----
   const kpis=[
-    ['Unique visitors',anInt(visitors),days+'-day total'],
+    ['Unique visitors',anInt(visitors),rangeLabel.toLowerCase()],
     ['Page views',anInt(pageviews),sessions?anInt((pageviews/sessions).toFixed(1))+' per session':'—'],
     ['Sessions',anInt(sessions),'visits'],
     ['Avg. time on page',anDur(avgDur),'engaged'],
@@ -684,12 +708,12 @@ async function renderAnalytics(){
     ['Visitor→lead',visitors?anPct(nLeads/visitors):'—',anInt(nLeads)+' leads'],
   ];
   let html='';
-  if(pageviews===0)html+=`<div class="an-note">📡 Tracking is live. No visits have been recorded in the last ${days} days yet — this fills in automatically as people visit the site. The funnel below still reflects your leads, calls & sales.</div>`;
+  if(pageviews===0)html+=`<div class="an-note">📡 Tracking is live. No visits recorded for <b>${esc(rangeLabel.toLowerCase())}</b> yet — this fills in automatically as people visit the site. The funnel below still reflects your leads, calls & sales.</div>`;
   html+='<div class="cards">'+kpis.map(k=>`<div class="stat"><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('')+'</div>';
 
   html+=`<div class="panel"><div class="panel-head"><div><h3>Traffic over time</h3><div class="desc">Page views and unique visitors per day.</div></div></div>${anLine(series)}</div>`;
 
-  html+=`<div class="panel"><div class="panel-head"><div><h3>Conversion funnel to revenue</h3><div class="desc">From anonymous visitor to paying investor, last ${days} days.</div></div></div>
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Conversion funnel to revenue</h3><div class="desc">From anonymous visitor to paying investor · ${esc(rangeLabel.toLowerCase())}.</div></div></div>
     <div class="funnel">${fsteps.map((s,i)=>{const prev=i?fsteps[i-1].n:0;const conv=i&&prev?` · ${anPct(s.n/prev)} of previous`:'';return `<div class="fstep"><div class="fbar-wrap"><div class="fbar" style="width:${Math.max(8,s.n/fmax*100)}%;background:${s.c}">${anInt(s.n)}</div><div style="font-weight:650">${s.l}</div></div><div class="fmeta">${i===0?(visitors?'top of funnel':'—'):conv.replace(' · ','')}</div></div>`;}).join('')}</div>
     <div class="rev-row"><div><div class="rk">Contracted / sold value</div><div class="rv">${anMoney(revenue)}</div></div><div><div class="rk">Deposits received</div><div class="rv">${anMoney(deposits)}</div></div><div><div class="rk">Overall visitor→sale</div><div class="rv">${visitors?anPct(nPurch/visitors):'—'}</div></div></div></div>`;
 
