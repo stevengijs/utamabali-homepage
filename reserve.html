@@ -26,7 +26,7 @@
   .step{flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding:8px 4px;border-radius:9px;background:#eef0ef;border:1px solid var(--line)}
   .step.on{background:var(--brand);color:#fff;border-color:var(--brand)}
   .step.done{background:#e7f6ef;color:var(--brand);border-color:#c6ead9}
-  .itp{border:1px solid var(--line);border-radius:12px;padding:18px 20px;max-height:340px;overflow:auto;font-size:13.5px;background:#fff}
+  .itp{border:1px solid var(--line);border-radius:12px;padding:18px 20px;max-height:320px;overflow:auto;font-size:13.5px;background:#fff}
   .itp h2{font-size:15px;margin:0 0 4px}
   .itp h3{font-size:13px;margin:16px 0 4px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
   .itp p{margin:6px 0}
@@ -39,15 +39,23 @@
   .btn{display:block;width:100%;padding:15px;border:none;border-radius:11px;background:var(--brand);color:#fff;font-weight:750;font-size:16px;cursor:pointer}
   .btn:hover{background:#0b573f}
   .btn:disabled{opacity:.5;cursor:not-allowed}
-  .btn-2{background:#fff;border:1px solid var(--line);color:var(--ink)}
   .muted{color:var(--muted)}
   .note{font-size:12px;color:var(--muted);margin-top:12px;text-align:center}
   .err{background:#fbeeec;border:1px solid #f0d3ce;color:#a3271b;border-radius:10px;padding:12px 14px;font-size:13.5px;margin:12px 0}
   .ok-badge{display:inline-flex;align-items:center;gap:7px;background:#e7f6ef;color:var(--brand);border:1px solid #c6ead9;border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px}
   .center{text-align:center}
   .big-ok{width:64px;height:64px;border-radius:50%;background:#e7f6ef;color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 14px}
-  .pay-methods{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
-  .pm{font-size:11px;font-weight:700;color:var(--muted);background:#f2f4f2;border:1px solid var(--line);border-radius:7px;padding:4px 9px}
+  .bank{background:#f7faf8;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+  .bank .k{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .bank .v{font-size:13px;line-height:1.5}
+  .banks{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.banks{grid-template-columns:1fr}}
+  .bank2{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .bank2 .bt{font-weight:750;font-size:13px;margin-bottom:8px}
+  .bank2 .row{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;flex-wrap:wrap}
+  .bank2 .row span{color:var(--muted);min-width:82px}
+  .bank2 .row b{word-break:break-all}
+  .cp{border:1px solid var(--line);background:#fff;border-radius:7px;font-size:11px;padding:3px 8px;cursor:pointer;color:var(--brand);font-weight:700}
 </style>
 </head>
 <body>
@@ -57,7 +65,7 @@
     <div class="card-h"><h1 id="title">Reserveer je unit</h1><div class="sub" id="subtitle">Bevestig en beveilig je unit met een aanbetaling.</div></div>
     <div class="card-b" id="body"><div class="center muted" style="padding:30px">Laden…</div></div>
   </div>
-  <div class="note">Beveiligd · UTAMA Bali · Betaling via Mollie (iDEAL, creditcard)</div>
+  <div class="note">Beveiligd · UTAMA Bali · PT Bali Utama Property</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -73,26 +81,27 @@ async function api(action,extra){
   const r=await fetch(EP,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,token,...(extra||{})})});
   return r.json();
 }
+function refText(r){return `Project reservation deposit for Villa ${r.unit||""}, to be credited against the first payment due under the Development and Construction Agreement.`;}
 function itpText(r){
   const today=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
-  return {today, html:`
+  return `
     <h2>Intentieverklaring tot aankoop (ITP)</h2>
     <p class="muted">Opgesteld op ${today}</p>
     <h3>Partijen</h3>
-    <p><b>Verkoper:</b> UTAMA Bali<br><b>Koper:</b> ${esc(r.name||"—")}${r.email?` (${esc(r.email)})`:""}</p>
+    <p><b>Verkoper:</b> PT Bali Utama Property<br><b>Koper:</b> ${esc(r.name||"—")}${r.email?` (${esc(r.email)})`:""}</p>
     <h3>Object</h3>
     <p><b>Project:</b> ${esc(r.project||"—")}<br><b>Unit:</b> ${esc(r.unit||"—")}${r.unit_price?`<br><b>Indicatieve koopsom:</b> ${euro(r.unit_price)}`:""}</p>
     <h3>Reserveringsdeposit</h3>
-    <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> om de bovengenoemde unit te reserveren. Met deze aanbetaling wordt de unit voor de koper vastgehouden en uit de verkoop gehaald.</p>
+    <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> aan PT Bali Utama Property om de bovengenoemde unit te reserveren. Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement ("credited against the first payment due under the Development and Construction Agreement").</p>
     <h3>Vervolg</h3>
     <p>Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.</p>
     <h3>Voorwaarden deposit</h3>
-    <p>De aanbetaling wordt in mindering gebracht op de totale koopsom. Restitutievoorwaarden worden vastgelegd in de definitieve overeenkomst. Deze tekst is een concept en kan door UTAMA worden aangepast.</p>
-  `};
+    <p>Restitutievoorwaarden worden vastgelegd in de definitieve overeenkomst. Deze tekst is een concept en kan door UTAMA worden aangepast.</p>
+  `;
 }
 function steps(active){
-  const s=[["1","ITP"],["2","Onder&shy;tekenen"],["3","Aanbetaling"]];
-  return `<div class="steps">${s.map((x,i)=>{const n=i+1;const cls=n<active?"done":(n===active?"on":"");return `<div class="step ${cls}">${n<active?"✓ ":""}${x[1]}</div>`;}).join("")}</div>`;
+  const s=["ITP","Onder&shy;tekenen","Aanbetaling"];
+  return `<div class="steps">${s.map((x,i)=>{const n=i+1;const cls=n<active?"done":(n===active?"on":"");return `<div class="step ${cls}">${n<active?"✓ ":""}${x}</div>`;}).join("")}</div>`;
 }
 function summary(r){
   return `<div class="sum">
@@ -100,6 +109,28 @@ function summary(r){
     <div><div class="k">Unit</div><div class="v">${esc(r.unit||"—")}</div></div>
     <div><div class="k">Aanbetaling</div><div class="v">${euro(r.deposit_amount)}</div></div>
   </div>`;
+}
+function bankBlock(r){
+  const ref=refText(r);
+  return `<h3 style="margin:6px 0 4px;font-size:15px">Aanbetaling — ${euro(r.deposit_amount)}</h3>
+    <p class="muted" style="font-size:13px;margin:0 0 12px">Maak de aanbetaling over aan <b>PT Bali Utama Property</b> met onderstaand betalingskenmerk. Kies één van de twee rekeningen.</p>
+    <div class="bank"><div class="k">Betalingskenmerk (vermeld dit bij je overschrijving)</div><div class="v" id="ref">${esc(ref)}</div><div style="margin-top:8px"><button class="cp" data-copy="${esc(ref)}">Kopieer kenmerk</button></div></div>
+    <div class="banks">
+      <div class="bank2"><div class="bt">Optie 1 · Europa (EUR)</div>
+        <div class="row"><span>Bank</span><b>BUNQ B.V.</b></div>
+        <div class="row"><span>Naam</span><b>Steven Gijsman</b></div>
+        <div class="row"><span>IBAN</span><b>NL40BUNQ2025524439</b><button class="cp" data-copy="NL40BUNQ2025524439">Kopieer</button></div>
+      </div>
+      <div class="bank2"><div class="bt">Optie 2 · Indonesië</div>
+        <div class="row"><span>Bank</span><b>OCBC NISP</b></div>
+        <div class="row"><span>Naam</span><b>PT Bali Utama Property</b></div>
+        <div class="row"><span>Rekeningnr.</span><b>160800023394</b><button class="cp" data-copy="160800023394">Kopieer</button></div>
+        <div class="row"><span>SWIFT</span><b>NISPIDJAXXX</b></div>
+        <div class="row"><span>Branch</span><b>7160</b></div>
+        <div class="row"><span>Bank code</span><b>028</b></div>
+        <div class="row"><span>Adres</span><b>Jl. Teuku Umar No 2-4, Denpasar 80114, Bali — Indonesia</b></div>
+      </div>
+    </div>`;
 }
 function render(){
   const r=RES;
@@ -114,45 +145,47 @@ function render(){
     return;
   }
   const signed=!!r.itp_signed_at;
-  const it=itpText(r);
   let h=summary(r)+steps(signed?3:1);
-  h+=`<div class="itp" id="itpbox">${it.html}</div>`;
+  h+=`<div class="itp" id="itpbox">${itpText(r)}</div>`;
   if(!signed){
     h+=`<div class="field" style="margin-top:18px"><label>Volledige naam (digitale handtekening)</label><input type="text" id="signer" placeholder="Voor- en achternaam" value="${esc(r.name||"")}"></div>
       <label class="check"><input type="checkbox" id="agree"><span>Ik heb de intentieverklaring gelezen en ga akkoord met de reservering en de aanbetaling van ${euro(r.deposit_amount)}.</span></label>
       <div id="msg"></div>
       <button class="btn" id="signBtn">Onderteken de ITP</button>
-      <div class="note">Ondertekenen legt je intentie vast met tijdstempel. Betalen doe je in de volgende stap.</div>`;
+      <div class="note">Ondertekenen legt je intentie vast met tijdstempel. De aanbetaling volgt in de volgende stap.</div>`;
   }else{
-    h+=`<div style="margin:16px 0"><span class="ok-badge">✓ ITP ondertekend door ${esc(r.itp_signer_name||r.name||"")}</span></div>
-      <div id="msg"></div>
-      <button class="btn" id="payBtn">Betaal ${euro(r.deposit_amount)} aanbetaling</button>
-      <div class="pay-methods"><span class="pm">iDEAL</span><span class="pm">Creditcard</span><span class="pm">Bancontact</span></div>
-      <div class="note">Je wordt doorgestuurd naar een beveiligde betaalpagina.</div>`;
+    const reported=r.payment_status==="transfer_reported";
+    h+=`<div style="margin:16px 0"><span class="ok-badge">✓ ITP ondertekend door ${esc(r.itp_signer_name||r.name||"")}</span></div>`;
+    h+=bankBlock(r);
+    h+=`<div id="msg"></div>`;
+    if(reported){
+      h+=`<div class="ok-badge" style="background:#fdf3e2;color:#8a6410;border-color:#f4e2c1;margin-top:12px">⏳ Betaling gemeld — we bevestigen je reservering zodra de aanbetaling binnen is.</div>`;
+    }else{
+      h+=`<button class="btn" id="paidBtn" style="margin-top:14px">Ik heb de overschrijving gedaan</button>
+        <div class="note">Klik nadat je de overschrijving hebt gedaan. We bevestigen zodra het bedrag is ontvangen.</div>`;
+    }
   }
   body.innerHTML=h;
-  const sb=$("#signBtn");
-  if(sb)sb.onclick=doSign;
-  const pb=$("#payBtn");
-  if(pb)pb.onclick=doPay;
+  const sb=$("#signBtn"); if(sb)sb.onclick=doSign;
+  const pb=$("#paidBtn"); if(pb)pb.onclick=doMarkTransfer;
+  document.querySelectorAll(".cp").forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);const t=b.textContent;b.textContent="Gekopieerd";setTimeout(()=>b.textContent=t,1200);}catch(e){}});
 }
 function makePdf(r,signer){
   try{
     const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"pt",format:"a4"});
     const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
     doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("UTAMA — Intentieverklaring tot aankoop",M,y);y+=26;
-    doc.setFont("helvetica","normal");doc.setFontSize(10.5);doc.setTextColor(90);
+    doc.setFont("helvetica","normal");doc.setFontSize(10.5);doc.setTextColor(30);
     const lines=[
       "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
-      "PARTIJEN","Verkoper: UTAMA Bali","Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
+      "PARTIJEN","Verkoper: PT Bali Utama Property","Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
       "OBJECT","Project: "+(r.project||"—"),"Unit: "+(r.unit||"—"),(r.unit_price?"Indicatieve koopsom: €"+Number(r.unit_price).toLocaleString("nl-NL"):""),"",
-      "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL"),
-      "Met deze aanbetaling wordt de unit voor de koper gereserveerd en uit de verkoop gehaald.","",
-      "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de","notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.","",
-      "VOORWAARDEN","De aanbetaling wordt in mindering gebracht op de totale koopsom. Restitutievoorwaarden","worden vastgelegd in de definitieve overeenkomst.","",
+      "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL")+" aan PT Bali Utama Property.",
+      "Referentie: "+refText(r),
+      "Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.","",
+      "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
       "ONDERTEKENING","Digitaal ondertekend door: "+signer,"Datum: "+new Date().toLocaleString("nl-NL")
     ];
-    doc.setTextColor(30);
     lines.forEach(t=>{const wrapped=doc.splitTextToSize(t,W);wrapped.forEach(w=>{if(y>780){doc.addPage();y=64;}doc.text(w,M,y);y+=15;});});
     return doc.output("datauristring").split(",")[1];
   }catch(e){return null;}
@@ -167,25 +200,15 @@ async function doSign(){
   if(res&&res.ok){RES=await api("get");render();}
   else{btn.disabled=false;btn.textContent="Onderteken de ITP";msg.innerHTML='<div class="err">'+esc((res&&res.error)||"Er ging iets mis.")+'</div>';}
 }
-async function doPay(){
-  const btn=$("#payBtn");btn.disabled=true;btn.textContent="Bezig…";const msg=$("#msg");
-  const res=await api("create_payment",{});
-  if(res&&res.checkout){location.href=res.checkout;return;}
-  btn.disabled=false;btn.textContent="Betaal "+euro(RES.deposit_amount)+" aanbetaling";
-  const m=(res&&res.error)||"";
-  if(/Mollie|geconfigureerd/i.test(m)){
-    msg.innerHTML='<div class="ok-badge" style="background:#e8f0fb;color:#1d4ed8;border-color:#cfe0f7">✓ Je ITP is opgeslagen — we activeren de online betaling binnenkort en nemen contact op.</div>';
-  }else{
-    msg.innerHTML='<div class="err">'+esc(m||"Er ging iets mis.")+'</div>';
-  }
+async function doMarkTransfer(){
+  const btn=$("#paidBtn");btn.disabled=true;btn.textContent="Bezig…";const msg=$("#msg");
+  const res=await api("mark_transfer",{});
+  if(res&&res.ok){RES=await api("get");render();}
+  else{btn.disabled=false;btn.textContent="Ik heb de overschrijving gedaan";msg.innerHTML='<div class="err">'+esc((res&&res.error)||"Er ging iets mis.")+'</div>';}
 }
 (async function(){
   if(!token){body.innerHTML='<div class="err">Geen reservering opgegeven.</div>';return;}
   RES=await api("get");
-  // if returning from Mollie but webhook not processed yet, poll briefly
-  if(RES&&RES.status!=="deposit_paid"&&new URLSearchParams(location.search).has("token")&&RES.payment_status==="open"){
-    for(let i=0;i<4&&RES.payment_status==="open";i++){await new Promise(r=>setTimeout(r,1500));RES=await api("get");}
-  }
   render();
 })();
 </script>

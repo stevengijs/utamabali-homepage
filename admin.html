@@ -1047,12 +1047,20 @@ async function openPerson(p){
 
   // reservations & €5K deposit flow
   const manageResv=canEdit('portal')||canEdit('leads');
-  let resvHtml=resvs.length?_mt(['Project','Unit','Deposit','ITP','Payment','Link'],resvs.map(r=>[
-      esc(r.project||'—'),esc(r.unit||'—'),money(r.deposit_amount),
-      r.itp_signed_at?'<span class="badge green">signed</span>':'<span class="badge grey">—</span>',
-      (r.status==='deposit_paid'||r.payment_status==='paid')?'<span class="badge green">paid</span>':'<span class="badge amber">'+esc(r.payment_status||'open')+'</span>',
-      `<button class="btn btn-ghost btn-sm" data-copy="${RESV_SITE}/reserve.html?token=${esc(r.token)}">Copy link</button>`
-    ])):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
+  const payBadge=r=>{
+    if(r.status==='deposit_paid'||r.payment_status==='paid')return '<span class="badge green">paid</span>';
+    if(r.payment_status==='transfer_reported')return '<span class="badge amber">transfer reported</span>';
+    return '<span class="badge grey">'+esc(r.payment_status||'open')+'</span>';
+  };
+  let resvHtml=resvs.length?_mt(['Project','Unit','Deposit','ITP','Payment','Link',manageResv?'Action':''],resvs.map(r=>{
+      const paid=(r.status==='deposit_paid'||r.payment_status==='paid');
+      const cells=[esc(r.project||'—'),esc(r.unit||'—'),money(r.deposit_amount),
+        r.itp_signed_at?'<span class="badge green">signed</span>':'<span class="badge grey">—</span>',
+        payBadge(r),
+        `<button class="btn btn-ghost btn-sm" data-copy="${RESV_SITE}/reserve.html?token=${esc(r.token)}">Copy link</button>`];
+      if(manageResv)cells.push(paid?'<span class="muted" style="font-size:12px">'+fmtDate(r.paid_at)+'</span>':`<button class="btn btn-primary btn-sm" data-confirmpaid="${r.id}" data-amt="${r.deposit_amount||''}">Confirm paid</button>`);
+      return cells;
+    })):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
   if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="newResv">+ Nieuwe reservering / aanbetaling</button></div>`;
   body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',resvHtml);
   body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
@@ -1089,8 +1097,15 @@ async function openPerson(p){
     mb.querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.project,b.dataset.enable==='1',b.dataset.id||null));
     const gb=$('#dr_grant_btn');if(gb)gb.onclick=()=>{const s=$('#dr_grant_sel');if(s&&s.value)setDataroom(p,s.value,true,null);};
     mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}toast('Reserveringslink gekopieerd','ok');});
+    mb.querySelectorAll('[data-confirmpaid]').forEach(b=>b.onclick=()=>markReservationPaid(b.dataset.confirmpaid,Number(b.dataset.amt)||null,p));
     const nr=$('#newResv');if(nr)nr.onclick=()=>openReservationForm(p,projList);
   }
+}
+async function markReservationPaid(id,amount,person){
+  if(!confirm('Bevestig dat de aanbetaling is ontvangen? De reservering wordt op "deposit paid" gezet.'))return;
+  const {error}=await sb.from('reservations').update({status:'deposit_paid',payment_status:'paid',paid_at:new Date().toISOString(),paid_amount:amount,paid_method:'bank_transfer'}).eq('id',id);
+  if(error){toast(error.message,'err');return;}
+  toast('Aanbetaling bevestigd','ok');openPerson(person);
 }
 const RESV_SITE='https://utamabali.com';
 function openReservationForm(p,projList){
