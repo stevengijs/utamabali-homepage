@@ -682,7 +682,7 @@ async function renderAnalytics(){
   const spanDays=Math.max(1,Math.round((untilD-sinceD)/864e5));
   const [evR,leadsR,purchR,webR,projR]=await Promise.all([
     sb.from('analytics_events').select('event_id,session_id,visitor_hash,is_new_session,path,referrer_host,channel,utm_source,utm_campaign,country,device,browser,duration_ms,created_at,page_title').gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).limit(50000),
-    sb.from('leads').select('project,source_page,type,created_at').gte('created_at',since).lte('created_at',until),
+    sb.from('leads').select('contact_id,project,source_page,type,created_at').gte('created_at',since).lte('created_at',until),
     sb.from('purchases').select('project,price,deposit_amount,status,created_at'),
     sb.from('webinar_registrations').select('call_booked,attended,created_at').gte('created_at',since).lte('created_at',until),
     sb.from('projects').select('name,slug,status,sort_order').order('sort_order',{ascending:true}),
@@ -726,6 +726,8 @@ async function renderAnalytics(){
   // A brochure / interest sign-up = any lead form fill (across every project), except the two action types.
   // (The brochure pop-up saves the lead under the project page, not a /brochure URL, so filtering on the URL misses most of them.)
   const brochure=leads.filter(l=>{const t=(l.type||'').toLowerCase();return t!=='reservation'&&t!=='dataroom_request';});
+  // unique people who signed up (dedupe by contact) — a person who requests twice counts once
+  const brochurePeople=new Set(brochure.map(l=>l.contact_id||('lead:'+l.source_page+l.created_at))).size;
   const brByProj=(()=>{const m={};brochure.forEach(l=>{const k=l.project||'(onbekend)';m[k]=(m[k]||0)+1;});return Object.entries(m).map(([k,n])=>({label:k,value:n,display:anInt(n)})).sort((a,b)=>b.value-a.value);})();
 
   // funnel + revenue
@@ -771,7 +773,7 @@ async function renderAnalytics(){
     ['Avg. time on page',anDur(avgDur),'engaged'],
     ['Bounce rate',sessions?anPct(bounces/sessions):'—','single-page visits'],
     ['Visitor→lead',visitors?anPct(Math.min(1,nLeads/visitors)):'—',anInt(nLeads)+' leads'],
-    ['Brochure sign-ups',anInt(brochure.length),'klik voor deze aanvragen','signups'],
+    ['Brochure sign-ups',anInt(brochurePeople),'unieke personen · klik hiervoor','signups'],
   ];
   let html='';
   if(pageviews===0)html+=`<div class="an-note">📡 Tracking is live. No visits recorded for <b>${esc(rangeLabel.toLowerCase())}</b> yet — this fills in automatically as people visit the site. The funnel below still reflects your leads, calls & sales.</div>`;
@@ -1154,17 +1156,20 @@ function drawRecentSignups(){
   let bro=all.filter(x=>{const t=(x.type||'').toLowerCase();return t!=='reservation'&&t!=='dataroom_request';});
   if(SIGNUPS_DAYS){const cut=Date.now()-SIGNUPS_DAYS*864e5;bro=bro.filter(x=>{const t=x.created_at?new Date(x.created_at).getTime():0;return t&&t>=cut;});}
   bro.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
-  const total=bro.length;
-  const shown=bro.slice(0,SIGNUPS_LIMIT);
+  // one row per person (most recent sign-up), count how many times they requested
+  const byPid={},uniq=[];
+  bro.forEach(x=>{const k=x.pid||x.email||JSON.stringify([x.who,x.created_at]);if(byPid[k]){byPid[k]._n++;return;}const row={...x,_n:1};byPid[k]=row;uniq.push(row);});
+  const total=uniq.length;
+  const shown=uniq.slice(0,SIGNUPS_LIMIT);
   const th='position:sticky;top:0;background:#fafbfa;z-index:1';
   const opts=[10,25,50,100,500].map(n=>`<option value="${n}" ${n===SIGNUPS_LIMIT?'selected':''}>${n}</option>`).join('');
   const perOpts=[['','Alle periodes'],['7','7 dagen'],['30','30 dagen'],['90','90 dagen']].map(([v,l])=>`<option value="${v}" ${String(SIGNUPS_DAYS||'')===v?'selected':''}>${l}</option>`).join('');
-  let h=`<div class="panel" style="margin-top:0;margin-bottom:18px"><div class="panel-head"><div><h3>Laatste brochure sign-ups <span class="count-pill">${total}</span></h3><div class="desc">Brochure-aanvragen — klik op een regel om het contact te openen.</div></div>
+  let h=`<div class="panel" style="margin-top:0;margin-bottom:18px"><div class="panel-head"><div><h3>Laatste brochure sign-ups <span class="count-pill">${total}</span></h3><div class="desc">Unieke personen die de brochure aanvroegen — klik op een regel om het contact te openen.</div></div>
       <div class="toolbar"><select id="signups_period" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">${perOpts}</select><span class="muted" style="font-size:12px">Toon</span><select id="signups_limit" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">${opts}</select></div></div>
     <div class="table-wrap" style="max-height:360px"><table><thead><tr><th style="${th}">Wie</th><th style="${th}">E-mail</th><th style="${th}">Telefoon</th><th style="${th}">Project</th><th style="${th}">Wanneer</th></tr></thead><tbody>`;
   if(!shown.length)h+='<tr><td colspan="5" class="empty">Geen brochure-aanvragen in deze periode.</td></tr>';
   shown.forEach(l=>{
-    h+=`<tr data-openp="${l.pid}" style="cursor:pointer"><td><b>${esc(l.who||'—')}</b></td><td>${l.email?`<a href="mailto:${esc(l.email)}" onclick="event.stopPropagation()">${esc(l.email)}</a>`:'—'}</td><td>${l.phone?`<a href="https://wa.me/${(l.phone||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#0f6b4f">${esc(l.phone)}</a>`:'—'}</td><td>${esc(l.project||'—')}</td><td>${fmtDateTime(l.created_at)}</td></tr>`;
+    h+=`<tr data-openp="${l.pid}" style="cursor:pointer"><td><b>${esc(l.who||'—')}</b>${l._n>1?` <span class="badge grey" title="Aantal aanvragen">${l._n}×</span>`:''}</td><td>${l.email?`<a href="mailto:${esc(l.email)}" onclick="event.stopPropagation()">${esc(l.email)}</a>`:'—'}</td><td>${l.phone?`<a href="https://wa.me/${(l.phone||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#0f6b4f">${esc(l.phone)}</a>`:'—'}</td><td>${esc(l.project||'—')}</td><td>${fmtDateTime(l.created_at)}</td></tr>`;
   });
   h+='</tbody></table></div>';
   if(total>shown.length)h+=`<div class="muted" style="font-size:12px;padding:8px 18px">${shown.length} van ${total} getoond — kies een hoger aantal of scroll.</div>`;
