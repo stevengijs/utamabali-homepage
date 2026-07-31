@@ -846,7 +846,7 @@ async function renderLiveVisitors(){
   const now=Date.now();
   const since=new Date(now-30*60000).toISOString();
   const {data,error}=await sb.from('analytics_events')
-    .select('session_id,visitor_hash,site,path,page_title,project,channel,referrer_host,utm_source,utm_campaign,country,device,browser,created_at')
+    .select('session_id,visitor_hash,site,path,page_title,project,channel,referrer_host,utm_source,utm_campaign,country,city,device,browser,created_at')
     .gte('created_at',since).order('created_at',{ascending:false}).limit(5000);
   if(!$('#live_visitors'))return; // navigated away while loading
   if(error){box.innerHTML=`<div class="empty" style="padding:18px">Live data niet beschikbaar: ${esc(error.message)}</div>`;return;}
@@ -879,7 +879,7 @@ async function renderLiveVisitors(){
     h+=`<div class="muted" style="padding:4px 18px 16px;font-size:13px">Niemand is op dit moment op de site. Zodra iemand de website bezoekt, verschijnt die hier live — met pagina en bron.${last30?` Er ${last30===1?'was 1 bezoeker':'waren '+last30+' bezoekers'} in de afgelopen 30 minuten.`:''}</div>`;
   }else{
     h+=`<div class="table-wrap" style="max-height:360px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Huidige pagina</th><th>Bron</th><th>Sinds</th></tr></thead><tbody>`;
-    active.forEach(e=>{const s=srcOf(e);const loc=e.country?esc(e.country):'—';
+    active.forEach(e=>{const s=srcOf(e);const loc=[e.city,e.country].filter(Boolean).map(esc).join(', ')||'—';
       h+=`<tr><td><span class="live-meta">${dev(e.device)} ${esc(e.device||'—')}${e.browser?' · '+esc(e.browser):''}<br>${loc}</span></td>`
        +`<td><div class="live-path">${esc(pageName(e.path))}</div><div class="live-ttl">${esc((e.site||'')+(e.path||'/').split('?')[0].split('#')[0])}</div></td>`
        +`<td><span class="src-badge ${s.c}">${esc(s.c)}</span><div class="live-meta" style="margin-top:3px">${esc(s.detail)}</div></td>`
