@@ -157,6 +157,21 @@
   .rev-row{display:flex;gap:26px;flex-wrap:wrap;padding:16px 20px;border-top:1px solid var(--line)}
   .rev-row .rk{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
   .rev-row .rv{font-size:22px;font-weight:750}
+  .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#16a34a;margin-right:8px;vertical-align:middle;box-shadow:0 0 0 0 rgba(22,163,74,.55);animation:livePulse 1.8s infinite}
+  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(22,163,74,.5)}70%{box-shadow:0 0 0 8px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+  .live-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:2px 0}
+  .live-count{font-size:30px;font-weight:800;color:var(--brand-ink);line-height:1}
+  .live-sub{font-size:12.5px;color:var(--muted)}
+  .live-tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .live-tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;padding:8px 18px;border-bottom:1px solid var(--line)}
+  .live-tbl td{padding:10px 18px;border-bottom:1px solid var(--line);vertical-align:top}
+  .live-tbl tr:last-child td{border-bottom:none}
+  .live-path{font-weight:650;color:var(--ink);word-break:break-all}
+  .live-ttl{font-size:11.5px;color:var(--muted)}
+  .src-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3}
+  .src-badge.paid{background:#fef2f2;color:#b91c1c}.src-badge.organic{background:#ecfdf5;color:#047857}.src-badge.social{background:#eff6ff;color:#1d4ed8}.src-badge.direct{background:#f1f5f9;color:#475569}.src-badge.referral{background:#faf5ff;color:#7c3aed}.src-badge.campaign{background:#fffbeb;color:#b45309}.src-badge.email{background:#fdf4ff;color:#a21caf}
+  .live-meta{font-size:12px;color:var(--muted)}
+  .live-ago{white-space:nowrap;font-weight:650;color:#16a34a}
   .lock-note{padding:40px;text-align:center;color:var(--muted)}
   .readonly-tag{font-size:11px;font-weight:700;color:var(--warn);background:#fdf3e2;border:1px solid #f4e2c1;padding:3px 9px;border-radius:999px}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
@@ -740,6 +755,8 @@ async function renderAnalytics(){
   if(pageviews===0)html+=`<div class="an-note">📡 Tracking is live. No visits recorded for <b>${esc(rangeLabel.toLowerCase())}</b> yet — this fills in automatically as people visit the site. The funnel below still reflects your leads, calls & sales.</div>`;
   html+='<div class="cards">'+kpis.map(k=>{const g=k[3]?` data-go="${k[3]}" style="cursor:pointer"`:'';return `<div class="stat"${g}><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`;}).join('')+'</div>';
 
+  html+=`<div class="panel" id="live_panel"><div class="panel-head"><div><h3><span class="live-dot"></span>Nu live op de site</h3><div class="desc">Bezoekers die nu actief zijn — op welke pagina en waar ze vandaan komen. Ververst automatisch elke 20 sec.</div></div></div><div id="live_visitors"><div class="muted" style="padding:8px 18px">Live bezoekers laden…</div></div></div>`;
+
   html+=`<div class="panel"><div class="panel-head"><div><h3>Traffic over time</h3><div class="desc">Page views and unique visitors per day.</div></div></div>${anLine(series)}</div>`;
 
   html+=`<div class="panel"><div class="panel-head"><div><h3>Conversion funnel to revenue</h3><div class="desc">From anonymous visitor to paying investor · ${esc(rangeLabel.toLowerCase())}.</div></div></div>
@@ -774,6 +791,48 @@ async function renderAnalytics(){
     if(x.dataset.go==='signups'){SIGNUPS_DAYS=spanDays;go('leads');}
     else go(x.dataset.go);
   });
+  renderLiveVisitors();
+  if(LIVE_TIMER)clearInterval(LIVE_TIMER);
+  LIVE_TIMER=setInterval(renderLiveVisitors,20000);
+}
+let LIVE_TIMER=null;
+async function renderLiveVisitors(){
+  const box=$('#live_visitors');
+  if(!box){ if(LIVE_TIMER){clearInterval(LIVE_TIMER);LIVE_TIMER=null;} return; }
+  const now=Date.now();
+  const since=new Date(now-30*60000).toISOString();
+  const {data,error}=await sb.from('analytics_events')
+    .select('session_id,visitor_hash,path,page_title,project,channel,referrer_host,utm_source,utm_campaign,country,device,browser,created_at')
+    .gte('created_at',since).order('created_at',{ascending:false}).limit(5000);
+  if(!$('#live_visitors'))return; // navigated away while loading
+  if(error){box.innerHTML=`<div class="empty" style="padding:18px">Live data niet beschikbaar: ${esc(error.message)}</div>`;return;}
+  const rows=data||[];
+  // latest event per session (rows already newest-first)
+  const seen={},sessions=[];
+  rows.forEach(e=>{if(!e.session_id||seen[e.session_id])return;seen[e.session_id]=1;sessions.push(e);});
+  const LIVE_WINDOW=5*60000;
+  const active=sessions.filter(s=>now-new Date(s.created_at).getTime()<=LIVE_WINDOW);
+  const n=active.length, last30=sessions.length;
+  const dev=d=>({desktop:'🖥️',mobile:'📱',tablet:'📲'}[d]||'💻');
+  const ago=ms=>{const s=Math.max(0,Math.round(ms/1000));if(s<15)return 'net nu';if(s<60)return s+' sec geleden';const m=Math.round(s/60);return m+' min geleden';};
+  const srcOf=e=>{const c=(e.channel||'direct').toLowerCase();let detail='';
+    if(e.utm_campaign)detail=e.utm_campaign;else if(e.utm_source)detail=e.utm_source;else if(e.referrer_host)detail=e.referrer_host;
+    else detail={direct:'directe link',organic:'zoekmachine',social:'social',paid:'advertentie',referral:'verwijzing',campaign:'campagne',email:'e-mail',internal:'intern'}[c]||c;
+    return {c,detail};};
+  let h=`<div class="live-head" style="padding:6px 18px 12px"><span class="live-count">${n}</span><span class="live-sub">${n===1?'bezoeker nu online':'bezoekers nu online'} · laatste 5 min · <b>${last30}</b> in laatste 30 min</span></div>`;
+  if(!n){
+    h+=`<div class="muted" style="padding:4px 18px 16px;font-size:13px">Niemand is op dit moment op de site. Zodra iemand de website bezoekt, verschijnt die hier live — met pagina en bron.${last30?` Er ${last30===1?'was 1 bezoeker':'waren '+last30+' bezoekers'} in de afgelopen 30 minuten.`:''}</div>`;
+  }else{
+    h+=`<div class="table-wrap" style="max-height:360px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Huidige pagina</th><th>Bron</th><th>Sinds</th></tr></thead><tbody>`;
+    active.forEach(e=>{const s=srcOf(e);const loc=e.country?esc(e.country):'—';
+      h+=`<tr><td><span class="live-meta">${dev(e.device)} ${esc(e.device||'—')}${e.browser?' · '+esc(e.browser):''}<br>${loc}</span></td>`
+       +`<td><div class="live-path">${esc(e.path||'/')}</div>${e.page_title?`<div class="live-ttl">${esc(e.page_title)}</div>`:''}</td>`
+       +`<td><span class="src-badge ${s.c}">${esc(s.c)}</span><div class="live-meta" style="margin-top:3px">${esc(s.detail)}</div></td>`
+       +`<td class="live-ago">${ago(now-new Date(e.created_at).getTime())}</td></tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  box.innerHTML=h;
 }
 
 /* ================= REVENUE ================= */
