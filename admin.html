@@ -734,7 +734,7 @@ async function renderAnalytics(){
     ['Avg. time on page',anDur(avgDur),'engaged'],
     ['Bounce rate',sessions?anPct(bounces/sessions):'—','single-page visits'],
     ['Visitor→lead',visitors?anPct(Math.min(1,nLeads/visitors)):'—',anInt(nLeads)+' leads'],
-    ['Brochure sign-ups',anInt(brochure.length),'klik voor de aanvragen','leads'],
+    ['Brochure sign-ups',anInt(brochure.length),'klik voor deze aanvragen','signups'],
   ];
   let html='';
   if(pageviews===0)html+=`<div class="an-note">📡 Tracking is live. No visits recorded for <b>${esc(rangeLabel.toLowerCase())}</b> yet — this fills in automatically as people visit the site. The funnel below still reflects your leads, calls & sales.</div>`;
@@ -770,7 +770,10 @@ async function renderAnalytics(){
     <div class="rev-row"><span class="muted" style="font-size:12px">Devices: ${devices.map(d=>`${esc(d.k)} ${anInt(d.n)}`).join(' · ')||'—'}</span></div></div>`;
 
   v.innerHTML=html;
-  v.querySelectorAll('.stat[data-go]').forEach(x=>x.onclick=()=>go(x.dataset.go));
+  v.querySelectorAll('.stat[data-go]').forEach(x=>x.onclick=()=>{
+    if(x.dataset.go==='signups'){SIGNUPS_SINCE=since;SIGNUPS_UNTIL=until;SIGNUPS_LABEL=rangeLabel;go('leads');}
+    else go(x.dataset.go);
+  });
 }
 
 /* ================= REVENUE ================= */
@@ -993,16 +996,19 @@ async function renderPeople(){
   drawPeople();
   $('#search_people').addEventListener('input',drawPeople);
 }
-let SIGNUPS_LIMIT=25;
+let SIGNUPS_LIMIT=25,SIGNUPS_SINCE=null,SIGNUPS_UNTIL=null,SIGNUPS_LABEL=null;
 function drawRecentSignups(){
   const el=$('#people_banner');if(!el)return;
   const all=[];PEOPLE.forEach(p=>(p._leads||[]).forEach(l=>all.push({...l,who:p.name||p.email,email:p.email,phone:p.phone,pid:p.id})));
-  const bro=all.filter(x=>/brochure/i.test(x.source_page||'')).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  let bro=all.filter(x=>/brochure/i.test(x.source_page||''));
+  if(SIGNUPS_SINCE)bro=bro.filter(x=>x.created_at&&x.created_at>=SIGNUPS_SINCE&&(!SIGNUPS_UNTIL||x.created_at<=SIGNUPS_UNTIL));
+  bro.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   const total=bro.length;
   const shown=bro.slice(0,SIGNUPS_LIMIT);
   const th='position:sticky;top:0;background:#fafbfa;z-index:1';
   const opts=[10,25,50,100,500].map(n=>`<option value="${n}" ${n===SIGNUPS_LIMIT?'selected':''}>${n}</option>`).join('');
-  let h=`<div class="panel" style="margin-top:0;margin-bottom:18px"><div class="panel-head"><div><h3>Laatste brochure sign-ups <span class="count-pill">${total}</span></h3><div class="desc">Brochure-aanvragen — klik op een regel om het contact te openen.</div></div>
+  const chip=SIGNUPS_SINCE?` <span class="badge blue" id="signups_clear" style="cursor:pointer">Periode: ${esc(SIGNUPS_LABEL||'')} · wis ✕</span>`:'';
+  let h=`<div class="panel" style="margin-top:0;margin-bottom:18px"><div class="panel-head"><div><h3>Laatste brochure sign-ups <span class="count-pill">${total}</span></h3><div class="desc">Brochure-aanvragen — klik op een regel om het contact te openen.${chip}</div></div>
       <div class="toolbar"><span class="muted" style="font-size:12px">Toon</span><select id="signups_limit" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">${opts}</select></div></div>
     <div class="table-wrap" style="max-height:360px"><table><thead><tr><th style="${th}">Wie</th><th style="${th}">E-mail</th><th style="${th}">Telefoon</th><th style="${th}">Project</th><th style="${th}">Wanneer</th></tr></thead><tbody>`;
   if(!shown.length)h+='<tr><td colspan="5" class="empty">Nog geen brochure-aanvragen.</td></tr>';
@@ -1014,6 +1020,7 @@ function drawRecentSignups(){
   h+='</div>';
   el.innerHTML=h;
   const sel=$('#signups_limit');if(sel)sel.onchange=()=>{SIGNUPS_LIMIT=Number(sel.value);drawRecentSignups();};
+  const clr=$('#signups_clear');if(clr)clr.onclick=()=>{SIGNUPS_SINCE=null;SIGNUPS_UNTIL=null;SIGNUPS_LABEL=null;drawRecentSignups();};
   el.querySelectorAll('[data-openp]').forEach(tr=>tr.onclick=()=>openPerson(PEOPLE.find(x=>x.id===tr.dataset.openp)));
 }
 function drawPeopleBanner(){
