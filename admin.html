@@ -1225,8 +1225,7 @@ async function openPerson(p){
           <div style="font-size:13px"><b>${esc(r.project||'—')} · ${esc(r.unit||'—')}</b> <span class="muted">${money(r.deposit_amount)} deposit</span><br>
             ITP: ${r.itp_signed_at?'<span class="badge green">getekend '+fmtDate(r.itp_signed_at)+'</span>':(r.itp_body?'<span class="badge blue">opgemaakt</span>':'<span class="badge grey">concept</span>')} · Betaling: ${payBadge(r)}${r.sent_at?' · <span class="muted">verstuurd '+fmtDate(r.sent_at)+(r.sent_via?' ('+esc(r.sent_via)+')':'')+'</span>':''}</div>
           <div class="row-actions" style="flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-ghost btn-sm" data-viewr="${r.id}">Bekijk / PDF</button>
-            ${manageResv?`<button class="btn btn-ghost btn-sm" data-editip="${r.id}">ITP opmaken</button>`:''}
+            <button class="btn btn-primary btn-sm" data-viewr="${r.id}">ITP openen</button>
             ${manageResv&&(r.phone||p.phone)?`<button class="btn btn-ghost btn-sm" style="color:#0f6b4f" data-wa="${r.id}">WhatsApp</button>`:''}
             ${manageResv&&(r.email||p.email)?`<button class="btn btn-ghost btn-sm" data-mail="${r.id}">E-mail</button>`:''}
             <button class="btn btn-ghost btn-sm" data-copy="${link}">Link</button>
@@ -1234,7 +1233,7 @@ async function openPerson(p){
           </div>
         </div></div>`;
     }).join(''):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
-  if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="newResv">+ ITP opstellen / reservering</button></div>`;
+  if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-ghost btn-sm" id="newResv">+ Nieuwe reservering</button></div>`;
   body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',resvHtml);
   body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
 
