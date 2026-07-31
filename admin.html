@@ -581,7 +581,7 @@ async function renderDashboard(){
   async function count(t){const {count,error}=await sb.from(t).select('*',{count:'exact',head:true});return error?'–':(count||0);}
   const stats=[];
   if(canView('analytics')){const since=new Date(Date.now()-30*864e5).toISOString();const {count:pv}=await sb.from('analytics_events').select('*',{count:'exact',head:true}).gte('created_at',since);stats.push(['Page views (30d)',pv||0,'website analytics','analytics']);}
-  if(canView('revenue')){const {data:pd}=await sb.from('purchases').select('status,price');const sales=(pd||[]).filter(x=>revClass(x.status)!=='lost');stats.push(['Revenue to date',anMoney(sales.reduce((a,x)=>a+(Number(x.price)||0),0)),sales.length+' unit'+(sales.length===1?'':'s')+' sold','revenue']);}
+  if(canView('revenue')){const {data:pd}=await sb.from('purchases').select('status,price');const sales=(pd||[]).filter(x=>revClass(x.status)!=='lost');stats.push(['Deals to date',anMoney(sales.reduce((a,x)=>a+(Number(x.price)||0),0)),sales.length+' unit'+(sales.length===1?'':'s')+' sold','revenue']);}
   if(canView('leads')){const {data:rd}=await sb.from('reservations').select('status,itp_signed_at,payment_status');const open=(rd||[]).filter(x=>x.itp_signed_at&&x.status!=='deposit_paid'&&x.payment_status!=='paid');if(open.length)stats.push(['ITP getekend · open',open.length,'wacht op aanbetaling','leads']);}
   if(canView('leads')){stats.push(['Leads',await count('leads'),'site inquiries & reservations','leads']);stats.push(['Contacts',await count('contacts'),'known people','leads']);}
   if(canView('webinars')){stats.push(['Webinar signups',await count('webinar_registrations'),'registrations','webinars']);}
@@ -901,26 +901,29 @@ async function renderRevenue(){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Loading revenue…</div>';
   const [projR,purR]=await Promise.all([
     sb.from('projects').select('name,slug,status,units_total,units_available,price_start,price_current,reservation_amount,sort_order').order('sort_order',{ascending:true}),
-    sb.from('purchases').select('project,unit,buyer_name,status,price,deposit_amount,contract_signed_at,created_at').order('contract_signed_at',{ascending:false,nullsFirst:false}),
+    sb.from('purchases').select('project,unit,buyer_name,status,price,deposit_amount,received_amount,contract_signed_at,created_at').order('contract_signed_at',{ascending:false,nullsFirst:false}),
   ]);
   if(purR.error){v.innerHTML=`<div class="panel"><div class="empty">Couldn’t load revenue: ${esc(purR.error.message)}</div></div>`;return;}
   const projs=projR.data||[],P=purR.data||[];
-  P.forEach(x=>{x._c=revClass(x.status);x._p=Number(x.price)||0;x._d=Number(x.deposit_amount)||0;});
+  P.forEach(x=>{x._c=revClass(x.status);x._p=Number(x.price)||0;x._d=Number(x.deposit_amount)||0;x._r=(x.received_amount==null)?null:Number(x.received_amount);});
   const sales=P.filter(x=>x._c!=='lost'&&x._c!=='pipeline');
 
   // per project: sold units & revenue come from actual deals (real per-unit prices); remaining from project inventory
   const rows=projs.map(pr=>{
     const deals=sales.filter(x=>anMatchProj(x.project,pr.name,pr.slug));
     const sold=deals.length, soldRev=deals.reduce((a,x)=>a+x._p,0);
+    const dt=deals.filter(x=>x._r!=null);
+    const recv=dt.reduce((a,x)=>a+x._r,0), toRecv=dt.reduce((a,x)=>a+Math.max(0,x._p-x._r),0);
+    const untrk=deals.some(x=>x._r==null);
     const askPrice=Number(pr.price_current||pr.price_start)||0;
     const avail=(pr.units_available==null)?Math.max(0,(Number(pr.units_total)||sold)-sold):Number(pr.units_available);
-    return {name:pr.name,status:pr.status,sold,soldRev,askPrice,avail,
+    return {name:pr.name,status:pr.status,sold,soldRev,recv,toRecv,untrk,askPrice,avail,
       remaining:avail*askPrice, total:sold+avail, avg:sold?soldRev/sold:0};
   });
   // deals whose project isn't in the projects table
   const known=new Set(projs.map(p=>(p.name||'').toLowerCase()));
   const orphan=sales.filter(x=>!projs.some(pr=>anMatchProj(x.project,pr.name,pr.slug)));
-  if(orphan.length)rows.push({name:'Other',status:'',sold:orphan.length,soldRev:orphan.reduce((a,x)=>a+x._p,0),askPrice:0,avail:0,remaining:0,total:orphan.length,avg:orphan.reduce((a,x)=>a+x._p,0)/orphan.length});
+  if(orphan.length){const orv=orphan.reduce((a,x)=>a+x._p,0);const odt=orphan.filter(x=>x._r!=null);rows.push({name:'Other',status:'',sold:orphan.length,soldRev:orv,recv:odt.reduce((a,x)=>a+x._r,0),toRecv:odt.reduce((a,x)=>a+Math.max(0,x._p-x._r),0),untrk:orphan.some(x=>x._r==null),askPrice:0,avail:0,remaining:0,total:orphan.length,avg:orv/orphan.length});}
 
   const totalRevenue=sales.reduce((a,x)=>a+x._p,0);
   const totalSold=sales.length;
@@ -930,27 +933,38 @@ async function renderRevenue(){
   const avgPrice=totalSold?totalRevenue/totalSold:0;
   const sellThrough=(totalSold+totalAvail)?totalSold/(totalSold+totalAvail):0;
   const deposits=sales.reduce((a,x)=>a+x._d,0);
+  // Funds received vs still to come (per-deal received_amount; deals without a figure are 'untracked')
+  const tracked=sales.filter(x=>x._r!=null), untracked=sales.filter(x=>x._r==null);
+  const received=tracked.reduce((a,x)=>a+x._r,0);
+  const toReceive=tracked.reduce((a,x)=>a+Math.max(0,x._p-x._r),0);
+  const untrackedVal=untracked.reduce((a,x)=>a+x._p,0);
 
   const kpis=[
-    ['Revenue to date',anMoney(totalRevenue),totalSold+' unit'+(totalSold===1?'':'s')+' sold'],
+    ['Deals to date',anMoney(totalRevenue),totalSold+' unit'+(totalSold===1?'':'s')+' verkocht'],
+    ['Ontvangen',anMoney(received),'daadwerkelijk binnengekomen','#0f9d74'],
+    ['Nog te ontvangen',anMoney(toReceive),'uit lopende contracten','#b7791f'],
     ['Avg. sale price',totalSold?anMoney(avgPrice):'—','per sold unit'],
     ['Remaining inventory',anMoney(remainingValue),totalAvail+' units for sale'],
     ['Sell-through rate',anPct(sellThrough),totalSold+' of '+(totalSold+totalAvail)+' units'],
     ['Total portfolio value',anMoney(portfolioValue),'sold + remaining'],
-    ['Deposits received',anMoney(deposits),'on logged deals'],
   ];
 
   let html='';
-  html+=`<div class="an-note">💰 Revenue to date = som van de werkelijke verkoopprijzen per unit (uit Deals). Remaining inventory = nog beschikbare units × huidige vraagprijs. Voeg een deal toe of pas een prijs aan, dan verandert dit mee.</div>`;
-  html+='<div class="cards">'+kpis.map(k=>`<div class="stat"><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('')+'</div>';
+  html+=`<div class="an-note">💰 Deals to date = som van de contractwaardes per unit (uit Deals). Ontvangen = geld dat al binnen is, Nog te ontvangen = resterende contracttermijnen. ${untrackedVal>0?`Bijgehouden voor MOKA (peildatum 30 mei 2026) en Palma; <b>${anMoney(untrackedVal)}</b> (${untracked.length} deal${untracked.length===1?'':'s'}, The Maison) nog niet — geef de ontvangen bedragen door en ik voeg ze toe.`:'Ontvangen-bedragen komen uit de MOKA sales data (peildatum 30 mei 2026).'}</div>`;
+  html+='<div class="cards">'+kpis.map(k=>`<div class="stat"><div class="k">${k[0]}</div><div class="v"${k[3]?` style="color:${k[3]}"`:''}>${k[1]}</div><div class="s">${k[2]}</div></div>`).join('')+'</div>';
 
   html+=`<div class="panel"><div class="panel-head"><div><h3>Revenue by project</h3><div class="desc">Gerealiseerde omzet uit verkochte units, plus resterende voorraadwaarde.</div></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Project</th><th>Status</th><th>Units sold</th><th>Sell-through</th><th>Avg. sale price</th><th>Revenue to date</th><th>Remaining value</th></tr></thead><tbody>
-    ${rows.length?rows.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${p.status?`<span class="badge grey">${esc(p.status)}</span>`:'—'}</td><td>${anInt(p.sold)} / ${anInt(p.total)}</td><td>${p.total?anPct(p.sold/p.total):'—'}</td><td>${p.sold?anMoney(p.avg):'—'}</td><td><b>${p.soldRev?anMoney(p.soldRev):'—'}</b></td><td>${p.remaining?anMoney(p.remaining):'—'}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">No projects yet.</td></tr>'}
-    </tbody><tfoot><tr style="font-weight:750;background:#fafbfa"><td>Total</td><td></td><td>${anInt(totalSold)} / ${anInt(totalSold+totalAvail)}</td><td>${anPct(sellThrough)}</td><td>${totalSold?anMoney(avgPrice):'—'}</td><td>${anMoney(totalRevenue)}</td><td>${anMoney(remainingValue)}</td></tr></tfoot></table></div></div>`;
+    <div class="table-wrap"><table><thead><tr><th>Project</th><th>Status</th><th>Units sold</th><th>Deal value</th><th>Ontvangen</th><th>Nog te ontvangen</th><th>Remaining value</th></tr></thead><tbody>
+    ${rows.length?rows.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${p.status?`<span class="badge grey">${esc(p.status)}</span>`:'—'}</td><td>${anInt(p.sold)} / ${anInt(p.total)}</td><td><b>${p.soldRev?anMoney(p.soldRev):'—'}</b></td><td style="color:#0f9d74">${p.recv?anMoney(p.recv):(p.untrk?'<span class="muted">n.v.t.</span>':'—')}</td><td style="color:#b7791f">${p.toRecv?anMoney(p.toRecv):(p.untrk&&!p.recv?'<span class="muted">n.v.t.</span>':'—')}</td><td>${p.remaining?anMoney(p.remaining):'—'}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">No projects yet.</td></tr>'}
+    </tbody><tfoot><tr style="font-weight:750;background:#fafbfa"><td>Total</td><td></td><td>${anInt(totalSold)} / ${anInt(totalSold+totalAvail)}</td><td>${anMoney(totalRevenue)}</td><td style="color:#0f9d74">${anMoney(received)}</td><td style="color:#b7791f">${anMoney(toReceive)}</td><td>${anMoney(remainingValue)}</td></tr></tfoot></table></div></div>`;
 
   html+=`<div class="an-grid" style="margin-top:20px">
-    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Revenue to date by project</h3><div class="desc">Gerealiseerde omzet uit verkochte units.</div></div></div>${anBars(rows.filter(r=>r.soldRev>0).map(r=>({label:r.name,value:r.soldRev,display:anMoney(r.soldRev),sub:'· '+r.sold+' sold'})),'#14b37d')}</div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Ontvangen per project</h3><div class="desc">Geld dat al binnen is.</div></div></div>${anBars(rows.filter(r=>r.recv>0).map(r=>({label:r.name,value:r.recv,display:anMoney(r.recv),sub:'· van '+anMoney(r.soldRev)})),'#0f9d74')}</div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Nog te ontvangen per project</h3><div class="desc">Resterende contracttermijnen die nog binnen moeten komen.</div></div></div>${anBars(rows.filter(r=>r.toRecv>0).map(r=>({label:r.name,value:r.toRecv,display:anMoney(r.toRecv),sub:'· van '+anMoney(r.soldRev)})),'#b7791f')}</div>
+  </div>`;
+
+  html+=`<div class="an-grid" style="margin-top:20px">
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Deal value by project</h3><div class="desc">Contractwaarde uit verkochte units.</div></div></div>${anBars(rows.filter(r=>r.soldRev>0).map(r=>({label:r.name,value:r.soldRev,display:anMoney(r.soldRev),sub:'· '+r.sold+' sold'})),'#14b37d')}</div>
     <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Remaining inventory value</h3><div class="desc">Nog te verkopen voorraad × vraagprijs.</div></div></div>${anBars(rows.filter(r=>r.remaining>0).map(r=>({label:r.name,value:r.remaining,display:anMoney(r.remaining),sub:'· '+r.avail+' left'})),'#b7791f')}</div>
   </div>`;
 
