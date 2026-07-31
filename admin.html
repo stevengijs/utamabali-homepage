@@ -193,6 +193,7 @@
 <div class="toast-wrap" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* ================= CONFIG ================= */
 const SUPABASE_URL = "https://gcpachivrwalsneuvlsa.supabase.co";
@@ -1102,7 +1103,7 @@ async function openNotifications(){
     const list=NOTIF_TAB==='open'?open:done.slice(0,40);
     if(!list.length)h+=`<div class="muted" style="padding:14px 2px">${NOTIF_TAB==='open'?'Geen open acties. 🎉':'Nog niets afgehandeld.'}</div>`;
     list.forEach(i=>{
-      let btns=`<button class="btn btn-ghost btn-sm" data-open="${i.contact_id||''}">Open</button>`;
+      let btns=(i.src==='resv')?`<button class="btn btn-ghost btn-sm" data-openr="${i.id}">Open</button>`:`<button class="btn btn-ghost btn-sm" data-open="${i.contact_id||''}">Open</button>`;
       if(NOTIF_TAB==='open'&&canAct){
         if(i.kind==='dataroom')btns=`<button class="btn btn-primary btn-sm" data-grant="${i.contact_id}" data-project="${esc(i.project)}" data-lead="${i.id}">Grant access</button>`+btns;
         if(i.kind==='reservation')btns=`<button class="btn btn-primary btn-sm" data-makeitp="${i.id}">Maak ITP</button>`+btns;
@@ -1115,7 +1116,8 @@ async function openNotifications(){
     const mb=document.querySelector('#overlay .modal-body');if(!mb)return;
     mb.innerHTML=h;
     mb.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{NOTIF_TAB=b.dataset.tab;render();});
-    mb.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open){closeOverlay();openContactById(b.dataset.open);}});
+    mb.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open){closeOverlay();openContactById(b.dataset.open);}else{toast('Geen contact gekoppeld','err');}});
+    mb.querySelectorAll('[data-openr]').forEach(b=>b.onclick=()=>{closeOverlay();openReservation(b.dataset.openr);});
     mb.querySelectorAll('[data-grant]').forEach(b=>b.onclick=async()=>{await bannerGrantDataroom(b.dataset.grant,b.dataset.project,b.dataset.lead);afterNotifAction();});
     mb.querySelectorAll('[data-confirm]').forEach(b=>b.onclick=async()=>{await bannerConfirmPaid(b.dataset.confirm,Number(b.dataset.amt)||null);afterNotifAction();});
     mb.querySelectorAll('[data-makeitp]').forEach(b=>b.onclick=()=>{closeOverlay();makeItpFromReservationLead(b.dataset.makeitp);});
@@ -1223,6 +1225,7 @@ async function openPerson(p){
           <div style="font-size:13px"><b>${esc(r.project||'—')} · ${esc(r.unit||'—')}</b> <span class="muted">${money(r.deposit_amount)} deposit</span><br>
             ITP: ${r.itp_signed_at?'<span class="badge green">getekend '+fmtDate(r.itp_signed_at)+'</span>':(r.itp_body?'<span class="badge blue">opgemaakt</span>':'<span class="badge grey">concept</span>')} · Betaling: ${payBadge(r)}${r.sent_at?' · <span class="muted">verstuurd '+fmtDate(r.sent_at)+(r.sent_via?' ('+esc(r.sent_via)+')':'')+'</span>':''}</div>
           <div class="row-actions" style="flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" data-viewr="${r.id}">Bekijk / PDF</button>
             ${manageResv?`<button class="btn btn-ghost btn-sm" data-editip="${r.id}">ITP opmaken</button>`:''}
             ${manageResv&&(r.phone||p.phone)?`<button class="btn btn-ghost btn-sm" style="color:#0f6b4f" data-wa="${r.id}">WhatsApp</button>`:''}
             ${manageResv&&(r.email||p.email)?`<button class="btn btn-ghost btn-sm" data-mail="${r.id}">E-mail</button>`:''}
@@ -1271,6 +1274,7 @@ async function openPerson(p){
     mb.querySelectorAll('[data-mkitp]').forEach(b=>b.onclick=()=>openReservationForm(p,projList,{project:b.dataset.mkproj,unit:b.dataset.mkunit,leadId:b.dataset.mkitp}));
     mb.querySelectorAll('[data-ldone]').forEach(b=>b.onclick=async()=>{await markLeadHandled(b.dataset.ldone);toast('Afgerond','ok');openPerson(p);});
     mb.querySelectorAll('[data-grantlead]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.grantlead,true,null));
+    mb.querySelectorAll('[data-viewr]').forEach(b=>b.onclick=()=>openReservation(b.dataset.viewr));
     mb.querySelectorAll('[data-editip]').forEach(b=>b.onclick=()=>openItpEditor(PERSON_RESV[b.dataset.editip],p));
     mb.querySelectorAll('[data-wa]').forEach(b=>b.onclick=()=>sendReservation(PERSON_RESV[b.dataset.wa],p,'whatsapp'));
     mb.querySelectorAll('[data-mail]').forEach(b=>b.onclick=()=>sendReservation(PERSON_RESV[b.dataset.mail],p,'email'));
@@ -1285,30 +1289,89 @@ function itpDraft(r){
 }
 function openItpEditor(r,person){
   if(!r)return;
-  const bodyH=`<div class="field"><label>ITP-tekst — automatisch opgemaakt, vrij te bewerken door je team</label>
-    <textarea id="itp_body" rows="16" style="font-family:inherit;font-size:13px">${esc(r.itp_body||itpDraft(r))}</textarea></div>
+  const signedWarn=r.itp_signed_at?`<div class="an-note" style="margin-bottom:12px">⚠️ Deze ITP is al getekend door de klant op ${fmtDateTime(r.itp_signed_at)}. Pas je de tekst aan, dan wijkt die af van wat de klant ondertekende — verstuur 'm dan opnieuw ter bevestiging.</div>`:'';
+  const bodyH=signedWarn+`<div class="field"><label>ITP-tekst — automatisch opgemaakt, vrij te bewerken door je team</label>
+    <textarea id="itp_body" rows="15" style="font-family:inherit;font-size:13px">${esc(r.itp_body||itpDraft(r))}</textarea></div>
     <div class="hint">Dit is wat de klant op de reserveringspagina ziet en digitaal tekent. Verstuur de link daarna via WhatsApp of e-mail.</div>`;
-  showModal('ITP opmaken · '+esc(r.project||'')+' '+esc(r.unit||''),bodyH,async()=>{
+  showModal('ITP bewerken · '+esc(r.project||'')+' '+esc(r.unit||''),bodyH,async()=>{
     const {error}=await sb.from('reservations').update({itp_body:$('#itp_body').value}).eq('id',r.id);
     if(error){toast(error.message,'err');return false;}
-    toast('ITP opgeslagen','ok');openPerson(person);return true;
+    toast('ITP opgeslagen','ok');if(person&&person.id)openPerson(person);else openReservation(r.id);return true;
   });
 }
+function itpStatusLine(r){
+  const paid=(r.status==='deposit_paid'||r.payment_status==='paid');
+  const itp=r.itp_signed_at?`<span class="badge green">Getekend ${fmtDateTime(r.itp_signed_at)}${r.itp_signer_name?' door '+esc(r.itp_signer_name):''}</span>`:(r.itp_body?'<span class="badge blue">Opgemaakt (nog niet getekend)</span>':'<span class="badge grey">Concept</span>');
+  const pay=paid?`<span class="badge green">Aanbetaling ontvangen ${r.paid_at?fmtDate(r.paid_at):''}</span>`:(r.payment_status==='transfer_reported'?'<span class="badge amber">Aanbetaling gemeld — nog te bevestigen</span>':'<span class="badge grey">Nog geen aanbetaling</span>');
+  const sent=r.sent_at?`<span class="badge grey">Verstuurd ${fmtDateTime(r.sent_at)}${r.sent_via?' ('+esc(r.sent_via)+')':''}</span>`:'<span class="badge grey">Nog niet verstuurd</span>';
+  return `<div style="display:flex;flex-direction:column;gap:6px;margin:8px 0 4px"><div>ITP: ${itp}</div><div>Betaling: ${pay}</div><div>Verzending: ${sent}</div></div>`;
+}
+async function openReservation(id){
+  showDetail('Reservering','<div class="muted" style="padding:10px">Laden…</div>');
+  const {data:r}=await sb.from('reservations').select('*').eq('id',id).single();
+  if(!r){toast('Reservering niet gevonden','err');return;}
+  PERSON_RESV[r.id]=r;
+  const link=RESV_SITE+'/reserve.html?token='+r.token;
+  const paid=(r.status==='deposit_paid'||r.payment_status==='paid');
+  const manage=canEdit('portal')||canEdit('leads');
+  let h=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:14px 16px">
+      <div style="font-size:16px;font-weight:750">${esc(r.name||r.email||'—')}</div>
+      <div class="muted" style="font-size:13px;margin-top:2px">${esc(r.project||'')} · ${esc(r.unit||'')} · aanbetaling ${money(r.deposit_amount)}${r.email?' · '+esc(r.email):''}${r.phone?' · '+esc(r.phone):''}</div>
+      ${itpStatusLine(r)}
+    </div>`;
+  h+=_sec('ITP-tekst',`<div class="itp-view" style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;white-space:pre-wrap;font-size:13px;max-height:300px;overflow:auto">${esc(r.itp_body||itpDraft(r))}</div>`);
+  h+=`<div class="row-actions" style="flex-wrap:wrap;justify-content:flex-start;gap:8px;margin-top:16px">
+      <button class="btn btn-ghost btn-sm" data-dlpdf="${r.id}">⬇︎ Download PDF</button>
+      ${manage?`<button class="btn btn-ghost btn-sm" data-editip2="${r.id}">ITP bewerken</button>`:''}
+      ${manage&&(r.phone)?`<button class="btn btn-ghost btn-sm" style="color:#0f6b4f" data-wa2="${r.id}">WhatsApp</button>`:''}
+      ${manage&&(r.email)?`<button class="btn btn-ghost btn-sm" data-mail2="${r.id}">E-mail</button>`:''}
+      <button class="btn btn-ghost btn-sm" data-copy="${link}">Link kopiëren</button>
+      ${(!paid&&manage)?`<button class="btn btn-primary btn-sm" data-confirm2="${r.id}" data-amt="${r.deposit_amount||''}">Confirm paid</button>`:''}
+      ${r.contact_id?`<button class="btn btn-ghost btn-sm" data-openc="${r.contact_id}">Open contact</button>`:''}
+    </div>`;
+  const mb=document.querySelector('#overlay .modal-body');if(!mb)return;
+  mb.innerHTML=h;
+  mb.querySelectorAll('[data-dlpdf]').forEach(b=>b.onclick=()=>downloadItpPdf(r));
+  mb.querySelectorAll('[data-editip2]').forEach(b=>b.onclick=()=>openItpEditor(r,null));
+  mb.querySelectorAll('[data-wa2]').forEach(b=>b.onclick=()=>sendReservation(r,{name:r.name,email:r.email,phone:r.phone},'whatsapp'));
+  mb.querySelectorAll('[data-mail2]').forEach(b=>b.onclick=()=>sendReservation(r,{name:r.name,email:r.email,phone:r.phone},'email'));
+  mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}toast('Link gekopieerd','ok');});
+  mb.querySelectorAll('[data-confirm2]').forEach(b=>b.onclick=async()=>{await bannerConfirmPaid(b.dataset.confirm2,Number(b.dataset.amt)||null);openReservation(r.id);});
+  mb.querySelectorAll('[data-openc]').forEach(b=>b.onclick=()=>openContactById(b.dataset.openc));
+}
+function downloadItpPdf(r){
+  if(!window.jspdf){toast('PDF-bibliotheek nog aan het laden, probeer zo nog eens','err');return;}
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4'});
+  const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('UTAMA — Intentieverklaring tot aankoop',M,y);y+=26;
+  doc.setFont('helvetica','normal');doc.setFontSize(10.5);doc.setTextColor(30);
+  const body=r.itp_body||itpDraft(r);
+  const lines=['Opgesteld op '+new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'}),'',...body.split('\n')];
+  if(r.itp_signed_at)lines.push('','ONDERTEKENING','Digitaal ondertekend door: '+(r.itp_signer_name||''),'Datum: '+fmtDateTime(r.itp_signed_at),'Verificatie-hash: '+(r.itp_hash||''));
+  lines.forEach(t=>{const w=doc.splitTextToSize(t,W);w.forEach(x=>{if(y>790){doc.addPage();y=64;}doc.text(x,M,y);y+=15;});});
+  doc.save('ITP-'+((r.project||'')+'-'+(r.unit||'')).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')+'.pdf');
+  toast('ITP-PDF gedownload','ok');
+}
 async function sendReservation(r,person,via){
-  if(!r)return;
+  if(!r)return;person=person||{};
   const link=RESV_SITE+'/reserve.html?token='+r.token;
   const dep='€'+Number(r.deposit_amount||5000).toLocaleString('nl-NL');
   const msg=`Hoi ${r.name||person.name||''},\n\nHier is je intentieverklaring voor ${r.project||''} ${r.unit||''}. Bekijk en teken hem, en rond je reservering af met de aanbetaling van ${dep} via deze link:\n${link}\n\nVragen? Stuur gerust een berichtje.\n\nGroet, UTAMA`;
+  let url;
   if(via==='whatsapp'){
     const digits=((r.phone||person.phone||'')+'').replace(/[^0-9]/g,'');
-    if(!digits){toast('Geen telefoonnummer bekend','err');return;}
-    window.open('https://wa.me/'+digits+'?text='+encodeURIComponent(msg),'_blank');
+    if(!digits){toast('Geen telefoonnummer bekend voor deze lead','err');return;}
+    url='https://wa.me/'+digits+'?text='+encodeURIComponent(msg);
   }else{
     const to=r.email||person.email||'';
-    window.open('mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent('Je intentieverklaring — UTAMA '+(r.project||''))+'&body='+encodeURIComponent(msg),'_blank');
+    if(!to){toast('Geen e-mailadres bekend voor deze lead','err');return;}
+    url='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent('Je intentieverklaring — UTAMA '+(r.project||''))+'&body='+encodeURIComponent(msg);
   }
+  const w=window.open(url,'_blank');
   await sb.from('reservations').update({sent_at:new Date().toISOString(),sent_via:via}).eq('id',r.id);
-  toast('Klaargezet om te versturen via '+(via==='whatsapp'?'WhatsApp':'e-mail'),'ok');
+  if(w){toast((via==='whatsapp'?'WhatsApp':'E-mail')+' geopend — de ITP-link staat in het bericht. Klik op verzenden in '+(via==='whatsapp'?'WhatsApp':'je mail'),'ok');}
+  else{try{navigator.clipboard.writeText(msg+'\n'+link);}catch(e){}toast('Pop-up geblokkeerd — bericht + link zijn gekopieerd, plak ze in '+(via==='whatsapp'?'WhatsApp':'je e-mail'),'err');}
+  if(PERSON_RESV[r.id])PERSON_RESV[r.id].sent_at=new Date().toISOString();
 }
 async function markReservationPaid(id,amount,person){
   if(!confirm('Bevestig dat de aanbetaling is ontvangen? De reservering wordt op "deposit paid" gezet.'))return;
