@@ -1069,7 +1069,7 @@ async function delRecord(resKey,id){
   const _ce=$('#cnt_'+resKey);if(_ce)_ce.textContent=_cache[resKey].length;drawTable(resKey);
 }
 
-function openForm(resKey,row){
+async function openForm(resKey,row){
   const R=RES[resKey];const ro=!!R.readOnly;const isEdit=!!row;row=row||{};
   const editFields=R.fields.filter(f=>!f.ro||isEdit);
   let body='';
@@ -1090,7 +1090,18 @@ function openForm(resKey,row){
     body+=`<div class="field"${full}><label>${esc(f.label)}${f.req?' *':''}</label>${input}</div>`;
   });
   body+='</div>';
-  if(ro){showDetail(`${esc(R.single)}${row[R.fields[0].k]?' · '+esc(row[R.fields[0].k]):''}`,body);return;}
+  if(ro){
+    if(resKey==='projects'&&isEdit)body+=`<div id="proj_purchases" style="margin-top:20px"><div class="muted" style="font-size:13px">Aankopen laden…</div></div>`;
+    showDetail(`${esc(R.single)}${row[R.fields[0].k]?' · '+esc(row[R.fields[0].k]):''}`,body);
+    if(resKey==='projects'&&isEdit){
+      const {data:pp}=await sb.from('purchases').select('buyer_name,unit,price,status,contract_signed_at,created_at').eq('project',row.name).order('contract_signed_at',{ascending:false,nullsFirst:false});
+      const el=$('#proj_purchases');
+      if(el){const list=pp||[];
+        el.innerHTML=_sec('Aankopen ('+list.length+')',list.length?_mt(['Koper','Unit','Prijs','Datum'],list.map(x=>[`<b>${esc(x.buyer_name||'—')}</b>`,esc(x.unit||'—'),money(x.price),fmtDate(x.contract_signed_at||x.created_at)])):'<div class="muted" style="font-size:13px">Nog geen aankopen voor dit project.</div>');
+      }
+    }
+    return;
+  }
   showModal(`${isEdit?'Edit':'New'} ${R.single}`,body,async()=>{
     const payload={};let ok=true;
     R.fields.filter(f=>!f.ro).forEach(f=>{
