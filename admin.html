@@ -1402,6 +1402,13 @@ async function openPerson(p){
   const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[],resvs=rvR.data||[];
   const _waProj=(leads.find(l=>l.project)||{}).project||'';
   const _waUrl=_helloWaUrl(p.phone,p.name,_waProj);
+  // Where the lead is (IP-based, via their linked analytics session)
+  let _loc='';
+  const _sess=[...new Set(leads.map(l=>l.ua_session).filter(Boolean))];
+  if(_sess.length){
+    const {data:_ev}=await sb.from('analytics_events').select('city,country,created_at').in('session_id',_sess).not('country','is',null).order('created_at',{ascending:false}).limit(1);
+    if(_ev&&_ev[0]){const e=_ev[0];const city=(e.city||'').replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Kota|Kabupaten)\s+/i,'').trim();_loc=[city,e.country].filter(Boolean).join(', ');}
+  }
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
@@ -1411,6 +1418,7 @@ async function openPerson(p){
           ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
           ${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}
           ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
+          ${_loc?`<span class="badge grey" title="Locatie op basis van IP (analytics)">📍 ${esc(_loc)}</span>`:''}
         </div>
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
