@@ -695,7 +695,7 @@ async function renderAnalytics(){
   const ev=evR.data||[],leads=leadsR.data||[],webs=webR.data||[],projs=projR.data||[];
   const interactions=intR&&intR.data?intR.data:[];
   const _intGrp=k=>{const m={};interactions.filter(x=>x.kind===k).forEach(x=>{const l=x.label||'—';(m[l]=m[l]||{n:0,uv:new Set()});m[l].n++;if(x.visitor_hash)m[l].uv.add(x.visitor_hash);});return Object.entries(m).map(([label,x])=>({label,value:x.n,uv:x.uv.size})).sort((a,b)=>b.value-a.value);};
-  const chapterViews=_intGrp('chapter'), faqViews=_intGrp('faq'), toolViews=_intGrp('tool');
+  const chapterViews=_intGrp('chapter'), faqViews=_intGrp('faq'), toolViews=[..._intGrp('tool'),..._intGrp('download')].sort((a,b)=>b.value-a.value);
   // brochure-only engagement (time spent on the /brochure pages, split out from the project page)
   const brochureEng=projs.map(pr=>{
     const slug=(pr.slug||'').toLowerCase();
@@ -820,7 +820,7 @@ async function renderAnalytics(){
       <div class="table-wrap"><table><thead><tr><th>Project</th><th>Weergaves</th><th>Uniek</th><th>Gem. tijd op brochure</th></tr></thead><tbody>
       ${brochureEng.length?brochureEng.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${anInt(r.views)}</td><td>${anInt(r.uv)}</td><td><b>${anDur(r.avg)}</b></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Nog geen brochure-bezoeken in deze periode.</td></tr>'}
       </tbody></table></div></div>
-    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Brochure — tools gebruikt</h3><div class="desc">Hoe vaak de interactieve ROI-calculator wordt gebruikt (per sessie geteld).</div></div></div>${toolViews.length?anBars(toolViews.map(t=>({label:t.label,value:t.value,display:anInt(t.value),sub:'· '+t.uv+' uniek'})),'#0891b2'):'<div class="empty" style="padding:22px">Nog geen tool-gebruik — dit telt zodra leads met de ROI-calculator schuiven.</div>'}</div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Brochure — tools &amp; downloads</h3><div class="desc">ROI-calculator-gebruik en PDF-downloads van de brochure (per sessie geteld).</div></div></div>${toolViews.length?anBars(toolViews.map(t=>({label:t.label,value:t.value,display:anInt(t.value),sub:'· '+t.uv+' uniek'})),'#0891b2'):'<div class="empty" style="padding:22px">Nog geen tool-gebruik of downloads — dit telt zodra leads de ROI-calculator gebruiken of de PDF downloaden.</div>'}</div>
   </div>`;
 
   html+=`<div class="an-grid" style="margin-top:20px">
