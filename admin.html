@@ -255,7 +255,7 @@ const RES = {
   /* ---- PROJECTS PAGE ---- */
   projects:{page:'projects', table:'projects', title:'Projects', single:'Project', orderBy:'sort_order', asc:true, readOnly:true,
     desc:'Master data per project — the single source of truth. View only here; changes are made via Claude so they sync everywhere (utamabali.com, invest. and the brochures).',
-    cols:['name','location','status','units_available','units_available_list','price_current'],
+    cols:['name','location','status','units_available','units_available_list','price_current','buyers'],
     fields:[
       {k:'name',label:'Name',type:'text',req:true},
       {k:'slug',label:'Slug (URL)',type:'text'},
@@ -266,6 +266,7 @@ const RES = {
       {k:'units_total',label:'Units total',type:'number'},
       {k:'units_available',label:'Units available',type:'number'},
       {k:'units_available_list',label:'Which units free',type:'text'},
+      {k:'buyers',label:'Buyers',type:'textarea'},
       {k:'price_start',label:'Start price (€)',type:'number',money:true},
       {k:'price_current',label:'Current price (€)',type:'number',money:true},
       {k:'price_next',label:'Next price (€)',type:'number',money:true},
