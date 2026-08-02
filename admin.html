@@ -1376,6 +1376,15 @@ function _greetForPhone(phone){
   if(hr>=12&&hr<18)return 'Goedemiddag';
   return 'Goedenavond';
 }
+/* Fallback country from phone country code (when no IP/session location is available). */
+function _countryFromPhone(phone){
+  const d=(phone||'').replace(/[^0-9+]/g,'');
+  if(!d)return '';
+  const map=[['+351','Portugal'],['+971','UAE'],['+62','Indonesia'],['+49','Germany'],['+32','Belgium'],['+44','United Kingdom'],['+41','Switzerland'],['+43','Austria'],['+33','France'],['+34','Spain'],['+65','Singapore'],['+66','Thailand'],['+61','Australia'],['+1','United States'],['+31','Netherlands']];
+  for(const [cc,name] of map){ if(d.startsWith(cc))return name; }
+  if(/^0[1-9]/.test(d))return 'Netherlands'; // Dutch national format (06…, 0…)
+  return '';
+}
 /* Build a WhatsApp deep-link with a personal opening message for a new sign-up. */
 function _helloWaUrl(phone,name,project){
   const digits=(phone||'').replace(/[^0-9]/g,'');
@@ -1402,13 +1411,14 @@ async function openPerson(p){
   const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[],resvs=rvR.data||[];
   const _waProj=(leads.find(l=>l.project)||{}).project||'';
   const _waUrl=_helloWaUrl(p.phone,p.name,_waProj);
-  // Where the lead is (IP-based, via their linked analytics session)
-  let _loc='';
+  // Where the lead is: IP-based (via linked analytics session) if we have it, else country from phone.
+  let _loc='',_locSrc='';
   const _sess=[...new Set(leads.map(l=>l.ua_session).filter(Boolean))];
   if(_sess.length){
     const {data:_ev}=await sb.from('analytics_events').select('city,country,created_at').in('session_id',_sess).not('country','is',null).order('created_at',{ascending:false}).limit(1);
-    if(_ev&&_ev[0]){const e=_ev[0];const city=(e.city||'').replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Kota|Kabupaten)\s+/i,'').trim();_loc=[city,e.country].filter(Boolean).join(', ');}
+    if(_ev&&_ev[0]){const e=_ev[0];const city=(e.city||'').replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Kota|Kabupaten)\s+/i,'').trim();_loc=[city,e.country].filter(Boolean).join(', ');if(_loc)_locSrc='ip';}
   }
+  if(!_loc){const c=_countryFromPhone(p.phone);if(c){_loc=c;_locSrc='phone';}}
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
@@ -1418,7 +1428,7 @@ async function openPerson(p){
           ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
           ${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}
           ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
-          ${_loc?`<span class="badge grey" title="Locatie op basis van IP (analytics)">📍 ${esc(_loc)}</span>`:''}
+          ${_loc?`<span class="badge grey" title="${_locSrc==='ip'?'Locatie op basis van IP (analytics)':'Land op basis van telefoonnummer — nog geen IP-sessie voor deze lead'}">📍 ${esc(_loc)}${_locSrc==='phone'?' · via telefoon':''}</span>`:''}
         </div>
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
