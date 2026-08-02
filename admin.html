@@ -882,12 +882,17 @@ async function renderRecentVisitors(){
   const cleanCity=c=>c?c.replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Regency of|Kota|Kabupaten)\s+/i,'').trim():c;
   const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-dune':'The Dune'}[s]||null);
   const pageName=path=>{let p=(path||'/').split('?')[0].split('#')[0];if(p==='/'||p==='')return 'Homepage';const seg=p.replace(/^\/+|\/+$/g,'').split('/');let name=projName(seg[0])||({referral:'Referral',portal:'Investeerdersportaal',dataroom:'Dataroom',webinar:'Webinar',webinar3:'Webinar'}[seg[0]]||seg[0].replace(/-/g,' '));if(/\/brochure(\/|$)/.test(p))name+=' — Brochure';else if(/\/dataroom(\/|$)/.test(p))name+=' — Dataroom';return name;};
-  let h=`<div class="table-wrap" style="max-height:420px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Laatste pagina</th><th>Hoelang</th><th>Wanneer</th></tr></thead><tbody>`;
+  const srcOf=e=>{const c=(e.channel||'direct').toLowerCase();let detail='';
+    if(e.utm_campaign)detail=e.utm_campaign;else if(e.utm_source)detail=e.utm_source;else if(e.referrer_host)detail=e.referrer_host;
+    else detail={direct:'directe link',organic:'zoekmachine',social:'social',paid:'advertentie',referral:'verwijzing',campaign:'campagne',email:'e-mail',internal:'intern'}[c]||c;
+    return {c,detail};};
+  let h=`<div class="table-wrap" style="max-height:420px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Laatste pagina</th><th>Bron</th><th>Hoelang</th><th>Wanneer</th></tr></thead><tbody>`;
   sessions.forEach(s=>{const e=s.last;const known=knownMap[s.vid];const id=idMap[s.sid]||vidMap[s.vid];const isKnown=!!known;const who=known||(id?(id.name||id.email||'Bekende lead'):null);
-    const loc=[cleanCity(e.city),e.country].filter(Boolean).map(esc).join(', ')||'—';
+    const loc=[cleanCity(e.city),e.country].filter(Boolean).map(esc).join(', ')||'—';const src=srcOf(e);
     h+=`<tr${(!isKnown&&id&&id.cid)?` class="live-known" data-cid="${esc(id.cid)}" title="Open contact in CRM"`:''}>`
      +`<td>${who?`<div class="live-name"${isKnown?' style="color:#0891b2"':''}>${isKnown?'🏷️':'👤'} ${esc(who)}${isKnown?' <span class="muted" style="font-size:11px;font-weight:400">intern</span>':''}</div>`:''}<span class="live-meta">${dev(e.device)} ${esc(e.device||'—')}${e.browser?' · '+esc(e.browser):''}<br>${loc}</span></td>`
      +`<td><div class="live-path">${esc(pageName(e.path))}</div><div class="live-ttl">${esc((e.path||'/').split('?')[0])}</div></td>`
+     +`<td><span class="src-badge ${src.c}">${esc(src.c)}</span><div class="live-meta" style="margin-top:3px">${esc(src.detail)}</div></td>`
      +`<td class="live-meta">${s.dur>0?anDur(s.dur):'—'}</td>`
      +`<td class="live-meta">${fmtDateTime(e.created_at)}</td></tr>`;
   });
