@@ -695,7 +695,14 @@ async function renderAnalytics(){
   const ev=evR.data||[],leads=leadsR.data||[],webs=webR.data||[],projs=projR.data||[];
   const interactions=intR&&intR.data?intR.data:[];
   const _intGrp=k=>{const m={};interactions.filter(x=>x.kind===k).forEach(x=>{const l=x.label||'—';(m[l]=m[l]||{n:0,uv:new Set()});m[l].n++;if(x.visitor_hash)m[l].uv.add(x.visitor_hash);});return Object.entries(m).map(([label,x])=>({label,value:x.n,uv:x.uv.size})).sort((a,b)=>b.value-a.value);};
-  const chapterViews=_intGrp('chapter'), faqViews=_intGrp('faq');
+  const chapterViews=_intGrp('chapter'), faqViews=_intGrp('faq'), toolViews=_intGrp('tool');
+  // brochure-only engagement (time spent on the /brochure pages, split out from the project page)
+  const brochureEng=projs.map(pr=>{
+    const slug=(pr.slug||'').toLowerCase();
+    const bpv=slug?ev.filter(e=>(e.path||'').toLowerCase().indexOf('/'+slug+'/brochure')===0||(e.path||'').toLowerCase().includes('/'+slug+'/brochure')):[];
+    const dd=bpv.map(e=>e.duration_ms).filter(d=>d>0);
+    return {name:pr.name,views:bpv.length,uv:new Set(bpv.map(e=>e.visitor_hash).filter(Boolean)).size,avg:dd.length?dd.reduce((a,b)=>a+b,0)/dd.length:0};
+  }).filter(r=>r.views>0).sort((a,b)=>b.views-a.views);
   const purch=(purchR.data||[]).filter(x=>x.created_at&&x.created_at>=since&&x.created_at<=until);
 
   const pageviews=ev.length;
@@ -788,6 +795,8 @@ async function renderAnalytics(){
 
   html+=`<div class="panel" id="live_panel"><div class="panel-head"><div><h3><span class="live-dot"></span>Nu live op de site</h3><div class="desc">Bezoekers die nu actief zijn — op welke pagina en waar ze vandaan komen. Ververst automatisch elke 20 sec.</div></div></div><div id="live_visitors"><div class="muted" style="padding:8px 18px">Live bezoekers laden…</div></div></div>`;
 
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Recente bezoekers</h3><div class="desc">De laatste bezoekers — ook als ze al weg zijn. Met naam (indien aangemeld), locatie, pagina, duur en tijd.</div></div></div><div id="recent_visitors"><div class="muted" style="padding:8px 18px">Laden…</div></div></div>`;
+
   html+=`<div class="panel"><div class="panel-head"><div><h3>Traffic over time</h3><div class="desc">Page views and unique visitors per day.</div></div></div>${anLine(series)}</div>`;
 
   html+=`<div class="panel"><div class="panel-head"><div><h3>Conversion funnel to revenue</h3><div class="desc">From anonymous visitor to paying investor · ${esc(rangeLabel.toLowerCase())}.</div></div></div>
@@ -805,6 +814,14 @@ async function renderAnalytics(){
     <div class="table-wrap"><table><thead><tr><th>Vraag</th><th>Keer bekeken</th><th>Unieke bezoekers</th></tr></thead><tbody>
     ${faqViews.length?faqViews.map(f=>`<tr><td>${esc(f.label)}</td><td><b>${anInt(f.value)}</b></td><td>${anInt(f.uv)}</td></tr>`).join(''):'<tr><td colspan="3" class="empty">Nog geen FAQ-weergaves — dit vult zich zodra leads vragen openen in de brochure.</td></tr>'}
     </tbody></table></div></div>`;
+
+  html+=`<div class="an-grid" style="margin-top:20px">
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Brochure-engagement</h3><div class="desc">Hoe lang de digitale brochure zélf bekeken wordt (los van de projectpagina) · ${esc(rangeLabel.toLowerCase())}.</div></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Project</th><th>Weergaves</th><th>Uniek</th><th>Gem. tijd op brochure</th></tr></thead><tbody>
+      ${brochureEng.length?brochureEng.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${anInt(r.views)}</td><td>${anInt(r.uv)}</td><td><b>${anDur(r.avg)}</b></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Nog geen brochure-bezoeken in deze periode.</td></tr>'}
+      </tbody></table></div></div>
+    <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Brochure — tools gebruikt</h3><div class="desc">Hoe vaak de interactieve ROI-calculator wordt gebruikt (per sessie geteld).</div></div></div>${toolViews.length?anBars(toolViews.map(t=>({label:t.label,value:t.value,display:anInt(t.value),sub:'· '+t.uv+' uniek'})),'#0891b2'):'<div class="empty" style="padding:22px">Nog geen tool-gebruik — dit telt zodra leads met de ROI-calculator schuiven.</div>'}</div>
+  </div>`;
 
   html+=`<div class="an-grid" style="margin-top:20px">
     <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Top pages</h3><div class="desc">Most-viewed pages & how long people stay.</div></div></div>${anBars(pages.map(p=>({label:p.path,value:p.pv,display:anInt(p.pv),sub:'· '+p.vis+' uv · '+anDur(p.avg)})),'#14b37d')}</div>
@@ -837,8 +854,44 @@ async function renderAnalytics(){
   drawConvPanel();
   const cp=$('#conv_page');if(cp)cp.onchange=()=>{ANALYTICS_CONVPAGE=cp.value;drawConvPanel();};
   renderLiveVisitors();
+  renderRecentVisitors();
   if(LIVE_TIMER)clearInterval(LIVE_TIMER);
   LIVE_TIMER=setInterval(renderLiveVisitors,20000);
+}
+async function renderRecentVisitors(){
+  const box=$('#recent_visitors');if(!box)return;
+  const {data,error}=await sb.from('analytics_events')
+    .select('session_id,visitor_hash,visitor_id,path,page_title,project,channel,referrer_host,utm_campaign,utm_source,country,city,device,browser,duration_ms,created_at')
+    .order('created_at',{ascending:false}).limit(800);
+  if(!$('#recent_visitors'))return;
+  if(error){box.innerHTML=`<div class="empty" style="padding:18px">Niet beschikbaar: ${esc(error.message)}</div>`;return;}
+  const rows=data||[];
+  const bySess={};
+  rows.forEach(e=>{const k=e.session_id||('h'+e.visitor_hash);if(!bySess[k]){bySess[k]={last:e,dur:0,sid:e.session_id,vid:e.visitor_id};}const g=bySess[k];if(new Date(e.created_at)>new Date(g.last.created_at))g.last=e;if(e.duration_ms>0)g.dur+=e.duration_ms;});
+  const sessions=Object.values(bySess).sort((a,b)=>new Date(b.last.created_at)-new Date(a.last.created_at)).slice(0,30);
+  const sids=[...new Set(sessions.map(s=>s.sid).filter(Boolean))];
+  const vids=[...new Set(sessions.map(s=>s.vid).filter(Boolean))];
+  const idMap={},vidMap={};
+  if(sids.length){const {data:ld}=await sb.from('leads').select('ua_session,contact_id,name,email').not('ua_session','is',null).in('ua_session',sids);(ld||[]).forEach(l=>{if(!idMap[l.ua_session])idMap[l.ua_session]={cid:l.contact_id,name:l.name,email:l.email};});}
+  if(vids.length){const {data:ld2}=await sb.from('leads').select('ua_vid,contact_id,name,email').not('ua_vid','is',null).in('ua_vid',vids);(ld2||[]).forEach(l=>{if(!vidMap[l.ua_vid])vidMap[l.ua_vid]={cid:l.contact_id,name:l.name,email:l.email};});}
+  if(!$('#recent_visitors'))return;
+  const dev=d=>({desktop:'🖥️',mobile:'📱',tablet:'📲'}[d]||'💻');
+  const cleanCity=c=>c?c.replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Regency of|Kota|Kabupaten)\s+/i,'').trim():c;
+  const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-dune':'The Dune'}[s]||null);
+  const pageName=path=>{let p=(path||'/').split('?')[0].split('#')[0];if(p==='/'||p==='')return 'Homepage';const seg=p.replace(/^\/+|\/+$/g,'').split('/');let name=projName(seg[0])||({referral:'Referral',portal:'Investeerdersportaal',dataroom:'Dataroom',webinar:'Webinar',webinar3:'Webinar'}[seg[0]]||seg[0].replace(/-/g,' '));if(/\/brochure(\/|$)/.test(p))name+=' — Brochure';else if(/\/dataroom(\/|$)/.test(p))name+=' — Dataroom';return name;};
+  let h=`<div class="table-wrap" style="max-height:420px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Laatste pagina</th><th>Hoelang</th><th>Wanneer</th></tr></thead><tbody>`;
+  sessions.forEach(s=>{const e=s.last;const id=idMap[s.sid]||vidMap[s.vid];const who=id?(id.name||id.email||'Bekende lead'):null;
+    const loc=[cleanCity(e.city),e.country].filter(Boolean).map(esc).join(', ')||'—';
+    h+=`<tr${id&&id.cid?` class="live-known" data-cid="${esc(id.cid)}" title="Open contact in CRM"`:''}>`
+     +`<td>${who?`<div class="live-name">👤 ${esc(who)}</div>`:''}<span class="live-meta">${dev(e.device)} ${esc(e.device||'—')}${e.browser?' · '+esc(e.browser):''}<br>${loc}</span></td>`
+     +`<td><div class="live-path">${esc(pageName(e.path))}</div><div class="live-ttl">${esc((e.path||'/').split('?')[0])}</div></td>`
+     +`<td class="live-meta">${s.dur>0?anDur(s.dur):'—'}</td>`
+     +`<td class="live-meta">${fmtDateTime(e.created_at)}</td></tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  if(!sessions.length)h=`<div class="muted" style="padding:14px 18px;font-size:13px">Nog geen bezoekers geregistreerd.</div>`;
+  box.innerHTML=h;
+  box.querySelectorAll('tr[data-cid]').forEach(tr=>tr.onclick=()=>openLivePerson(tr.dataset.cid));
 }
 let CONV_DATA=[],ANALYTICS_CONVPAGE='';
 function drawConvPanel(){
