@@ -358,8 +358,9 @@ const RES = {
   /* ---- PORTAL PAGE ---- */
   purchases:{page:'portal', table:'purchases', title:'Purchases', single:'Purchase', noCreate:true,
     desc:'Reservations, contracts & completed sales.',
-    cols:['project','unit','status','price','created_at'],
+    cols:['buyer_name','project','unit','status','price','created_at'],
     fields:[
+      {k:'buyer_name',label:'Buyer',type:'text'},
       {k:'project',label:'Project',type:'text',req:true},
       {k:'unit',label:'Unit',type:'text'},
       {k:'status',label:'Status',type:'select',opts:['reserved','contracted','completed','cancelled']},
@@ -1363,6 +1364,30 @@ function _sec(title,inner){return `<div style="margin-top:20px"><div style="font
 function _mt(headers,rows){ if(!rows.length)return '<div class="muted" style="font-size:13px">None.</div>'; let h='<table style="font-size:13px"><thead><tr>'+headers.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>'; rows.forEach(r=>{h+='<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>';}); return h+'</tbody></table>'; }
 function _hint(t){return `<div class="muted" style="font-size:12px;margin:-4px 0 8px">${t}</div>`;}
 function leadTypeBadge(t){const m={inquiry:['blue','Inquiry'],reservation:['amber','Reserveringsaanvraag'],dataroom_request:['blue','Dataroom-aanvraag']};const x=m[t]||['grey',t||'—'];return `<span class="badge ${x[0]}">${esc(x[1])}</span>`;}
+/* Time-of-day greeting based on the lead's timezone (derived from phone country code). */
+function _greetForPhone(phone){
+  const d=(phone||'').replace(/[^0-9+]/g,'');
+  let tz='Europe/Amsterdam';
+  const map=[['+351','Europe/Lisbon'],['+971','Asia/Dubai'],['+62','Asia/Makassar'],['+49','Europe/Berlin'],['+32','Europe/Brussels'],['+44','Europe/London'],['+41','Europe/Zurich'],['+43','Europe/Vienna'],['+33','Europe/Paris'],['+34','Europe/Madrid'],['+65','Asia/Singapore'],['+66','Asia/Bangkok'],['+61','Australia/Sydney'],['+1','America/New_York'],['+31','Europe/Amsterdam']];
+  for(const [cc,z] of map){ if(d.startsWith(cc)){tz=z;break;} }
+  let hr=12;
+  try{ hr=Number(new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'numeric',hour12:false}).format(new Date())); }catch(e){}
+  if(hr>=6&&hr<12)return 'Goedemorgen';
+  if(hr>=12&&hr<18)return 'Goedemiddag';
+  return 'Goedenavond';
+}
+/* Build a WhatsApp deep-link with a personal opening message for a new sign-up. */
+function _helloWaUrl(phone,name,project){
+  const digits=(phone||'').replace(/[^0-9]/g,'');
+  const first=(name||'').trim().split(/\s+/)[0]||'';
+  const sender=(ME&&(ME.full_name||ME.email))||'UTAMA Bali';
+  const title=(ME&&ME.title)?(', '+ME.title):'';
+  const greet=_greetForPhone(phone);
+  const hi=first?`${greet} ${first},`:`${greet},`;
+  const projPhrase=project?`ons project, ${project}`:'ons project';
+  const msg=`${hi} dit is ${sender}${title}. We hebben zojuist een aanmelding ontvangen voor ${projPhrase}. Klopt dat?\n\nIk stuur na iedere aanmelding altijd even persoonlijk een bericht om kennis te maken.`;
+  return 'https://wa.me/'+digits+'?text='+encodeURIComponent(msg);
+}
 async function openPerson(p){
   showDetail('Contact','<div class="muted">Loading…</div>');
   const [lr,pr,wr,dr,rr,projR,rvR]=await Promise.all([
@@ -1375,6 +1400,8 @@ async function openPerson(p){
     sb.from('reservations').select('*').or('contact_id.eq.'+p.id+',email.eq.'+p.email).order('created_at',{ascending:false}),
   ]);
   const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[],resvs=rvR.data||[];
+  const _waProj=(leads.find(l=>l.project)||{}).project||'';
+  const _waUrl=_helloWaUrl(p.phone,p.name,_waProj);
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
@@ -1387,7 +1414,7 @@ async function openPerson(p){
         </div>
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
-        ${p.phone?`<a class="btn btn-ghost btn-sm" style="text-decoration:none;color:#0f6b4f;border-color:#c6ead9" href="https://wa.me/${(p.phone||'').replace(/[^0-9]/g,'')}" target="_blank" rel="noopener">💬 WhatsApp</a>`:''}
+        ${p.phone?`<a class="btn btn-ghost btn-sm" style="text-decoration:none;color:#0f6b4f;border-color:#c6ead9" href="${_waUrl}" target="_blank" rel="noopener">💬 WhatsApp</a>`:''}
         ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
       </div>
     </div>
