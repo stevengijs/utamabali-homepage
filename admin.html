@@ -683,15 +683,19 @@ async function renderAnalytics(){
   const {since:sinceD,until:untilD,label:rangeLabel}=anRangeCalc();
   const since=sinceD.toISOString(),until=untilD.toISOString();
   const spanDays=Math.max(1,Math.round((untilD-sinceD)/864e5));
-  const [evR,leadsR,purchR,webR,projR]=await Promise.all([
+  const [evR,leadsR,purchR,webR,projR,intR]=await Promise.all([
     sb.from('analytics_events').select('event_id,session_id,visitor_hash,is_new_session,path,referrer_host,channel,utm_source,utm_campaign,country,device,browser,duration_ms,created_at,page_title').gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).limit(50000),
     sb.from('leads').select('contact_id,project,source_page,type,created_at').gte('created_at',since).lte('created_at',until),
     sb.from('purchases').select('project,price,deposit_amount,status,created_at'),
     sb.from('webinar_registrations').select('call_booked,attended,created_at').gte('created_at',since).lte('created_at',until),
     sb.from('projects').select('name,slug,status,sort_order').order('sort_order',{ascending:true}),
+    sb.from('analytics_interactions').select('kind,label,project,visitor_hash,created_at').gte('created_at',since).lte('created_at',until).limit(50000),
   ]);
   if(evR.error){v.innerHTML=`<div class="panel"><div class="empty">Couldn’t load analytics: ${esc(evR.error.message)}</div></div>`;return;}
   const ev=evR.data||[],leads=leadsR.data||[],webs=webR.data||[],projs=projR.data||[];
+  const interactions=intR&&intR.data?intR.data:[];
+  const _intGrp=k=>{const m={};interactions.filter(x=>x.kind===k).forEach(x=>{const l=x.label||'—';(m[l]=m[l]||{n:0,uv:new Set()});m[l].n++;if(x.visitor_hash)m[l].uv.add(x.visitor_hash);});return Object.entries(m).map(([label,x])=>({label,value:x.n,uv:x.uv.size})).sort((a,b)=>b.value-a.value);};
+  const chapterViews=_intGrp('chapter'), faqViews=_intGrp('faq');
   const purch=(purchR.data||[]).filter(x=>x.created_at&&x.created_at>=since&&x.created_at<=until);
 
   const pageviews=ev.length;
@@ -794,6 +798,13 @@ async function renderAnalytics(){
   html+=`<div class="panel"><div class="panel-head"><div><h3>Conversie: landingspagina → brochure</h3><div class="desc">Welk deel van je paginabezoekers vraagt de brochure aan — dus doorstroomt naar de brochurepagina · ${esc(rangeLabel.toLowerCase())}.</div></div>
     <div class="toolbar"><select id="conv_page" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">${convOpts}</select></div></div>
     <div id="conv_body"></div></div>`;
+
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Brochure — hoofdstukken bekeken</h3><div class="desc">Welke hoofdstukken van de digitale brochure leads openen · ${esc(rangeLabel.toLowerCase())}.</div></div></div>${chapterViews.length?anBars(chapterViews.map(c=>({label:c.label,value:c.value,display:anInt(c.value),sub:'· '+c.uv+' uniek'})),'#7c3aed'):'<div class="empty" style="padding:22px">Nog geen hoofdstuk-weergaves — dit vult zich zodra leads door de brochure klikken.</div>'}</div>`;
+
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Brochure — FAQ-vragen bekeken</h3><div class="desc">Welke veelgestelde vragen leads openen, en hoe vaak · ${esc(rangeLabel.toLowerCase())}.</div></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Vraag</th><th>Keer bekeken</th><th>Unieke bezoekers</th></tr></thead><tbody>
+    ${faqViews.length?faqViews.map(f=>`<tr><td>${esc(f.label)}</td><td><b>${anInt(f.value)}</b></td><td>${anInt(f.uv)}</td></tr>`).join(''):'<tr><td colspan="3" class="empty">Nog geen FAQ-weergaves — dit vult zich zodra leads vragen openen in de brochure.</td></tr>'}
+    </tbody></table></div></div>`;
 
   html+=`<div class="an-grid" style="margin-top:20px">
     <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Top pages</h3><div class="desc">Most-viewed pages & how long people stay.</div></div></div>${anBars(pages.map(p=>({label:p.path,value:p.pv,display:anInt(p.pv),sub:'· '+p.vis+' uv · '+anDur(p.avg)})),'#14b37d')}</div>
