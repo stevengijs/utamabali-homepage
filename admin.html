@@ -874,24 +874,47 @@ async function renderRecentVisitors(){
   const idMap={},vidMap={};
   if(sids.length){const {data:ld}=await sb.from('leads').select('ua_session,contact_id,name,email').not('ua_session','is',null).in('ua_session',sids);(ld||[]).forEach(l=>{if(!idMap[l.ua_session])idMap[l.ua_session]={cid:l.contact_id,name:l.name,email:l.email};});}
   if(vids.length){const {data:ld2}=await sb.from('leads').select('ua_vid,contact_id,name,email').not('ua_vid','is',null).in('ua_vid',vids);(ld2||[]).forEach(l=>{if(!vidMap[l.ua_vid])vidMap[l.ua_vid]={cid:l.contact_id,name:l.name,email:l.email};});}
+  const {data:kvd}=await sb.from('analytics_known_visitors').select('visitor_id,label');
   if(!$('#recent_visitors'))return;
+  const knownMap={};(kvd||[]).forEach(k=>{knownMap[k.visitor_id]=k.label;});
+  const canMark=canEdit('analytics')||(ME&&ME.is_admin);
   const dev=d=>({desktop:'🖥️',mobile:'📱',tablet:'📲'}[d]||'💻');
   const cleanCity=c=>c?c.replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Regency of|Kota|Kabupaten)\s+/i,'').trim():c;
   const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-dune':'The Dune'}[s]||null);
   const pageName=path=>{let p=(path||'/').split('?')[0].split('#')[0];if(p==='/'||p==='')return 'Homepage';const seg=p.replace(/^\/+|\/+$/g,'').split('/');let name=projName(seg[0])||({referral:'Referral',portal:'Investeerdersportaal',dataroom:'Dataroom',webinar:'Webinar',webinar3:'Webinar'}[seg[0]]||seg[0].replace(/-/g,' '));if(/\/brochure(\/|$)/.test(p))name+=' — Brochure';else if(/\/dataroom(\/|$)/.test(p))name+=' — Dataroom';return name;};
-  let h=`<div class="table-wrap" style="max-height:420px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Laatste pagina</th><th>Hoelang</th><th>Wanneer</th></tr></thead><tbody>`;
-  sessions.forEach(s=>{const e=s.last;const id=idMap[s.sid]||vidMap[s.vid];const who=id?(id.name||id.email||'Bekende lead'):null;
+  let h=`<div class="table-wrap" style="max-height:420px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Laatste pagina</th><th>Hoelang</th><th>Wanneer</th><th></th></tr></thead><tbody>`;
+  sessions.forEach(s=>{const e=s.last;const known=knownMap[s.vid];const id=idMap[s.sid]||vidMap[s.vid];const isKnown=!!known;const who=known||(id?(id.name||id.email||'Bekende lead'):null);
     const loc=[cleanCity(e.city),e.country].filter(Boolean).map(esc).join(', ')||'—';
-    h+=`<tr${id&&id.cid?` class="live-known" data-cid="${esc(id.cid)}" title="Open contact in CRM"`:''}>`
-     +`<td>${who?`<div class="live-name">👤 ${esc(who)}</div>`:''}<span class="live-meta">${dev(e.device)} ${esc(e.device||'—')}${e.browser?' · '+esc(e.browser):''}<br>${loc}</span></td>`
+    h+=`<tr${(!isKnown&&id&&id.cid)?` class="live-known" data-cid="${esc(id.cid)}" title="Open contact in CRM"`:''}>`
+     +`<td>${who?`<div class="live-name"${isKnown?' style="color:#0891b2"':''}>${isKnown?'🏷️':'👤'} ${esc(who)}${isKnown?' <span class="muted" style="font-size:11px;font-weight:400">intern</span>':''}</div>`:''}<span class="live-meta">${dev(e.device)} ${esc(e.device||'—')}${e.browser?' · '+esc(e.browser):''}<br>${loc}</span></td>`
      +`<td><div class="live-path">${esc(pageName(e.path))}</div><div class="live-ttl">${esc((e.path||'/').split('?')[0])}</div></td>`
      +`<td class="live-meta">${s.dur>0?anDur(s.dur):'—'}</td>`
-     +`<td class="live-meta">${fmtDateTime(e.created_at)}</td></tr>`;
+     +`<td class="live-meta">${fmtDateTime(e.created_at)}</td>`
+     +`<td style="text-align:right">${(canMark&&s.vid&&!isKnown)?`<button class="btn btn-ghost btn-sm" data-markme="${esc(s.vid)}">dit ben ik</button>`:(isKnown&&canMark?`<button class="btn btn-ghost btn-sm" data-unmark="${esc(s.vid)}" title="Markering verwijderen">✕</button>`:'')}</td></tr>`;
   });
   h+=`</tbody></table></div>`;
   if(!sessions.length)h=`<div class="muted" style="padding:14px 18px;font-size:13px">Nog geen bezoekers geregistreerd.</div>`;
   box.innerHTML=h;
   box.querySelectorAll('tr[data-cid]').forEach(tr=>tr.onclick=()=>openLivePerson(tr.dataset.cid));
+  box.querySelectorAll('[data-markme]').forEach(b=>b.onclick=(ev)=>{ev.stopPropagation();markKnownVisitor(b.dataset.markme);});
+  box.querySelectorAll('[data-unmark]').forEach(b=>b.onclick=(ev)=>{ev.stopPropagation();unmarkKnownVisitor(b.dataset.unmark);});
+}
+async function markKnownVisitor(vid){
+  if(!vid)return;
+  const def=(ME&&ME.full_name)||'Intern';
+  const label=(prompt('Naam voor dit apparaat (intern):',def)||'').trim();
+  if(!label)return;
+  const {error}=await sb.from('analytics_known_visitors').upsert({visitor_id:vid,label,created_by:ME&&ME.id},{onConflict:'visitor_id'});
+  if(error){toast(error.message,'err');return;}
+  toast('Apparaat gemarkeerd als "'+label+'"','ok');
+  renderRecentVisitors();renderLiveVisitors();
+}
+async function unmarkKnownVisitor(vid){
+  if(!vid)return;
+  const {error}=await sb.from('analytics_known_visitors').delete().eq('visitor_id',vid);
+  if(error){toast(error.message,'err');return;}
+  toast('Markering verwijderd','ok');
+  renderRecentVisitors();renderLiveVisitors();
 }
 let CONV_DATA=[],ANALYTICS_CONVPAGE='';
 function drawConvPanel(){
@@ -943,6 +966,9 @@ async function renderLiveVisitors(){
     if(!$('#live_visitors'))return;
     (ld2||[]).forEach(l=>{const k=l.ua_vid;if(k&&!vidMap[k])vidMap[k]={cid:l.contact_id,name:l.name,email:l.email};});
   }
+  const {data:kvd}=await sb.from('analytics_known_visitors').select('visitor_id,label');
+  if(!$('#live_visitors'))return;
+  const knownMap={};(kvd||[]).forEach(k=>{knownMap[k.visitor_id]=k.label;});
   const dev=d=>({desktop:'🖥️',mobile:'📱',tablet:'📲'}[d]||'💻');
   const ago=ms=>{const s=Math.max(0,Math.round(ms/1000));if(s<15)return 'net nu';if(s<60)return s+' sec geleden';const m=Math.round(s/60);return m+' min geleden';};
   const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-dune':'The Dune'}[s]||null);
@@ -967,8 +993,8 @@ async function renderLiveVisitors(){
     h+=`<div class="table-wrap" style="max-height:360px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Huidige pagina</th><th>Bron</th><th>Sinds</th></tr></thead><tbody>`;
     const cleanCity=c=>c?c.replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Regency of|Kota|Kabupaten)\s+/i,'').trim():c;
     active.forEach(e=>{const s=srcOf(e);const loc=[cleanCity(e.city),e.country].filter(Boolean).map(esc).join(', ')||'—';
-      const id=idMap[e.session_id]||vidMap[e.visitor_id];const who=id?(id.name||id.email||'Bekende lead'):null;
-      h+=`<tr${id&&id.cid?` class="live-known" data-cid="${esc(id.cid)}" title="Open contact in CRM"`:''}><td>${who?`<div class="live-name">👤 ${esc(who)}</div>`:''}<span class="live-meta">${dev(e.device)} ${esc(e.device||'—')}${e.browser?' · '+esc(e.browser):''}<br>${loc}</span></td>`
+      const known=knownMap[e.visitor_id];const id=idMap[e.session_id]||vidMap[e.visitor_id];const isKnown=!!known;const who=known||(id?(id.name||id.email||'Bekende lead'):null);
+      h+=`<tr${(!isKnown&&id&&id.cid)?` class="live-known" data-cid="${esc(id.cid)}" title="Open contact in CRM"`:''}><td>${who?`<div class="live-name"${isKnown?' style="color:#0891b2"':''}>${isKnown?'🏷️':'👤'} ${esc(who)}${isKnown?' <span class="muted" style="font-size:11px;font-weight:400">intern</span>':''}</div>`:''}<span class="live-meta">${dev(e.device)} ${esc(e.device||'—')}${e.browser?' · '+esc(e.browser):''}<br>${loc}</span></td>`
        +`<td><div class="live-path">${esc(pageName(e.path))}</div><div class="live-ttl">${esc((e.site||'')+(e.path||'/').split('?')[0].split('#')[0])}</div></td>`
        +`<td><span class="src-badge ${s.c}">${esc(s.c)}</span><div class="live-meta" style="margin-top:3px">${esc(s.detail)}</div></td>`
        +`<td class="live-ago">${ago(now-new Date(e.created_at).getTime())}</td></tr>`;
