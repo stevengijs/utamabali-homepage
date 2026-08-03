@@ -1615,9 +1615,9 @@ async function openPerson(p){
     body+=_sec('Herkomst (marketing)',inner);
   }
   const manageLeads=canEdit('leads')||canEdit('portal');
-  body+=_sec('Aanvragen & interesse ('+leads.length+')',_hint('Binnengekomen via de site: brochure-aanvragen, reserveringsaanvragen en dataroom-verzoeken — het type staat per regel. Klik "Maak ITP" om van een aanvraag een reservering te maken.')+_mt(['Type','Project','Unit','Budget','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
+  body+=_sec('Aanvragen & interesse ('+leads.length+')',_hint('Binnengekomen via de site: brochure-aanvragen, reserveringsaanvragen en dataroom-verzoeken — het type staat per regel. Klik "Maak ITP" om van een aanvraag een reservering te maken.')+_mt(['Type','Project','Unit','Budget','Wanneer investeren','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
     const open=(l.type==='dataroom_request'||l.type==='reservation')&&!l.handled_at;
-    const cells=[leadTypeBadge(l.type),esc(l.project||'—'),esc(l.unit||'—'),esc(l.budget||'—'),fmtDateTime(l.created_at),open?'<span class="badge amber">Open</span>':(l.handled_at?'<span class="badge green">Afgehandeld</span>':'—')];
+    const cells=[leadTypeBadge(l.type),esc(l.project||'—'),esc(l.unit||'—'),esc(l.budget||'—'),esc(l.timeline||'—'),fmtDateTime(l.created_at),open?'<span class="badge amber">Open</span>':(l.handled_at?'<span class="badge green">Afgehandeld</span>':'—')];
     if(manageLeads){
       let act='';
       if(open&&l.type==='reservation')act=`<button class="btn btn-primary btn-sm" data-mkitp="${l.id}" data-mkproj="${esc(l.project||'')}" data-mkunit="${esc(l.unit||'')}">Maak ITP</button> <button class="btn btn-ghost btn-sm" data-ldone="${l.id}" title="Afronden">✓</button>`;
