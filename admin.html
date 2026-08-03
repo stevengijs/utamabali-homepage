@@ -845,6 +845,7 @@ async function renderAnalytics(){
   const campaigns=grp('utm_campaign','session_id').slice(0,8);
   const countries=grp('country','visitor_hash').slice(0,8);
   const devices=grp('device','session_id');
+  const browsers=grp('browser','session_id').slice(0,6);
   const leadSrc=(()=>{const m={};leads.forEach(l=>{const k=l.source_page||'(unknown)';m[k]=(m[k]||0)+1;});return Object.entries(m).map(([k,n])=>({k,n})).sort((a,b)=>b.n-a.n).slice(0,8);})();
 
   // brochure sign-ups (leads via a /brochure page or brochure-type request)
@@ -949,13 +950,26 @@ async function renderAnalytics(){
     <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Brochure sign-ups per project</h3><div class="desc">Aanvragen van de digitale brochure — ${anInt(brochure.length)} totaal.</div></div></div>${anBars(brByProj,'#b7791f')}</div>
   </div>`;
 
+  // ---- devices & browsers summary ----
+  {
+    const devTot=devices.reduce((a,d)=>a+d.n,0);
+    const devIcon={mobile:'📱',desktop:'🖥️',tablet:'📲'};
+    const devName={mobile:'Mobiel',desktop:'Desktop',tablet:'Tablet'};
+    const devBars=devices.map(d=>({label:(devIcon[d.k]||'💻')+' '+(devName[d.k]||d.k),value:d.n,display:anInt(d.n),sub:'· '+(devTot?Math.round(100*d.n/devTot):0)+'%'}));
+    const brTot=browsers.reduce((a,b)=>a+b.n,0);
+    const brBars=browsers.map(b=>({label:b.k,value:b.n,display:anInt(b.n),sub:'· '+(brTot?Math.round(100*b.n/brTot):0)+'%'}));
+    html+=`<div class="an-grid" style="margin-top:20px">
+      <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Apparaten</h3><div class="desc">Waarmee bezoekers de site bekijken — ${anInt(devTot)} sessies.</div></div></div>${devTot?anBars(devBars,'#0891b2'):'<div class="empty" style="padding:16px">Nog geen data.</div>'}</div>
+      <div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Browsers</h3><div class="desc">Welke browser bezoekers gebruiken.</div></div></div>${brTot?anBars(brBars,'#7c3aed'):'<div class="empty" style="padding:16px">Nog geen data.</div>'}</div>
+    </div>`;
+  }
+
   html+=`<div class="panel"><div class="panel-head"><div><h3>Leads by landing page</h3><div class="desc">Which pages turn into inquiries.</div></div></div>${anBars(leadSrc.map(c=>({label:c.k,value:c.n,display:anInt(c.n),sub:'leads'})),'#0f6b4f')}</div>`;
 
   html+=`<div class="panel"><div class="panel-head"><div><h3>Interest & revenue per project</h3><div class="desc">Which projects attract attention — and convert to sales.</div></div></div>
     <div class="table-wrap"><table><thead><tr><th>Project</th><th>Views</th><th>Unique</th><th>Avg. time</th><th>Inquiries</th><th>View→inquiry</th><th>Sales</th><th>Revenue</th></tr></thead><tbody>
     ${projRows.length?projRows.map(p=>`<tr><td><b>${esc(p.name)}</b> ${p.status?`<span class="badge grey">${esc(p.status)}</span>`:''}</td><td>${anInt(p.views)}</td><td>${anInt(p.uv)}</td><td>${anDur(p.avg)}</td><td>${anInt(p.inq)}</td><td>${p.views?anPct(p.inq/p.views):'—'}</td><td>${anInt(p.buys)}</td><td>${p.rev?anMoney(p.rev):'—'}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">No projects yet.</td></tr>'}
-    </tbody></table></div>
-    <div class="rev-row"><span class="muted" style="font-size:12px">Devices: ${devices.map(d=>`${esc(d.k)} ${anInt(d.n)}`).join(' · ')||'—'}</span></div></div>`;
+    </tbody></table></div></div>`;
 
   v.innerHTML=html;
   v.querySelectorAll('.stat[data-go]').forEach(x=>x.onclick=()=>{
