@@ -1869,7 +1869,7 @@ async function setDataroom(person,project,enable,rowId){
 }
 function showDetail(title,bodyHTML){
   const ov=$('#overlay');
-  ov.innerHTML=`<div class="modal" style="width:760px"><div class="modal-head"><h3>${title}</h3><button class="x" id="mx">×</button></div><div class="modal-body">${bodyHTML}</div><div class="modal-foot"><button class="btn btn-ghost" id="mcancel">Close</button></div></div>`;
+  ov.innerHTML=`<div class="modal" style="width:min(1060px,96vw)"><div class="modal-head"><h3>${title}</h3><button class="x" id="mx">×</button></div><div class="modal-body">${bodyHTML}</div><div class="modal-foot"><button class="btn btn-ghost" id="mcancel">Close</button></div></div>`;
   ov.style.display='flex';
   const close=()=>{ov.style.display='none';ov.innerHTML='';};
   $('#mx').onclick=close;$('#mcancel').onclick=close;
