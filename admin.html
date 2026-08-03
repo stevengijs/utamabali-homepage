@@ -235,7 +235,10 @@
   .pdr-fact .v{font-size:14px;font-weight:700;margin-top:3px;color:#0f172a;word-break:break-word}
   .pdr-title{font-size:19px;font-weight:800;border:none;padding:2px 0;width:100%;outline:none;font-family:inherit}
   .pdr-title:focus{border-bottom:2px solid var(--brand,#0f6b4f)}
-  .pipe-av{width:22px;height:22px;border-radius:50%;background:var(--brand,#0f6b4f);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:auto}
+  .pipe-av{width:24px;height:24px;border-radius:50%;background:var(--brand,#0f6b4f);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .pipe-card-chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+  .pipe-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid #eef1f0}
+  .pipe-foot-right{display:inline-flex;align-items:center;gap:7px;margin-left:auto}
   .pipe-add{margin:0 8px 8px;padding:7px;border:1px dashed #c7cfcb;border-radius:9px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;width:calc(100% - 16px)}
   .pipe-add:hover{background:#eef2f0;color:var(--ink,#111)}
   .pc-form label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:2px}
@@ -617,9 +620,28 @@ async function boot(){
   $('#login').style.display='none';$('#app').style.display='block';
   $('#meName').textContent=ME.full_name||ME.email;
   $('#meRole').textContent=isAdmin()?'Admin':'Team member';
-  buildNav();go('dashboard');
+  buildNav();
+  if(!handleDeepLink())go('dashboard');
+  window.addEventListener('hashchange',handleDeepLink);
   const bell=$('#notifBell');if(bell)bell.onclick=openNotifications;
   refreshNotifBadge();
+}
+/* Shareable deep links: utamabali.com/admin#contact/<id> opens that contact for the team */
+function crmDeepLink(contactId){return location.origin+location.pathname+'#contact/'+contactId;}
+function copyLink(url){
+  const done=()=>toast('Link gekopieerd — plak in WhatsApp of mail voor je team','ok');
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,()=>fallback());return;} }catch(e){}
+  fallback();
+  function fallback(){try{const t=document.createElement('textarea');t.value=url;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();done();}catch(e){prompt('Kopieer deze link:',url);}}
+}
+function handleDeepLink(){
+  const m=(location.hash||'').match(/^#contact\/([0-9a-fA-F-]{8,})/);
+  if(!m)return false;
+  const id=m[1];
+  if(!canView('leads')){toast('Je hebt geen toegang tot Leads / CRM','err');return true;}
+  if(CURRENT!=='leads')go('leads');
+  (async()=>{try{const {data}=await sb.from('contacts').select('*').eq('id',id).single();if(data)openPerson(data);else toast('Contact niet gevonden','err');}catch(e){toast('Kon contact niet openen','err');}})();
+  return true;
 }
 
 /* ================= NAV ================= */
@@ -1705,6 +1727,7 @@ async function openPerson(p){
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
         ${_waUrl?`<a class="btn btn-sm" id="pd_wa" style="text-decoration:none;background:#25D366;color:#fff;border-color:#25D366;font-weight:600" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
+        <button class="btn btn-ghost btn-sm" id="pd_share" title="Kopieer een link naar dit contact om te delen met je team">🔗 Deel</button>
         ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
       </div>
     </div>
@@ -1800,6 +1823,7 @@ async function openPerson(p){
   }
   const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
   const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
+  const sh=$('#pd_share'); if(sh)sh.onclick=()=>copyLink(crmDeepLink(p.id));
   // Recompute the WhatsApp greeting at the moment of clicking (send time), not when the contact was opened.
   const wab=$('#pd_wa'); if(wab)wab.addEventListener('click',(e)=>{ const u=_helloWaUrl(p.phone,p.name,_waProj); if(!u){e.preventDefault();toast('Geen geldig telefoonnummer','err');return;} wab.href=u; });
   if(mb){
@@ -2051,11 +2075,12 @@ function pipeCardHtml(c){
   const val=(c.value!=null&&c.value!=='')?`<span class="pipe-chip val">${anMoney(c.value)}</span>`:'';
   const crm=c.contact_id?`<span class="pipe-chip crm" data-crm="${esc(c.contact_id)}" title="Open in CRM">CRM ↗</span>`:'';
   const wa=_waDigits(en.phone)?`<a class="pipe-wa" data-wa="${esc(c.id)}" title="Stuur WhatsApp-bericht">${WA_SVG}</a>`:'';
-  const who=c.assignee?`<span class="pipe-av" title="${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
-  const right=(wa||who)?`<span style="margin-left:auto;display:inline-flex;gap:6px;align-items:center">${wa}${who}</span>`:'';
+  const who=c.assignee?`<span class="pipe-av" title="Eigenaar: ${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
   const warm=c.contact_id?warmthBadge(WARMTH[c.contact_id]):'';
-  const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(c.title||'(naamloos)')}</div>${warm}</div>`;
-  return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}">${titleRow}<div class="pipe-card-meta">${proj}${budget}${tl}${val}${crm}${right}</div></div>`;
+  const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(c.title||'(naamloos)')}</div>${warm}</div>`;
+  const chips=`${proj}${budget}${tl}`;
+  const foot=(crm||wa||who||val)?`<div class="pipe-card-foot"><span style="display:inline-flex;gap:5px;align-items:center">${val}${crm}</span><span class="pipe-foot-right">${wa}${who}</span></div>`:'';
+  return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}">${titleRow}${chips.trim()?`<div class="pipe-card-chips">${chips}</div>`:''}${foot}</div>`;
 }
 function drawPipeline(){
   const v=$('#view');const edit=canEdit('pipeline');const cur=PIPE.cur;const stages=cur.stages||[];
@@ -2201,6 +2226,7 @@ function pipeCardDrawer(card){
   if(phone)acts.push(`<a class="pdr-act" href="tel:${esc(phone.replace(/[^0-9+]/g,''))}">📞 Bellen</a>`);
   if(email)acts.push(`<a class="pdr-act" href="mailto:${esc(email)}">✉️ Mailen</a>`);
   if(card.contact_id)acts.push(`<a class="pdr-act" id="pdr_crm" href="#">🔗 Open in CRM</a>`);
+  if(card.contact_id)acts.push(`<a class="pdr-act" id="pdr_share" href="#" title="Kopieer een deelbare link naar dit contact">↗ Deel</a>`);
   const root=document.createElement('div');root.id='pdrawer_root';
   root.innerHTML=`<div class="pdrawer-back"></div><aside class="pdrawer" role="dialog" aria-label="Kaart">
     <div class="pdrawer-head">
@@ -2249,6 +2275,7 @@ function pipeCardDrawer(card){
   }
   if(q('#pdr_wa'))q('#pdr_wa').onclick=e=>{e.preventDefault();pipeWhatsapp(card.id);};
   if(q('#pdr_crm'))q('#pdr_crm').onclick=e=>{e.preventDefault();close();openContactById(card.contact_id);};
+  if(q('#pdr_share'))q('#pdr_share').onclick=e=>{e.preventDefault();copyLink(crmDeepLink(card.contact_id));};
 }
 function pipeAddCard(stage){pipeCardForm(null,stage);}
 function pipeCardForm(card,defaultStage){
