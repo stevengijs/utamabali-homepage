@@ -794,17 +794,24 @@ async function renderAnalytics(){
   const {since:sinceD,until:untilD,label:rangeLabel}=anRangeCalc();
   const since=sinceD.toISOString(),until=untilD.toISOString();
   const spanDays=Math.max(1,Math.round((untilD-sinceD)/864e5));
-  const [evR,leadsR,purchR,webR,projR,intR]=await Promise.all([
-    sb.from('analytics_events').select('event_id,session_id,visitor_hash,is_new_session,path,referrer_host,channel,utm_source,utm_campaign,country,device,browser,duration_ms,created_at,page_title').gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).limit(50000),
-    sb.from('leads').select('contact_id,project,source_page,type,created_at').gte('created_at',since).lte('created_at',until),
+  const [evR,leadsR,purchR,webR,projR,intR,kvR]=await Promise.all([
+    sb.from('analytics_events').select('event_id,session_id,visitor_hash,visitor_id,is_new_session,path,referrer_host,channel,utm_source,utm_campaign,country,device,browser,duration_ms,created_at,page_title').gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).limit(50000),
+    sb.from('leads').select('contact_id,project,source_page,type,ua_vid,created_at').gte('created_at',since).lte('created_at',until),
     sb.from('purchases').select('project,price,deposit_amount,status,created_at'),
     sb.from('webinar_registrations').select('call_booked,attended,created_at').gte('created_at',since).lte('created_at',until),
     sb.from('projects').select('name,slug,status,sort_order').order('sort_order',{ascending:true}),
-    sb.from('analytics_interactions').select('kind,label,project,visitor_hash,created_at').gte('created_at',since).lte('created_at',until).limit(50000),
+    sb.from('analytics_interactions').select('kind,label,project,visitor_hash,session_id,created_at').gte('created_at',since).lte('created_at',until).limit(50000),
+    sb.from('analytics_known_visitors').select('visitor_id'),
   ]);
   if(evR.error){v.innerHTML=`<div class="panel"><div class="empty">Couldn’t load analytics: ${esc(evR.error.message)}</div></div>`;return;}
-  const ev=evR.data||[],leads=leadsR.data||[],webs=webR.data||[],projs=projR.data||[];
-  const interactions=intR&&intR.data?intR.data:[];
+  // Exclude internal (team's own) devices from all reporting — they still appear in the live panel.
+  const INTERNAL_VIDS=new Set((kvR&&kvR.data?kvR.data:[]).map(k=>k.visitor_id).filter(Boolean));
+  const _evAll=evR.data||[];
+  const _internalSess=new Set(_evAll.filter(e=>e.visitor_id&&INTERNAL_VIDS.has(e.visitor_id)).map(e=>e.session_id).filter(Boolean));
+  const ev=_evAll.filter(e=>!(e.visitor_id&&INTERNAL_VIDS.has(e.visitor_id)));
+  const leads=(leadsR.data||[]).filter(l=>!(l.ua_vid&&INTERNAL_VIDS.has(l.ua_vid)));
+  const webs=webR.data||[],projs=projR.data||[];
+  const interactions=(intR&&intR.data?intR.data:[]).filter(x=>!(x.session_id&&_internalSess.has(x.session_id)));
   const _intGrp=k=>{const m={};interactions.filter(x=>x.kind===k).forEach(x=>{const l=x.label||'—';(m[l]=m[l]||{n:0,uv:new Set()});m[l].n++;if(x.visitor_hash)m[l].uv.add(x.visitor_hash);});return Object.entries(m).map(([label,x])=>({label,value:x.n,uv:x.uv.size})).sort((a,b)=>b.value-a.value);};
   const chapterViews=_intGrp('chapter'), faqViews=_intGrp('faq'), toolViews=[..._intGrp('tool'),..._intGrp('download')].sort((a,b)=>b.value-a.value);
   // brochure-only engagement (time spent on the /brochure pages, split out from the project page)
