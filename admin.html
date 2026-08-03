@@ -1014,6 +1014,23 @@ async function resolveMetaNames(ids){
   }catch(e){}
 }
 function metaName(v){const s=String(v==null?'':v);return META_NAMES[s]||s;}
+/* ---- lead warmth score (shared across pipeline, lead detail, CRM) ---- */
+let WARMTH={};
+async function warmthLoad(contactIds){
+  const want=[...new Set((contactIds||[]).filter(Boolean).filter(id=>!(id in WARMTH)))];
+  if(!want.length)return;
+  try{const {data}=await sb.rpc('lead_warmth',{p_contacts:want});(data||[]).forEach(r=>{WARMTH[r.contact_id]=r.score;});want.forEach(id=>{if(!(id in WARMTH))WARMTH[id]=null;});}catch(e){}
+}
+function warmthTier(score){
+  if(score==null)return null;
+  if(score>=65)return {label:'Heet',icon:'🔥',color:'#dc2626',bg:'#fef2f2',bd:'#fecaca'};
+  if(score>=40)return {label:'Warm',icon:'🌤️',color:'#b45309',bg:'#fffbeb',bd:'#fde68a'};
+  return {label:'Koud',icon:'❄️',color:'#2563eb',bg:'#eff6ff',bd:'#bfdbfe'};
+}
+function warmthBadge(score,opts){
+  const t=warmthTier(score);if(!t)return '';const big=opts&&opts.big;
+  return `<span class="warmth-badge" title="Lead-warmte ${score}/100 — ${t.label}. Op basis van websitegedrag (tijd, pagina's, ROI-calculator), budget, koop-timeline, geldig WhatsApp-nummer en fase." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
+}
 let LIVE_TIMER=null;
 async function renderLiveVisitors(){
   const box=$('#live_visitors');
@@ -1354,6 +1371,7 @@ async function renderPeople(){
   const cel=$('#cnt_people');if(cel)cel.textContent=PEOPLE.length;
   drawRecentSignups();
   drawPeople();
+  warmthLoad(PEOPLE.map(p=>p.id)).then(()=>{if(CURRENT==='leads')drawPeople();});
   $('#search_people').addEventListener('input',drawPeople);
   if(PENDING_OPEN_PERSON){const p=PEOPLE.find(x=>x.id===PENDING_OPEN_PERSON);PENDING_OPEN_PERSON=null;if(p)openPerson(p);}
 }
@@ -1553,11 +1571,12 @@ function drawPeople(){
   let rows=PEOPLE; if(q)rows=rows.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
   const tw=$('#tw_people');if(!tw)return;
   if(!rows.length){tw.innerHTML='<div class="empty">No people'+(q?' match your search.':'.')+'</div>';return;}
-  let h='<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Flags</th><th>Last activity</th></tr></thead><tbody>';
+  let h='<table><thead><tr><th>Name</th><th>Warmte</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Flags</th><th>Last activity</th></tr></thead><tbody>';
   rows.forEach(p=>{
     const projs=[...new Set(p._leads.map(l=>l.project).filter(Boolean))].join(', ');
     const flags=`${p._isNew?'<span class="badge green">NEW</span> ':''}${p._deposit?'<span class="badge green">💶 aanbetaling gemeld</span> ':''}${p._itp?'<span class="badge blue">📝 ITP getekend</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
-    h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td style="white-space:normal">${flags}</td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
+    const warm=warmthBadge(WARMTH[p.id])||'<span class="muted" style="font-size:12px">—</span>';
+    h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${warm}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td style="white-space:normal">${flags}</td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
   });
   tw.innerHTML=h+'</tbody></table>';
   tw.querySelectorAll('tr[data-person]').forEach(tr=>tr.onclick=()=>openPerson(PEOPLE.find(x=>x.id===tr.dataset.person)));
@@ -1621,6 +1640,7 @@ async function openPerson(p){
     sb.from('reservations').select('*').or('contact_id.eq.'+p.id+',email.eq.'+p.email).order('created_at',{ascending:false}),
   ]);
   const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[],resvs=rvR.data||[];
+  await warmthLoad([p.id]);
   const _waProj=(leads.find(l=>l.project)||{}).project||'';
   const _waUrl=_helloWaUrl(p.phone,p.name,_waProj);
   // Where the lead is + how they came in (attributie), via linked analytics sessions/visitor.
@@ -1673,7 +1693,7 @@ async function openPerson(p){
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
-        <div style="font-size:18px;font-weight:750;margin-bottom:11px">${esc(p.name||p.email||'Contact')}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px"><span style="font-size:18px;font-weight:750">${esc(p.name||p.email||'Contact')}</span>${warmthBadge(WARMTH[p.id],{big:true})}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <a href="mailto:${esc(p.email)}" class="badge blue" style="text-decoration:none">${esc(p.email)}</a>
           ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
@@ -1998,6 +2018,7 @@ async function loadPipelineData(){
   ]);
   PIPE.cards=cR.data||[];PIPE.views=vR.data||[];
   await pipeLoadEnrichment();
+  await warmthLoad(PIPE.cards.map(c=>c.contact_id));
   drawPipeline();
 }
 async function pipeLoadEnrichment(){
@@ -2032,7 +2053,9 @@ function pipeCardHtml(c){
   const wa=_waDigits(en.phone)?`<a class="pipe-wa" data-wa="${esc(c.id)}" title="Stuur WhatsApp-bericht">${WA_SVG}</a>`:'';
   const who=c.assignee?`<span class="pipe-av" title="${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
   const right=(wa||who)?`<span style="margin-left:auto;display:inline-flex;gap:6px;align-items:center">${wa}${who}</span>`:'';
-  return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}"><div class="pipe-card-title">${esc(c.title||'(naamloos)')}</div><div class="pipe-card-meta">${proj}${budget}${tl}${val}${crm}${right}</div></div>`;
+  const warm=c.contact_id?warmthBadge(WARMTH[c.contact_id]):'';
+  const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(c.title||'(naamloos)')}</div>${warm}</div>`;
+  return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}">${titleRow}<div class="pipe-card-meta">${proj}${budget}${tl}${val}${crm}${right}</div></div>`;
 }
 function drawPipeline(){
   const v=$('#view');const edit=canEdit('pipeline');const cur=PIPE.cur;const stages=cur.stages||[];
@@ -2185,6 +2208,7 @@ function pipeCardDrawer(card){
         <input class="pdr-title" id="pdr_title" value="${esc(card.title||'')}" ${edit?'':'readonly'} placeholder="Titel">
         <button id="pdr_x" title="Sluiten" style="font-size:22px;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted)">×</button>
       </div>
+      ${card.contact_id&&warmthBadge(WARMTH[card.contact_id],{big:true})?`<div style="margin-top:8px">${warmthBadge(WARMTH[card.contact_id],{big:true})}</div>`:''}
       <div class="pdr-field" style="margin-top:12px"><div class="pdr-label">Fase / kolom wijzigen</div><select id="pdr_stage" ${edit?'':'disabled'}>${stageOpts}</select></div>
     </div>
     <div class="pdrawer-body">
