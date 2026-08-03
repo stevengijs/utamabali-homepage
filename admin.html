@@ -212,6 +212,10 @@
   .ibx-thead{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
   .ibx-thead-l{display:flex;gap:11px;align-items:center;min-width:0}
   .ibx-tname{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+  a.ibx-proflink{color:inherit;text-decoration:none}
+  a.ibx-proflink:hover{text-decoration:underline}
+  .ibx-ext{opacity:.45;font-size:.8em;font-weight:600}
+  a.ibx-proflink:hover .ibx-ext{opacity:.8}
   .ibx-tsub{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
   .ibx-chtag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid}
   .ibx-thead-r{display:flex;align-items:center;gap:8px;flex:none}
@@ -1228,6 +1232,11 @@ function inboxAvatar(nm,ch,url,big){
   const inner=esc(inboxInitials(nm))+(url?`<img src="${esc(url)}" alt="" class="ibx-avimg" referrerpolicy="no-referrer" onerror="this.remove()">`:'');
   return `<div class="ibx-av${big?' lg':''}" style="background:${ch.bg};color:${ch.color};border-color:${ch.bd}">${inner}<span class="ibx-avch" title="${esc(ch.label)}">${ch.icon}</span></div>`;
 }
+function inboxProfileUrl(cv){
+  if(!cv)return '';
+  if(cv.channel==='instagram'){const h=String(cv.handle||'').replace(/^@/,'').trim();return h?('https://instagram.com/'+encodeURIComponent(h)):'';}
+  return '';
+}
 function inboxStatusPill(c){
   const map={active:['AI actief','#065f46','#ecfdf5','#a7f3d0'],booked:['Afspraak','#1e40af','#eff6ff','#bfdbfe'],
     needs_human:['Overname','#9a3412','#fff7ed','#fed7aa'],closed:['Gesloten','#475569','#f1f5f9','#e2e8f0'],opted_out:['Afgemeld','#7f1d1d','#fef2f2','#fecaca']};
@@ -1323,9 +1332,9 @@ function inboxDrawThread(data,keepDraft){
   t.innerHTML=`
     <div class="ibx-thead">
       <div class="ibx-thead-l">
-        ${inboxAvatar(nm,ch,cv.avatar_url,true)}
+        ${(()=>{const u=inboxProfileUrl(cv);const av=inboxAvatar(nm,ch,cv.avatar_url,true);return u?`<a href="${u}" target="_blank" rel="noopener" title="Open Instagram-profiel" style="text-decoration:none">${av}</a>`:av;})()}
         <div>
-          <div class="ibx-tname">${esc(nm)}</div>
+          <div class="ibx-tname">${(()=>{const u=inboxProfileUrl(cv);return u?`<a class="ibx-proflink" href="${u}" target="_blank" rel="noopener" title="Open Instagram-profiel">${esc(nm)} <span class="ibx-ext">↗</span></a>`:esc(nm);})()}</div>
           <div class="ibx-tsub"><span class="ibx-chtag" style="color:${ch.color};background:${ch.bg};border-color:${ch.bd}">${ch.icon} ${ch.label}</span> ${esc(cv.handle||'')}</div>
         </div>
       </div>
@@ -1387,8 +1396,8 @@ function inboxDrawInfo(ctx){
   const tlHtml=timeline.length?timeline.map(it=>`<div class="ibx-tl"><span class="ibx-tl-ic">${tlicon[it.kind]||'•'}</span><div class="ibx-tl-b"><div class="ibx-tl-t">${esc(it.title)}${it.project?' · '+esc(it.project):''}</div><div class="ibx-tl-m">${it.ts?new Date(it.ts).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'}):''}${it.meta?' · '+esc(it.meta):''}</div></div></div>`).join(''):`<div class="ibx-ip-note">Nog geen eerdere activiteit vastgelegd.</div>`;
   info.innerHTML=`
     <div class="ibx-ip-head">
-      ${inboxAvatar(nm,ch,cv.avatar_url,true)}
-      <div class="ibx-ip-id"><div class="ibx-ip-name">${esc(nm)}</div><div class="ibx-ip-sub">${esc(cv.handle||'')}</div></div>
+      ${(()=>{const u=inboxProfileUrl(cv);const av=inboxAvatar(nm,ch,cv.avatar_url,true);return u?`<a href="${u}" target="_blank" rel="noopener" title="Open Instagram-profiel" style="text-decoration:none">${av}</a>`:av;})()}
+      <div class="ibx-ip-id"><div class="ibx-ip-name">${(()=>{const u=inboxProfileUrl(cv);return u?`<a class="ibx-proflink" href="${u}" target="_blank" rel="noopener" title="Open Instagram-profiel">${esc(nm)} <span class="ibx-ext">↗</span></a>`:esc(nm);})()}</div><div class="ibx-ip-sub">${cv.handle?(()=>{const u=inboxProfileUrl(cv);return u?`<a class="ibx-proflink" href="${u}" target="_blank" rel="noopener">${esc(cv.handle)}</a>`:esc(cv.handle);})():''}</div></div>
       ${cv.warmth!=null?warmthBadge(cv.warmth,{big:true}):''}
     </div>
     <div class="ibx-ip-actions">${acts.join('')}</div>
