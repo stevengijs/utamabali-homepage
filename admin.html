@@ -190,6 +190,7 @@
   .pipe-colgrip{cursor:grab;color:#b3bcb7;font-size:13px;line-height:1;letter-spacing:-1px;user-select:none}
   .pipe-colgrip:active{cursor:grabbing}
   .pipe-col.col-drop{outline:2px dashed #8fd3ba;outline-offset:-3px;border-radius:12px}
+  .pipe-col.col-dragging{opacity:.4;box-shadow:0 8px 24px rgba(0,0,0,.14)}
   .pipe-col-count{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:1px 8px}
   .pipe-col-sum{font-size:11px;color:var(--muted);padding:0 12px 6px}
   .pipe-cards{padding:8px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:60px;flex:1}
@@ -2099,8 +2100,8 @@ function wirePipeline(){
   // ---- whole-column drag to reorder ----
   if(canEdit('pipeline')){
     board.querySelectorAll('.pipe-colgrip[data-colkey]').forEach(g=>{
-      g.addEventListener('dragstart',e=>{PIPE.colDrag=g.dataset.colkey;try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','col:'+g.dataset.colkey);}catch(x){}});
-      g.addEventListener('dragend',()=>{PIPE.colDrag=null;board.querySelectorAll('.pipe-col').forEach(c=>c.classList.remove('col-drop'));});
+      g.addEventListener('dragstart',e=>{PIPE.colDrag=g.dataset.colkey;const col=g.closest('.pipe-col');if(col){try{e.dataTransfer.setDragImage(col,24,20);}catch(x){}setTimeout(()=>col.classList.add('col-dragging'),0);}try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','col:'+g.dataset.colkey);}catch(x){}});
+      g.addEventListener('dragend',()=>{PIPE.colDrag=null;board.querySelectorAll('.pipe-col').forEach(c=>{c.classList.remove('col-drop');c.classList.remove('col-dragging');});});
     });
     board.querySelectorAll('.pipe-col').forEach(col=>{
       col.addEventListener('dragover',e=>{if(!PIPE.colDrag)return;e.preventDefault();col.classList.add('col-drop');});
@@ -2184,7 +2185,7 @@ function pipeCardDrawer(card){
         <input class="pdr-title" id="pdr_title" value="${esc(card.title||'')}" ${edit?'':'readonly'} placeholder="Titel">
         <button id="pdr_x" title="Sluiten" style="font-size:22px;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted)">×</button>
       </div>
-      <div class="pdr-field" style="margin-top:12px"><div class="pdr-label">Fase / kolom</div><select id="pdr_stage" ${edit?'':'disabled'}>${stageOpts}</select></div>
+      <div class="pdr-field" style="margin-top:12px"><div class="pdr-label">Fase / kolom wijzigen</div><select id="pdr_stage" ${edit?'':'disabled'}>${stageOpts}</select></div>
     </div>
     <div class="pdrawer-body">
       ${acts.length?`<div class="pdr-actions">${acts.join('')}</div>`:''}
@@ -2301,7 +2302,7 @@ async function pipeImportLeads(){
   toast(rows.length+' lead'+(rows.length===1?'':'s')+' geïmporteerd','ok');loadPipelineData();
 }
 function pipeEditColumns(){
-  const cur=PIPE.cur;let name=cur.name;let auto=!!cur.auto_sync;let stages=JSON.parse(JSON.stringify(cur.stages||[]));
+  const cur=PIPE.cur;let name=cur.name;let auto=!!cur.auto_sync;let defAss=cur.default_assignee||'';let stages=JSON.parse(JSON.stringify(cur.stages||[]));
   const slug=s=>((s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,24)||'kolom');
   function draw(){
     const rows=stages.map((s,i)=>`<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
@@ -2314,6 +2315,7 @@ function pipeEditColumns(){
     const body=`<div class="pc-form">
       <label>Pipeline-naam<input class="pc-in" id="pe_name" value="${esc(name)}"></label>
       <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:500;color:var(--ink,#111);cursor:pointer"><input type="checkbox" id="pe_auto" ${auto?'checked':''} style="width:16px;height:16px"> Automatisch vullen vanuit de CRM (leads, ITP-aanvragen, aankopen schuiven vanzelf mee)</label>
+      <label style="margin-top:12px">Standaard-eigenaar voor nieuwe leads<select class="pc-in" id="pe_defass"><option value="">— niemand —</option>${PIPE.team.map(t=>`<option value="${t.id}"${defAss===t.id?' selected':''}>${esc(t.full_name||t.email)}</option>`).join('')}</select></label>
       <div style="margin-top:16px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Kolommen</div>
       <div style="margin-top:8px" id="pe_rows">${rows}</div>
       <button class="btn btn-ghost btn-sm" id="pe_add">＋ Kolom toevoegen</button>
@@ -2328,6 +2330,7 @@ function pipeEditColumns(){
     const g=id=>document.getElementById(id),closeM=()=>{$('#overlay').style.display='none';$('#overlay').innerHTML='';};
     g('pe_name').oninput=e=>{name=e.target.value;};
     g('pe_auto').onchange=e=>{auto=e.target.checked;};
+    if(g('pe_defass'))g('pe_defass').onchange=e=>{defAss=e.target.value;};
     g('pe_rows').querySelectorAll('[data-l]').forEach(inp=>inp.oninput=e=>{stages[+inp.dataset.l].label=e.target.value;});
     g('pe_rows').querySelectorAll('[data-c]').forEach(inp=>inp.oninput=e=>{stages[+inp.dataset.c].color=e.target.value;});
     g('pe_rows').querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const i=+b.dataset.up;[stages[i-1],stages[i]]=[stages[i],stages[i-1]];draw();});
@@ -2339,11 +2342,11 @@ function pipeEditColumns(){
       const used=new Set();
       stages.forEach(s=>{if(!(s.label||'').trim())s.label='Kolom';let base=s.key||slug(s.label),k=base,n=2;while(used.has(k)){k=base+'-'+(n++);}s.key=k;used.add(k);});
       const validKeys=new Set(stages.map(s=>s.key)),first=stages[0].key;
-      const {error}=await sb.from('pipelines').update({name:(name||'').trim()||'Pipeline',stages,auto_sync:auto}).eq('id',cur.id);
+      const {error}=await sb.from('pipelines').update({name:(name||'').trim()||'Pipeline',stages,auto_sync:auto,default_assignee:defAss||null}).eq('id',cur.id);
       if(error){toast('Kon niet opslaan: '+error.message,'err');return;}
       const orphans=PIPE.cards.filter(c=>!validKeys.has(c.stage));
       if(orphans.length){await sb.from('pipeline_cards').update({stage:first}).in('id',orphans.map(o=>o.id));}
-      cur.stages=stages;cur.name=(name||'').trim()||'Pipeline';cur.auto_sync=auto;const li=PIPE.list.find(p=>p.id===cur.id);if(li){li.stages=stages;li.name=cur.name;li.auto_sync=auto;}
+      cur.stages=stages;cur.name=(name||'').trim()||'Pipeline';cur.auto_sync=auto;cur.default_assignee=defAss||null;const li=PIPE.list.find(p=>p.id===cur.id);if(li){li.stages=stages;li.name=cur.name;li.auto_sync=auto;li.default_assignee=cur.default_assignee;}
       closeM();toast('Opgeslagen','ok');loadPipelineData();
     };
     if(g('pe_delpipe'))g('pe_delpipe').onclick=async()=>{
