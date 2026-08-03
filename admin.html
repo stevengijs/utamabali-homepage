@@ -1533,14 +1533,34 @@ async function openPerson(p){
   const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[],resvs=rvR.data||[];
   const _waProj=(leads.find(l=>l.project)||{}).project||'';
   const _waUrl=_helloWaUrl(p.phone,p.name,_waProj);
-  // Where the lead is: IP-based (via linked analytics session) if we have it, else country from phone.
-  let _loc='',_locSrc='';
+  // Where the lead is + how they came in (attributie), via linked analytics sessions/visitor.
+  let _loc='',_locSrc='',_attr=null;
   const _sess=[...new Set(leads.map(l=>l.ua_session).filter(Boolean))];
-  if(_sess.length){
-    const {data:_ev}=await sb.from('analytics_events').select('city,country,created_at').in('session_id',_sess).not('country','is',null).order('created_at',{ascending:false}).limit(1);
-    if(_ev&&_ev[0]){const e=_ev[0];const city=(e.city||'').replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Kota|Kabupaten)\s+/i,'').trim();_loc=[city,e.country].filter(Boolean).join(', ');if(_loc)_locSrc='ip';}
+  const _vids=[...new Set(leads.map(l=>l.ua_vid).filter(Boolean))];
+  if(_sess.length||_vids.length){
+    const SEL='channel,utm_source,utm_medium,utm_campaign,utm_content,utm_term,referrer_host,path,city,country,created_at';
+    let evs=[];
+    if(_sess.length){const {data}=await sb.from('analytics_events').select(SEL).in('session_id',_sess).order('created_at',{ascending:true}).limit(300);evs=evs.concat(data||[]);}
+    if(_vids.length){const {data}=await sb.from('analytics_events').select(SEL).in('visitor_id',_vids).order('created_at',{ascending:true}).limit(300);evs=evs.concat(data||[]);}
+    evs.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+    // location: most recent event that carries a country
+    for(let i=evs.length-1;i>=0;i--){if(evs[i].country){const e=evs[i];const city=(e.city||'').replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Kota|Kabupaten)\s+/i,'').trim();_loc=[city,e.country].filter(Boolean).join(', ');if(_loc)_locSrc='ip';break;}}
+    // attributie (first touch): vroegste event met campagne/bron/niet-direct kanaal, anders het allereerste event
+    _attr=evs.find(e=>e.utm_campaign||e.utm_source||(e.channel&&!['direct','internal'].includes((e.channel||'').toLowerCase())))||evs[0]||null;
   }
   if(!_loc){const c=_countryFromPhone(p.phone);if(c){_loc=c;_locSrc='phone';}}
+  // build attribution labels
+  let _attrChan='',_attrLabel='',_attrBits=[];
+  if(_attr){
+    _attrChan=(_attr.channel||'direct').toLowerCase();
+    _attrLabel={direct:'Direct',organic:'Organisch',social:'Social',paid:'Ad',referral:'Referral',campaign:'Campagne',email:'E-mail',internal:'Intern'}[_attrChan]||_attrChan;
+    if(_attr.utm_source)_attrBits.push(['Bron',_attr.utm_source]);
+    if(_attr.utm_medium)_attrBits.push(['Medium',_attr.utm_medium]);
+    if(_attr.utm_campaign)_attrBits.push(['Campagne',_attr.utm_campaign]);
+    if(_attr.utm_content)_attrBits.push(['Advertentie',_attr.utm_content]);
+    if(_attr.utm_term)_attrBits.push(['Zoekterm',_attr.utm_term]);
+    if(!_attr.utm_source&&_attr.referrer_host)_attrBits.push(['Verwijzer',_attr.referrer_host]);
+  }
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
@@ -1551,6 +1571,7 @@ async function openPerson(p){
           ${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}
           ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
           ${_loc?`<span class="badge grey" title="${_locSrc==='ip'?'Locatie op basis van IP (analytics)':'Land op basis van telefoonnummer — nog geen IP-sessie voor deze lead'}">📍 ${esc(_loc)}${_locSrc==='phone'?' · via telefoon':''}</span>`:''}
+          ${_attr?`<span class="src-badge ${_attrChan}" title="Hoe deze lead binnenkwam (eerste bezoek)">${esc(_attrLabel)}${_attr.utm_campaign?' · '+esc(_attr.utm_campaign):(_attr.utm_source?' · '+esc(_attr.utm_source):'')}</span>`:''}
         </div>
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
@@ -1564,6 +1585,20 @@ async function openPerson(p){
     </div>
   </div>
   <hr style="border:none;border-top:1px solid var(--line);margin:22px 0 2px">`;
+  // Herkomst / marketing-attributie
+  {
+    let inner;
+    if(_attr){
+      const human={direct:'Directe link — typte de URL in of kwam via een bookmark',organic:'Organisch — via een zoekmachine (Google e.d.)',social:'Social media',paid:'Betaalde advertentie',referral:'Verwijzing vanaf een andere website',campaign:'Getagde campagnelink',email:'Via een e-mail',internal:'Interne link'}[_attrChan]||_attrChan;
+      const rows=_attrBits.map(b=>`<tr><td class="muted" style="white-space:nowrap;padding:2px 14px 2px 0;vertical-align:top">${esc(b[0])}</td><td style="padding:2px 0"><b>${esc(b[1])}</b></td></tr>`).join('');
+      const note=(_attrChan==='paid'&&!_attr.utm_campaign&&!_attr.utm_source)?'<div class="muted" style="font-size:12px;margin-top:8px">Herkend als advertentieklik (ad-click-id in de URL), maar er zijn geen campagne-tags meegegeven. Voeg <code>utm_campaign</code> en <code>utm_content</code> toe aan je advertentie-links om te zien wélke advertentie precies.</div>':'';
+      const src=_attr.referrer_host&&!_attrBits.some(b=>b[0]==='Verwijzer')?`<div class="muted" style="font-size:12px;margin-top:6px">Eerste pagina: <b>${esc((_attr.path||'/').split('?')[0])}</b></div>`:'';
+      inner=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:${rows?'10px':'2px'}"><span class="src-badge ${_attrChan}" style="font-size:12px">${esc(_attrLabel)}</span><span style="font-size:13px">${esc(human)}</span></div>${rows?`<table style="font-size:13px;border-collapse:collapse">${rows}</table>`:''}${src}${note}`;
+    }else{
+      inner='<div class="muted" style="font-size:13px">Geen webverkeer gekoppeld aan deze lead — herkomst onbekend. (Leads van vóór de tracking, of ingevoerd zonder sessie.)</div>';
+    }
+    body+=_sec('Herkomst (marketing)',inner);
+  }
   const manageLeads=canEdit('leads')||canEdit('portal');
   body+=_sec('Aanvragen & interesse ('+leads.length+')',_hint('Binnengekomen via de site: vragen, reserveringsaanvragen en dataroom-verzoeken. Klik "Maak ITP" om er een reservering van te maken.')+_mt(['Type','Project','Unit','Budget','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
     const open=(l.type==='dataroom_request'||l.type==='reservation')&&!l.handled_at;
