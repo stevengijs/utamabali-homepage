@@ -196,7 +196,8 @@
   .ibx-row.unread .ibx-rprev{color:var(--ink);font-weight:500}
   .ibx-av{position:relative;flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
   .ibx-av.lg{width:46px;height:46px;font-size:15px}
-  .ibx-avch{position:absolute;right:-3px;bottom:-3px;font-size:11px;background:#fff;border-radius:50%;line-height:1;padding:1px}
+  .ibx-avch{position:absolute;right:-3px;bottom:-3px;font-size:11px;background:#fff;border-radius:50%;line-height:1;padding:1px;z-index:2}
+  .ibx-avimg{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;z-index:1}
   .ibx-rmain{flex:1;min-width:0}
   .ibx-rtop{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
   .ibx-rname{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1219,6 +1220,12 @@ function inboxRel(ts){
   return d.toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
 }
 function inboxInitials(name){const p=(name||'?').trim().split(/\s+/);return ((p[0]||'')[0]||'?').toUpperCase()+((p[1]||'')[0]||'').toUpperCase();}
+function inboxAvatar(nm,ch,url,big){
+  // Profile photo (Instagram/WhatsApp) when available; initials underneath as
+  // fallback so an expired/blocked image URL degrades gracefully.
+  const inner=esc(inboxInitials(nm))+(url?`<img src="${esc(url)}" alt="" class="ibx-avimg" referrerpolicy="no-referrer" onerror="this.remove()">`:'');
+  return `<div class="ibx-av${big?' lg':''}" style="background:${ch.bg};color:${ch.color};border-color:${ch.bd}">${inner}<span class="ibx-avch" title="${esc(ch.label)}">${ch.icon}</span></div>`;
+}
 function inboxStatusPill(c){
   const map={active:['AI actief','#065f46','#ecfdf5','#a7f3d0'],booked:['Afspraak','#1e40af','#eff6ff','#bfdbfe'],
     needs_human:['Overname','#9a3412','#fff7ed','#fed7aa'],closed:['Gesloten','#475569','#f1f5f9','#e2e8f0'],opted_out:['Afgemeld','#7f1d1d','#fef2f2','#fecaca']};
@@ -1270,7 +1277,7 @@ async function inboxLoad(){
     const ch=INBOX_CH[c.channel]||INBOX_CH.instagram;const nm=c.display_name||c.contact_name||c.handle||'Onbekend';
     const unread=c.unread_count>0;
     return `<div class="ibx-row ${INBOX.sel===c.id?'sel':''} ${unread?'unread':''}" data-id="${c.id}">
-      <div class="ibx-av" style="background:${ch.bg};color:${ch.color};border-color:${ch.bd}">${esc(inboxInitials(nm))}<span class="ibx-avch" title="${ch.label}">${ch.icon}</span></div>
+      ${inboxAvatar(nm,ch,c.avatar_url)}
       <div class="ibx-rmain">
         <div class="ibx-rtop"><span class="ibx-rname">${esc(nm)}</span><span class="ibx-rtime">${inboxRel(c.last_message_at)}</span></div>
         <div class="ibx-rprev">${c.last_direction==='out'?'<span class="ibx-you">Jij/AI:</span> ':''}${esc((c.last_message_preview||'').slice(0,80))}</div>
@@ -1313,7 +1320,7 @@ function inboxDrawThread(data,keepDraft){
   t.innerHTML=`
     <div class="ibx-thead">
       <div class="ibx-thead-l">
-        <div class="ibx-av lg" style="background:${ch.bg};color:${ch.color};border-color:${ch.bd}">${esc(inboxInitials(nm))}<span class="ibx-avch">${ch.icon}</span></div>
+        ${inboxAvatar(nm,ch,cv.avatar_url,true)}
         <div>
           <div class="ibx-tname">${esc(nm)}</div>
           <div class="ibx-tsub"><span class="ibx-chtag" style="color:${ch.color};background:${ch.bg};border-color:${ch.bd}">${ch.icon} ${ch.label}</span> ${esc(cv.handle||'')}</div>
@@ -1377,7 +1384,7 @@ function inboxDrawInfo(ctx){
   const tlHtml=timeline.length?timeline.map(it=>`<div class="ibx-tl"><span class="ibx-tl-ic">${tlicon[it.kind]||'•'}</span><div class="ibx-tl-b"><div class="ibx-tl-t">${esc(it.title)}${it.project?' · '+esc(it.project):''}</div><div class="ibx-tl-m">${it.ts?new Date(it.ts).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'}):''}${it.meta?' · '+esc(it.meta):''}</div></div></div>`).join(''):`<div class="ibx-ip-note">Nog geen eerdere activiteit vastgelegd.</div>`;
   info.innerHTML=`
     <div class="ibx-ip-head">
-      <div class="ibx-av lg" style="background:${ch.bg};color:${ch.color};border-color:${ch.bd}">${esc(inboxInitials(nm))}<span class="ibx-avch">${ch.icon}</span></div>
+      ${inboxAvatar(nm,ch,cv.avatar_url,true)}
       <div class="ibx-ip-id"><div class="ibx-ip-name">${esc(nm)}</div><div class="ibx-ip-sub">${esc(cv.handle||'')}</div></div>
       ${cv.warmth!=null?warmthBadge(cv.warmth,{big:true}):''}
     </div>
