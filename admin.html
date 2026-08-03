@@ -1983,7 +1983,7 @@ function drawPipeline(){
       const cs=cards.filter(c=>c.stage===st.key).sort((a,b)=>(a.position||0)-(b.position||0));
       const sum=cs.reduce((a,c)=>a+(Number(c.value)||0),0);
       h+=`<div class="pipe-col" data-stage="${esc(st.key)}">
-        <div class="pipe-col-head"><span class="pipe-dot" style="background:${esc(st.color||'#64748b')}"></span><span class="pipe-col-title">${esc(st.label)}</span><span class="pipe-col-count">${cs.length}</span></div>
+        <div class="pipe-col-head"><span class="pipe-dot" style="background:${esc(st.color||'#64748b')}"></span><span class="pipe-col-title"${edit?` data-stkey="${esc(st.key)}" title="Klik om te hernoemen" style="cursor:text"`:''}>${esc(st.label)}</span><span class="pipe-col-count">${cs.length}</span></div>
         ${sum>0?`<div class="pipe-col-sum">${anMoney(sum)}</div>`:''}
         <div class="pipe-cards" data-stage="${esc(st.key)}">${cs.map(pipeCardHtml).join('')}</div>
         ${edit?`<button class="pipe-add" data-add="${esc(st.key)}">＋ Kaart</button>`:''}
@@ -2017,6 +2017,23 @@ function wirePipeline(){
     zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');pipeDrop(zone,e);});
   });
   board.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>pipeAddCard(b.dataset.add));
+  board.querySelectorAll('.pipe-col-title[data-stkey]').forEach(t=>t.addEventListener('click',()=>pipeStartRename(t,t.dataset.stkey)));
+}
+function pipeStartRename(titleEl,key){
+  if(!canEdit('pipeline'))return;
+  const st=(PIPE.cur.stages||[]).find(s=>s.key===key);if(!st)return;
+  const inp=document.createElement('input');inp.value=st.label;
+  inp.style.cssText='font-weight:700;font-size:13px;border:1px solid var(--brand,#0f6b4f);border-radius:6px;padding:1px 6px;width:140px;font-family:inherit';
+  titleEl.replaceWith(inp);inp.focus();inp.select();
+  let done=false;
+  const commit=async()=>{if(done)return;done=true;const val=(inp.value||'').trim()||st.label;
+    if(val!==st.label){st.label=val;const li=PIPE.list.find(p=>p.id===PIPE.cur.id);if(li)li.stages=PIPE.cur.stages;
+      const {error}=await sb.from('pipelines').update({stages:PIPE.cur.stages}).eq('id',PIPE.cur.id);
+      if(error)toast('Kon niet opslaan: '+error.message,'err');else toast('Kolom hernoemd','ok');}
+    drawPipeline();
+  };
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}else if(e.key==='Escape'){done=true;drawPipeline();}});
+  inp.addEventListener('blur',commit);
 }
 async function pipeDrop(zone,e){
   const id=PIPE.dragId;if(!id)return;
