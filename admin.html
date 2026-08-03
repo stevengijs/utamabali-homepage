@@ -1590,7 +1590,7 @@ async function openPerson(p){
         </div>
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
-        ${p.phone?`<a class="btn btn-ghost btn-sm" style="text-decoration:none;color:#0f6b4f;border-color:#c6ead9" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
+        ${p.phone?`<a class="btn btn-ghost btn-sm" id="pd_wa" style="text-decoration:none;color:#0f6b4f;border-color:#c6ead9" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
         ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
       </div>
     </div>
@@ -1686,6 +1686,8 @@ async function openPerson(p){
   body+=_sec('Referrals ('+refs.length+')',_mt(['Code','Status','Reward'],refs.map(x=>[esc(x.code||'—'),statusBadge(x.status),money(x.reward_amount)])));
   const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
   const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
+  // Recompute the WhatsApp greeting at the moment of clicking (send time), not when the contact was opened.
+  const wab=$('#pd_wa'); if(wab)wab.addEventListener('click',()=>{ wab.href=_helloWaUrl(p.phone,p.name,_waProj); });
   if(mb){
     mb.querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.project,b.dataset.enable==='1',b.dataset.id||null));
     const gb=$('#dr_grant_btn');if(gb)gb.onclick=()=>{const s=$('#dr_grant_sel');if(s&&s.value)setDataroom(p,s.value,true,null);};
