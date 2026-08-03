@@ -272,6 +272,23 @@
   .ibx-pipe-sel{flex:1;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;background:#fff;outline:none}
   .ibx-pipe-sel:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
   .ibx-pipe-row .btn{flex:none;background:var(--brand);color:#fff}
+  /* Unified multi-channel bits */
+  .ibx-rchans{display:inline-flex;gap:2px;font-size:11px;line-height:1}
+  .ibx-medico{opacity:.85;font-size:10.5px}
+  .ibx-chip-med{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;border:1px solid}
+  .ibx-chsel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+  .ibx-chselb{font-size:12px;font-weight:600;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);cursor:pointer}
+  .ibx-chselb.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .ibx-sendhint{font-size:11.5px;color:var(--muted);margin-bottom:7px}
+  .ibx-modetabs{display:flex;gap:4px;margin-bottom:8px}
+  .ibx-modetabs button{font-size:12px;font-weight:600;padding:5px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--muted);cursor:pointer}
+  .ibx-modetabs button.on{background:#eef2f0;color:var(--ink);border-color:#cfe0d8}
+  .ibx-input-note{background:#fffdf2;border-color:#f0e2a8!important}
+  .ibx-notebtn{background:#eab308!important;color:#3a2f05!important}
+  /* Internal note in the thread */
+  .ibx-note{align-self:center;max-width:82%;background:#fffdf2;border:1px solid #f0e2a8;border-radius:10px;padding:8px 12px;margin:2px 0}
+  .ibx-note-h{font-size:10.5px;font-weight:800;letter-spacing:.02em;color:#9a7a06;text-transform:uppercase;margin-bottom:3px}
+  .ibx-note-b{font-size:13px;line-height:1.5;color:#4a3d0a;white-space:pre-wrap;word-wrap:break-word}
   .ibx-ip-note{font-size:12px;color:var(--muted);line-height:1.5}
   .ibx-oth{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;background:#f8faf9;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12.5px;font-weight:600}
   .ibx-oth:hover{background:#eef5f2}
@@ -1223,7 +1240,7 @@ function warmthBadge(score,opts){
   return `<span class="warmth-badge" title="Koopbereidheid ${score}/100 — ${t.label}. Op basis van websitegedrag (tijd, pagina's, ROI-calculator), budget, koop-timeline, geldig WhatsApp-nummer en fase." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
 }
 /* ================= INBOX (unified IG / WA / email) ================= */
-let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{}};
+let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{},sendCh:'',channels:[]};
 let INBOX_TIMER=null;
 const INBOX_CH={
   instagram:{label:'Instagram',icon:'📸',color:'#c13584',bg:'#fdf2f8',bd:'#f9d6e8'},
@@ -1233,7 +1250,12 @@ const INBOX_CH={
 /* Vanaf welk eigen account UTAMA per kanaal verzendt — getoond bij uitgaande
    berichten zodat het team ziet vanuit welk account/nummer/e-mail iets gaat.
    Vul whatsapp/email in zodra die kanalen live gaan. */
-const BIZ_ACCOUNTS={ instagram:'@stevenbalivillas', whatsapp:'', email:'' };
+const BIZ_ACCOUNTS={ instagram:'@stevenbalivillas', whatsapp:'', email:'info@utamabali.com' };
+// Small channel chip (icon + label) used to mark each message's medium.
+function inboxChip(channel,withLabel){
+  const c=INBOX_CH[channel]||INBOX_CH.instagram;
+  return `<span class="ibx-chip-med" title="${esc(c.label)}" style="color:${c.color};background:${c.bg};border-color:${c.bd}">${c.icon}${withLabel?' '+esc(c.label):''}</span>`;
+}
 function inboxRel(ts){
   if(!ts)return '';const d=new Date(ts),now=Date.now(),s=Math.round((now-d.getTime())/1000);
   if(s<60)return 'nu';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'u';
@@ -1316,12 +1338,14 @@ async function inboxLoad(){
   box.innerHTML=INBOX.convos.map(c=>{
     const ch=INBOX_CH[c.channel]||INBOX_CH.instagram;const nm=c.display_name||c.contact_name||c.handle||'Onbekend';
     const unread=c.unread_count>0;
+    const chans=Array.isArray(c.channels)?c.channels:[c.channel];
+    const chIcons=chans.length>1?`<span class="ibx-rchans">${chans.map(x=>`<span title="${esc((INBOX_CH[x]||{}).label||x)}">${(INBOX_CH[x]||INBOX_CH.instagram).icon}</span>`).join('')}</span>`:'';
     return `<div class="ibx-row ${INBOX.sel===c.id?'sel':''} ${unread?'unread':''}" data-id="${c.id}">
       ${inboxAvatar(nm,ch,c.avatar_url)}
       <div class="ibx-rmain">
         <div class="ibx-rtop"><span class="ibx-rname">${esc(nm)}</span><span class="ibx-rtime">${inboxRel(c.last_message_at)}</span></div>
         <div class="ibx-rprev">${c.last_direction==='out'?'<span class="ibx-you">Jij/AI:</span> ':''}${esc((c.last_message_preview||'').slice(0,80))}</div>
-        <div class="ibx-rmeta">${inboxStatusPill(c)}${c.warmth!=null?warmthBadge(c.warmth):''}${unread?`<span class="ibx-unread">${c.unread_count}</span>`:''}</div>
+        <div class="ibx-rmeta">${inboxStatusPill(c)}${c.warmth!=null?warmthBadge(c.warmth):''}${chIcons}${unread?`<span class="ibx-unread">${c.unread_count}</span>`:''}</div>
       </div>
     </div>`;
   }).join('');
@@ -1351,12 +1375,36 @@ function inboxFacts(cv){
   if(cv.is_qualified!=null)f.push(['Gekwalificeerd',cv.is_qualified?'Ja':'Nee']);
   return f.map(([k,val])=>`<span class="ibx-fact"><b>${esc(k)}:</b> ${esc(val)}</span>`).join('');
 }
+function inboxComposerHint(){
+  const k=INBOX.sendCh;const c=INBOX_CH[k]||INBOX_CH.instagram;const acct=BIZ_ACCOUNTS[k];
+  return `Verzendt via <b>${c.icon} ${esc(c.label)}</b>${acct?` als <b>${esc(acct)}</b>`:''}. Zodra jij stuurt, neem je het over en pauzeert de AI.`;
+}
+function inboxSetSendCh(k){
+  INBOX.sendCh=k;
+  document.querySelectorAll('#ibx_chsel .ibx-chselb').forEach(b=>b.classList.toggle('on',b.dataset.ch===k));
+  const h=$('#ibx_sendhint');if(h)h.innerHTML=inboxComposerHint();
+  const inp=$('#ibx_input');if(inp)inp.placeholder=(INBOX_CH[k]||{}).label?`Schrijf een ${(INBOX_CH[k]).label}-bericht…`:'Schrijf een bericht…';
+}
 function inboxDrawThread(data,keepDraft){
-  const cv=data.conversation,msgs=data.messages||[];const ch=INBOX_CH[cv.channel]||INBOX_CH.instagram;
+  const cv=data.conversation,msgs=data.messages||[];const gid=data.group_id||cv.group_id||INBOX.sel;
+  const ch=INBOX_CH[cv.channel]||INBOX_CH.instagram;
   const nm=cv.display_name||cv.contact_name||cv.handle||'Onbekend';
   INBOX.cur={avatar:cv.avatar_url,name:nm,ch,channel:cv.channel};
   const edit=canEdit('inbox');
   const aiOn=cv.ai_enabled;
+  // Which channels can we reply on? Existing bindings + email/WhatsApp when we
+  // know the contact's address/number (a binding gets created on first send).
+  const binds=data.channels||[];const have=new Set(binds.map(b=>b.channel));
+  const avail=[];['instagram','whatsapp','email'].forEach(k=>{if(have.has(k))avail.push(k);});
+  if(cv.contact_email&&!have.has('email'))avail.push('email');
+  if(cv.contact_phone&&!have.has('whatsapp'))avail.push('whatsapp');
+  if(!avail.length)avail.push(cv.channel||'instagram');
+  // Default reply channel = the medium the lead last used.
+  let def=null;for(let i=msgs.length-1;i>=0;i--){if(msgs[i].direction==='in'){def=msgs[i].channel;break;}}
+  if(!def)def=(msgs.length?msgs[msgs.length-1].channel:null)||cv.channel;
+  if(!avail.includes(def))def=avail[0];
+  INBOX.channels=avail;INBOX.sendCh=def;
+  const chansSub=(Array.isArray(cv_channels(data))?cv_channels(data):[cv.channel]);
   const t=$('#ibx_thread');
   t.innerHTML=`
     <div class="ibx-thead">
@@ -1364,34 +1412,87 @@ function inboxDrawThread(data,keepDraft){
         ${(()=>{const u=inboxProfileUrl(cv);const av=inboxAvatar(nm,ch,cv.avatar_url,true);return u?`<a href="${u}" target="_blank" rel="noopener" title="Open Instagram-profiel" style="text-decoration:none">${av}</a>`:av;})()}
         <div>
           <div class="ibx-tname">${(()=>{const u=inboxProfileUrl(cv);return u?`<a class="ibx-proflink" href="${u}" target="_blank" rel="noopener" title="Open Instagram-profiel">${esc(nm)} <span class="ibx-ext">↗</span></a>`:esc(nm);})()}</div>
-          <div class="ibx-tsub"><span class="ibx-chtag" style="color:${ch.color};background:${ch.bg};border-color:${ch.bd}">${ch.icon} ${ch.label}</span> ${esc(cv.handle||'')}</div>
+          <div class="ibx-tsub">${chansSub.map(k=>`<span class="ibx-chtag" style="color:${(INBOX_CH[k]||ch).color};background:${(INBOX_CH[k]||ch).bg};border-color:${(INBOX_CH[k]||ch).bd}">${(INBOX_CH[k]||ch).icon} ${(INBOX_CH[k]||ch).label}</span>`).join('')} ${esc(cv.handle||'')}</div>
         </div>
       </div>
       <div class="ibx-thead-r">${inboxStatusPill(cv)}</div>
     </div>
     <div class="ibx-msgs" id="ibx_msgs"></div>
     <div class="ibx-compose">
-      ${aiOn?`<div class="ibx-aihint">🤖 De AI beantwoordt dit gesprek automatisch${BIZ_ACCOUNTS[cv.channel]?` · verzendt als <b>${esc(BIZ_ACCOUNTS[cv.channel])}</b>`:''}. Zodra jij een bericht stuurt, neem je het over en pauzeert de AI.</div>`:''}
-      ${edit?`<div class="ibx-crow">
-        <textarea id="ibx_input" class="ibx-input" rows="1" placeholder="Schrijf een bericht…"></textarea>
-        <button class="btn ibx-sendbtn" id="ibx_send">Sturen</button>
-      </div>`:`<div class="muted" style="padding:10px 14px;font-size:12px">Alleen-lezen — je hebt geen bewerkrechten voor de inbox.</div>`}
+      ${aiOn?`<div class="ibx-aihint">🤖 De AI beantwoordt dit gesprek automatisch. Zodra jij een bericht stuurt, neem je het over en pauzeert de AI.</div>`:''}
+      ${edit?`
+        <div class="ibx-modetabs" id="ibx_modetabs">
+          <button data-mode="msg" class="on">Bericht</button>
+          <button data-mode="note">📝 Interne notitie</button>
+        </div>
+        <div id="ibx_msgtools">${avail.length>1?`<div class="ibx-chsel" id="ibx_chsel">${avail.map(k=>`<button class="ibx-chselb ${k===def?'on':''}" data-ch="${k}">${(INBOX_CH[k]||INBOX_CH.instagram).icon} ${(INBOX_CH[k]||INBOX_CH.instagram).label}</button>`).join('')}</div>`:''}</div>
+        <div class="ibx-sendhint" id="ibx_sendhint">${inboxComposerHint()}</div>
+        <div class="ibx-crow">
+          <textarea id="ibx_input" class="ibx-input" rows="1" placeholder="Schrijf een bericht…"></textarea>
+          <button class="btn ibx-sendbtn" id="ibx_send">Sturen</button>
+        </div>`:`<div class="muted" style="padding:10px 14px;font-size:12px">Alleen-lezen — je hebt geen bewerkrechten voor de inbox.</div>`}
     </div>`;
   inboxRenderMsgs(msgs);
   if(edit){
+    INBOX.composeMode='msg';
+    document.querySelectorAll('#ibx_chsel .ibx-chselb').forEach(b=>b.onclick=()=>inboxSetSendCh(b.dataset.ch));
+    document.querySelectorAll('#ibx_modetabs button').forEach(b=>b.onclick=()=>inboxSetMode(b.dataset.mode));
+    inboxSetSendCh(def);
     const inp=$('#ibx_input');
     if(inp){
-      if(keepDraft&&INBOX.drafts[cv.id]!=null)inp.value=INBOX.drafts[cv.id];
-      inp.oninput=()=>{INBOX.drafts[cv.id]=inp.value;inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px';};
-      inp.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();inboxSend(cv.id);}};
+      if(keepDraft&&INBOX.drafts[gid]!=null)inp.value=INBOX.drafts[gid];
+      inp.oninput=()=>{if(INBOX.composeMode==='msg')INBOX.drafts[gid]=inp.value;inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px';};
+      inp.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();inboxComposeSend(gid);}};
     }
-    const sb1=$('#ibx_send');if(sb1)sb1.onclick=()=>inboxSend(cv.id);
+    const sb1=$('#ibx_send');if(sb1)sb1.onclick=()=>inboxComposeSend(gid);
   }
+}
+function inboxSetMode(mode){
+  INBOX.composeMode=mode;
+  document.querySelectorAll('#ibx_modetabs button').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
+  const tools=$('#ibx_msgtools');if(tools)tools.style.display=mode==='note'?'none':'';
+  const hint=$('#ibx_sendhint');if(hint)hint.innerHTML=mode==='note'?'📝 <b>Interne notitie</b> — alleen zichtbaar voor het team, wordt niet naar de lead gestuurd.':inboxComposerHint();
+  const inp=$('#ibx_input');if(inp)inp.placeholder=mode==='note'?'Schrijf een interne notitie…':'Schrijf een bericht…';
+  const btn=$('#ibx_send');if(btn){btn.textContent=mode==='note'?'Notitie opslaan':'Sturen';btn.classList.toggle('ibx-notebtn',mode==='note');}
+  const crow=$('#ibx_input');if(crow)crow.classList.toggle('ibx-input-note',mode==='note');
+}
+function inboxComposeSend(gid){ return INBOX.composeMode==='note'?inboxAddNote(gid):inboxSend(gid); }
+// Switch the composer to a specific channel and focus it (used by the "Mailen"
+// action so e-mailing happens IN the portal, not in an external mail app).
+function inboxComposeVia(channel){
+  if(INBOX.composeMode!=='msg')inboxSetMode('msg');
+  if(INBOX.channels&&!INBOX.channels.includes(channel))INBOX.channels.push(channel);
+  // Ensure a selector button exists/points to this channel.
+  if(!document.querySelector(`#ibx_chsel .ibx-chselb[data-ch="${channel}"]`)){
+    const sel=$('#ibx_chsel');
+    if(sel){const b=document.createElement('button');b.className='ibx-chselb';b.dataset.ch=channel;b.innerHTML=`${(INBOX_CH[channel]||INBOX_CH.instagram).icon} ${(INBOX_CH[channel]||INBOX_CH.instagram).label}`;b.onclick=()=>inboxSetSendCh(channel);sel.appendChild(b);}
+  }
+  inboxSetSendCh(channel);
+  const inp=$('#ibx_input');if(inp)inp.focus();
+}
+async function inboxAddNote(gid){
+  const inp=$('#ibx_input');if(!inp)return;const body=inp.value.trim();if(!body)return;
+  const btn=$('#ibx_send');if(btn){btn.disabled=true;btn.textContent='Opslaan…';}
+  try{
+    const {data,error}=await sb.rpc('inbox_add_note',{p_id:gid,p_body:body});
+    if(error||(data&&data.error)){toast('Notitie opslaan mislukt: '+esc((error&&error.message)||data.error),'err');return;}
+    inp.value='';inp.style.height='auto';
+    toast('Interne notitie opgeslagen','ok');
+    await inboxOpen(gid,true);
+  }catch(e){toast('Notitie opslaan mislukt','err');}
+  finally{const b=$('#ibx_send');if(b){b.disabled=false;b.textContent=INBOX.composeMode==='note'?'Notitie opslaan':'Sturen';}}
+}
+// Distinct channels present in the thread (bindings + message channels).
+function cv_channels(data){
+  const s=new Set();(data.channels||[]).forEach(b=>s.add(b.channel));(data.messages||[]).forEach(m=>m.channel&&s.add(m.channel));
+  if(!s.size&&data.conversation&&data.conversation.channel)s.add(data.conversation.channel);
+  return [...s];
 }
 function inboxStatusText(s){return ({active:'AI actief',booked:'Afspraak',needs_human:'Overname',closed:'Gesloten',opted_out:'Afgemeld'}[s]||s);}
 function inboxDrawInfo(ctx){
   const info=$('#ibx_info');if(!info)return;
-  const cv=ctx.conversation||{},ct=ctx.contact||null,other=ctx.other_threads||[],timeline=ctx.timeline||[];
+  const cv=ctx.conversation||{},ct=ctx.contact||null,chans=ctx.channels||[],timeline=ctx.timeline||[];
+  const gid=cv.group_id||INBOX.sel;
   const ch=INBOX_CH[cv.channel]||INBOX_CH.instagram;
   const nm=cv.display_name||(ct&&ct.name)||cv.handle||'Onbekend';
   const edit=canEdit('inbox');
@@ -1402,7 +1503,7 @@ function inboxDrawInfo(ctx){
   if(cv.contact_id)acts.push(`<button class="btn btn-ghost btn-sm" onclick="openContactById('${cv.contact_id}')">CRM →</button>`);
   if(wa)acts.push(`<a class="btn btn-ghost btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>`);
   if(phone)acts.push(`<a class="btn btn-ghost btn-sm" href="tel:${esc(phone)}">Bellen</a>`);
-  if(email)acts.push(`<a class="btn btn-ghost btn-sm" href="mailto:${esc(email)}">Mailen</a>`);
+  if(email)acts.push(`<button class="btn btn-ghost btn-sm" onclick="inboxComposeVia('email')">✉️ Mailen</button>`);
   if(cv.contact_id)acts.push(`<button class="btn btn-ghost btn-sm" onclick="copyLink(crmDeepLink('${cv.contact_id}'))">Deel</button>`);
   const aiCtrl=edit?(cv.ai_enabled
     ?`<button class="btn btn-sm ibx-take" id="ibx_takeover">✋ Overnemen (AI pauzeren)</button>`
@@ -1429,7 +1530,7 @@ function inboxDrawInfo(ctx){
       <div class="ibx-ip-note" style="margin-bottom:8px">${pcur?`Staat nu op <b>${esc(curLabel||pcur)}</b>.`:'Nog niet in de sales-pipeline. Kies een status om dit contact toe te voegen.'}</div>
       ${edit?`<div class="ibx-pipe-row"><select id="ibx_pipe_sel" class="ibx-pipe-sel">${opts}</select><button class="btn btn-sm" id="ibx_pipe_set">${pcur?'Verplaats':'Toevoegen'}</button></div>`:''}</div>`;
   }
-  const otherHtml=other.length?other.map(o=>{const oc=INBOX_CH[o.channel]||INBOX_CH.instagram;return `<button class="ibx-oth" onclick="inboxOpen('${o.id}')"><span>${oc.icon} ${oc.label}</span><span class="muted">${esc(inboxStatusText(o.status))} · ${inboxRel(o.last_message_at)}${o.unread_count>0?' · '+o.unread_count+' nieuw':''}</span></button>`;}).join(''):'';
+  const chansHtml=chans.length?chans.map(o=>{const oc=INBOX_CH[o.channel]||INBOX_CH.instagram;return `<div class="ibx-oth"><span>${oc.icon} ${oc.label}${o.handle?' · '+esc(o.handle):''}</span><span class="muted">${o.ai_enabled?'AI actief':inboxStatusText(o.status)} · ${inboxRel(o.last_message_at)}</span></div>`;}).join(''):'';
   const tlicon={lead:'📩',reservation:'📝',purchase:'💰',dataroom:'📂',pipeline:'🧭',webinar:'🎥'};
   const tlHtml=timeline.length?timeline.map(it=>`<div class="ibx-tl"><span class="ibx-tl-ic">${tlicon[it.kind]||'•'}</span><div class="ibx-tl-b"><div class="ibx-tl-t">${esc(it.title)}${it.project?' · '+esc(it.project):''}</div><div class="ibx-tl-m">${it.ts?new Date(it.ts).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'}):''}${it.meta?' · '+esc(it.meta):''}</div></div></div>`).join(''):`<div class="ibx-ip-note">Nog geen eerdere activiteit vastgelegd.</div>`;
   info.innerHTML=`
@@ -1444,13 +1545,13 @@ function inboxDrawInfo(ctx){
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Lead</div>${leadRows.length?leadRows.map(([k,val])=>`<div class="ibx-kv"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join(''):'<div class="ibx-ip-note">Nog geen kwalificatie vastgelegd.</div>'}${winRow}</div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Contact</div>${contactHtml}</div>
       ${pipeHtml}
-      ${otherHtml?`<div class="ibx-ip-sec"><div class="ibx-ip-h">Andere gesprekken</div>${otherHtml}</div>`:''}
+      ${chansHtml?`<div class="ibx-ip-sec"><div class="ibx-ip-h">Kanalen</div>${chansHtml}</div>`:''}
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Historie</div>${tlHtml}</div>
     </div>`;
   if(edit){
-    const to=$('#ibx_takeover');if(to)to.onclick=()=>inboxTakeOver(cv.id);
-    const rs=$('#ibx_resume');if(rs)rs.onclick=()=>inboxResume(cv.id);
-    const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(cv.id);
+    const to=$('#ibx_takeover');if(to)to.onclick=()=>inboxTakeOver(gid);
+    const rs=$('#ibx_resume');if(rs)rs.onclick=()=>inboxResume(gid);
+    const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(gid);
   }
 }
 async function inboxSetPipeline(id){
@@ -1470,8 +1571,17 @@ function inboxRenderMsgs(msgs){
   // Skip empty placeholder messages so they can't leave a stray bubble/time.
   const list=(msgs||[]).filter(m=>((m.body||'').trim())||(m.attachments&&m.attachments.length));
   box.innerHTML=list.map((m,i)=>{
+    // Centered date separator when the calendar day changes (like WhatsApp/IG).
+    const day=inboxDayKey(m.created_at);let sep='';
+    if(day&&day!==lastDay){sep=`<div class="ibx-daysep"><span>${esc(inboxDayLabel(m.created_at))}</span></div>`;lastDay=day;}
+    // Internal note — a team-only sticky in the same thread; never sent to the lead.
+    if(m.is_note){
+      return `${sep}<div class="ibx-note"><div class="ibx-note-h">📝 Interne notitie · ${esc((m.sender_name||'Team').split('@')[0])} · ${esc(inboxClock(m.created_at))}</div><div class="ibx-note-b">${esc(m.body||'')}</div></div>`;
+    }
     const out=m.direction==='out';const who=m.sender;
-    const biz=BIZ_ACCOUNTS[cur.channel]||'';
+    const mch=m.channel||cur.channel||'instagram';
+    const med=INBOX_CH[mch]||INBOX_CH.instagram;
+    const biz=BIZ_ACCOUNTS[mch]||'';
     const bizTag=(out&&biz)?` · <span class="ibx-bizacct">${esc(biz)}</span>`:'';
     const tag=who==='ai'?`<span class="ibx-tag ai">AI${bizTag}</span>`:who==='human'?`<span class="ibx-tag hum">${esc((m.sender_name||'Team').split('@')[0])}${bizTag}</span>`:'';
     const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
@@ -1481,24 +1591,23 @@ function inboxRenderMsgs(msgs){
     let avatar='';
     if(!out){
       const next=list[i+1];
-      const lastOfRun=!next||next.direction==='out';
+      const lastOfRun=!next||next.direction==='out'||next.is_note;
       const nm=cur.name||m.sender_name||'';
       avatar=lastOfRun
         ? `<div class="ibx-msgav" title="${esc(nm)}">${esc(inboxInitials(nm))}${cur.avatar?`<img src="${esc(cur.avatar)}" alt="" class="ibx-avimg" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</div>`
         : `<div class="ibx-msgav ph"></div>`;
     }
-    // Centered date separator when the calendar day changes (like WhatsApp/IG).
-    const day=inboxDayKey(m.created_at);let sep='';
-    if(day&&day!==lastDay){sep=`<div class="ibx-daysep"><span>${esc(inboxDayLabel(m.created_at))}</span></div>`;lastDay=day;}
     // Show the time only once per minute-cluster: on the last message before the
     // clock minute changes (or the last message / a day change). Avoids repeating
     // the same "23:44" under every bubble.
     const nx=list[i+1];
     const showTime=!nx||inboxClock(nx.created_at)!==inboxClock(m.created_at)||inboxDayKey(nx.created_at)!==day;
-    const timeHtml=showTime?`<div class="ibx-btime">${esc(inboxClock(m.created_at))}</div>`:'';
+    // Meta line under each bubble: the message's medium icon always (so it's
+    // clear which channel it came via), plus the time once per minute-cluster.
+    const metaHtml=`<div class="ibx-btime"><span class="ibx-medico" title="${esc(med.label)}">${med.icon}</span>${showTime?' '+esc(inboxClock(m.created_at)):''}</div>`;
     return `${sep}<div class="ibx-mrow ${out?'out':'in'}">
       <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag}<div class="ibx-btext">${esc(m.body||'')}</div>${undelNote}</div></div>
-      ${timeHtml}</div>`;
+      ${metaHtml}</div>`;
   }).join('');
   box.scrollTop=box.scrollHeight;
 }
@@ -1509,14 +1618,16 @@ async function inboxRefreshMessages(id){
 }
 async function inboxSend(id){
   const inp=$('#ibx_input');if(!inp)return;const body=inp.value.trim();if(!body){return;}
+  const channel=INBOX.sendCh||'';
   const btn=$('#ibx_send');if(btn){btn.disabled=true;btn.textContent='Sturen…';}
   try{
-    const {data,error}=await sb.functions.invoke('inbox-send',{body:{conversation_id:id,body}});
-    if(error||(data&&data.error)){toast('Versturen mislukt: '+esc((error&&error.message)||data.error),'err');return;}
+    const {data,error}=await sb.functions.invoke('inbox-send',{body:{group:id,channel,body}});
+    if(error||(data&&data.error)){toast('Versturen mislukt: '+esc((error&&error.message)||(data&&(data.note||data.error))),'err');return;}
     inp.value='';INBOX.drafts[id]='';inp.style.height='auto';
-    if(data&&data.delivery==='pending')toast('Opgeslagen. Kanaal-verzending nog niet gekoppeld — zie doc om IG/WA-token te koppelen.','');
+    const chLbl=(INBOX_CH[data&&data.channel]||{}).label||'';
+    if(data&&data.delivery==='pending')toast(`Opgeslagen. ${chLbl}-verzending nog niet gekoppeld — zie doc om het kanaal-token te koppelen.`,'');
     else if(data&&data.delivery==='failed')toast('Bericht opgeslagen, maar afleveren mislukte: '+esc(data.delivery_error||''),'err');
-    else toast('Verzonden','ok');
+    else toast(`Verzonden via ${chLbl||'kanaal'}`,'ok');
     await inboxOpen(id,true);await inboxLoad();
   }catch(e){toast('Versturen mislukt','err');}
   finally{const b=$('#ibx_send');if(b){b.disabled=false;b.textContent='Sturen';}}
