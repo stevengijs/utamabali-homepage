@@ -187,6 +187,9 @@
   .pipe-col-head{display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line);position:sticky;top:0}
   .pipe-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .pipe-col-title{font-weight:700;font-size:13px}
+  .pipe-colgrip{cursor:grab;color:#b3bcb7;font-size:13px;line-height:1;letter-spacing:-1px;user-select:none}
+  .pipe-colgrip:active{cursor:grabbing}
+  .pipe-col.col-drop{outline:2px dashed #8fd3ba;outline-offset:-3px;border-radius:12px}
   .pipe-col-count{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:1px 8px}
   .pipe-col-sum{font-size:11px;color:var(--muted);padding:0 12px 6px}
   .pipe-cards{padding:8px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:60px;flex:1}
@@ -204,6 +207,33 @@
   .pipe-chip.tl{background:#f1f5f9;color:#475569}
   .pipe-wa{width:24px;height:24px;border-radius:50%;background:#25D366;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;text-decoration:none}
   .pipe-wa:hover{filter:brightness(.94)}
+  /* card detail drawer */
+  .pdrawer-back{position:fixed;inset:0;background:rgba(15,23,42,.30);z-index:60;opacity:0;transition:opacity .18s}
+  .pdrawer-back.open{opacity:1}
+  .pdrawer{position:fixed;top:0;right:0;height:100vh;width:430px;max-width:94vw;background:#fff;box-shadow:-10px 0 34px rgba(0,0,0,.20);z-index:61;transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+  .pdrawer.open{transform:translateX(0)}
+  .pdrawer-head{padding:16px 18px 14px;border-bottom:1px solid var(--line)}
+  .pdrawer-body{padding:16px 18px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:18px}
+  .pdrawer-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+  .pdr-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .pdr-act{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--ink,#111)}
+  .pdr-act:hover{background:#f5f7f6}
+  .pdr-act.wa{background:#25D366;color:#fff;border-color:#25D366}
+  .pdr-act.wa:hover{filter:brightness(.95)}
+  .pdr-stages{display:flex;gap:6px;flex-wrap:wrap}
+  .pdr-stage{padding:5px 11px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:var(--muted);transition:all .1s}
+  .pdr-stage:hover{background:#f2f5f4}
+  .pdr-stage.active{color:#fff;border-color:transparent}
+  .pdr-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+  .pdr-field input,.pdr-field select,.pdr-field textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit}
+  .pdr-field textarea{resize:vertical}
+  .pdr-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pdr-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pdr-fact{background:#f7faf8;border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+  .pdr-fact .k{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  .pdr-fact .v{font-size:13.5px;font-weight:650;margin-top:2px}
+  .pdr-title{font-size:19px;font-weight:800;border:none;padding:2px 0;width:100%;outline:none;font-family:inherit}
+  .pdr-title:focus{border-bottom:2px solid var(--brand,#0f6b4f)}
   .pipe-av{width:22px;height:22px;border-radius:50%;background:var(--brand,#0f6b4f);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:auto}
   .pipe-add{margin:0 8px 8px;padding:7px;border:1px dashed #c7cfcb;border-radius:9px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;width:calc(100% - 16px)}
   .pipe-add:hover{background:#eef2f0;color:var(--ink,#111)}
@@ -1557,8 +1587,18 @@ function _countryFromPhone(phone){
   return '';
 }
 /* Build a WhatsApp deep-link with a personal opening message for a new sign-up. */
+/* Normalise a phone to WhatsApp international digits (no +). Returns '' if not a plausible number. */
+function _waDigits(phone){
+  let d=(phone||'').replace(/[^0-9]/g,'');
+  if(!d)return '';
+  if(d.startsWith('00'))d=d.slice(2);            // 00 international prefix
+  else if(d.startsWith('0'))d='31'+d.replace(/^0+/,''); // Dutch national 06…/0… -> +31
+  if(d.length<9||d.length>15)return '';          // implausible / truncated
+  return d;
+}
 function _helloWaUrl(phone,name,project){
-  const digits=(phone||'').replace(/[^0-9]/g,'');
+  const digits=_waDigits(phone);
+  if(!digits)return '';                           // no valid number -> no link (avoids WhatsApp contact-picker)
   const first=(name||'').trim().split(/\s+/)[0]||'';
   const sender=(ME&&(ME.full_name||ME.email))||'UTAMA Bali';
   const title=(ME&&ME.title)?(', '+ME.title):'';
@@ -1643,7 +1683,7 @@ async function openPerson(p){
         </div>
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
-        ${p.phone?`<a class="btn btn-sm" id="pd_wa" style="text-decoration:none;background:#25D366;color:#fff;border-color:#25D366;font-weight:600" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
+        ${_waUrl?`<a class="btn btn-sm" id="pd_wa" style="text-decoration:none;background:#25D366;color:#fff;border-color:#25D366;font-weight:600" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
         ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
       </div>
     </div>
@@ -1740,7 +1780,7 @@ async function openPerson(p){
   const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
   const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
   // Recompute the WhatsApp greeting at the moment of clicking (send time), not when the contact was opened.
-  const wab=$('#pd_wa'); if(wab)wab.addEventListener('click',()=>{ wab.href=_helloWaUrl(p.phone,p.name,_waProj); });
+  const wab=$('#pd_wa'); if(wab)wab.addEventListener('click',(e)=>{ const u=_helloWaUrl(p.phone,p.name,_waProj); if(!u){e.preventDefault();toast('Geen geldig telefoonnummer','err');return;} wab.href=u; });
   if(mb){
     mb.querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.project,b.dataset.enable==='1',b.dataset.id||null));
     const gb=$('#dr_grant_btn');if(gb)gb.onclick=()=>{const s=$('#dr_grant_sel');if(s&&s.value)setDataroom(p,s.value,true,null);};
@@ -1964,10 +2004,10 @@ async function pipeLoadEnrichment(){
   const ids=[...new Set(PIPE.cards.map(c=>c.contact_id).filter(Boolean))];
   if(!ids.length)return;
   const [ctR,ldR]=await Promise.all([
-    sb.from('contacts').select('id,name,phone').in('id',ids),
+    sb.from('contacts').select('id,name,phone,email').in('id',ids),
     sb.from('leads').select('contact_id,budget,timeline,project,created_at').in('contact_id',ids).order('created_at',{ascending:false}),
   ]);
-  (ctR.data||[]).forEach(ct=>{PIPE.enrich[ct.id]={name:ct.name,phone:ct.phone};});
+  (ctR.data||[]).forEach(ct=>{PIPE.enrich[ct.id]={name:ct.name,phone:ct.phone,email:ct.email};});
   (ldR.data||[]).forEach(l=>{if(!l.contact_id)return;const e=PIPE.enrich[l.contact_id]||(PIPE.enrich[l.contact_id]={});if(!e.budget&&l.budget)e.budget=l.budget;if(!e.timeline&&l.timeline)e.timeline=l.timeline;if(!e.project&&l.project)e.project=l.project;});
 }
 function pipeTeamName(id){const t=PIPE.team.find(x=>x.id===id);return t?(t.full_name||t.email||'—'):'';}
@@ -1988,7 +2028,7 @@ function pipeCardHtml(c){
   const tl=en.timeline?`<span class="pipe-chip tl" title="Wanneer investeren">⏱ ${esc(en.timeline)}</span>`:'';
   const val=(c.value!=null&&c.value!=='')?`<span class="pipe-chip val">${anMoney(c.value)}</span>`:'';
   const crm=c.contact_id?`<span class="pipe-chip crm" data-crm="${esc(c.contact_id)}" title="Open in CRM">CRM ↗</span>`:'';
-  const wa=en.phone?`<a class="pipe-wa" data-wa="${esc(c.id)}" title="Stuur WhatsApp-bericht">${WA_SVG}</a>`:'';
+  const wa=_waDigits(en.phone)?`<a class="pipe-wa" data-wa="${esc(c.id)}" title="Stuur WhatsApp-bericht">${WA_SVG}</a>`:'';
   const who=c.assignee?`<span class="pipe-av" title="${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
   const right=(wa||who)?`<span style="margin-left:auto;display:inline-flex;gap:6px;align-items:center">${wa}${who}</span>`:'';
   return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}"><div class="pipe-card-title">${esc(c.title||'(naamloos)')}</div><div class="pipe-card-meta">${proj}${budget}${tl}${val}${crm}${right}</div></div>`;
@@ -2021,7 +2061,7 @@ function drawPipeline(){
       const cs=cards.filter(c=>c.stage===st.key).sort((a,b)=>(a.position||0)-(b.position||0));
       const sum=cs.reduce((a,c)=>a+(Number(c.value)||0),0);
       h+=`<div class="pipe-col" data-stage="${esc(st.key)}">
-        <div class="pipe-col-head"><span class="pipe-dot" style="background:${esc(st.color||'#64748b')}"></span><span class="pipe-col-title"${edit?` data-stkey="${esc(st.key)}" title="Klik om te hernoemen" style="cursor:text"`:''}>${esc(st.label)}</span><span class="pipe-col-count">${cs.length}</span></div>
+        <div class="pipe-col-head">${edit?`<span class="pipe-colgrip" draggable="true" data-colkey="${esc(st.key)}" title="Sleep om de kolom te verplaatsen">⠿</span>`:''}<span class="pipe-dot" style="background:${esc(st.color||'#64748b')}"></span><span class="pipe-col-title"${edit?` data-stkey="${esc(st.key)}" title="Klik om te hernoemen" style="cursor:text"`:''}>${esc(st.label)}</span><span class="pipe-col-count">${cs.length}</span></div>
         ${sum>0?`<div class="pipe-col-sum">${anMoney(sum)}</div>`:''}
         <div class="pipe-cards" data-stage="${esc(st.key)}">${cs.map(pipeCardHtml).join('')}</div>
         ${edit?`<button class="pipe-add" data-add="${esc(st.key)}">＋ Kaart</button>`:''}
@@ -2051,11 +2091,23 @@ function wirePipeline(){
   board.querySelectorAll('.pipe-chip.crm[data-crm]').forEach(ch=>ch.addEventListener('click',e=>{e.stopPropagation();openContactById(ch.dataset.crm);}));
   board.querySelectorAll('.pipe-wa[data-wa]').forEach(a=>{a.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();pipeWhatsapp(a.dataset.wa);});a.setAttribute('draggable','false');});
   board.querySelectorAll('.pipe-cards').forEach(zone=>{
-    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');try{e.dataTransfer.dropEffect='move';}catch(x){}});
+    zone.addEventListener('dragover',e=>{if(PIPE.colDrag)return;e.preventDefault();zone.classList.add('drag-over');try{e.dataTransfer.dropEffect='move';}catch(x){}});
     zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
-    zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');pipeDrop(zone,e);});
+    zone.addEventListener('drop',e=>{if(PIPE.colDrag)return;e.preventDefault();zone.classList.remove('drag-over');pipeDrop(zone,e);});
   });
   board.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>pipeAddCard(b.dataset.add));
+  // ---- whole-column drag to reorder ----
+  if(canEdit('pipeline')){
+    board.querySelectorAll('.pipe-colgrip[data-colkey]').forEach(g=>{
+      g.addEventListener('dragstart',e=>{PIPE.colDrag=g.dataset.colkey;try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','col:'+g.dataset.colkey);}catch(x){}});
+      g.addEventListener('dragend',()=>{PIPE.colDrag=null;board.querySelectorAll('.pipe-col').forEach(c=>c.classList.remove('col-drop'));});
+    });
+    board.querySelectorAll('.pipe-col').forEach(col=>{
+      col.addEventListener('dragover',e=>{if(!PIPE.colDrag)return;e.preventDefault();col.classList.add('col-drop');});
+      col.addEventListener('dragleave',()=>col.classList.remove('col-drop'));
+      col.addEventListener('drop',e=>{if(!PIPE.colDrag)return;e.preventDefault();col.classList.remove('col-drop');pipeColDrop(col,e);});
+    });
+  }
   board.querySelectorAll('.pipe-col-title[data-stkey]').forEach(t=>t.addEventListener('click',()=>pipeStartRename(t,t.dataset.stkey)));
 }
 function pipeStartRename(titleEl,key){
@@ -2091,9 +2143,88 @@ async function pipeDrop(zone,e){
   if(error){toast('Kon kaart niet verplaatsen: '+error.message,'err');card.stage=oldStage;card.position=oldPos;drawPipeline();}
   PIPE.dragId=null;
 }
+async function pipeColDrop(col,e){
+  const key=PIPE.colDrag;PIPE.colDrag=null;if(!key)return;
+  const targetKey=col.dataset.stage;if(!targetKey||targetKey===key)return;
+  const stages=(PIPE.cur.stages||[]).slice();
+  const from=stages.findIndex(s=>s.key===key);if(from<0)return;
+  const r=col.getBoundingClientRect();const after=e.clientX>r.left+r.width/2;
+  const [moved]=stages.splice(from,1);
+  let idx=stages.findIndex(s=>s.key===targetKey);if(idx<0){stages.splice(from,0,moved);return;}
+  if(after)idx+=1;
+  stages.splice(idx,0,moved);
+  PIPE.cur.stages=stages;const li=PIPE.list.find(p=>p.id===PIPE.cur.id);if(li)li.stages=stages;
+  drawPipeline();
+  const {error}=await sb.from('pipelines').update({stages}).eq('id',PIPE.cur.id);
+  if(error){toast('Kon kolomvolgorde niet opslaan: '+error.message,'err');loadPipelineData();}
+}
 async function openContactById(id){try{const {data}=await sb.from('contacts').select('*').eq('id',id).single();if(data)openPerson(data);else toast('Contact niet gevonden','err');}catch(e){toast('Kon contact niet openen','err');}}
-function pipeWhatsapp(id){const c=PIPE.cards.find(x=>x.id===id);if(!c)return;const en=(PIPE.enrich&&PIPE.enrich[c.contact_id])||{};if(!en.phone){toast('Geen telefoonnummer bekend','err');return;}const url=_helloWaUrl(en.phone,en.name||c.title,c.project||en.project||'');window.open(url,'_blank','noopener');}
-function pipeOpenCard(id){const c=PIPE.cards.find(x=>x.id===id);if(c)pipeCardForm(c,null);}
+function pipeWhatsapp(id){const c=PIPE.cards.find(x=>x.id===id);if(!c)return;const en=(PIPE.enrich&&PIPE.enrich[c.contact_id])||{};const url=_helloWaUrl(en.phone,en.name||c.title,c.project||en.project||'');if(!url){toast('Geen geldig telefoonnummer voor deze lead','err');return;}window.open(url,'_blank','noopener');}
+function pipeOpenCard(id){const c=PIPE.cards.find(x=>x.id===id);if(c)pipeCardDrawer(c);}
+function pipeCardDrawer(card){
+  const edit=canEdit('pipeline');
+  const en=(PIPE.enrich&&PIPE.enrich[card.contact_id])||{};
+  const stages=PIPE.cur.stages||[];
+  const projOpts=`<option value="">— geen —</option>`+PIPE.projects.map(n=>`<option value="${esc(n)}"${card.project===n?' selected':''}>${esc(n)}</option>`).join('');
+  const teamOpts=`<option value="">— niemand —</option>`+PIPE.team.map(t=>`<option value="${t.id}"${card.assignee===t.id?' selected':''}>${esc(t.full_name||t.email)}</option>`).join('');
+  const pill=s=>`<span class="pdr-stage${s.key===card.stage?' active':''}" data-stg="${esc(s.key)}"${s.key===card.stage?` style="background:${esc(s.color||'#0f6b4f')}"`:''}>${esc(s.label)}</span>`;
+  const phone=en.phone||'',email=en.email||'';
+  const facts=[['Budget',esc(en.budget||'—')],['Wanneer investeren',esc(en.timeline||'—')]];
+  if(phone)facts.push(['Telefoon',esc(phone)]);
+  if(email)facts.push(['E-mail',esc(email)]);
+  const acts=[];
+  if(_waDigits(phone))acts.push(`<a class="pdr-act wa" id="pdr_wa" href="#">${WA_SVG} WhatsApp</a>`);
+  if(phone)acts.push(`<a class="pdr-act" href="tel:${esc(phone.replace(/[^0-9+]/g,''))}">📞 Bellen</a>`);
+  if(email)acts.push(`<a class="pdr-act" href="mailto:${esc(email)}">✉️ Mailen</a>`);
+  if(card.contact_id)acts.push(`<a class="pdr-act" id="pdr_crm" href="#">🔗 Open in CRM</a>`);
+  const root=document.createElement('div');root.id='pdrawer_root';
+  root.innerHTML=`<div class="pdrawer-back"></div><aside class="pdrawer" role="dialog" aria-label="Kaart">
+    <div class="pdrawer-head">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <input class="pdr-title" id="pdr_title" value="${esc(card.title||'')}" ${edit?'':'readonly'} placeholder="Titel">
+        <button id="pdr_x" title="Sluiten" style="font-size:22px;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted)">×</button>
+      </div>
+      <div class="pdr-stages" style="margin-top:12px" id="pdr_stages">${stages.map(pill).join('')}</div>
+    </div>
+    <div class="pdrawer-body">
+      ${acts.length?`<div class="pdr-actions">${acts.join('')}</div>`:''}
+      <div class="pdr-facts">${facts.map(f=>`<div class="pdr-fact"><div class="k">${f[0]}</div><div class="v">${f[1]}</div></div>`).join('')}</div>
+      <div class="pdr-grid2">
+        <div class="pdr-field"><div class="pdr-label">Project</div><select id="pdr_proj" ${edit?'':'disabled'}>${projOpts}</select></div>
+        <div class="pdr-field"><div class="pdr-label">Eigenaar</div><select id="pdr_ass" ${edit?'':'disabled'}>${teamOpts}</select></div>
+      </div>
+      <div class="pdr-field"><div class="pdr-label">Waarde (€)</div><input id="pdr_value" type="number" step="1000" value="${card.value!=null?card.value:''}" ${edit?'':'readonly'}></div>
+      <div class="pdr-field"><div class="pdr-label">Notities</div><textarea id="pdr_notes" rows="5" ${edit?'':'readonly'} placeholder="Interne notities voor het team…">${esc(card.notes||'')}</textarea></div>
+      <div class="muted" style="font-size:11.5px">${card.source==='lead'?'Automatisch aangemaakt vanuit de CRM.':'Handmatig aangemaakte kaart.'} Wijzigingen worden direct opgeslagen.</div>
+    </div>
+    <div class="pdrawer-foot">
+      ${edit?`<button class="btn btn-ghost" id="pdr_del" style="color:#b91c1c">Verwijderen</button>`:''}
+      <span style="margin-left:auto"></span>
+      <span class="muted" id="pdr_saved" style="font-size:12px"></span>
+      <button class="btn btn-ghost" id="pdr_close">Sluiten</button>
+    </div>
+  </aside>`;
+  document.body.appendChild(root);
+  const q=s=>root.querySelector(s);
+  requestAnimationFrame(()=>{q('.pdrawer-back').classList.add('open');q('.pdrawer').classList.add('open');});
+  const onKey=e=>{if(e.key==='Escape')close();};
+  function close(){q('.pdrawer-back').classList.remove('open');q('.pdrawer').classList.remove('open');document.removeEventListener('keydown',onKey);setTimeout(()=>root.remove(),210);}
+  document.addEventListener('keydown',onKey);
+  q('.pdrawer-back').onclick=close;q('#pdr_x').onclick=close;q('#pdr_close').onclick=close;
+  const flash=()=>{const s=q('#pdr_saved');if(s){s.textContent='✓ Opgeslagen';setTimeout(()=>{if(s)s.textContent='';},1400);}};
+  async function save(patch){Object.assign(card,patch);const ci=PIPE.cards.find(c=>c.id===card.id);if(ci)Object.assign(ci,patch);const {error}=await sb.from('pipeline_cards').update(patch).eq('id',card.id);if(error){toast('Opslaan mislukt: '+error.message,'err');return;}flash();drawPipeline();}
+  if(edit){
+    q('#pdr_title').addEventListener('blur',e=>{const v=e.target.value.trim();if(v&&v!==card.title)save({title:v});});
+    q('#pdr_value').addEventListener('blur',e=>{const v=e.target.value===''?null:Number(e.target.value);if(v!==card.value)save({value:v});});
+    q('#pdr_proj').addEventListener('change',e=>save({project:e.target.value||null}));
+    q('#pdr_ass').addEventListener('change',e=>save({assignee:e.target.value||null}));
+    q('#pdr_notes').addEventListener('blur',e=>{const v=e.target.value.trim()||null;if(v!==card.notes)save({notes:v});});
+    q('#pdr_stages').querySelectorAll('[data-stg]').forEach(p=>p.onclick=async()=>{const k=p.dataset.stg;if(k===card.stage)return;const mx=Math.max(0,...PIPE.cards.filter(c=>c.stage===k).map(c=>c.position||0));await save({stage:k,position:mx+1});q('#pdr_stages').querySelectorAll('[data-stg]').forEach(x=>{const on=x.dataset.stg===k;x.classList.toggle('active',on);x.style.background=on?((stages.find(s=>s.key===k)||{}).color||'#0f6b4f'):'';});});
+    q('#pdr_del').onclick=async()=>{if(!confirm('Deze kaart verwijderen?'))return;const {error}=await sb.from('pipeline_cards').delete().eq('id',card.id);if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}close();toast('Verwijderd','ok');loadPipelineData();};
+  }
+  if(q('#pdr_wa'))q('#pdr_wa').onclick=e=>{e.preventDefault();pipeWhatsapp(card.id);};
+  if(q('#pdr_crm'))q('#pdr_crm').onclick=e=>{e.preventDefault();close();openContactById(card.contact_id);};
+}
 function pipeAddCard(stage){pipeCardForm(null,stage);}
 function pipeCardForm(card,defaultStage){
   if(!canEdit('pipeline')){toast('Alleen-lezen toegang','err');return;}
