@@ -1590,7 +1590,7 @@ async function openPerson(p){
         </div>
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
-        ${p.phone?`<a class="btn btn-ghost btn-sm" id="pd_wa" style="text-decoration:none;color:#0f6b4f;border-color:#c6ead9" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
+        ${p.phone?`<a class="btn btn-sm" id="pd_wa" style="text-decoration:none;background:#25D366;color:#fff;border-color:#25D366;font-weight:600" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
         ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
       </div>
     </div>
