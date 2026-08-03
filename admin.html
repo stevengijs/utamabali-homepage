@@ -1049,6 +1049,10 @@ function warmthTier(score){
   if(score>=40)return {label:'Warm',icon:'🌤️',color:'#b45309',bg:'#fffbeb',bd:'#fde68a'};
   return {label:'Koud',icon:'❄️',color:'#2563eb',bg:'#eff6ff',bd:'#bfdbfe'};
 }
+function partnerBadge(partner){
+  if(!partner)return '';
+  return `<span class="badge" title="Aangeleverd door partner ${esc(partner)} — apart afgehandeld" style="background:#111827;color:#fff;font-weight:700">${esc(partner)}</span>`;
+}
 function warmthBadge(score,opts){
   const t=warmthTier(score);if(!t)return '';const big=opts&&opts.big;
   return `<span class="warmth-badge" title="Koopbereidheid ${score}/100 — ${t.label}. Op basis van websitegedrag (tijd, pagina's, ROI-calculator), budget, koop-timeline, geldig WhatsApp-nummer en fase." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
@@ -1598,7 +1602,7 @@ function drawPeople(){
     const projs=[...new Set(p._leads.map(l=>l.project).filter(Boolean))].join(', ');
     const flags=`${p._isNew?'<span class="badge green">NEW</span> ':''}${p._deposit?'<span class="badge green">💶 aanbetaling gemeld</span> ':''}${p._itp?'<span class="badge blue">📝 ITP getekend</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
     const warm=warmthBadge(WARMTH[p.id])||'<span class="muted" style="font-size:12px">—</span>';
-    h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${warm}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td style="white-space:normal">${flags}</td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
+    h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${p.partner?' '+partnerBadge(p.partner):''}${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${warm}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td style="white-space:normal">${flags}</td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
   });
   tw.innerHTML=h+'</tbody></table>';
   tw.querySelectorAll('tr[data-person]').forEach(tr=>tr.onclick=()=>openPerson(PEOPLE.find(x=>x.id===tr.dataset.person)));
@@ -1715,7 +1719,7 @@ async function openPerson(p){
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap"><span style="font-size:18px;font-weight:750">${esc(p.name||p.email||'Contact')}</span>${warmthBadge(WARMTH[p.id],{big:true})?`<span style="display:inline-flex;align-items:center;gap:7px"><span class="muted" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Koopbereidheid</span>${warmthBadge(WARMTH[p.id],{big:true})}</span>`:''}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap"><span style="font-size:18px;font-weight:750">${esc(p.name||p.email||'Contact')}</span>${p.partner?partnerBadge(p.partner):''}${warmthBadge(WARMTH[p.id],{big:true})?`<span style="display:inline-flex;align-items:center;gap:7px"><span class="muted" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Koopbereidheid</span>${warmthBadge(WARMTH[p.id],{big:true})}</span>`:''}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <a href="mailto:${esc(p.email)}" class="badge blue" style="text-decoration:none">${esc(p.email)}</a>
           ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
