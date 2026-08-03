@@ -1914,6 +1914,7 @@ let PIPE={list:[],cur:null,cards:[],views:[],team:[],projects:[],filters:{projec
 
 async function renderPipeline(){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Pipeline laden…</div>';
+  try{await sb.rpc('pipeline_sync_all');}catch(e){/* best-effort CRM sync */}
   const [plR,tmR,prR]=await Promise.all([
     sb.from('pipelines').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
     sb.from('adm_profiles').select('id,full_name,email').order('created_at',{ascending:true}),
@@ -1971,7 +1972,7 @@ function drawPipeline(){
     <select id="pipe_view" title="Opgeslagen weergave">${viewOpts}</select>
     ${edit?`<button class="btn btn-ghost btn-sm" id="pipe_saveview">Weergave opslaan</button>`:''}
     <span style="margin-left:auto"></span>
-    ${edit?`<button class="btn btn-ghost btn-sm" id="pipe_import">⤵ Leads importeren</button>`:''}
+    ${cur.auto_sync?`<span class="muted" style="font-size:12px" title="Kaarten komen automatisch uit de CRM: nieuwe leads, ITP-/reserveringsaanvragen en aankopen verschuiven vanzelf mee.">⚡ Automatisch gevuld vanuit CRM</span>`:(edit?`<button class="btn btn-ghost btn-sm" id="pipe_import">⤵ Leads importeren</button>`:'')}
   </div>`;
   const cards=pipeFilteredCards();
   if(!stages.length){
@@ -2084,7 +2085,7 @@ function pipeCardForm(card,defaultStage){
 async function pipeNewPipeline(){
   const name=(prompt('Naam van de nieuwe pipeline:','Nieuwe pipeline')||'').trim();if(!name)return;
   const so=Math.max(0,...PIPE.list.map(p=>p.sort_order||0))+1;
-  const {data,error}=await sb.from('pipelines').insert({name,sort_order:so,created_by:ME.id}).select().single();
+  const {data,error}=await sb.from('pipelines').insert({name,sort_order:so,auto_sync:false,created_by:ME.id}).select().single();
   if(error){toast('Kon niet aanmaken: '+error.message,'err');return;}
   PIPE.cur=data;toast('Pipeline aangemaakt','ok');renderPipeline();
 }
@@ -2112,7 +2113,7 @@ async function pipeImportLeads(){
   toast(rows.length+' lead'+(rows.length===1?'':'s')+' geïmporteerd','ok');loadPipelineData();
 }
 function pipeEditColumns(){
-  const cur=PIPE.cur;let name=cur.name;let stages=JSON.parse(JSON.stringify(cur.stages||[]));
+  const cur=PIPE.cur;let name=cur.name;let auto=!!cur.auto_sync;let stages=JSON.parse(JSON.stringify(cur.stages||[]));
   const slug=s=>((s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,24)||'kolom');
   function draw(){
     const rows=stages.map((s,i)=>`<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
@@ -2124,6 +2125,7 @@ function pipeEditColumns(){
     </div>`).join('');
     const body=`<div class="pc-form">
       <label>Pipeline-naam<input class="pc-in" id="pe_name" value="${esc(name)}"></label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:500;color:var(--ink,#111);cursor:pointer"><input type="checkbox" id="pe_auto" ${auto?'checked':''} style="width:16px;height:16px"> Automatisch vullen vanuit de CRM (leads, ITP-aanvragen, aankopen schuiven vanzelf mee)</label>
       <div style="margin-top:16px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Kolommen</div>
       <div style="margin-top:8px" id="pe_rows">${rows}</div>
       <button class="btn btn-ghost btn-sm" id="pe_add">＋ Kolom toevoegen</button>
@@ -2137,6 +2139,7 @@ function pipeEditColumns(){
     showDetail('Kolommen & pipeline bewerken',body);
     const g=id=>document.getElementById(id),closeM=()=>{$('#overlay').style.display='none';$('#overlay').innerHTML='';};
     g('pe_name').oninput=e=>{name=e.target.value;};
+    g('pe_auto').onchange=e=>{auto=e.target.checked;};
     g('pe_rows').querySelectorAll('[data-l]').forEach(inp=>inp.oninput=e=>{stages[+inp.dataset.l].label=e.target.value;});
     g('pe_rows').querySelectorAll('[data-c]').forEach(inp=>inp.oninput=e=>{stages[+inp.dataset.c].color=e.target.value;});
     g('pe_rows').querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const i=+b.dataset.up;[stages[i-1],stages[i]]=[stages[i],stages[i-1]];draw();});
@@ -2148,11 +2151,11 @@ function pipeEditColumns(){
       const used=new Set();
       stages.forEach(s=>{if(!(s.label||'').trim())s.label='Kolom';let base=s.key||slug(s.label),k=base,n=2;while(used.has(k)){k=base+'-'+(n++);}s.key=k;used.add(k);});
       const validKeys=new Set(stages.map(s=>s.key)),first=stages[0].key;
-      const {error}=await sb.from('pipelines').update({name:(name||'').trim()||'Pipeline',stages}).eq('id',cur.id);
+      const {error}=await sb.from('pipelines').update({name:(name||'').trim()||'Pipeline',stages,auto_sync:auto}).eq('id',cur.id);
       if(error){toast('Kon niet opslaan: '+error.message,'err');return;}
       const orphans=PIPE.cards.filter(c=>!validKeys.has(c.stage));
       if(orphans.length){await sb.from('pipeline_cards').update({stage:first}).in('id',orphans.map(o=>o.id));}
-      cur.stages=stages;cur.name=(name||'').trim()||'Pipeline';const li=PIPE.list.find(p=>p.id===cur.id);if(li){li.stages=stages;li.name=cur.name;}
+      cur.stages=stages;cur.name=(name||'').trim()||'Pipeline';cur.auto_sync=auto;const li=PIPE.list.find(p=>p.id===cur.id);if(li){li.stages=stages;li.name=cur.name;li.auto_sync=auto;}
       closeM();toast('Opgeslagen','ok');loadPipelineData();
     };
     if(g('pe_delpipe'))g('pe_delpipe').onclick=async()=>{
