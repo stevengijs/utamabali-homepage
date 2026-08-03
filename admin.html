@@ -1029,7 +1029,7 @@ function warmthTier(score){
 }
 function warmthBadge(score,opts){
   const t=warmthTier(score);if(!t)return '';const big=opts&&opts.big;
-  return `<span class="warmth-badge" title="Lead-warmte ${score}/100 — ${t.label}. Op basis van websitegedrag (tijd, pagina's, ROI-calculator), budget, koop-timeline, geldig WhatsApp-nummer en fase." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
+  return `<span class="warmth-badge" title="Koopbereidheid ${score}/100 — ${t.label}. Op basis van websitegedrag (tijd, pagina's, ROI-calculator), budget, koop-timeline, geldig WhatsApp-nummer en fase." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
 }
 let LIVE_TIMER=null;
 async function renderLiveVisitors(){
@@ -1571,7 +1571,7 @@ function drawPeople(){
   let rows=PEOPLE; if(q)rows=rows.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
   const tw=$('#tw_people');if(!tw)return;
   if(!rows.length){tw.innerHTML='<div class="empty">No people'+(q?' match your search.':'.')+'</div>';return;}
-  let h='<table><thead><tr><th>Name</th><th>Warmte</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Flags</th><th>Last activity</th></tr></thead><tbody>';
+  let h='<table><thead><tr><th>Name</th><th>Koopbereidheid</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Flags</th><th>Last activity</th></tr></thead><tbody>';
   rows.forEach(p=>{
     const projs=[...new Set(p._leads.map(l=>l.project).filter(Boolean))].join(', ');
     const flags=`${p._isNew?'<span class="badge green">NEW</span> ':''}${p._deposit?'<span class="badge green">💶 aanbetaling gemeld</span> ':''}${p._itp?'<span class="badge blue">📝 ITP getekend</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
@@ -2208,7 +2208,7 @@ function pipeCardDrawer(card){
         <input class="pdr-title" id="pdr_title" value="${esc(card.title||'')}" ${edit?'':'readonly'} placeholder="Titel">
         <button id="pdr_x" title="Sluiten" style="font-size:22px;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted)">×</button>
       </div>
-      ${card.contact_id&&warmthBadge(WARMTH[card.contact_id],{big:true})?`<div style="margin-top:8px">${warmthBadge(WARMTH[card.contact_id],{big:true})}</div>`:''}
+      ${card.contact_id&&warmthBadge(WARMTH[card.contact_id],{big:true})?`<div style="margin-top:10px;display:flex;align-items:center;gap:8px"><span class="pdr-label" style="margin:0">Koopbereidheid</span>${warmthBadge(WARMTH[card.contact_id],{big:true})}</div>`:''}
       <div class="pdr-field" style="margin-top:12px"><div class="pdr-label">Fase / kolom wijzigen</div><select id="pdr_stage" ${edit?'':'disabled'}>${stageOpts}</select></div>
     </div>
     <div class="pdrawer-body">
