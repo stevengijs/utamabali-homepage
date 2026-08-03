@@ -200,6 +200,10 @@
   .pipe-chip.val{background:#ecfdf5;color:#047857}
   .pipe-chip.proj{background:#f1f5f9;color:#334155}
   .pipe-chip.crm{background:#eff6ff;color:#1d4ed8;cursor:pointer}
+  .pipe-chip.budget{background:#fffbeb;color:#b45309}
+  .pipe-chip.tl{background:#f1f5f9;color:#475569}
+  .pipe-wa{width:24px;height:24px;border-radius:50%;background:#25D366;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;text-decoration:none}
+  .pipe-wa:hover{filter:brightness(.94)}
   .pipe-av{width:22px;height:22px;border-radius:50%;background:var(--brand,#0f6b4f);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:auto}
   .pipe-add{margin:0 8px 8px;padding:7px;border:1px dashed #c7cfcb;border-radius:9px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;width:calc(100% - 16px)}
   .pipe-add:hover{background:#eef2f0;color:var(--ink,#111)}
@@ -912,9 +916,11 @@ async function renderRecentVisitors(){
   const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-dune':'The Dune'}[s]||null);
   const pageName=path=>{let p=(path||'/').split('?')[0].split('#')[0];if(p==='/'||p==='')return 'Homepage';const seg=p.replace(/^\/+|\/+$/g,'').split('/');let name=projName(seg[0])||({referral:'Referral',portal:'Investeerdersportaal',dataroom:'Dataroom',webinar:'Webinar',webinar3:'Webinar'}[seg[0]]||seg[0].replace(/-/g,' '));if(/\/brochure(\/|$)/.test(p))name+=' — Brochure';else if(/\/dataroom(\/|$)/.test(p))name+=' — Dataroom';return name;};
   const srcOf=e=>{const c=(e.channel||'direct').toLowerCase();let detail='';
-    if(e.utm_campaign)detail=e.utm_campaign;else if(e.utm_source)detail=e.utm_source;else if(e.referrer_host)detail=e.referrer_host;
+    if(e.utm_campaign)detail=metaName(e.utm_campaign);else if(e.utm_source)detail=e.utm_source;else if(e.referrer_host)detail=e.referrer_host;
     else detail={direct:'directe link',organic:'zoekmachine',social:'social',paid:'advertentie',referral:'verwijzing',campaign:'campagne',email:'e-mail',internal:'intern'}[c]||c;
     return {c,detail};};
+  await resolveMetaNames(sessions.map(s=>s.last&&s.last.utm_campaign));
+  if(!$('#recent_visitors'))return;
   let h=`<div class="table-wrap" style="max-height:420px;overflow:auto"><table class="live-tbl"><thead><tr><th>Bezoeker</th><th>Laatste pagina</th><th>Bron</th><th>Hoelang</th><th>Wanneer</th></tr></thead><tbody>`;
   sessions.forEach(s=>{const e=s.last;const known=knownMap[s.vid];const id=idMap[s.sid]||vidMap[s.vid];const isKnown=!!known;const who=known||(id?(id.name||id.email||'Bekende lead'):null);
     const loc=[cleanCity(e.city),e.country].filter(Boolean).map(esc).join(', ')||'—';const src=srcOf(e);
@@ -965,6 +971,18 @@ function drawConvPanel(){
   h+=`<div class="rev-row"><span class="muted" style="font-size:12px">"Naar brochure" = unieke bezoekers die de projectpagina bekeken én op de brochurepagina kwamen (dus de brochure aanvroegen).</span></div>`;
   box.innerHTML=h;
 }
+/* Resolve Meta campaign/ad IDs -> names (shared cache), for the Bron columns */
+let META_NAMES={};
+async function resolveMetaNames(ids){
+  try{
+    const want=[...new Set((ids||[]).map(x=>String(x==null?'':x)).filter(x=>/^\d{6,}$/.test(x)&&!(x in META_NAMES)))];
+    if(!want.length||!sb.functions||!sb.functions.invoke)return;
+    const {data}=await sb.functions.invoke('meta-names',{body:{ids:want}});
+    if(data&&data.names)Object.assign(META_NAMES,data.names);
+    want.forEach(id=>{if(!(id in META_NAMES))META_NAMES[id]=null;});
+  }catch(e){}
+}
+function metaName(v){const s=String(v==null?'':v);return META_NAMES[s]||s;}
 let LIVE_TIMER=null;
 async function renderLiveVisitors(){
   const box=$('#live_visitors');
@@ -1014,9 +1032,11 @@ async function renderLiveVisitors(){
     return name;
   };
   const srcOf=e=>{const c=(e.channel||'direct').toLowerCase();let detail='';
-    if(e.utm_campaign)detail=e.utm_campaign;else if(e.utm_source)detail=e.utm_source;else if(e.referrer_host)detail=e.referrer_host;
+    if(e.utm_campaign)detail=metaName(e.utm_campaign);else if(e.utm_source)detail=e.utm_source;else if(e.referrer_host)detail=e.referrer_host;
     else detail={direct:'directe link',organic:'zoekmachine',social:'social',paid:'advertentie',referral:'verwijzing',campaign:'campagne',email:'e-mail',internal:'intern'}[c]||c;
     return {c,detail};};
+  await resolveMetaNames(active.map(e=>e.utm_campaign));
+  if(!$('#live_visitors'))return;
   let h=`<div class="live-head" style="padding:6px 18px 12px"><span class="live-count">${n}</span><span class="live-sub">${n===1?'bezoeker nu online':'bezoekers nu online'} · laatste 5 min · <b>${last30}</b> in laatste 30 min</span></div>`;
   if(!n){
     h+=`<div class="muted" style="padding:4px 18px 16px;font-size:13px">Niemand is op dit moment op de site. Zodra iemand de website bezoekt, verschijnt die hier live — met pagina en bron.${last30?` Er ${last30===1?'was 1 bezoeker':'waren '+last30+' bezoekers'} in de afgelopen 30 minuten.`:''}</div>`;
@@ -1910,7 +1930,8 @@ function showDetail(title,bodyHTML){
 }
 
 /* ================= SALES PIPELINE (drag & drop) ================= */
-let PIPE={list:[],cur:null,cards:[],views:[],team:[],projects:[],filters:{project:'',assignee:'',q:''},dragId:null};
+let PIPE={list:[],cur:null,cards:[],views:[],team:[],projects:[],enrich:{},filters:{project:'',assignee:'',q:''},dragId:null};
+const WA_SVG='<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" aria-hidden="true"><path d="M17.47 14.38c-.29-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.14-.19.29-.74.94-.9 1.13-.17.19-.33.21-.62.07-.29-.15-1.22-.45-2.33-1.44-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.59.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.14-.64-1.55-.88-2.12-.23-.56-.47-.48-.64-.49h-.55c-.19 0-.5.07-.76.36-.26.29-1 .98-1 2.38s1.02 2.76 1.17 2.95c.14.19 2.01 3.07 4.87 4.31.68.29 1.21.47 1.62.6.68.22 1.3.19 1.79.11.55-.08 1.7-.69 1.94-1.36.24-.67.24-1.24.17-1.36-.07-.12-.26-.19-.55-.34z"/><path d="M12 2.04c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.48 1.34 4.99L2 22l5.13-1.34c1.46.8 3.11 1.22 4.79 1.22 5.5 0 9.96-4.46 9.96-9.96S17.5 2.04 12 2.04zm0 18.19c-1.5 0-2.97-.4-4.25-1.16l-.3-.18-3.04.8.81-2.97-.2-.31a8.24 8.24 0 0 1-1.26-4.39c0-4.56 3.71-8.27 8.28-8.27 4.56 0 8.27 3.71 8.27 8.27 0 4.57-3.71 8.28-8.27 8.28z"/></svg>';
 
 async function renderPipeline(){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Pipeline laden…</div>';
@@ -1935,7 +1956,19 @@ async function loadPipelineData(){
     sb.from('pipeline_views').select('*').eq('pipeline_id',PIPE.cur.id).order('created_at',{ascending:true}),
   ]);
   PIPE.cards=cR.data||[];PIPE.views=vR.data||[];
+  await pipeLoadEnrichment();
   drawPipeline();
+}
+async function pipeLoadEnrichment(){
+  PIPE.enrich={};
+  const ids=[...new Set(PIPE.cards.map(c=>c.contact_id).filter(Boolean))];
+  if(!ids.length)return;
+  const [ctR,ldR]=await Promise.all([
+    sb.from('contacts').select('id,name,phone').in('id',ids),
+    sb.from('leads').select('contact_id,budget,timeline,project,created_at').in('contact_id',ids).order('created_at',{ascending:false}),
+  ]);
+  (ctR.data||[]).forEach(ct=>{PIPE.enrich[ct.id]={name:ct.name,phone:ct.phone};});
+  (ldR.data||[]).forEach(l=>{if(!l.contact_id)return;const e=PIPE.enrich[l.contact_id]||(PIPE.enrich[l.contact_id]={});if(!e.budget&&l.budget)e.budget=l.budget;if(!e.timeline&&l.timeline)e.timeline=l.timeline;if(!e.project&&l.project)e.project=l.project;});
 }
 function pipeTeamName(id){const t=PIPE.team.find(x=>x.id===id);return t?(t.full_name||t.email||'—'):'';}
 function pipeInitials(id){const n=pipeTeamName(id);if(!n)return '?';return n.split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();}
@@ -1949,11 +1982,16 @@ function pipeFilteredCards(){
   });
 }
 function pipeCardHtml(c){
-  const who=c.assignee?`<span class="pipe-av" title="${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
-  const proj=c.project?`<span class="pipe-chip proj">${esc(c.project)}</span>`:'';
+  const en=(PIPE.enrich&&PIPE.enrich[c.contact_id])||{};
+  const proj=(c.project||en.project)?`<span class="pipe-chip proj">${esc(c.project||en.project)}</span>`:'';
+  const budget=en.budget?`<span class="pipe-chip budget" title="Budget">${esc(en.budget)}</span>`:'';
+  const tl=en.timeline?`<span class="pipe-chip tl" title="Wanneer investeren">⏱ ${esc(en.timeline)}</span>`:'';
   const val=(c.value!=null&&c.value!=='')?`<span class="pipe-chip val">${anMoney(c.value)}</span>`:'';
   const crm=c.contact_id?`<span class="pipe-chip crm" data-crm="${esc(c.contact_id)}" title="Open in CRM">CRM ↗</span>`:'';
-  return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}"><div class="pipe-card-title">${esc(c.title||'(naamloos)')}</div><div class="pipe-card-meta">${proj}${val}${crm}${who}</div></div>`;
+  const wa=en.phone?`<a class="pipe-wa" data-wa="${esc(c.id)}" title="Stuur WhatsApp-bericht">${WA_SVG}</a>`:'';
+  const who=c.assignee?`<span class="pipe-av" title="${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
+  const right=(wa||who)?`<span style="margin-left:auto;display:inline-flex;gap:6px;align-items:center">${wa}${who}</span>`:'';
+  return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}"><div class="pipe-card-title">${esc(c.title||'(naamloos)')}</div><div class="pipe-card-meta">${proj}${budget}${tl}${val}${crm}${right}</div></div>`;
 }
 function drawPipeline(){
   const v=$('#view');const edit=canEdit('pipeline');const cur=PIPE.cur;const stages=cur.stages||[];
@@ -2011,6 +2049,7 @@ function wirePipeline(){
     cardEl.addEventListener('click',e=>{if(e.target.closest('[data-crm]'))return;pipeOpenCard(cardEl.dataset.id);});
   });
   board.querySelectorAll('.pipe-chip.crm[data-crm]').forEach(ch=>ch.addEventListener('click',e=>{e.stopPropagation();openContactById(ch.dataset.crm);}));
+  board.querySelectorAll('.pipe-wa[data-wa]').forEach(a=>{a.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();pipeWhatsapp(a.dataset.wa);});a.setAttribute('draggable','false');});
   board.querySelectorAll('.pipe-cards').forEach(zone=>{
     zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');try{e.dataTransfer.dropEffect='move';}catch(x){}});
     zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
@@ -2053,6 +2092,7 @@ async function pipeDrop(zone,e){
   PIPE.dragId=null;
 }
 async function openContactById(id){try{const {data}=await sb.from('contacts').select('*').eq('id',id).single();if(data)openPerson(data);else toast('Contact niet gevonden','err');}catch(e){toast('Kon contact niet openen','err');}}
+function pipeWhatsapp(id){const c=PIPE.cards.find(x=>x.id===id);if(!c)return;const en=(PIPE.enrich&&PIPE.enrich[c.contact_id])||{};if(!en.phone){toast('Geen telefoonnummer bekend','err');return;}const url=_helloWaUrl(en.phone,en.name||c.title,c.project||en.project||'');window.open(url,'_blank','noopener');}
 function pipeOpenCard(id){const c=PIPE.cards.find(x=>x.id===id);if(c)pipeCardForm(c,null);}
 function pipeAddCard(stage){pipeCardForm(null,stage);}
 function pipeCardForm(card,defaultStage){
