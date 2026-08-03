@@ -1281,8 +1281,11 @@ function inboxAvatar(nm,ch,url,big){
 }
 function inboxProfileUrl(cv){
   if(!cv)return '';
-  if(cv.channel==='instagram'){const h=String(cv.handle||'').replace(/^@/,'').trim();return h?('https://instagram.com/'+encodeURIComponent(h)):'';}
-  return '';
+  // Prefer an explicit Instagram handle (kept on the unified header even when the
+  // last active channel is WhatsApp/e-mail), then fall back to the handle when the
+  // primary channel is Instagram. So the IG link stays as long as the lead has IG.
+  const h=String(cv.instagram_handle||(cv.channel==='instagram'?cv.handle:'')||'').replace(/^@/,'').trim();
+  return h?('https://instagram.com/'+encodeURIComponent(h)):'';
 }
 function inboxStatusPill(c){
   const map={active:['AI actief','#065f46','#ecfdf5','#a7f3d0'],booked:['Afspraak','#1e40af','#eff6ff','#bfdbfe'],
@@ -1412,7 +1415,7 @@ function inboxDrawThread(data,keepDraft){
         ${(()=>{const u=inboxProfileUrl(cv);const av=inboxAvatar(nm,ch,cv.avatar_url,true);return u?`<a href="${u}" target="_blank" rel="noopener" title="Open Instagram-profiel" style="text-decoration:none">${av}</a>`:av;})()}
         <div>
           <div class="ibx-tname">${(()=>{const u=inboxProfileUrl(cv);return u?`<a class="ibx-proflink" href="${u}" target="_blank" rel="noopener" title="Open Instagram-profiel">${esc(nm)} <span class="ibx-ext">↗</span></a>`:esc(nm);})()}</div>
-          <div class="ibx-tsub">${chansSub.map(k=>`<span class="ibx-chtag" style="color:${(INBOX_CH[k]||ch).color};background:${(INBOX_CH[k]||ch).bg};border-color:${(INBOX_CH[k]||ch).bd}">${(INBOX_CH[k]||ch).icon} ${(INBOX_CH[k]||ch).label}</span>`).join('')} ${esc(cv.handle||'')}</div>
+          <div class="ibx-tsub">${(()=>{const ig=inboxProfileUrl(cv);return chansSub.map(k=>{const cc=INBOX_CH[k]||ch;const chip=`<span class="ibx-chtag" style="color:${cc.color};background:${cc.bg};border-color:${cc.bd}">${cc.icon} ${cc.label}${k==='instagram'&&ig?' ↗':''}</span>`;return (k==='instagram'&&ig)?`<a href="${ig}" target="_blank" rel="noopener" title="Open Instagram-profiel" style="text-decoration:none">${chip}</a>`:chip;}).join('');})()} ${esc(cv.handle||'')}</div>
         </div>
       </div>
       <div class="ibx-thead-r">${inboxStatusPill(cv)}</div>
