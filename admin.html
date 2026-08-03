@@ -1693,7 +1693,7 @@ async function openPerson(p){
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px"><span style="font-size:18px;font-weight:750">${esc(p.name||p.email||'Contact')}</span>${warmthBadge(WARMTH[p.id],{big:true})}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap"><span style="font-size:18px;font-weight:750">${esc(p.name||p.email||'Contact')}</span>${warmthBadge(WARMTH[p.id],{big:true})?`<span style="display:inline-flex;align-items:center;gap:7px"><span class="muted" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Koopbereidheid</span>${warmthBadge(WARMTH[p.id],{big:true})}</span>`:''}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <a href="mailto:${esc(p.email)}" class="badge blue" style="text-decoration:none">${esc(p.email)}</a>
           ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
