@@ -263,6 +263,19 @@
   .ibx-tl-t{font-size:12.5px;font-weight:600}
   .ibx-tl-m{font-size:11px;color:var(--muted)}
   @media(max-width:1120px){.ibx-wrap{grid-template-columns:1fr;height:auto}.ibx-list{max-height:40vh}.ibx-thread{min-height:52vh}.ibx-info{max-height:none}}
+  /* Chat history inside the CRM contact detail */
+  .pdc-thread{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+  .pdc-head{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f8faf9;border-bottom:1px solid var(--line)}
+  .pdc-msgs{padding:10px;max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;background:#fbfcfb}
+  .pdc-row{display:flex}
+  .pdc-row.out{justify-content:flex-end}
+  .pdc-bub{max-width:80%;padding:7px 10px;border-radius:12px;font-size:13px;line-height:1.45}
+  .pdc-bub.lead{background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+  .pdc-bub.ai{background:#eaf4ef;border:1px solid #cfe8dd;border-bottom-right-radius:4px}
+  .pdc-bub.human{background:var(--brand);color:#fff;border-bottom-right-radius:4px}
+  .pdc-tag{display:block;font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;opacity:.75;margin-bottom:2px}
+  .pdc-txt{white-space:pre-wrap;word-wrap:break-word}
+  .pdc-time{display:block;font-size:9.5px;opacity:.6;margin-top:3px;text-align:right}
   .readonly-tag{font-size:11px;font-weight:700;color:var(--warn);background:#fdf3e2;border:1px solid #f4e2c1;padding:3px 9px;border-radius:999px}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
   /* ---- sales pipeline board ---- */
@@ -2178,6 +2191,8 @@ async function openPerson(p){
   }
   body+=_sec('Dataroom access',drHtml);
   body+=_sec('Referrals ('+refs.length+')',_mt(['Code','Status','Reward'],refs.map(x=>[esc(x.code||'—'),statusBadge(x.status),money(x.reward_amount)])));
+  // Chatgeschiedenis (Inbox — Instagram / WhatsApp / e-mail)
+  body+=_sec('Chatgeschiedenis','<div id="pd_chat" class="muted" style="font-size:13px">Laden…</div>');
   // Herkomst / marketing-attributie (onderaan, onder Referrals)
   {
     let inner;
@@ -2195,6 +2210,7 @@ async function openPerson(p){
   const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
   const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
   const sh=$('#pd_share'); if(sh)sh.onclick=()=>copyLink(crmDeepLink(p.id));
+  inboxRenderContactChat(p.id);
   // Recompute the WhatsApp greeting at the moment of clicking (send time), not when the contact was opened.
   const wab=$('#pd_wa'); if(wab)wab.addEventListener('click',(e)=>{ const u=_helloWaUrl(p.phone,p.name,_waProj); if(!u){e.preventDefault();toast('Geen geldig telefoonnummer','err');return;} wab.href=u; });
   if(mb){
@@ -2212,6 +2228,31 @@ async function openPerson(p){
     const nr=$('#newResv');if(nr)nr.onclick=()=>openReservationForm(p,projList);
   }
 }
+async function inboxRenderContactChat(contactId){
+  const box=$('#pd_chat');if(!box)return;
+  let data,error;
+  try{({data,error}=await sb.rpc('inbox_contact_threads',{p_contact:contactId}));}catch(e){error=e;}
+  const cur=$('#pd_chat');if(!cur)return; // modal closed/changed
+  if(error){cur.innerHTML='<div class="muted" style="font-size:13px">Kon chatgeschiedenis niet laden.</div>';return;}
+  const threads=data||[];
+  if(!threads.length){cur.innerHTML='<div class="muted" style="font-size:13px">Nog geen gesprekken in de inbox voor dit contact. Instagram- en WhatsApp-chats verschijnen hier zodra ze binnenkomen.</div>';return;}
+  cur.innerHTML=threads.map(t=>{
+    const ch=INBOX_CH[t.channel]||INBOX_CH.instagram;
+    const bubbles=(t.messages||[]).map(m=>{
+      const out=m.direction==='out',who=m.sender;
+      const tag=who==='ai'?'AI':who==='human'?esc((m.sender_name||'Team').split('@')[0]):'';
+      const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
+      return `<div class="pdc-row ${out?'out':'in'}"><div class="pdc-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag?`<span class="pdc-tag">${tag}</span>`:''}<span class="pdc-txt">${esc(m.body||'')}</span><span class="pdc-time">${inboxRel(m.created_at)}${undel?' · niet geleverd':''}</span></div></div>`;
+    }).join('')||'<div class="muted" style="font-size:12px">Geen berichten.</div>';
+    return `<div class="pdc-thread">
+      <div class="pdc-head"><span class="ibx-chtag" style="color:${ch.color};background:${ch.bg};border-color:${ch.bd}">${ch.icon} ${ch.label}</span>
+        <span class="muted" style="font-size:12px">${esc(inboxStatusText(t.status))} · ${inboxRel(t.last_message_at)}</span>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="openInboxThread('${t.id}')">Open in Inbox →</button></div>
+      <div class="pdc-msgs">${bubbles}</div>
+    </div>`;
+  }).join('');
+}
+function openInboxThread(id){INBOX.sel=id;if(!canView('inbox')){toast('Je hebt geen toegang tot de Inbox','err');return;}closeOverlay();go('inbox');}
 let PERSON_RESV={};
 function itpDraft(r){
   const dep='€'+Number(r.deposit_amount||5000).toLocaleString('nl-NL');
