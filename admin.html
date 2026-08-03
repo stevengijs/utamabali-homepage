@@ -177,6 +177,66 @@
   .live-tbl tr.live-known{cursor:pointer;transition:background .12s}
   .live-tbl tr.live-known:hover{background:#f0faf6}
   .lock-note{padding:40px;text-align:center;color:var(--muted)}
+
+  /* ===== Inbox ===== */
+  .ibx-wrap{display:grid;grid-template-columns:340px 1fr;gap:16px;height:calc(100vh - 150px);min-height:460px}
+  .ibx-list{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+  .ibx-filters{padding:12px 12px 8px;border-bottom:1px solid var(--line)}
+  .ibx-search{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;outline:none;font-size:13px}
+  .ibx-search:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
+  .ibx-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;align-items:center}
+  .ibx-chip{padding:4px 9px;border:1px solid var(--line);background:#fff;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--muted)}
+  .ibx-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .ibx-chsep{width:1px;height:16px;background:var(--line);margin:0 2px}
+  .ibx-convs{overflow-y:auto;flex:1}
+  .ibx-row{display:flex;gap:10px;padding:11px 12px;border-bottom:1px solid var(--line);cursor:pointer;position:relative}
+  .ibx-row:hover{background:#f6f8f7}
+  .ibx-row.sel{background:#eef5f2}
+  .ibx-row.unread .ibx-rname{font-weight:800}
+  .ibx-row.unread .ibx-rprev{color:var(--ink);font-weight:500}
+  .ibx-av{position:relative;flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+  .ibx-av.lg{width:46px;height:46px;font-size:15px}
+  .ibx-avch{position:absolute;right:-3px;bottom:-3px;font-size:11px;background:#fff;border-radius:50%;line-height:1;padding:1px}
+  .ibx-rmain{flex:1;min-width:0}
+  .ibx-rtop{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .ibx-rname{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ibx-rtime{flex:none;font-size:11px;color:var(--muted)}
+  .ibx-rprev{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0 5px}
+  .ibx-you{color:var(--brand);font-weight:600}
+  .ibx-rmeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .ibx-pill{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid}
+  .ibx-unread{margin-left:auto;background:var(--brand-2);color:#fff;font-size:10.5px;font-weight:800;min-width:18px;height:18px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+  .ibx-thread{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+  .ibx-empty{margin:auto;color:var(--muted);padding:40px;text-align:center}
+  .ibx-thead{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .ibx-thead-l{display:flex;gap:11px;align-items:center;min-width:0}
+  .ibx-tname{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+  .ibx-tsub{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .ibx-chtag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid}
+  .ibx-thead-r{display:flex;align-items:center;gap:8px;flex:none}
+  .ibx-facts{display:flex;gap:8px;flex-wrap:wrap;padding:9px 16px;background:#f8faf9;border-bottom:1px solid var(--line)}
+  .ibx-fact{font-size:12px;color:var(--muted)}.ibx-fact b{color:var(--ink)}
+  .ibx-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;background:#fbfcfb}
+  .ibx-mrow{display:flex}
+  .ibx-mrow.out{justify-content:flex-end}
+  .ibx-bub{max-width:74%;padding:9px 12px;border-radius:14px;position:relative;font-size:13.5px;line-height:1.5}
+  .ibx-bub.lead{background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+  .ibx-bub.ai{background:#eaf4ef;border:1px solid #cfe8dd;border-bottom-right-radius:4px}
+  .ibx-bub.human{background:var(--brand);color:#fff;border-bottom-right-radius:4px}
+  .ibx-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px;opacity:.85}
+  .ibx-tag.ai{color:#0f6b4f}.ibx-tag.hum{color:#eafff4}
+  .ibx-btext{white-space:pre-wrap;word-wrap:break-word}
+  .ibx-btime{font-size:10px;opacity:.6;margin-top:4px;text-align:right}
+  .ibx-undel{font-size:10.5px;margin-top:4px;color:#b45309;font-weight:700}
+  .ibx-bub.human .ibx-undel{color:#ffe0b2}
+  .ibx-compose{border-top:1px solid var(--line);padding:10px 12px;background:#fff}
+  .ibx-aihint{font-size:11.5px;color:var(--muted);background:#f1f7f4;border:1px solid #d9ebe3;border-radius:8px;padding:7px 10px;margin-bottom:8px}
+  .ibx-crow{display:flex;gap:8px;align-items:flex-end}
+  .ibx-input{flex:1;resize:none;padding:10px 12px;border:1px solid var(--line);border-radius:10px;outline:none;font-size:13.5px;max-height:120px}
+  .ibx-input:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
+  .ibx-sendbtn{background:var(--brand);color:#fff;flex:none}
+  .ibx-sendbtn:disabled{opacity:.6}
+  @media(max-width:820px){.ibx-wrap{grid-template-columns:1fr;height:auto}.ibx-list{max-height:44vh}.ibx-thread{min-height:52vh}}
   .readonly-tag{font-size:11px;font-weight:700;color:var(--warn);background:#fdf3e2;border:1px solid #f4e2c1;padding:3px 9px;border-radius:999px}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
   /* ---- sales pipeline board ---- */
@@ -297,6 +357,7 @@ const PAGES = [
   {key:'analytics',label:'Analytics',              icon:'📊'},
   {key:'revenue',  label:'Revenue',                icon:'💰'},
   {key:'leads',    label:'Leads / CRM',            icon:'📇'},
+  {key:'inbox',    label:'Inbox',                  icon:'💬'},
   {key:'pipeline', label:'Pipeline',               icon:'🧭'},
   {key:'webinars', label:'Webinar',                icon:'🎥'},
   {key:'projects', label:'Projects',               icon:'🏗️'},
@@ -654,7 +715,7 @@ function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',pipeline:'Pipeline',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
+  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
   $('#pageTitle').textContent=titles[k]||k;
   if(k==='dashboard')return renderDashboard();
   if(k==='analytics')return renderAnalytics();
@@ -662,6 +723,7 @@ function go(k){
   if(k==='users')return renderUsers();
   if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;}
   if(k==='leads')return renderPeople();
+  if(k==='inbox')return renderInbox();
   if(k==='pipeline')return renderPipeline();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
@@ -1102,6 +1164,185 @@ function partnerBadge(partner){
 function warmthBadge(score,opts){
   const t=warmthTier(score);if(!t)return '';const big=opts&&opts.big;
   return `<span class="warmth-badge" title="Koopbereidheid ${score}/100 — ${t.label}. Op basis van websitegedrag (tijd, pagina's, ROI-calculator), budget, koop-timeline, geldig WhatsApp-nummer en fase." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
+}
+/* ================= INBOX (unified IG / WA / email) ================= */
+let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{}};
+let INBOX_TIMER=null;
+const INBOX_CH={
+  instagram:{label:'Instagram',icon:'📸',color:'#c13584',bg:'#fdf2f8',bd:'#f9d6e8'},
+  whatsapp:{label:'WhatsApp',icon:'🟢',color:'#128c7e',bg:'#f0fdf4',bd:'#bbf7d0'},
+  email:{label:'E-mail',icon:'✉️',color:'#334155',bg:'#f1f5f9',bd:'#e2e8f0'},
+};
+function inboxRel(ts){
+  if(!ts)return '';const d=new Date(ts),now=Date.now(),s=Math.round((now-d.getTime())/1000);
+  if(s<60)return 'nu';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'u';
+  if(s<604800)return Math.floor(s/86400)+'d';
+  return d.toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+}
+function inboxInitials(name){const p=(name||'?').trim().split(/\s+/);return ((p[0]||'')[0]||'?').toUpperCase()+((p[1]||'')[0]||'').toUpperCase();}
+function inboxStatusPill(c){
+  const map={active:['AI actief','#065f46','#ecfdf5','#a7f3d0'],booked:['Afspraak','#1e40af','#eff6ff','#bfdbfe'],
+    needs_human:['Overname','#9a3412','#fff7ed','#fed7aa'],closed:['Gesloten','#475569','#f1f5f9','#e2e8f0'],opted_out:['Afgemeld','#7f1d1d','#fef2f2','#fecaca']};
+  const m=map[c.status]||map.active;
+  return `<span class="ibx-pill" style="color:${m[1]};background:${m[2]};border-color:${m[3]}">${m[0]}</span>`;
+}
+async function renderInbox(){
+  const v=$('#view');
+  v.innerHTML=`<div class="ibx-wrap">
+    <div class="ibx-list">
+      <div class="ibx-filters">
+        <input id="ibx_search" class="ibx-search" placeholder="Zoek op naam, handle of bericht…" value="${esc(INBOX.search)}">
+        <div class="ibx-chips" id="ibx_chch"></div>
+      </div>
+      <div id="ibx_convs" class="ibx-convs"><div class="muted" style="padding:16px">Laden…</div></div>
+    </div>
+    <div class="ibx-thread" id="ibx_thread">
+      <div class="ibx-empty">Kies een gesprek links om mee te lezen.</div>
+    </div>
+  </div>`;
+  const chs=[['','Alle'],['instagram','📸 Instagram'],['whatsapp','🟢 WhatsApp'],['email','✉️ E-mail']];
+  const sts=[['','Alle statussen'],['active','AI actief'],['needs_human','Overname'],['booked','Afspraak'],['opted_out','Afgemeld']];
+  $('#ibx_chch').innerHTML=
+    chs.map(([k,l])=>`<button class="ibx-chip ${INBOX.channel===k?'on':''}" data-ch="${k}">${l}</button>`).join('')+
+    `<span class="ibx-chsep"></span>`+
+    sts.map(([k,l])=>`<button class="ibx-chip ib-st ${INBOX.status===k?'on':''}" data-st="${k}">${esc(l)}</button>`).join('');
+  $('#ibx_chch').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{INBOX.channel=b.dataset.ch;renderInbox();});
+  $('#ibx_chch').querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{INBOX.status=b.dataset.st;renderInbox();});
+  const si=$('#ibx_search');let sTmr;si.oninput=()=>{clearTimeout(sTmr);sTmr=setTimeout(()=>{INBOX.search=si.value.trim();inboxLoad();},280);};
+  await inboxLoad();
+  if(INBOX.sel)inboxOpen(INBOX.sel,true);
+  if(INBOX_TIMER)clearInterval(INBOX_TIMER);
+  INBOX_TIMER=setInterval(inboxPoll,15000);
+}
+function inboxPoll(){
+  if(CURRENT!=='inbox'||!$('#ibx_convs')){if(INBOX_TIMER){clearInterval(INBOX_TIMER);INBOX_TIMER=null;}return;}
+  inboxLoad(); if(INBOX.sel)inboxRefreshMessages(INBOX.sel);
+}
+async function inboxLoad(){
+  const {data,error}=await sb.rpc('inbox_list',{p_channel:INBOX.channel||null,p_status:INBOX.status||null,p_search:INBOX.search||null,p_limit:300});
+  const box=$('#ibx_convs');if(!box)return;
+  if(error){box.innerHTML=`<div class="empty" style="padding:16px">Kon inbox niet laden: ${esc(error.message)}</div>`;return;}
+  INBOX.convos=data||[];
+  if(!INBOX.convos.length){box.innerHTML='<div class="empty" style="padding:24px 16px">Nog geen gesprekken. Zodra de IG/WA-automatisering berichten doorstuurt, verschijnen ze hier.</div>';return;}
+  box.innerHTML=INBOX.convos.map(c=>{
+    const ch=INBOX_CH[c.channel]||INBOX_CH.instagram;const nm=c.display_name||c.contact_name||c.handle||'Onbekend';
+    const unread=c.unread_count>0;
+    return `<div class="ibx-row ${INBOX.sel===c.id?'sel':''} ${unread?'unread':''}" data-id="${c.id}">
+      <div class="ibx-av" style="background:${ch.bg};color:${ch.color};border-color:${ch.bd}">${esc(inboxInitials(nm))}<span class="ibx-avch" title="${ch.label}">${ch.icon}</span></div>
+      <div class="ibx-rmain">
+        <div class="ibx-rtop"><span class="ibx-rname">${esc(nm)}</span><span class="ibx-rtime">${inboxRel(c.last_message_at)}</span></div>
+        <div class="ibx-rprev">${c.last_direction==='out'?'<span class="ibx-you">Jij/AI:</span> ':''}${esc((c.last_message_preview||'').slice(0,80))}</div>
+        <div class="ibx-rmeta">${inboxStatusPill(c)}${c.warmth!=null?warmthBadge(c.warmth):''}${unread?`<span class="ibx-unread">${c.unread_count}</span>`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.ibx-row').forEach(r=>r.onclick=()=>inboxOpen(r.dataset.id));
+}
+async function inboxOpen(id,keepDraft){
+  INBOX.sel=id;
+  document.querySelectorAll('.ibx-row').forEach(r=>r.classList.toggle('sel',r.dataset.id===id));
+  const c=INBOX.convos.find(x=>x.id===id);
+  if(c&&c.unread_count>0){c.unread_count=0;sb.rpc('inbox_mark_read',{p_id:id});const rr=document.querySelector(`.ibx-row[data-id="${id}"]`);if(rr){rr.classList.remove('unread');const u=rr.querySelector('.ibx-unread');if(u)u.remove();}}
+  const t=$('#ibx_thread');if(!t)return;
+  t.innerHTML='<div class="muted" style="padding:20px">Gesprek laden…</div>';
+  const {data,error}=await sb.rpc('inbox_thread',{p_id:id});
+  if(error||!data||!data.conversation){t.innerHTML=`<div class="empty" style="padding:20px">Kon gesprek niet laden${error?': '+esc(error.message):''}.</div>`;return;}
+  inboxDrawThread(data,keepDraft);
+}
+function inboxFacts(cv){
+  const f=[];if(cv.interest)f.push(['Interesse',cv.interest]);
+  const tl={now:'Nu',['3-6m']:'3–6 mnd',exploring:'Oriënteert'}[cv.timeline]||cv.timeline;if(tl)f.push(['Timing',tl]);
+  if(cv.budget_band)f.push(['Budget',cv.budget_band]);
+  if(cv.is_qualified!=null)f.push(['Gekwalificeerd',cv.is_qualified?'Ja':'Nee']);
+  return f.map(([k,val])=>`<span class="ibx-fact"><b>${esc(k)}:</b> ${esc(val)}</span>`).join('');
+}
+function inboxDrawThread(data,keepDraft){
+  const cv=data.conversation,msgs=data.messages||[];const ch=INBOX_CH[cv.channel]||INBOX_CH.instagram;
+  const nm=cv.display_name||cv.contact_name||cv.handle||'Onbekend';
+  const edit=canEdit('inbox');
+  const t=$('#ibx_thread');
+  const contactBtn=cv.contact_id
+    ?`<button class="btn btn-ghost btn-sm" onclick="openContactById('${cv.contact_id}')">Open in CRM →</button>`
+    :`<span class="muted" style="font-size:12px">Nog niet gekoppeld aan een contact</span>`;
+  const aiOn=cv.ai_enabled;
+  const aiCtrl=edit?(aiOn
+    ?`<button class="btn btn-sm" id="ibx_takeover">✋ Overnemen (AI pauzeren)</button>`
+    :`<button class="btn btn-ghost btn-sm" id="ibx_resume">↩︎ Terug naar AI</button>`):'';
+  t.innerHTML=`
+    <div class="ibx-thead">
+      <div class="ibx-thead-l">
+        <div class="ibx-av lg" style="background:${ch.bg};color:${ch.color};border-color:${ch.bd}">${esc(inboxInitials(nm))}<span class="ibx-avch">${ch.icon}</span></div>
+        <div>
+          <div class="ibx-tname">${esc(nm)} ${cv.warmth!=null?warmthBadge(cv.warmth):''}</div>
+          <div class="ibx-tsub"><span class="ibx-chtag" style="color:${ch.color};background:${ch.bg};border-color:${ch.bd}">${ch.icon} ${ch.label}</span> ${esc(cv.handle||'')} · ${contactBtn}</div>
+        </div>
+      </div>
+      <div class="ibx-thead-r">${inboxStatusPill(cv)} ${aiCtrl}</div>
+    </div>
+    ${inboxFacts(cv)?`<div class="ibx-facts">${inboxFacts(cv)}</div>`:''}
+    <div class="ibx-msgs" id="ibx_msgs"></div>
+    <div class="ibx-compose">
+      ${aiOn?`<div class="ibx-aihint">🤖 De AI beantwoordt dit gesprek automatisch. Zodra jij een bericht stuurt, neem je het over en pauzeert de AI.</div>`:''}
+      ${edit?`<div class="ibx-crow">
+        <textarea id="ibx_input" class="ibx-input" rows="1" placeholder="Schrijf een bericht…"></textarea>
+        <button class="btn ibx-sendbtn" id="ibx_send">Sturen</button>
+      </div>`:`<div class="muted" style="padding:10px 14px;font-size:12px">Alleen-lezen — je hebt geen bewerkrechten voor de inbox.</div>`}
+    </div>`;
+  inboxRenderMsgs(msgs);
+  if(edit){
+    const inp=$('#ibx_input');
+    if(inp){
+      if(keepDraft&&INBOX.drafts[cv.id]!=null)inp.value=INBOX.drafts[cv.id];
+      inp.oninput=()=>{INBOX.drafts[cv.id]=inp.value;inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px';};
+      inp.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();inboxSend(cv.id);}};
+    }
+    const sb1=$('#ibx_send');if(sb1)sb1.onclick=()=>inboxSend(cv.id);
+    const to=$('#ibx_takeover');if(to)to.onclick=()=>inboxTakeOver(cv.id);
+    const rs=$('#ibx_resume');if(rs)rs.onclick=()=>inboxResume(cv.id);
+  }
+}
+function inboxRenderMsgs(msgs){
+  const box=$('#ibx_msgs');if(!box)return;
+  box.innerHTML=(msgs||[]).map(m=>{
+    const out=m.direction==='out';const who=m.sender;
+    const tag=who==='ai'?'<span class="ibx-tag ai">AI</span>':who==='human'?`<span class="ibx-tag hum">${esc((m.sender_name||'Team').split('@')[0])}</span>`:'';
+    const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
+    const undelNote=undel?`<div class="ibx-undel">${m.delivery_status==='failed'?'⚠︎ Niet afgeleverd':'⏳ Niet verzonden — kanaal nog niet gekoppeld'}</div>`:'';
+    return `<div class="ibx-mrow ${out?'out':'in'}">
+      <div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag}<div class="ibx-btext">${esc(m.body||'')}</div>
+        <div class="ibx-btime">${inboxRel(m.created_at)}</div>${undelNote}</div>
+    </div>`;
+  }).join('');
+  box.scrollTop=box.scrollHeight;
+}
+async function inboxRefreshMessages(id){
+  if(INBOX.sel!==id)return;
+  const {data}=await sb.rpc('inbox_thread',{p_id:id});
+  if(data&&data.messages&&$('#ibx_msgs'))inboxRenderMsgs(data.messages);
+}
+async function inboxSend(id){
+  const inp=$('#ibx_input');if(!inp)return;const body=inp.value.trim();if(!body){return;}
+  const btn=$('#ibx_send');if(btn){btn.disabled=true;btn.textContent='Sturen…';}
+  try{
+    const {data,error}=await sb.functions.invoke('inbox-send',{body:{conversation_id:id,body}});
+    if(error||(data&&data.error)){toast('Versturen mislukt: '+esc((error&&error.message)||data.error),'err');return;}
+    inp.value='';INBOX.drafts[id]='';inp.style.height='auto';
+    if(data&&data.delivery==='pending')toast('Opgeslagen. Kanaal-verzending nog niet gekoppeld — zie doc om IG/WA-token te koppelen.','');
+    else if(data&&data.delivery==='failed')toast('Bericht opgeslagen, maar afleveren mislukte: '+esc(data.delivery_error||''),'err');
+    else toast('Verzonden','ok');
+    await inboxOpen(id,true);await inboxLoad();
+  }catch(e){toast('Versturen mislukt','err');}
+  finally{const b=$('#ibx_send');if(b){b.disabled=false;b.textContent='Sturen';}}
+}
+async function inboxTakeOver(id){
+  const {error}=await sb.rpc('inbox_take_over',{p_id:id});
+  if(error){toast('Overnemen mislukt: '+esc(error.message),'err');return;}
+  toast('Je hebt dit gesprek overgenomen — de AI is gepauzeerd','ok');await inboxOpen(id,true);await inboxLoad();
+}
+async function inboxResume(id){
+  const {error}=await sb.rpc('inbox_resume_ai',{p_id:id});
+  if(error){toast('Mislukt: '+esc(error.message),'err');return;}
+  toast('Terug naar de AI','ok');await inboxOpen(id,true);await inboxLoad();
 }
 let LIVE_TIMER=null;
 async function renderLiveVisitors(){
