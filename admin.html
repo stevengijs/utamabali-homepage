@@ -1566,7 +1566,11 @@ async function openPerson(p){
       }
     }
     const show=v=>{const s=String(v||'');return nm[s]||s;};
-    if(_attr.utm_source)_attrBits.push(['Bron',isMeta?'Facebook / Instagram (Meta)':_attr.utm_source]);
+    // Distinguish Facebook vs Instagram: utm_source (fb/ig) is authoritative; referrer host is a fallback.
+    const rh=(_attr.referrer_host||'').toLowerCase();
+    const metaPlat=!isMeta?'':(/^(ig|instagram)$/.test(srcRaw)?'Instagram':/^(fb|facebook)$/.test(srcRaw)?'Facebook':/instagram/.test(rh)?'Instagram':/facebook/.test(rh)?'Facebook':'');
+    const bronLabel=isMeta?(metaPlat?metaPlat+' (Meta)':'Facebook / Instagram (Meta)'):_attr.utm_source;
+    if(_attr.utm_source||isMeta)_attrBits.push(['Bron',bronLabel]);
     if(_attr.utm_medium)_attrBits.push(['Medium',_attr.utm_medium]);
     if(_attr.utm_campaign)_attrBits.push(['Campagne',show(_attr.utm_campaign)]);
     if(_attr.utm_content)_attrBits.push([isMeta?'Advertentieset':'Advertentie',show(_attr.utm_content)]);
@@ -1600,20 +1604,6 @@ async function openPerson(p){
     </div>
   </div>
   <hr style="border:none;border-top:1px solid var(--line);margin:22px 0 2px">`;
-  // Herkomst / marketing-attributie
-  {
-    let inner;
-    if(_attr){
-      const human={direct:'Directe link — typte de URL in of kwam via een bookmark',organic:'Organisch — via een zoekmachine (Google e.d.)',social:'Social media',paid:'Betaalde advertentie',referral:'Verwijzing vanaf een andere website',campaign:'Getagde campagnelink',email:'Via een e-mail',internal:'Interne link'}[_attrChan]||_attrChan;
-      const rows=_attrBits.map(b=>`<tr><td class="muted" style="white-space:nowrap;padding:2px 14px 2px 0;vertical-align:top">${esc(b[0])}</td><td style="padding:2px 0"><b>${esc(b[1])}</b></td></tr>`).join('');
-      const note=_attrNote?`<div class="muted" style="font-size:12px;margin-top:8px">${_attrNote}</div>`:'';
-      const src=_attr.referrer_host&&!_attrBits.some(b=>b[0]==='Verwijzer')?`<div class="muted" style="font-size:12px;margin-top:6px">Eerste pagina: <b>${esc((_attr.path||'/').split('?')[0])}</b></div>`:'';
-      inner=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:${rows?'10px':'2px'}"><span class="src-badge ${_attrChan}" style="font-size:12px">${esc(_attrLabel)}</span><span style="font-size:13px">${esc(human)}</span></div>${rows?`<table style="font-size:13px;border-collapse:collapse">${rows}</table>`:''}${src}${note}`;
-    }else{
-      inner='<div class="muted" style="font-size:13px">Geen webverkeer gekoppeld aan deze lead — herkomst onbekend. (Leads van vóór de tracking, of ingevoerd zonder sessie.)</div>';
-    }
-    body+=_sec('Herkomst (marketing)',inner);
-  }
   const manageLeads=canEdit('leads')||canEdit('portal');
   body+=_sec('Aanvragen & interesse ('+leads.length+')',_hint('Binnengekomen via de site: brochure-aanvragen, reserveringsaanvragen en dataroom-verzoeken — het type staat per regel. Klik "Maak ITP" om van een aanvraag een reservering te maken.')+_mt(['Type','Project','Unit','Budget','Wanneer investeren','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
     const open=(l.type==='dataroom_request'||l.type==='reservation')&&!l.handled_at;
@@ -1684,6 +1674,20 @@ async function openPerson(p){
   }
   body+=_sec('Dataroom access',drHtml);
   body+=_sec('Referrals ('+refs.length+')',_mt(['Code','Status','Reward'],refs.map(x=>[esc(x.code||'—'),statusBadge(x.status),money(x.reward_amount)])));
+  // Herkomst / marketing-attributie (onderaan, onder Referrals)
+  {
+    let inner;
+    if(_attr){
+      const human={direct:'Directe link — typte de URL in of kwam via een bookmark',organic:'Organisch — via een zoekmachine (Google e.d.)',social:'Social media',paid:'Betaalde advertentie',referral:'Verwijzing vanaf een andere website',campaign:'Getagde campagnelink',email:'Via een e-mail',internal:'Interne link'}[_attrChan]||_attrChan;
+      const rows=_attrBits.map(b=>`<tr><td class="muted" style="white-space:nowrap;padding:2px 14px 2px 0;vertical-align:top">${esc(b[0])}</td><td style="padding:2px 0"><b>${esc(b[1])}</b></td></tr>`).join('');
+      const note=_attrNote?`<div class="muted" style="font-size:12px;margin-top:8px">${_attrNote}</div>`:'';
+      const src=_attr.referrer_host&&!_attrBits.some(b=>b[0]==='Verwijzer')?`<div class="muted" style="font-size:12px;margin-top:6px">Eerste pagina: <b>${esc((_attr.path||'/').split('?')[0])}</b></div>`:'';
+      inner=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:${rows?'10px':'2px'}"><span class="src-badge ${_attrChan}" style="font-size:12px">${esc(_attrLabel)}</span><span style="font-size:13px">${esc(human)}</span></div>${rows?`<table style="font-size:13px;border-collapse:collapse">${rows}</table>`:''}${src}${note}`;
+    }else{
+      inner='<div class="muted" style="font-size:13px">Geen webverkeer gekoppeld aan deze lead — herkomst onbekend. (Leads van vóór de tracking, of ingevoerd zonder sessie.)</div>';
+    }
+    body+=_sec('Herkomst (marketing)',inner);
+  }
   const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
   const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
   // Recompute the WhatsApp greeting at the moment of clicking (send time), not when the contact was opened.
