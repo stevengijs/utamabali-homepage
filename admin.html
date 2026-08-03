@@ -1485,7 +1485,7 @@ function drawPeople(){
 function _sec(title,inner){return `<div style="margin-top:20px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">${title}</div>${inner}</div>`;}
 function _mt(headers,rows){ if(!rows.length)return '<div class="muted" style="font-size:13px">None.</div>'; let h='<table style="font-size:13px"><thead><tr>'+headers.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>'; rows.forEach(r=>{h+='<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>';}); return h+'</tbody></table>'; }
 function _hint(t){return `<div class="muted" style="font-size:12px;margin:-4px 0 8px">${t}</div>`;}
-function leadTypeBadge(t){const m={inquiry:['blue','Inquiry'],reservation:['amber','Reserveringsaanvraag'],dataroom_request:['blue','Dataroom-aanvraag']};const x=m[t]||['grey',t||'—'];return `<span class="badge ${x[0]}">${esc(x[1])}</span>`;}
+function leadTypeBadge(t){const k=(t||'').toLowerCase();const m={inquiry:['blue','Brochure-aanvraag'],brochure:['blue','Brochure-aanvraag'],reservation:['amber','Reserveringsaanvraag'],dataroom_request:['blue','Dataroom-aanvraag']};const x=m[k]||(k?['grey',t]:['blue','Brochure-aanvraag']);return `<span class="badge ${x[0]}">${esc(x[1])}</span>`;}
 /* Time-of-day greeting based on the lead's timezone (derived from phone country code). */
 function _greetForPhone(phone){
   const d=(phone||'').replace(/[^0-9+]/g,'');
@@ -1549,17 +1549,32 @@ async function openPerson(p){
     _attr=evs.find(e=>e.utm_campaign||e.utm_source||(e.channel&&!['direct','internal'].includes((e.channel||'').toLowerCase())))||evs[0]||null;
   }
   if(!_loc){const c=_countryFromPhone(p.phone);if(c){_loc=c;_locSrc='phone';}}
-  // build attribution labels
-  let _attrChan='',_attrLabel='',_attrBits=[];
+  // build attribution labels (Meta-aware: resolve campaign/adset/ad IDs to names)
+  let _attrChan='',_attrLabel='',_attrBits=[],_attrHead='',_attrNote='';
   if(_attr){
     _attrChan=(_attr.channel||'direct').toLowerCase();
     _attrLabel={direct:'Direct',organic:'Organisch',social:'Social',paid:'Ad',referral:'Referral',campaign:'Campagne',email:'E-mail',internal:'Intern'}[_attrChan]||_attrChan;
-    if(_attr.utm_source)_attrBits.push(['Bron',_attr.utm_source]);
+    const srcRaw=(_attr.utm_source||'').toLowerCase();
+    const isMeta=/^(fb|facebook|ig|instagram|meta)$/.test(srcRaw)||(_attrChan==='paid'&&/facebook|instagram/.test((_attr.referrer_host||'').toLowerCase()));
+    // resolve Meta numeric object IDs (campaign/adset/ad) to human names via the meta-names function
+    let nm={},hadIds=false,gotNames=false;
+    if(isMeta){
+      const ids=[_attr.utm_campaign,_attr.utm_content,_attr.utm_term].map(x=>String(x||'')).filter(x=>/^\d{6,}$/.test(x));
+      hadIds=ids.length>0;
+      if(hadIds&&sb.functions&&sb.functions.invoke){
+        try{const {data}=await sb.functions.invoke('meta-names',{body:{ids}});if(data&&data.names){nm=data.names;gotNames=Object.keys(nm).length>0;}}catch(e){}
+      }
+    }
+    const show=v=>{const s=String(v||'');return nm[s]||s;};
+    if(_attr.utm_source)_attrBits.push(['Bron',isMeta?'Facebook / Instagram (Meta)':_attr.utm_source]);
     if(_attr.utm_medium)_attrBits.push(['Medium',_attr.utm_medium]);
-    if(_attr.utm_campaign)_attrBits.push(['Campagne',_attr.utm_campaign]);
-    if(_attr.utm_content)_attrBits.push(['Advertentie',_attr.utm_content]);
-    if(_attr.utm_term)_attrBits.push(['Zoekterm',_attr.utm_term]);
+    if(_attr.utm_campaign)_attrBits.push(['Campagne',show(_attr.utm_campaign)]);
+    if(_attr.utm_content)_attrBits.push([isMeta?'Advertentieset':'Advertentie',show(_attr.utm_content)]);
+    if(_attr.utm_term)_attrBits.push([isMeta?'Advertentie':'Zoekterm',show(_attr.utm_term)]);
     if(!_attr.utm_source&&_attr.referrer_host)_attrBits.push(['Verwijzer',_attr.referrer_host]);
+    _attrHead=_attr.utm_campaign?show(_attr.utm_campaign):(_attr.utm_source?(isMeta?'Meta':_attr.utm_source):'');
+    if(_attrChan==='paid'&&!_attr.utm_campaign&&!_attr.utm_source)_attrNote='Herkend als advertentieklik (ad-click-id in de URL), maar er zijn geen campagne-tags meegegeven. Voeg <code>utm_campaign</code>/<code>utm_content</code> toe aan je advertentie-links om te zien wélke advertentie precies.';
+    else if(isMeta&&hadIds&&!gotNames)_attrNote='Dit zijn Meta’s campagne-/advertentie-<b>ID’s</b>. Naam-vertaling staat nog uit — zie mijn bericht om die aan te zetten (of tag je ad-links met namen).';
   }
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
@@ -1571,11 +1586,11 @@ async function openPerson(p){
           ${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}
           ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
           ${_loc?`<span class="badge grey" title="${_locSrc==='ip'?'Locatie op basis van IP (analytics)':'Land op basis van telefoonnummer — nog geen IP-sessie voor deze lead'}">📍 ${esc(_loc)}${_locSrc==='phone'?' · via telefoon':''}</span>`:''}
-          ${_attr?`<span class="src-badge ${_attrChan}" title="Hoe deze lead binnenkwam (eerste bezoek)">${esc(_attrLabel)}${_attr.utm_campaign?' · '+esc(_attr.utm_campaign):(_attr.utm_source?' · '+esc(_attr.utm_source):'')}</span>`:''}
+          ${_attr?`<span class="src-badge ${_attrChan}" title="Hoe deze lead binnenkwam (eerste bezoek)">${esc(_attrLabel)}${_attrHead?' · '+esc(_attrHead):''}</span>`:''}
         </div>
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
-        ${p.phone?`<a class="btn btn-ghost btn-sm" style="text-decoration:none;color:#0f6b4f;border-color:#c6ead9" href="${_waUrl}" target="_blank" rel="noopener">💬 WhatsApp</a>`:''}
+        ${p.phone?`<a class="btn btn-ghost btn-sm" style="text-decoration:none;color:#0f6b4f;border-color:#c6ead9" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
         ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
       </div>
     </div>
@@ -1591,7 +1606,7 @@ async function openPerson(p){
     if(_attr){
       const human={direct:'Directe link — typte de URL in of kwam via een bookmark',organic:'Organisch — via een zoekmachine (Google e.d.)',social:'Social media',paid:'Betaalde advertentie',referral:'Verwijzing vanaf een andere website',campaign:'Getagde campagnelink',email:'Via een e-mail',internal:'Interne link'}[_attrChan]||_attrChan;
       const rows=_attrBits.map(b=>`<tr><td class="muted" style="white-space:nowrap;padding:2px 14px 2px 0;vertical-align:top">${esc(b[0])}</td><td style="padding:2px 0"><b>${esc(b[1])}</b></td></tr>`).join('');
-      const note=(_attrChan==='paid'&&!_attr.utm_campaign&&!_attr.utm_source)?'<div class="muted" style="font-size:12px;margin-top:8px">Herkend als advertentieklik (ad-click-id in de URL), maar er zijn geen campagne-tags meegegeven. Voeg <code>utm_campaign</code> en <code>utm_content</code> toe aan je advertentie-links om te zien wélke advertentie precies.</div>':'';
+      const note=_attrNote?`<div class="muted" style="font-size:12px;margin-top:8px">${_attrNote}</div>`:'';
       const src=_attr.referrer_host&&!_attrBits.some(b=>b[0]==='Verwijzer')?`<div class="muted" style="font-size:12px;margin-top:6px">Eerste pagina: <b>${esc((_attr.path||'/').split('?')[0])}</b></div>`:'';
       inner=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:${rows?'10px':'2px'}"><span class="src-badge ${_attrChan}" style="font-size:12px">${esc(_attrLabel)}</span><span style="font-size:13px">${esc(human)}</span></div>${rows?`<table style="font-size:13px;border-collapse:collapse">${rows}</table>`:''}${src}${note}`;
     }else{
@@ -1600,7 +1615,7 @@ async function openPerson(p){
     body+=_sec('Herkomst (marketing)',inner);
   }
   const manageLeads=canEdit('leads')||canEdit('portal');
-  body+=_sec('Aanvragen & interesse ('+leads.length+')',_hint('Binnengekomen via de site: vragen, reserveringsaanvragen en dataroom-verzoeken. Klik "Maak ITP" om er een reservering van te maken.')+_mt(['Type','Project','Unit','Budget','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
+  body+=_sec('Aanvragen & interesse ('+leads.length+')',_hint('Binnengekomen via de site: brochure-aanvragen, reserveringsaanvragen en dataroom-verzoeken — het type staat per regel. Klik "Maak ITP" om van een aanvraag een reservering te maken.')+_mt(['Type','Project','Unit','Budget','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
     const open=(l.type==='dataroom_request'||l.type==='reservation')&&!l.handled_at;
     const cells=[leadTypeBadge(l.type),esc(l.project||'—'),esc(l.unit||'—'),esc(l.budget||'—'),fmtDateTime(l.created_at),open?'<span class="badge amber">Open</span>':(l.handled_at?'<span class="badge green">Afgehandeld</span>':'—')];
     if(manageLeads){
