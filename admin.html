@@ -232,6 +232,7 @@
   .ibx-bub.human{background:var(--brand);color:#fff;border-bottom-right-radius:4px}
   .ibx-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px;opacity:.85}
   .ibx-tag.ai{color:#0f6b4f}.ibx-tag.hum{color:#eafff4}
+  .ibx-bizacct{text-transform:none;font-weight:600;letter-spacing:0;opacity:.9}
   .ibx-btext{white-space:pre-wrap;word-wrap:break-word}
   .ibx-btime{font-size:10px;opacity:.6;margin-top:4px;text-align:right}
   .ibx-undel{font-size:10.5px;margin-top:4px;color:#b45309;font-weight:700}
@@ -1219,6 +1220,10 @@ const INBOX_CH={
   whatsapp:{label:'WhatsApp',icon:'🟢',color:'#128c7e',bg:'#f0fdf4',bd:'#bbf7d0'},
   email:{label:'E-mail',icon:'✉️',color:'#334155',bg:'#f1f5f9',bd:'#e2e8f0'},
 };
+/* Vanaf welk eigen account UTAMA per kanaal verzendt — getoond bij uitgaande
+   berichten zodat het team ziet vanuit welk account/nummer/e-mail iets gaat.
+   Vul whatsapp/email in zodra die kanalen live gaan. */
+const BIZ_ACCOUNTS={ instagram:'@stevenbalivillas', whatsapp:'', email:'' };
 function inboxRel(ts){
   if(!ts)return '';const d=new Date(ts),now=Date.now(),s=Math.round((now-d.getTime())/1000);
   if(s<60)return 'nu';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'u';
@@ -1325,7 +1330,7 @@ function inboxFacts(cv){
 function inboxDrawThread(data,keepDraft){
   const cv=data.conversation,msgs=data.messages||[];const ch=INBOX_CH[cv.channel]||INBOX_CH.instagram;
   const nm=cv.display_name||cv.contact_name||cv.handle||'Onbekend';
-  INBOX.cur={avatar:cv.avatar_url,name:nm,ch};
+  INBOX.cur={avatar:cv.avatar_url,name:nm,ch,channel:cv.channel};
   const edit=canEdit('inbox');
   const aiOn=cv.ai_enabled;
   const t=$('#ibx_thread');
@@ -1342,7 +1347,7 @@ function inboxDrawThread(data,keepDraft){
     </div>
     <div class="ibx-msgs" id="ibx_msgs"></div>
     <div class="ibx-compose">
-      ${aiOn?`<div class="ibx-aihint">🤖 De AI beantwoordt dit gesprek automatisch. Zodra jij een bericht stuurt, neem je het over en pauzeert de AI.</div>`:''}
+      ${aiOn?`<div class="ibx-aihint">🤖 De AI beantwoordt dit gesprek automatisch${BIZ_ACCOUNTS[cv.channel]?` · verzendt als <b>${esc(BIZ_ACCOUNTS[cv.channel])}</b>`:''}. Zodra jij een bericht stuurt, neem je het over en pauzeert de AI.</div>`:''}
       ${edit?`<div class="ibx-crow">
         <textarea id="ibx_input" class="ibx-input" rows="1" placeholder="Schrijf een bericht…"></textarea>
         <button class="btn ibx-sendbtn" id="ibx_send">Sturen</button>
@@ -1418,7 +1423,9 @@ function inboxRenderMsgs(msgs){
   const list=msgs||[];const cur=INBOX.cur||{};
   box.innerHTML=list.map((m,i)=>{
     const out=m.direction==='out';const who=m.sender;
-    const tag=who==='ai'?'<span class="ibx-tag ai">AI</span>':who==='human'?`<span class="ibx-tag hum">${esc((m.sender_name||'Team').split('@')[0])}</span>`:'';
+    const biz=BIZ_ACCOUNTS[cur.channel]||'';
+    const bizTag=(out&&biz)?` · <span class="ibx-bizacct">${esc(biz)}</span>`:'';
+    const tag=who==='ai'?`<span class="ibx-tag ai">AI${bizTag}</span>`:who==='human'?`<span class="ibx-tag hum">${esc((m.sender_name||'Team').split('@')[0])}${bizTag}</span>`:'';
     const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
     const undelNote=undel?`<div class="ibx-undel">${m.delivery_status==='failed'?'⚠︎ Niet afgeleverd':'⏳ Niet verzonden — kanaal nog niet gekoppeld'}</div>`:'';
     // Instagram-style: a small avatar next to the LEAD's messages, shown only on
