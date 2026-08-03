@@ -222,8 +222,12 @@
   .ibx-facts{display:flex;gap:8px;flex-wrap:wrap;padding:9px 16px;background:#f8faf9;border-bottom:1px solid var(--line)}
   .ibx-fact{font-size:12px;color:var(--muted)}.ibx-fact b{color:var(--ink)}
   .ibx-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;background:#fbfcfb}
-  .ibx-mrow{display:flex;align-items:flex-end;gap:7px}
-  .ibx-mrow.out{justify-content:flex-end}
+  .ibx-mrow{display:flex;flex-direction:column;gap:2px}
+  .ibx-mrow.out{align-items:flex-end}
+  .ibx-mrow.in{align-items:flex-start}
+  .ibx-mline{display:flex;align-items:flex-end;gap:7px;max-width:100%}
+  .ibx-daysep{display:flex;align-items:center;justify-content:center;margin:12px 0 6px}
+  .ibx-daysep span{font-size:11px;font-weight:700;color:var(--muted);background:#eef2f0;border:1px solid var(--line);padding:3px 12px;border-radius:999px}
   .ibx-msgav{position:relative;flex:none;width:26px;height:26px;border-radius:50%;background:#eef2f0;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:#334155;overflow:hidden;margin-bottom:2px;cursor:default}
   .ibx-msgav.ph{visibility:hidden}
   .ibx-bub{max-width:74%;padding:9px 12px;border-radius:14px;position:relative;font-size:13.5px;line-height:1.5}
@@ -234,7 +238,9 @@
   .ibx-tag.ai{color:#0f6b4f}.ibx-tag.hum{color:#eafff4}
   .ibx-bizacct{text-transform:none;font-weight:600;letter-spacing:0;opacity:.9}
   .ibx-btext{white-space:pre-wrap;word-wrap:break-word}
-  .ibx-btime{font-size:10px;opacity:.6;margin-top:4px;text-align:right}
+  .ibx-btime{font-size:10.5px;opacity:.55;padding:0 2px}
+  .ibx-mrow.in .ibx-btime{padding-left:33px}
+  .ibx-mrow.out .ibx-btime{padding-right:2px}
   .ibx-undel{font-size:10.5px;margin-top:4px;color:#b45309;font-weight:700}
   .ibx-bub.human .ibx-undel{color:#ffe0b2}
   .ibx-compose{border-top:1px solid var(--line);padding:10px 12px;background:#fff}
@@ -262,6 +268,10 @@
   .ibx-kv{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;padding:3px 0}
   .ibx-kv span{color:var(--muted);flex:none}
   .ibx-kv b{text-align:right;word-break:break-word}
+  .ibx-pipe-row{display:flex;gap:7px;align-items:center}
+  .ibx-pipe-sel{flex:1;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;background:#fff;outline:none}
+  .ibx-pipe-sel:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
+  .ibx-pipe-row .btn{flex:none;background:var(--brand);color:#fff}
   .ibx-ip-note{font-size:12px;color:var(--muted);line-height:1.5}
   .ibx-oth{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;background:#f8faf9;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12.5px;font-weight:600}
   .ibx-oth:hover{background:#eef5f2}
@@ -1230,6 +1240,16 @@ function inboxRel(ts){
   if(s<604800)return Math.floor(s/86400)+'d';
   return d.toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
 }
+function inboxClock(ts){if(!ts)return '';return new Date(ts).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});}
+function inboxDayKey(ts){if(!ts)return '';const d=new Date(ts);return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();}
+function inboxDayLabel(ts){
+  if(!ts)return '';
+  const d=new Date(ts),now=new Date();
+  const dk=inboxDayKey(d),todayK=inboxDayKey(now),yK=inboxDayKey(new Date(now.getTime()-864e5));
+  if(dk===todayK)return 'Vandaag';
+  if(dk===yK)return 'Gisteren';
+  return d.toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
+}
 function inboxInitials(name){const p=(name||'?').trim().split(/\s+/);return ((p[0]||'')[0]||'?').toUpperCase()+((p[1]||'')[0]||'').toUpperCase();}
 function inboxAvatar(nm,ch,url,big){
   // Profile photo (Instagram/WhatsApp) when available; initials underneath as
@@ -1279,9 +1299,13 @@ async function renderInbox(){
   if(INBOX_TIMER)clearInterval(INBOX_TIMER);
   INBOX_TIMER=setInterval(inboxPoll,15000);
 }
-function inboxPoll(){
+async function inboxPoll(){
   if(CURRENT!=='inbox'||!$('#ibx_convs')){if(INBOX_TIMER){clearInterval(INBOX_TIMER);INBOX_TIMER=null;}return;}
-  inboxLoad(); if(INBOX.sel)inboxRefreshMessages(INBOX.sel);
+  // Keep the read-watermark on the open conversation moving forward, so any
+  // messages that arrived while it's open don't reappear as "unread" on refresh.
+  if(INBOX.sel){await sb.rpc('inbox_mark_read',{p_id:INBOX.sel});}
+  await inboxLoad();
+  if(INBOX.sel){const c=INBOX.convos.find(x=>x.id===INBOX.sel);if(c)c.unread_count=0;const rr=document.querySelector(`.ibx-row[data-id="${INBOX.sel}"]`);if(rr){rr.classList.remove('unread');const u=rr.querySelector('.ibx-unread');if(u)u.remove();}inboxRefreshMessages(INBOX.sel);}
 }
 async function inboxLoad(){
   const {data,error}=await sb.rpc('inbox_list',{p_channel:INBOX.channel||null,p_status:INBOX.status||null,p_search:INBOX.search||null,p_limit:300});
@@ -1396,6 +1420,15 @@ function inboxDrawInfo(ctx){
   }else{
     contactHtml=`<div class="ibx-ip-note">Nog niet gekoppeld aan een CRM-contact. Zodra de lead een e-mail of telefoonnummer deelt (bijv. het WhatsApp-nummer), koppelt dit automatisch en verschijnt de volledige historie hier.</div>`;
   }
+  const pipe=ctx.pipeline||{};const pstages=pipe.stages||[];const pcur=pipe.current_stage||'';
+  let pipeHtml='';
+  if(pstages.length){
+    const opts=pstages.map(s=>`<option value="${esc(s.key)}"${s.key===pcur?' selected':''}>${esc(s.label)}</option>`).join('');
+    const curLabel=(pstages.find(s=>s.key===pcur)||{}).label;
+    pipeHtml=`<div class="ibx-ip-sec"><div class="ibx-ip-h">Pipeline</div>
+      <div class="ibx-ip-note" style="margin-bottom:8px">${pcur?`Staat nu op <b>${esc(curLabel||pcur)}</b>.`:'Nog niet in de sales-pipeline. Kies een status om dit contact toe te voegen.'}</div>
+      ${edit?`<div class="ibx-pipe-row"><select id="ibx_pipe_sel" class="ibx-pipe-sel">${opts}</select><button class="btn btn-sm" id="ibx_pipe_set">${pcur?'Verplaats':'Toevoegen'}</button></div>`:''}</div>`;
+  }
   const otherHtml=other.length?other.map(o=>{const oc=INBOX_CH[o.channel]||INBOX_CH.instagram;return `<button class="ibx-oth" onclick="inboxOpen('${o.id}')"><span>${oc.icon} ${oc.label}</span><span class="muted">${esc(inboxStatusText(o.status))} · ${inboxRel(o.last_message_at)}${o.unread_count>0?' · '+o.unread_count+' nieuw':''}</span></button>`;}).join(''):'';
   const tlicon={lead:'📩',reservation:'📝',purchase:'💰',dataroom:'📂',pipeline:'🧭',webinar:'🎥'};
   const tlHtml=timeline.length?timeline.map(it=>`<div class="ibx-tl"><span class="ibx-tl-ic">${tlicon[it.kind]||'•'}</span><div class="ibx-tl-b"><div class="ibx-tl-t">${esc(it.title)}${it.project?' · '+esc(it.project):''}</div><div class="ibx-tl-m">${it.ts?new Date(it.ts).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'}):''}${it.meta?' · '+esc(it.meta):''}</div></div></div>`).join(''):`<div class="ibx-ip-note">Nog geen eerdere activiteit vastgelegd.</div>`;
@@ -1410,17 +1443,30 @@ function inboxDrawInfo(ctx){
     <div class="ibx-ip-scroll">
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Lead</div>${leadRows.length?leadRows.map(([k,val])=>`<div class="ibx-kv"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join(''):'<div class="ibx-ip-note">Nog geen kwalificatie vastgelegd.</div>'}${winRow}</div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Contact</div>${contactHtml}</div>
+      ${pipeHtml}
       ${otherHtml?`<div class="ibx-ip-sec"><div class="ibx-ip-h">Andere gesprekken</div>${otherHtml}</div>`:''}
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Historie</div>${tlHtml}</div>
     </div>`;
   if(edit){
     const to=$('#ibx_takeover');if(to)to.onclick=()=>inboxTakeOver(cv.id);
     const rs=$('#ibx_resume');if(rs)rs.onclick=()=>inboxResume(cv.id);
+    const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(cv.id);
   }
+}
+async function inboxSetPipeline(id){
+  const sel=$('#ibx_pipe_sel');if(!sel)return;const stage=sel.value;
+  const btn=$('#ibx_pipe_set');if(btn){btn.disabled=true;btn.textContent='…';}
+  try{
+    const {data,error}=await sb.rpc('inbox_set_pipeline',{p_conversation:id,p_stage:stage});
+    if(error||(data&&data.error)){toast('Pipeline bijwerken mislukt: '+esc((error&&error.message)||data.error),'err');return;}
+    toast('Toegevoegd aan pipeline','ok');
+    await inboxOpen(id,true);
+  }catch(e){toast('Pipeline bijwerken mislukt','err');}
+  finally{const b=$('#ibx_pipe_set');if(b)b.disabled=false;}
 }
 function inboxRenderMsgs(msgs){
   const box=$('#ibx_msgs');if(!box)return;
-  const list=msgs||[];const cur=INBOX.cur||{};
+  const list=msgs||[];const cur=INBOX.cur||{};let lastDay='';
   box.innerHTML=list.map((m,i)=>{
     const out=m.direction==='out';const who=m.sender;
     const biz=BIZ_ACCOUNTS[cur.channel]||'';
@@ -1439,9 +1485,12 @@ function inboxRenderMsgs(msgs){
         ? `<div class="ibx-msgav" title="${esc(nm)}">${esc(inboxInitials(nm))}${cur.avatar?`<img src="${esc(cur.avatar)}" alt="" class="ibx-avimg" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</div>`
         : `<div class="ibx-msgav ph"></div>`;
     }
-    return `<div class="ibx-mrow ${out?'out':'in'}">${avatar}
-      <div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag}<div class="ibx-btext">${esc(m.body||'')}</div>
-        <div class="ibx-btime">${inboxRel(m.created_at)}</div>${undelNote}</div>
+    // Centered date separator when the calendar day changes (like WhatsApp/IG).
+    const day=inboxDayKey(m.created_at);let sep='';
+    if(day&&day!==lastDay){sep=`<div class="ibx-daysep"><span>${esc(inboxDayLabel(m.created_at))}</span></div>`;lastDay=day;}
+    return `${sep}<div class="ibx-mrow ${out?'out':'in'}">
+      <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag}<div class="ibx-btext">${esc(m.body||'')}</div>${undelNote}</div></div>
+      <div class="ibx-btime">${esc(inboxClock(m.created_at))}</div>
     </div>`;
   }).join('');
   box.scrollTop=box.scrollHeight;
