@@ -694,17 +694,25 @@ async function renderDashboard(){
   try{const p=new URLSearchParams(location.search).get('gcal');if(p){toast(p==='connected'?'Google Agenda gekoppeld ✓':(p==='cancelled'?'Koppeling geannuleerd':'Koppelen mislukt — probeer opnieuw'),p==='connected'?'ok':'err');history.replaceState(null,'',location.pathname+location.hash);}}catch(e){}
   gcalRender();
 }
+async function gcalConnect(btn){
+  const label=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='Doorsturen naar Google…';}
+  try{const {data,error}=await sb.functions.invoke('gcal-connect');if(error||!data||!data.url){toast((data&&data.error)||'Google-koppeling is nog niet ingesteld. Vraag de beheerder.','err');if(btn){btn.disabled=false;btn.textContent=label;}return;}location.href=data.url;}
+  catch(e){toast('Kon koppeling niet starten','err');if(btn){btn.disabled=false;btn.textContent=label;}}
+}
 async function gcalRender(){
   const box=$('#gcal_body');if(!box)return;
-  const {data,error}=await sb.from('google_calendar_connections').select('google_email,connected_at').eq('user_id',ME.id).maybeSingle();
+  const {data,error}=await sb.from('google_calendar_connections').select('id,google_email,connected_at').eq('user_id',ME.id).order('connected_at',{ascending:true});
   if(!$('#gcal_body'))return;
-  if(error&&error.code&&error.code!=='PGRST116'){box.innerHTML=`<div class="muted" style="font-size:13px">Niet beschikbaar: ${esc(error.message)}</div>`;return;}
-  if(data){
-    box.innerHTML=`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="badge green">✓ Gekoppeld</span><span style="font-size:13.5px;font-weight:600">${esc(data.google_email||'Google-account')}</span><span style="margin-left:auto"></span><button class="btn btn-ghost btn-sm" id="gcal_disc" style="color:#b91c1c">Ontkoppelen</button></div>`;
-    const d=$('#gcal_disc');if(d)d.onclick=async()=>{if(!confirm('Google Agenda ontkoppelen?'))return;const {error}=await sb.from('google_calendar_connections').delete().eq('user_id',ME.id);if(error){toast('Ontkoppelen mislukt: '+error.message,'err');return;}toast('Ontkoppeld','ok');gcalRender();};
+  if(error){box.innerHTML=`<div class="muted" style="font-size:13px">Niet beschikbaar: ${esc(error.message)}</div>`;return;}
+  const rows=data||[];
+  if(rows.length){
+    box.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">${rows.map(r=>`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--line);border-radius:9px;padding:9px 12px"><span class="badge green">✓</span><span style="font-size:13.5px;font-weight:600">${esc(r.google_email||'Google-account')}</span><span class="muted" style="font-size:12px">gekoppeld ${fmtDate(r.connected_at)}</span><span style="margin-left:auto"></span><button class="btn btn-ghost btn-sm" data-disc="${esc(r.id)}" style="color:#b91c1c">Ontkoppelen</button></div>`).join('')}</div>
+    <button class="btn btn-ghost btn-sm" id="gcal_add" style="margin-top:12px">＋ Nog een agenda koppelen</button>`;
+    box.querySelectorAll('[data-disc]').forEach(b=>b.onclick=async()=>{if(!confirm('Deze agenda ontkoppelen?'))return;const {error}=await sb.from('google_calendar_connections').delete().eq('id',b.dataset.disc);if(error){toast('Ontkoppelen mislukt: '+error.message,'err');return;}toast('Ontkoppeld','ok');gcalRender();});
+    const add=$('#gcal_add');if(add)add.onclick=()=>gcalConnect(add);
   }else{
-    box.innerHTML=`<button class="btn btn-primary" id="gcal_conn">📅 Koppel Google Agenda</button><div class="muted" style="font-size:12px;margin-top:8px">Je wordt doorgestuurd naar Google om toestemming te geven.</div>`;
-    const c=$('#gcal_conn');if(c)c.onclick=async()=>{c.disabled=true;c.textContent='Doorsturen naar Google…';try{const {data,error}=await sb.functions.invoke('gcal-connect');if(error||!data||!data.url){toast((data&&data.error)||'Google-koppeling is nog niet ingesteld. Vraag de beheerder.','err');c.disabled=false;c.textContent='📅 Koppel Google Agenda';return;}location.href=data.url;}catch(e){toast('Kon koppeling niet starten','err');c.disabled=false;c.textContent='📅 Koppel Google Agenda';}};
+    box.innerHTML=`<button class="btn btn-primary" id="gcal_conn">📅 Koppel Google Agenda</button><div class="muted" style="font-size:12px;margin-top:8px">Je wordt doorgestuurd naar Google om toestemming te geven. Je kunt later meerdere agenda's koppelen.</div>`;
+    const c=$('#gcal_conn');if(c)c.onclick=()=>gcalConnect(c);
   }
 }
 function accessSummaryHTML(){
