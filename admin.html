@@ -1721,7 +1721,7 @@ async function openPerson(p){
           ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
           ${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}
           ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
-          ${_loc?`<span class="badge grey" title="${_locSrc==='ip'?'Locatie op basis van IP (analytics)':'Land op basis van telefoonnummer — nog geen IP-sessie voor deze lead'}">📍 ${esc(_loc)}${_locSrc==='phone'?' · via telefoon':''}</span>`:''}
+          ${_loc?`<span class="badge grey" title="${_locSrc==='ip'?'Locatie bepaald uit het IP-adres van hun websitebezoek (analytics).':'Land geschat uit de landcode van het telefoonnummer. Er is geen websitebezoek (IP-sessie) aan deze lead gekoppeld, dus de exacte plaats is onbekend.'}">📍 ${esc(_loc)}${_locSrc==='phone'?' · land geschat via telefoon':''}</span>`:''}
           ${_attr?`<span class="src-badge ${_attrChan}" title="Hoe deze lead binnenkwam (eerste bezoek)">${esc(_attrLabel)}${_attrHead?' · '+esc(_attrHead):''}</span>`:''}
         </div>
       </div>
@@ -1817,7 +1817,7 @@ async function openPerson(p){
       const src=_attr.referrer_host&&!_attrBits.some(b=>b[0]==='Verwijzer')?`<div class="muted" style="font-size:12px;margin-top:6px">Eerste pagina: <b>${esc((_attr.path||'/').split('?')[0])}</b></div>`:'';
       inner=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:${rows?'10px':'2px'}"><span class="src-badge ${_attrChan}" style="font-size:12px">${esc(_attrLabel)}</span><span style="font-size:13px">${esc(human)}</span></div>${rows?`<table style="font-size:13px;border-collapse:collapse">${rows}</table>`:''}${src}${note}`;
     }else{
-      inner='<div class="muted" style="font-size:13px">Geen webverkeer gekoppeld aan deze lead — herkomst onbekend. (Leads van vóór de tracking, of ingevoerd zonder sessie.)</div>';
+      inner='<div class="muted" style="font-size:13px">Deze lead vulde een formulier in op de site, maar er is geen webverkeer-sessie aan gekoppeld — de marketingbron (bijv. Meta-ad, Google, direct) is daardoor onbekend. Dit gebeurt bij leads van vóór de tracking, of als de sessie niet meegestuurd werd.</div>';
     }
     body+=_sec('Herkomst (marketing)',inner);
   }
