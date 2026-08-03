@@ -230,8 +230,8 @@
   .pdr-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .pdr-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .pdr-fact{background:#f7faf8;border:1px solid var(--line);border-radius:9px;padding:9px 11px}
-  .pdr-fact .k{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
-  .pdr-fact .v{font-size:13.5px;font-weight:650;margin-top:2px}
+  .pdr-fact .k{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b}
+  .pdr-fact .v{font-size:14px;font-weight:700;margin-top:3px;color:#0f172a;word-break:break-word}
   .pdr-title{font-size:19px;font-weight:800;border:none;padding:2px 0;width:100%;outline:none;font-family:inherit}
   .pdr-title:focus{border-bottom:2px solid var(--brand,#0f6b4f)}
   .pipe-av{width:22px;height:22px;border-radius:50%;background:var(--brand,#0f6b4f);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:auto}
@@ -2167,7 +2167,7 @@ function pipeCardDrawer(card){
   const stages=PIPE.cur.stages||[];
   const projOpts=`<option value="">— geen —</option>`+PIPE.projects.map(n=>`<option value="${esc(n)}"${card.project===n?' selected':''}>${esc(n)}</option>`).join('');
   const teamOpts=`<option value="">— niemand —</option>`+PIPE.team.map(t=>`<option value="${t.id}"${card.assignee===t.id?' selected':''}>${esc(t.full_name||t.email)}</option>`).join('');
-  const pill=s=>`<span class="pdr-stage${s.key===card.stage?' active':''}" data-stg="${esc(s.key)}"${s.key===card.stage?` style="background:${esc(s.color||'#0f6b4f')}"`:''}>${esc(s.label)}</span>`;
+  const stageOpts=stages.map(s=>`<option value="${esc(s.key)}"${s.key===card.stage?' selected':''}>${esc(s.label)}</option>`).join('');
   const phone=en.phone||'',email=en.email||'';
   const facts=[['Budget',esc(en.budget||'—')],['Wanneer investeren',esc(en.timeline||'—')]];
   if(phone)facts.push(['Telefoon',esc(phone)]);
@@ -2184,7 +2184,7 @@ function pipeCardDrawer(card){
         <input class="pdr-title" id="pdr_title" value="${esc(card.title||'')}" ${edit?'':'readonly'} placeholder="Titel">
         <button id="pdr_x" title="Sluiten" style="font-size:22px;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted)">×</button>
       </div>
-      <div class="pdr-stages" style="margin-top:12px" id="pdr_stages">${stages.map(pill).join('')}</div>
+      <div class="pdr-field" style="margin-top:12px"><div class="pdr-label">Fase / kolom</div><select id="pdr_stage" ${edit?'':'disabled'}>${stageOpts}</select></div>
     </div>
     <div class="pdrawer-body">
       ${acts.length?`<div class="pdr-actions">${acts.join('')}</div>`:''}
@@ -2219,7 +2219,7 @@ function pipeCardDrawer(card){
     q('#pdr_proj').addEventListener('change',e=>save({project:e.target.value||null}));
     q('#pdr_ass').addEventListener('change',e=>save({assignee:e.target.value||null}));
     q('#pdr_notes').addEventListener('blur',e=>{const v=e.target.value.trim()||null;if(v!==card.notes)save({notes:v});});
-    q('#pdr_stages').querySelectorAll('[data-stg]').forEach(p=>p.onclick=async()=>{const k=p.dataset.stg;if(k===card.stage)return;const mx=Math.max(0,...PIPE.cards.filter(c=>c.stage===k).map(c=>c.position||0));await save({stage:k,position:mx+1});q('#pdr_stages').querySelectorAll('[data-stg]').forEach(x=>{const on=x.dataset.stg===k;x.classList.toggle('active',on);x.style.background=on?((stages.find(s=>s.key===k)||{}).color||'#0f6b4f'):'';});});
+    q('#pdr_stage').addEventListener('change',async e=>{const k=e.target.value;if(k===card.stage)return;const mx=Math.max(0,...PIPE.cards.filter(c=>c.stage===k).map(c=>c.position||0));await save({stage:k,position:mx+1});});
     q('#pdr_del').onclick=async()=>{if(!confirm('Deze kaart verwijderen?'))return;const {error}=await sb.from('pipeline_cards').delete().eq('id',card.id);if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}close();toast('Verwijderd','ok');loadPipelineData();};
   }
   if(q('#pdr_wa'))q('#pdr_wa').onclick=e=>{e.preventDefault();pipeWhatsapp(card.id);};
