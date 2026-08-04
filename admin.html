@@ -275,8 +275,9 @@
   .ibx-sum-btn{font-size:11px;font-weight:700;padding:3px 9px;border:1px solid #cfe8dd;border-radius:999px;background:#eaf4ef;color:#0f6b4f;cursor:pointer}
   .ibx-sum-btn:hover{background:#dceee6}
   .ibx-sum-btn:disabled{opacity:.6;cursor:default}
-  .ibx-sum-text{font-size:12.5px;line-height:1.55;color:var(--ink)}
-  .ibx-sum-text b{color:var(--ink)}
+  .ibx-sum-list{margin:0;padding-left:16px;font-size:12.5px;line-height:1.5;color:var(--ink)}
+  .ibx-sum-list li{margin:2px 0}
+  .ibx-sum-list b{color:var(--ink)}
   /* Unified multi-channel bits */
   .ibx-rchans{display:inline-flex;gap:2px;font-size:11px;line-height:1}
   .ibx-medico{opacity:.85;font-size:10.5px}
@@ -1516,10 +1517,11 @@ function cv_channels(data){
 }
 function inboxStatusText(s){return ({active:'AI actief',booked:'Afspraak',needs_human:'Overname',closed:'Gesloten',opted_out:'Afgemeld'}[s]||s);}
 function inboxSummaryHtml(s){
-  if(!s||!s.summary)return '<div class="ibx-ip-note">Nog geen samenvatting. Klik op “Genereren” om een AI-samenvatting van dit gesprek te maken.</div>';
-  const md=esc(s.summary).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
+  if(!s||!s.summary)return '<div class="ibx-ip-note">Nog geen samenvatting. Klik op “Genereren” om een korte AI-samenvatting van dit gesprek te maken.</div>';
+  const items=String(s.summary).split(/\n+/).map(l=>l.trim()).filter(Boolean)
+    .map(l=>`<li>${esc(l.replace(/^[-•*]\s*/,'')).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</li>`).join('');
   const when=s.generated_at?`<div class="muted" style="font-size:10.5px;margin-top:6px">Bijgewerkt ${new Date(s.generated_at).toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${s.message_count?' · '+s.message_count+' berichten':''}</div>`:'';
-  return `<div class="ibx-sum-text">${md}</div>${when}`;
+  return `<ul class="ibx-sum-list">${items}</ul>${when}`;
 }
 async function inboxGenSummary(gid){
   const btn=$('#ibx_sum_btn'),body=$('#ibx_sum_body');
