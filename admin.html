@@ -425,6 +425,16 @@
   .seq-enr-list{display:flex;flex-direction:column;gap:6px}
   .seq-enr{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fbfcfb;border:1px solid var(--line);border-radius:9px;padding:8px 11px}
   .seq-enr-x{background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer}
+  .seq-audience{background:#f8faf9;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0 4px}
+  .seq-aud-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .seq-rte-tools{display:flex;gap:4px;margin-bottom:0;background:#f4f6f5;border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;padding:5px}
+  .seq-rte-tools button{min-width:30px;height:28px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;font-size:13px;color:var(--ink)}
+  .seq-rte-tools button:hover{background:#e6ece9;border-color:var(--line)}
+  .seq-rte{border:1px solid var(--line);border-radius:0 0 8px 8px;padding:10px 12px;min-height:120px;font-size:14px;line-height:1.55;outline:none;background:#fff}
+  .seq-rte:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.12)}
+  .seq-rte:empty:before{content:attr(data-ph);color:#9aa5a0}
+  .seq-rte p{margin:0 0 10px}
+  .seq-rte ul,.seq-rte ol{margin:0 0 10px;padding-left:20px}
   .pipe-add{margin:0 8px 8px;padding:7px;border:1px dashed #c7cfcb;border-radius:9px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;width:calc(100% - 16px)}
   .pipe-add:hover{background:#eef2f0;color:var(--ink,#111)}
   .pc-form label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:2px}
@@ -481,10 +491,10 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 /* Permission pages (match adm_permissions.page keys) */
 const PAGES = [
   {key:'inbox',    label:'Inbox',                  icon:'💬'},
+  {key:'pipeline', label:'Pipeline',               icon:'🧭'},
   {key:'analytics',label:'Analytics',              icon:'📊'},
   {key:'revenue',  label:'Revenue',                icon:'💰'},
   {key:'leads',    label:'Leads / CRM',            icon:'📇'},
-  {key:'pipeline', label:'Pipeline',               icon:'🧭'},
   {key:'sequences',label:'E-mail sequences',       icon:'📧'},
   {key:'webinars', label:'Webinar',                icon:'🎥'},
   {key:'projects', label:'Projects',               icon:'🏗️'},
@@ -3353,8 +3363,12 @@ function randPw(){const c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456
 /* ================= E-MAIL SEQUENCES ================= */
 let SEQ={list:[],cur:null};
 function seqEsc(s){return esc(s);}
-function seqPlainHtml(body){const paras=String(body||'').split(/\n{2,}/).map(p=>`<p style="margin:0 0 14px">${esc(p).replace(/\n/g,'<br>')}</p>`).join('');return `<div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px;line-height:1.6;color:#1a2b23">${paras}</div>`;}
-function seqNewsletterHtml(subject,body){const paras=String(body||'').split(/\n{2,}/).map(p=>`<p style="margin:0 0 16px">${esc(p).replace(/\n/g,'<br>')}</p>`).join('');return `<div style="background:#f4f6f5;padding:20px"><div style="max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e6ebe8"><div style="background:#0f6b4f;padding:18px 24px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;font-size:17px;font-weight:800">UTAMA <span style="font-weight:500;opacity:.85">Bali</span></div><div style="padding:24px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px;line-height:1.65;color:#12211c">${paras}</div><div style="padding:16px 24px;border-top:1px solid #eef1f0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;color:#8a978f">UTAMA Bali · investeringsvilla's op Bali · invest.utamabali.com</div></div></div>`;}
+// A body can be rich HTML (from the WYSIWYG) or plain text (old/plain-typed).
+function seqIsHtml(b){return /<(p|br|ul|ol|li|strong|b|em|i|h[1-6]|a|div|span)\b/i.test(String(b||''));}
+function seqBodyInner(b){b=String(b||'');if(seqIsHtml(b))return b;return b.split(/\n{2,}/).map(p=>`<p style="margin:0 0 14px">${esc(p).replace(/\n/g,'<br>')}</p>`).join('');}
+function seqBodyToEditorHtml(b){b=String(b||'');if(seqIsHtml(b))return b;if(!b.trim())return '';return b.split(/\n{2,}/).map(p=>`<p>${esc(p).replace(/\n/g,'<br>')}</p>`).join('');}
+function seqPlainHtml(inner){return `<div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px;line-height:1.6;color:#1a2b23">${inner}</div>`;}
+function seqNewsletterHtml(subject,inner){return `<div style="background:#f4f6f5;padding:20px"><div style="max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e6ebe8"><div style="background:#0f6b4f;padding:18px 24px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;font-size:17px;font-weight:800">UTAMA <span style="font-weight:500;opacity:.85">Bali</span></div><div style="padding:24px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px;line-height:1.65;color:#12211c">${inner}</div><div style="padding:16px 24px;border-top:1px solid #eef1f0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;color:#8a978f">UTAMA Bali · investeringsvilla's op Bali · invest.utamabali.com</div></div></div>`;}
 async function renderSequences(){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Sequences laden…</div>';
   const {data,error}=await sb.rpc('seq_list');
@@ -3386,8 +3400,24 @@ async function seqOpen(id){
     if(error||!data||!data.sequence){v.innerHTML=`<div class="panel"><div class="empty" style="padding:20px">Kon sequence niet laden.</div></div>`;return;}
     seq=data.sequence;steps=(data.steps&&data.steps.length)?data.steps:steps;enrollments=data.enrollments||[];
   }
+  if(!SEQ.opts){
+    const [bR,tR,pR]=await Promise.all([
+      sb.from('leads').select('budget').not('budget','is',null).limit(2000),
+      sb.from('leads').select('timeline').not('timeline','is',null).limit(2000),
+      sb.from('projects').select('name').order('sort_order',{ascending:true})
+    ]);
+    SEQ.opts={
+      budget:[...new Set((bR.data||[]).map(x=>x.budget).filter(Boolean))],
+      timeline:[...new Set((tR.data||[]).map(x=>x.timeline).filter(Boolean))],
+      projects:(pR.data||[]).map(x=>x.name).filter(Boolean)
+    };
+  }
   SEQ.cur={id:id||null,seq,steps,enrollments};
   seqEditorView();
+}
+function seqOptSelect(id,list,cur,allLabel){
+  const opts=`<option value="">${esc(allLabel)}</option>`+(list||[]).map(v=>`<option value="${esc(v)}"${v===cur?' selected':''}>${esc(v)}</option>`).join('');
+  return `<select id="${id}" class="pc-in">${opts}</select>`;
 }
 function seqStepCard(st,i){
   const design=st.design==='newsletter'?'newsletter':'plain';
@@ -3404,7 +3434,15 @@ function seqStepCard(st,i){
       <button type="button" class="seq-del" title="Verwijderen">×</button>
     </div>
     <input class="seq-subj pc-in" placeholder="Onderwerp" value="${esc(st.subject||'')}">
-    <textarea class="seq-body pc-in" rows="6" placeholder="E-mailinhoud… gebruik {naam} en {project} voor personalisatie">${esc(st.body||'')}</textarea>
+    <div class="seq-rte-tools">
+      <button type="button" data-cmd="bold" title="Vet"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Cursief"><i>I</i></button>
+      <button type="button" data-cmd="insertUnorderedList" title="Opsomming">• Lijst</button>
+      <button type="button" data-cmd="insertOrderedList" title="Genummerd">1. Lijst</button>
+      <button type="button" data-cmd="createLink" title="Link invoegen">🔗</button>
+      <button type="button" data-cmd="removeFormat" title="Opmaak wissen">✕</button>
+    </div>
+    <div class="seq-body seq-rte" contenteditable="true" data-ph="E-mailinhoud… gebruik {naam} en {project} voor personalisatie">${seqBodyToEditorHtml(st.body)}</div>
   </div>`;
 }
 function seqEditorView(){
@@ -3424,6 +3462,15 @@ function seqEditorView(){
         <label class="seq-check"><input type="checkbox" id="seq_enabled" ${s.enabled?'checked':''}> Ingeschakeld (verstuurt)</label>
         <label class="seq-check"><input type="checkbox" id="seq_stop" ${s.stop_on_reply!==false?'checked':''}> Stop zodra de lead reageert</label>
       </div>
+      <div id="seq_audience" class="seq-audience" style="${s.trigger==='new_lead'?'':'display:none'}">
+        <div class="seq-h" style="margin-bottom:8px">Wie stroomt automatisch in?</div>
+        <div class="muted" style="font-size:11.5px;margin-bottom:8px">Laat op “Alle” staan voor élke nieuwe lead, of filter gericht op project, budget of timing. Filters werken samen (én-én).</div>
+        <div class="seq-aud-grid">
+          <div><label class="pdr-label">Project</label>${seqOptSelect('seq_f_project',SEQ.opts.projects,s.filter_project||'','Alle projecten')}</div>
+          <div><label class="pdr-label">Budget</label>${seqOptSelect('seq_f_budget',SEQ.opts.budget,s.filter_budget||'','Alle budgetten')}</div>
+          <div><label class="pdr-label">Timing</label>${seqOptSelect('seq_f_timeline',SEQ.opts.timeline,s.filter_timeline||'','Alle timings')}</div>
+        </div>
+      </div>
       <div class="seq-h">E-mails in de reeks</div>
       <div id="seq_steps">${stepsHtml}</div>
       ${edit?`<button class="btn btn-ghost btn-sm" id="seq_addstep" style="margin-top:8px">＋ E-mail toevoegen</button>`:''}
@@ -3434,6 +3481,7 @@ function seqEditorView(){
   </div>`;
   $('#seq_back').onclick=()=>renderSequences();
   if(edit){
+    const tg=$('#seq_trigger');if(tg)tg.onchange=()=>{const a=$('#seq_audience');if(a)a.style.display=(tg.value==='new_lead')?'':'none';};
     $('#seq_addstep').onclick=()=>{const wrap=$('#seq_steps');const div=document.createElement('div');div.innerHTML=seqStepCard({day_offset:seqNextDay(),subject:'',body:'',design:'plain'},wrap.children.length);const node=div.firstElementChild;wrap.appendChild(node);seqWireStep(node);};
     $('#seq_save').onclick=seqSaveCurrent;
     const rn=$('#seq_run');if(rn)rn.onclick=seqRunNow;
@@ -3447,19 +3495,32 @@ function seqNextDay(){const days=[...document.querySelectorAll('#seq_steps .seq-
 function seqWireStep(node){
   node.querySelector('.seq-del').onclick=()=>{node.remove();};
   node.querySelectorAll('.seq-dbtn').forEach(b=>b.onclick=()=>{node.dataset.design=b.dataset.design;node.querySelectorAll('.seq-dbtn').forEach(x=>x.classList.toggle('on',x.dataset.design===b.dataset.design));});
-  node.querySelector('.seq-prev').onclick=()=>{const subj=node.querySelector('.seq-subj').value;const body=node.querySelector('.seq-body').value;const design=node.dataset.design;seqPreview(subj,body,design);};
+  const rte=node.querySelector('.seq-rte');
+  node.querySelectorAll('.seq-rte-tools button').forEach(btn=>{
+    btn.addEventListener('mousedown',e=>e.preventDefault()); // keep the text selection
+    btn.onclick=()=>{const cmd=btn.dataset.cmd;rte.focus();
+      if(cmd==='createLink'){const url=prompt('Link-URL:','https://');if(url)document.execCommand('createLink',false,url);}
+      else{document.execCommand(cmd,false,null);}};
+  });
+  node.querySelector('.seq-prev').onclick=()=>{const subj=node.querySelector('.seq-subj').value;const body=rte.innerHTML;const design=node.dataset.design;seqPreview(subj,body,design);};
 }
 function seqCollectSteps(){
-  return [...document.querySelectorAll('#seq_steps .seq-step')].map(node=>({
-    day_offset:String(Number(node.querySelector('.seq-day').value)||0),
-    subject:node.querySelector('.seq-subj').value,
-    body:node.querySelector('.seq-body').value,
-    design:node.dataset.design==='newsletter'?'newsletter':'plain'
-  }));
+  return [...document.querySelectorAll('#seq_steps .seq-step')].map(node=>{
+    const rte=node.querySelector('.seq-rte');
+    let html=(rte?rte.innerHTML:'').trim();
+    if(html==='<br>'||html==='<div><br></div>'||html==='<p><br></p>')html='';
+    return {
+      day_offset:String(Number(node.querySelector('.seq-day').value)||0),
+      subject:node.querySelector('.seq-subj').value,
+      body:html,
+      design:node.dataset.design==='newsletter'?'newsletter':'plain'
+    };
+  });
 }
 async function seqSaveCurrent(){
   const c=SEQ.cur;const btn=$('#seq_save');if(btn){btn.disabled=true;btn.textContent='Opslaan…';}
-  const payload={p_id:c.id,p_name:$('#seq_name').value.trim(),p_trigger:$('#seq_trigger').value,p_enabled:$('#seq_enabled').checked,p_stop_on_reply:$('#seq_stop').checked,p_from_name:'UTAMA Bali',p_from_email:'info@utamabali.com',p_steps:seqCollectSteps()};
+  const payload={p_id:c.id,p_name:$('#seq_name').value.trim(),p_trigger:$('#seq_trigger').value,p_enabled:$('#seq_enabled').checked,p_stop_on_reply:$('#seq_stop').checked,p_from_name:'UTAMA Bali',p_from_email:'info@utamabali.com',p_steps:seqCollectSteps(),
+    p_filter_project:($('#seq_f_project')&&$('#seq_f_project').value)||'',p_filter_budget:($('#seq_f_budget')&&$('#seq_f_budget').value)||'',p_filter_timeline:($('#seq_f_timeline')&&$('#seq_f_timeline').value)||''};
   const {data,error}=await sb.rpc('seq_save',payload);
   if(btn){btn.disabled=false;btn.textContent='Opslaan';}
   if(error||(data&&data.error)){toast('Opslaan mislukt: '+esc((error&&error.message)||data.error),'err');return;}
@@ -3481,7 +3542,8 @@ function seqPreview(subject,body,design){
   const vars={naam:'Steven',project:'The Maison'};
   const rb=String(body||'').replace(/\{naam\}/g,vars.naam).replace(/\{voornaam\}/g,vars.naam).replace(/\{project\}/g,vars.project);
   const rs=String(subject||'').replace(/\{naam\}/g,vars.naam).replace(/\{project\}/g,vars.project);
-  const html=design==='newsletter'?seqNewsletterHtml(rs,rb):seqPlainHtml(rb);
+  const inner=seqBodyInner(rb);
+  const html=design==='newsletter'?seqNewsletterHtml(rs,inner):seqPlainHtml(inner);
   const root=document.createElement('div');root.id='seqprev_root';
   root.innerHTML=`<div class="chatpop-back open"></div><div class="chatpop open" style="width:min(680px,94vw);height:min(720px,88vh)"><div class="chatpop-head"><div class="chatpop-title">Preview · Onderwerp: ${esc(rs||'(leeg)')}</div><button id="seqprev_x" style="font-size:22px;background:none;border:none;cursor:pointer;color:var(--muted)">×</button></div><div style="flex:1;overflow:auto;background:#f4f6f5">${html}</div></div>`;
   document.body.appendChild(root);
