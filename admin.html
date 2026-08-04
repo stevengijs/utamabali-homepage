@@ -408,8 +408,14 @@
   .seq-badge.on{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
   .seq-edit{padding:16px}
   .seq-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .seq-flags{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 4px}
+  .seq-flags{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:12px 0 4px}
   .seq-check{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink)}
+  .seq-toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:7px 14px;border-radius:999px;border:1px solid;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+  .seq-toggle-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .seq-toggle.on{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+  .seq-toggle.on .seq-toggle-dot{background:#10b981}
+  .seq-toggle.off{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+  .seq-toggle.off .seq-toggle-dot{background:#ef4444}
   .seq-h{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
   .seq-step{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fbfcfb}
   .seq-step-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
@@ -3459,7 +3465,7 @@ function seqEditorView(){
         <div><label class="pdr-label">Instroom</label><select id="seq_trigger" class="pc-in"><option value="manual"${s.trigger==='manual'?' selected':''}>Handmatig toevoegen</option><option value="new_lead"${s.trigger==='new_lead'?' selected':''}>Automatisch bij nieuwe lead</option></select></div>
       </div>
       <div class="seq-flags">
-        <label class="seq-check"><input type="checkbox" id="seq_enabled" ${s.enabled?'checked':''}> Ingeschakeld (verstuurt)</label>
+        <button type="button" id="seq_enabled_btn" class="seq-toggle ${s.enabled?'on':'off'}" data-on="${s.enabled?'1':'0'}" title="Klik om aan/uit te zetten"><span class="seq-toggle-dot"></span>${s.enabled?'Actief':'Inactief'}</button>
         <label class="seq-check"><input type="checkbox" id="seq_stop" ${s.stop_on_reply!==false?'checked':''}> Stop zodra de lead reageert</label>
       </div>
       <div id="seq_audience" class="seq-audience" style="${s.trigger==='new_lead'?'':'display:none'}">
@@ -3482,6 +3488,7 @@ function seqEditorView(){
   $('#seq_back').onclick=()=>renderSequences();
   if(edit){
     const tg=$('#seq_trigger');if(tg)tg.onchange=()=>{const a=$('#seq_audience');if(a)a.style.display=(tg.value==='new_lead')?'':'none';};
+    const enb=$('#seq_enabled_btn');if(enb)enb.onclick=()=>{const on=enb.dataset.on!=='1';enb.dataset.on=on?'1':'0';enb.classList.toggle('on',on);enb.classList.toggle('off',!on);enb.innerHTML='<span class="seq-toggle-dot"></span>'+(on?'Actief':'Inactief');};
     $('#seq_addstep').onclick=()=>{const wrap=$('#seq_steps');const div=document.createElement('div');div.innerHTML=seqStepCard({day_offset:seqNextDay(),subject:'',body:'',design:'plain'},wrap.children.length);const node=div.firstElementChild;wrap.appendChild(node);seqWireStep(node);};
     $('#seq_save').onclick=seqSaveCurrent;
     const rn=$('#seq_run');if(rn)rn.onclick=seqRunNow;
@@ -3519,7 +3526,7 @@ function seqCollectSteps(){
 }
 async function seqSaveCurrent(){
   const c=SEQ.cur;const btn=$('#seq_save');if(btn){btn.disabled=true;btn.textContent='Opslaan…';}
-  const payload={p_id:c.id,p_name:$('#seq_name').value.trim(),p_trigger:$('#seq_trigger').value,p_enabled:$('#seq_enabled').checked,p_stop_on_reply:$('#seq_stop').checked,p_from_name:'UTAMA Bali',p_from_email:'info@utamabali.com',p_steps:seqCollectSteps(),
+  const payload={p_id:c.id,p_name:$('#seq_name').value.trim(),p_trigger:$('#seq_trigger').value,p_enabled:($('#seq_enabled_btn')&&$('#seq_enabled_btn').dataset.on==='1'),p_stop_on_reply:$('#seq_stop').checked,p_from_name:'UTAMA Bali',p_from_email:'info@utamabali.com',p_steps:seqCollectSteps(),
     p_filter_project:($('#seq_f_project')&&$('#seq_f_project').value)||'',p_filter_budget:($('#seq_f_budget')&&$('#seq_f_budget').value)||'',p_filter_timeline:($('#seq_f_timeline')&&$('#seq_f_timeline').value)||''};
   const {data,error}=await sb.rpc('seq_save',payload);
   if(btn){btn.disabled=false;btn.textContent='Opslaan';}
