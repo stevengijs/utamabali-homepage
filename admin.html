@@ -2765,6 +2765,20 @@ function wirePipeline(){
   const fa=$('#pipe_fass');if(fa)fa.onchange=()=>{PIPE.filters.assignee=fa.value;drawPipeline();};
   const vw=$('#pipe_view');if(vw)vw.onchange=()=>{const found=PIPE.views.find(x=>x.id===vw.value);PIPE.filters=found?Object.assign({project:'',assignee:'',q:''},found.filters||{}):{project:'',assignee:'',q:''};drawPipeline();};
   const board=$('#pipe_board');if(!board)return;
+  // Auto-scroll the board horizontally while dragging a card near either edge,
+  // so you can reach the last column even when it's off-screen.
+  (function(){
+    let raf=null,dir=0;const EDGE=90,SPEED=22;
+    const step=()=>{if(dir!==0){board.scrollLeft+=dir*SPEED;raf=requestAnimationFrame(step);}else raf=null;};
+    board.addEventListener('dragover',e=>{
+      const r=board.getBoundingClientRect();
+      if(e.clientX>r.right-EDGE)dir=1;else if(e.clientX<r.left+EDGE)dir=-1;else dir=0;
+      if(dir!==0&&!raf)raf=requestAnimationFrame(step);
+    });
+    const stop=()=>{dir=0;if(raf){cancelAnimationFrame(raf);raf=null;}};
+    board.addEventListener('drop',stop);
+    board.addEventListener('dragend',stop,true);
+  })();
   board.querySelectorAll('.pipe-card').forEach(cardEl=>{
     cardEl.addEventListener('dragstart',e=>{PIPE.dragId=cardEl.dataset.id;cardEl.classList.add('dragging');try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',cardEl.dataset.id);}catch(x){}});
     cardEl.addEventListener('dragend',()=>{cardEl.classList.remove('dragging');board.querySelectorAll('.pipe-cards').forEach(z=>z.classList.remove('drag-over'));});
