@@ -421,6 +421,19 @@
   .seq-toggle.on .seq-toggle-dot{background:#10b981}
   .seq-toggle.off{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
   .seq-toggle.off .seq-toggle-dot{background:#ef4444}
+  .pm-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+  .pm-tile{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+  .pm-imgwrap{aspect-ratio:4/3;background:#f1f5f9;overflow:hidden}
+  .pm-imgwrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .pm-tools{display:flex;align-items:center;gap:6px;padding:7px 8px;border-top:1px solid var(--line)}
+  .pm-tools button{border:1px solid var(--line);background:#fff;border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:12px;line-height:1}
+  .pm-tools button:disabled{opacity:.35;cursor:default}
+  .pm-del{color:#b91c1c}
+  .pm-ord{font-size:11px;font-weight:700;color:var(--muted);min-width:16px;text-align:center}
+  .pm-cap{width:100%;border:0;border-top:1px solid var(--line);padding:7px 9px;font-size:12px;outline:none}
+  .pm-cap-ro{padding:7px 9px;font-size:12px;color:var(--ink)}
+  .pm-meta{padding:5px 9px;font-size:10.5px;color:var(--muted);border-top:1px solid var(--line)}
   .seq-h{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
   .seq-step{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fbfcfb}
   .seq-step-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
@@ -2007,6 +2020,111 @@ async function delRecord(resKey,id){
   const _ce=$('#cnt_'+resKey);if(_ce)_ce.textContent=_cache[resKey].length;drawTable(resKey);
 }
 
+/* ---- PROJECT RENDERS / FOTO'S (per project, met volgorde + auto-compressie) ---- */
+let PMEDIA={projectId:null,items:[]};
+const PM_BUCKET='project-media';
+function pmPublicUrl(path){try{return sb.storage.from(PM_BUCKET).getPublicUrl(path).data.publicUrl;}catch(e){return '';}}
+function pmBytes(n){if(n==null)return '';const u=['B','KB','MB','GB'];let i=0,v=Number(n);while(v>=1024&&i<u.length-1){v/=1024;i++;}return v.toFixed(v<10&&i>0?1:0)+' '+u[i];}
+// Verklein grote beelden client-side (canvas) zodat je geen 50MB-renders hoeft te uploaden.
+async function pmCompress(file){
+  if(!/^image\//.test(file.type))return {blob:file,width:null,height:null,note:'geen afbeelding'};
+  try{
+    const bmp=await createImageBitmap(file);
+    const maxDim=2560;const w=bmp.width,h=bmp.height;
+    const scale=Math.min(1,maxDim/Math.max(w,h));
+    const cw=Math.max(1,Math.round(w*scale)),ch=Math.max(1,Math.round(h*scale));
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+    cv.getContext('2d').drawImage(bmp,0,0,cw,ch);
+    const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.82));
+    if(bmp.close)bmp.close();
+    if(blob&&blob.size<file.size)return {blob,width:cw,height:ch};
+    return {blob:file,width:w,height:h};
+  }catch(e){return {blob:file,width:null,height:null};}
+}
+function projMediaInit(projectId){PMEDIA={projectId,items:[]};projMediaReload(projectId);}
+async function projMediaReload(projectId){
+  const {data,error}=await sb.from('project_media').select('*').eq('project_id',projectId).order('sort_order',{ascending:true});
+  PMEDIA={projectId,items:error?[]:(data||[])};
+  projMediaRender();
+}
+function projMediaRender(){
+  const el=$('#proj_media');if(!el)return;
+  // Projectvelden zijn read-only (sync via Claude), maar renders/foto's mogen admins beheren.
+  const canManage=(typeof canEdit==='function'&&canEdit('projects'))||(typeof ME!=='undefined'&&ME&&ME.is_admin);
+  const items=PMEDIA.items||[];
+  const tiles=items.map((m,i)=>`
+    <div class="pm-tile" data-id="${m.id}">
+      <div class="pm-imgwrap"><img src="${esc(pmPublicUrl(m.path))}" loading="lazy" alt=""></div>
+      ${canManage?`<div class="pm-tools">
+        <button class="pm-mv" data-mv="-1" title="Naar voren" ${i===0?'disabled':''}>◀</button>
+        <span class="pm-ord">${i+1}</span>
+        <button class="pm-mv" data-mv="1" title="Naar achter" ${i===items.length-1?'disabled':''}>▶</button>
+        <span style="flex:1"></span>
+        <button class="pm-del" title="Verwijderen">🗑</button>
+      </div>
+      <input class="pm-cap" value="${esc(m.caption||'')}" placeholder="Bijschrift (optioneel)">`:(m.caption?`<div class="pm-cap-ro">${esc(m.caption)}</div>`:'')}
+      <div class="pm-meta">${m.width&&m.height?m.width+'×'+m.height+' · ':''}${pmBytes(m.bytes)}</div>
+    </div>`).join('');
+  el.innerHTML=_sec(`Renders &amp; foto's (${items.length})`,
+    `${canManage?`<div class="pm-bar">
+        <button class="btn btn-sm" id="pm_upl_btn">⬆ Renders / foto's uploaden</button>
+        <input type="file" id="pm_upl_in" accept="image/*" multiple style="display:none">
+        <span class="muted" style="font-size:11.5px">Grote renders worden automatisch verkleind — je hoeft niets vooraf aan te passen.</span>
+      </div>`:''}
+     <div id="pm_prog" class="muted" style="font-size:12px;margin:4px 0"></div>
+     <div class="pm-grid">${tiles||'<div class="muted" style="font-size:13px;padding:6px 0">Nog geen renders. Upload de eerste hierboven.</div>'}</div>`);
+  if(canManage){
+    const inp=$('#pm_upl_in'),btn=$('#pm_upl_btn');
+    if(btn)btn.onclick=()=>inp&&inp.click();
+    if(inp)inp.onchange=()=>{const fs=Array.from(inp.files||[]);inp.value='';if(fs.length)projMediaUpload(PMEDIA.projectId,fs);};
+    el.querySelectorAll('.pm-tile').forEach(t=>{
+      const id=t.dataset.id;
+      t.querySelectorAll('.pm-mv').forEach(b=>b.onclick=()=>projMediaMove(id,Number(b.dataset.mv)));
+      const del=t.querySelector('.pm-del');if(del)del.onclick=()=>projMediaDelete(id);
+      const cap=t.querySelector('.pm-cap');if(cap)cap.addEventListener('blur',()=>projMediaCaption(id,cap.value));
+    });
+  }
+}
+async function projMediaUpload(projectId,files){
+  const prog=$('#pm_prog');let done=0,fail=0;
+  let base=(PMEDIA.items||[]).reduce((mx,x)=>Math.max(mx,x.sort_order||0),-1)+1;
+  for(const file of files){
+    if(prog)prog.textContent=`Bezig… (${done+1}/${files.length}) ${file.name}`;
+    const {blob,width,height}=await pmCompress(file);
+    const ext=blob.type==='image/jpeg'?'jpg':((file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin');
+    const path=`${projectId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const up=await sb.storage.from(PM_BUCKET).upload(path,blob,{contentType:blob.type||'application/octet-stream',upsert:false});
+    if(up.error){fail++;toast('Upload mislukt: '+up.error.message,'err');continue;}
+    const ins=await sb.from('project_media').insert({project_id:projectId,path,bytes:blob.size,width,height,sort_order:base++});
+    if(ins.error){fail++;toast('Opslaan mislukt: '+ins.error.message,'err');continue;}
+    done++;
+  }
+  if(prog)prog.textContent='';
+  if(done)toast(`${done} render${done===1?'':'s'} toegevoegd${fail?` · ${fail} mislukt`:''}`,fail?'err':'ok');
+  projMediaReload(projectId);
+}
+async function projMediaMove(id,dir){
+  const items=(PMEDIA.items||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const i=items.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=items.length)return;
+  const tmp=items[i];items[i]=items[j];items[j]=tmp;
+  const ups=[];items.forEach((it,idx)=>{if(it.sort_order!==idx){it.sort_order=idx;ups.push(sb.from('project_media').update({sort_order:idx}).eq('id',it.id));}});
+  PMEDIA.items=items;projMediaRender();
+  const rs=await Promise.all(ups);if(rs.some(r=>r&&r.error))toast('Volgorde opslaan mislukt','err');
+}
+async function projMediaDelete(id){
+  const m=(PMEDIA.items||[]).find(x=>x.id===id);if(!m)return;
+  if(!confirm('Deze render verwijderen?'))return;
+  await sb.storage.from(PM_BUCKET).remove([m.path]);
+  const {error}=await sb.from('project_media').delete().eq('id',id);
+  if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}
+  toast('Verwijderd','ok');projMediaReload(PMEDIA.projectId);
+}
+async function projMediaCaption(id,val){
+  const m=(PMEDIA.items||[]).find(x=>x.id===id);if(!m||(m.caption||'')===(val||''))return;
+  const {error}=await sb.from('project_media').update({caption:val||null}).eq('id',id);
+  if(error){toast('Bijschrift opslaan mislukt','err');return;}
+  m.caption=val||null;
+}
 async function openForm(resKey,row){
   const R=RES[resKey];const ro=!!R.readOnly;const isEdit=!!row;row=row||{};
   const editFields=R.fields.filter(f=>!f.ro||isEdit);
@@ -2029,8 +2147,10 @@ async function openForm(resKey,row){
   });
   body+='</div>';
   if(ro){
-    if(resKey==='projects'&&isEdit)body+=`<div id="proj_purchases" style="margin-top:20px"><div class="muted" style="font-size:13px">Aankopen laden…</div></div>`;
+    if(resKey==='projects'&&isEdit)body+=`<div id="proj_media" style="margin-top:22px"><div class="muted" style="font-size:13px">Renders laden…</div></div>`;
+    if(resKey==='projects'&&isEdit)body+=`<div id="proj_purchases" style="margin-top:22px"><div class="muted" style="font-size:13px">Aankopen laden…</div></div>`;
     showDetail(`${esc(R.single)}${row[R.fields[0].k]?' · '+esc(row[R.fields[0].k]):''}`,body);
+    if(resKey==='projects'&&isEdit)projMediaInit(row.id);
     if(resKey==='projects'&&isEdit){
       const {data:pp}=await sb.from('purchases').select('buyer_name,unit,price,status,contract_signed_at,created_at').eq('project',row.name).order('contract_signed_at',{ascending:false,nullsFirst:false});
       const el=$('#proj_purchases');
