@@ -373,6 +373,15 @@
   .pipe-card-chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
   .pipe-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid #eef1f0}
   .pipe-foot-right{display:inline-flex;align-items:center;gap:7px;margin-left:auto}
+  .pipe-chat{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#eef4ff;color:#1e40af;border:1px solid #cfe0ff;cursor:pointer}
+  .pipe-chat:hover{background:#e0ebff}
+  /* Chat popup (from a pipeline card) */
+  .chatpop-back{position:fixed;inset:0;background:rgba(15,23,42,.32);opacity:0;transition:opacity .18s;z-index:60}
+  .chatpop-back.open{opacity:1}
+  .chatpop{position:fixed;z-index:61;top:50%;left:50%;transform:translate(-50%,-46%);width:min(520px,94vw);height:min(640px,86vh);background:var(--panel,#fff);border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden;opacity:0;transition:opacity .18s,transform .18s}
+  .chatpop.open{opacity:1;transform:translate(-50%,-50%)}
+  .chatpop-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .chatpop-title{font-weight:700;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pipe-add{margin:0 8px 8px;padding:7px;border:1px dashed #c7cfcb;border-radius:9px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;width:calc(100% - 16px)}
   .pipe-add:hover{background:#eef2f0;color:var(--ink,#111)}
   .pc-form label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:2px}
@@ -2669,12 +2678,15 @@ async function pipeLoadEnrichment(){
   PIPE.enrich={};
   const ids=[...new Set(PIPE.cards.map(c=>c.contact_id).filter(Boolean))];
   if(!ids.length)return;
-  const [ctR,ldR]=await Promise.all([
+  const [ctR,ldR,chR]=await Promise.all([
     sb.from('contacts').select('id,name,phone,email').in('id',ids),
     sb.from('leads').select('contact_id,budget,timeline,project,created_at').in('contact_id',ids).order('created_at',{ascending:false}),
+    sb.from('inbox_conversations').select('contact_id,channel,last_message_at').in('contact_id',ids),
   ]);
   (ctR.data||[]).forEach(ct=>{PIPE.enrich[ct.id]={name:ct.name,phone:ct.phone,email:ct.email};});
   (ldR.data||[]).forEach(l=>{if(!l.contact_id)return;const e=PIPE.enrich[l.contact_id]||(PIPE.enrich[l.contact_id]={});if(!e.budget&&l.budget)e.budget=l.budget;if(!e.timeline&&l.timeline)e.timeline=l.timeline;if(!e.project&&l.project)e.project=l.project;});
+  // Chat activity per contact: latest message time + which channels are in play.
+  (chR.data||[]).forEach(cv=>{if(!cv.contact_id)return;const e=PIPE.enrich[cv.contact_id]||(PIPE.enrich[cv.contact_id]={});const ch=e.chat||(e.chat={at:null,channels:[]});if(cv.channel&&!ch.channels.includes(cv.channel))ch.channels.push(cv.channel);if(cv.last_message_at&&(!ch.at||cv.last_message_at>ch.at))ch.at=cv.last_message_at;});
 }
 function pipeTeamName(id){const t=PIPE.team.find(x=>x.id===id);return t?(t.full_name||t.email||'—'):'';}
 function pipeInitials(id){const n=pipeTeamName(id);if(!n)return '?';return n.split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();}
@@ -2694,12 +2706,13 @@ function pipeCardHtml(c){
   const tl=en.timeline?`<span class="pipe-chip tl" title="Wanneer investeren">⏱ ${esc(en.timeline)}</span>`:'';
   const val=(c.value!=null&&c.value!=='')?`<span class="pipe-chip val">${anMoney(c.value)}</span>`:'';
   const crm=c.contact_id?`<span class="pipe-chip crm" data-crm="${esc(c.contact_id)}" title="Open in CRM">CRM ↗</span>`:'';
+  const chat=(c.contact_id&&en.chat&&en.chat.at)?`<span class="pipe-chat" data-chat="${esc(c.contact_id)}" title="Laatste chat: ${esc(inboxRel(en.chat.at))} — klik om te openen">${(en.chat.channels||[]).map(x=>(INBOX_CH[x]||INBOX_CH.instagram).icon).join('')||'💬'} ${esc(inboxRel(en.chat.at))}</span>`:'';
   const wa=_waDigits(en.phone)?`<a class="pipe-wa" data-wa="${esc(c.id)}" title="Stuur WhatsApp-bericht">${WA_SVG}</a>`:'';
   const who=c.assignee?`<span class="pipe-av" title="Eigenaar: ${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
   const warm=c.contact_id?warmthBadge(WARMTH[c.contact_id]):'';
   const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(c.title||'(naamloos)')}</div>${warm}</div>`;
   const chips=`${proj}${budget}${tl}`;
-  const foot=(crm||wa||who||val)?`<div class="pipe-card-foot"><span style="display:inline-flex;gap:5px;align-items:center">${val}${crm}</span><span class="pipe-foot-right">${wa}${who}</span></div>`:'';
+  const foot=(crm||wa||who||val||chat)?`<div class="pipe-card-foot"><span style="display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap">${val}${crm}${chat}</span><span class="pipe-foot-right">${wa}${who}</span></div>`:'';
   return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}">${titleRow}${chips.trim()?`<div class="pipe-card-chips">${chips}</div>`:''}${foot}</div>`;
 }
 function drawPipeline(){
@@ -2755,9 +2768,10 @@ function wirePipeline(){
   board.querySelectorAll('.pipe-card').forEach(cardEl=>{
     cardEl.addEventListener('dragstart',e=>{PIPE.dragId=cardEl.dataset.id;cardEl.classList.add('dragging');try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',cardEl.dataset.id);}catch(x){}});
     cardEl.addEventListener('dragend',()=>{cardEl.classList.remove('dragging');board.querySelectorAll('.pipe-cards').forEach(z=>z.classList.remove('drag-over'));});
-    cardEl.addEventListener('click',e=>{if(e.target.closest('[data-crm]'))return;pipeOpenCard(cardEl.dataset.id);});
+    cardEl.addEventListener('click',e=>{if(e.target.closest('[data-crm]')||e.target.closest('[data-chat]'))return;pipeOpenCard(cardEl.dataset.id);});
   });
   board.querySelectorAll('.pipe-chip.crm[data-crm]').forEach(ch=>ch.addEventListener('click',e=>{e.stopPropagation();openContactById(ch.dataset.crm);}));
+  board.querySelectorAll('.pipe-chat[data-chat]').forEach(ch=>ch.addEventListener('click',e=>{e.stopPropagation();pipeChatPopup(ch.dataset.chat);}));
   board.querySelectorAll('.pipe-wa[data-wa]').forEach(a=>{a.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();pipeWhatsapp(a.dataset.wa);});a.setAttribute('draggable','false');});
   board.querySelectorAll('.pipe-cards').forEach(zone=>{
     zone.addEventListener('dragover',e=>{if(PIPE.colDrag)return;e.preventDefault();zone.classList.add('drag-over');try{e.dataTransfer.dropEffect='move';}catch(x){}});
@@ -2829,6 +2843,39 @@ async function pipeColDrop(col,e){
 }
 async function openContactById(id){try{const {data}=await sb.from('contacts').select('*').eq('id',id).single();if(data)openPerson(data);else toast('Contact niet gevonden','err');}catch(e){toast('Kon contact niet openen','err');}}
 function pipeWhatsapp(id){const c=PIPE.cards.find(x=>x.id===id);if(!c)return;const en=(PIPE.enrich&&PIPE.enrich[c.contact_id])||{};const url=_helloWaUrl(en.phone,en.name||c.title,c.project||en.project||'');if(!url){toast('Geen geldig telefoonnummer voor deze lead','err');return;}window.open(url,'_blank','noopener');}
+// Chat popup on a pipeline card: shows the lead's unified inbox conversation
+// (all channels, read-only), with a jump to the full inbox to reply.
+async function pipeChatPopup(contactId){
+  if(!canView('inbox')){toast('Je hebt geen toegang tot de Inbox','err');return;}
+  const gid='c:'+contactId;
+  const root=document.createElement('div');root.id='chatpop_root';
+  root.innerHTML=`<div class="chatpop-back"></div><div class="chatpop" role="dialog" aria-label="Chat">
+    <div class="chatpop-head">
+      <div class="chatpop-title" id="chatpop_title">Chat laden…</div>
+      <div style="display:flex;gap:8px;align-items:center;flex:none">
+        ${canView('inbox')?`<button class="btn btn-ghost btn-sm" id="chatpop_open">Open in inbox →</button>`:''}
+        <button id="chatpop_x" title="Sluiten" style="font-size:22px;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted)">×</button>
+      </div>
+    </div>
+    <div class="ibx-msgs" id="ibx_msgs" style="flex:1;min-height:0"></div>
+  </div>`;
+  document.body.appendChild(root);
+  const q=s=>root.querySelector(s);
+  requestAnimationFrame(()=>{q('.chatpop-back').classList.add('open');q('.chatpop').classList.add('open');});
+  const onKey=e=>{if(e.key==='Escape')close();};
+  function close(){q('.chatpop-back').classList.remove('open');q('.chatpop').classList.remove('open');document.removeEventListener('keydown',onKey);setTimeout(()=>root.remove(),200);}
+  document.addEventListener('keydown',onKey);
+  q('.chatpop-back').onclick=close;q('#chatpop_x').onclick=close;
+  const ob=q('#chatpop_open');if(ob)ob.onclick=()=>{close();openInboxThread(gid);};
+  try{
+    const {data,error}=await sb.rpc('inbox_thread',{p_id:gid});
+    if(error||!data||!data.conversation){q('#ibx_msgs').innerHTML='<div class="muted" style="padding:20px">Kon de chat niet laden.</div>';q('#chatpop_title').textContent='Chat';return;}
+    const cv=data.conversation||{};
+    INBOX.cur={avatar:cv.avatar_url,name:cv.display_name||cv.contact_name||cv.handle||'Onbekend',ch:INBOX_CH[cv.channel]||INBOX_CH.instagram,channel:cv.channel};
+    q('#chatpop_title').innerHTML=`${esc(INBOX.cur.name)} <span class="muted" style="font-weight:500;font-size:12px">${(data.channels||[]).map(b=>(INBOX_CH[b.channel]||INBOX_CH.instagram).icon).join(' ')}</span>`;
+    inboxRenderMsgs(data.messages||[]);
+  }catch(e){q('#ibx_msgs').innerHTML='<div class="muted" style="padding:20px">Kon de chat niet laden.</div>';}
+}
 function pipeOpenCard(id){const c=PIPE.cards.find(x=>x.id===id);if(c)pipeCardDrawer(c);}
 function pipeCardDrawer(card){
   const edit=canEdit('pipeline');
