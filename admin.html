@@ -187,7 +187,12 @@
   .ibx-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;align-items:center}
   .ibx-chip{padding:4px 9px;border:1px solid var(--line);background:#fff;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--muted)}
   .ibx-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .ibx-chip.ibx-vw{color:#b45309;border-color:#fcd34d;background:#fffbeb}
+  .ibx-chip.ibx-vw.on{background:#f59e0b;border-color:#f59e0b;color:#fff}
   .ibx-chsep{width:1px;height:16px;background:var(--line);margin:0 2px}
+  .ibx-autobar{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:#f8fafc;color:#64748b;font-size:11.5px;padding:8px 14px;cursor:pointer}
+  .ibx-autobar:hover{background:#f1f5f9;color:#475569}
+  .ibx-autobar.on{background:#eff6ff;color:#1d4ed8;border-bottom-color:#bfdbfe}
   .ibx-convs{overflow-y:auto;flex:1}
   .ibx-row{display:flex;gap:10px;padding:11px 12px;border-bottom:1px solid var(--line);cursor:pointer;position:relative}
   .ibx-row:hover{background:#f6f8f7}
@@ -1310,7 +1315,7 @@ function warmthBadge(score,opts){
   return `<span class="warmth-badge" title="Koopbereidheid ${score}/100 — ${t.label}. Op basis van websitegedrag (tijd, pagina's, ROI-calculator), budget, koop-timeline, geldig WhatsApp-nummer en fase." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
 }
 /* ================= INBOX (unified IG / WA / email) ================= */
-let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{},sendCh:'',channels:[]};
+let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{},sendCh:'',channels:[],unreadOnly:false,showAuto:false};
 let INBOX_TIMER=null;
 const INBOX_CH={
   instagram:{label:'Instagram',icon:'📸',color:'#c13584',bg:'#fdf2f8',bd:'#f9d6e8'},
@@ -1383,9 +1388,12 @@ async function renderInbox(){
   const chs=[['','Alle'],['instagram','📸 Instagram'],['whatsapp','🟢 WhatsApp'],['email','✉️ E-mail']];
   const sts=[['','Alle statussen'],['active','AI actief'],['needs_human','Overname'],['booked','Afspraak'],['opted_out','Afgemeld']];
   $('#ibx_chch').innerHTML=
+    `<button class="ibx-chip ibx-vw ${INBOX.unreadOnly?'on':''}" data-vw="unread" title="Toon alleen ongelezen berichten, van alle kanalen door elkaar">● Ongelezen</button>`+
+    `<span class="ibx-chsep"></span>`+
     chs.map(([k,l])=>`<button class="ibx-chip ${INBOX.channel===k?'on':''}" data-ch="${k}">${l}</button>`).join('')+
     `<span class="ibx-chsep"></span>`+
     sts.map(([k,l])=>`<button class="ibx-chip ib-st ${INBOX.status===k?'on':''}" data-st="${k}">${esc(l)}</button>`).join('');
+  $('#ibx_chch').querySelectorAll('[data-vw]').forEach(b=>b.onclick=()=>{INBOX.unreadOnly=!INBOX.unreadOnly;if(INBOX.unreadOnly)INBOX.channel='';renderInbox();});
   $('#ibx_chch').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{INBOX.channel=b.dataset.ch;renderInbox();});
   $('#ibx_chch').querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{INBOX.status=b.dataset.st;renderInbox();});
   const si=$('#ibx_search');let sTmr;si.oninput=()=>{clearTimeout(sTmr);sTmr=setTimeout(()=>{INBOX.search=si.value.trim();inboxLoad();},280);};
@@ -1408,7 +1416,18 @@ async function inboxLoad(){
   if(error){box.innerHTML=`<div class="empty" style="padding:16px">Kon inbox niet laden: ${esc(error.message)}</div>`;return;}
   INBOX.convos=data||[];
   if(!INBOX.convos.length){box.innerHTML='<div class="empty" style="padding:24px 16px">Nog geen gesprekken. Zodra de IG/WA-automatisering berichten doorstuurt, verschijnen ze hier.</div>';return;}
-  box.innerHTML=INBOX.convos.map(c=>{
+  // Purely-automated conversations (sequence/outreach mails, geen mens erin) worden standaard
+  // verborgen zodat de échte gesprekken overzichtelijk blijven. Optioneel te tonen.
+  const autoHidden=INBOX.convos.filter(c=>c.automated_only).length;
+  let list=INBOX.convos;
+  if(!INBOX.showAuto)list=list.filter(c=>!c.automated_only);
+  if(INBOX.unreadOnly)list=list.filter(c=>(c.unread_count||0)>0);
+  const bar=(!INBOX.showAuto&&autoHidden>0)
+    ? `<button class="ibx-autobar" data-showauto="1">🤖 ${autoHidden} automatische sequence-mail${autoHidden===1?'':'s'} verborgen · <u>tonen</u></button>`
+    : (INBOX.showAuto?`<button class="ibx-autobar on" data-showauto="0">🤖 Automatische mails zichtbaar · <u>verbergen</u></button>`:'');
+  if(!list.length){box.innerHTML=bar+`<div class="empty" style="padding:20px 16px">${INBOX.unreadOnly?'Geen ongelezen berichten. 🎉':'Geen gesprekken in deze weergave.'}</div>`;
+    const ab0=box.querySelector('[data-showauto]');if(ab0)ab0.onclick=()=>{INBOX.showAuto=ab0.dataset.showauto==='1';renderInbox();};return;}
+  box.innerHTML=bar+list.map(c=>{
     const ch=INBOX_CH[c.channel]||INBOX_CH.instagram;const nm=c.display_name||c.contact_name||c.handle||'Onbekend';
     const unread=c.unread_count>0;
     const chans=Array.isArray(c.channels)?c.channels:[c.channel];
@@ -1422,6 +1441,7 @@ async function inboxLoad(){
       </div>
     </div>`;
   }).join('');
+  const ab=box.querySelector('[data-showauto]');if(ab)ab.onclick=()=>{INBOX.showAuto=ab.dataset.showauto==='1';renderInbox();};
   box.querySelectorAll('.ibx-row').forEach(r=>r.onclick=()=>inboxOpen(r.dataset.id));
 }
 async function inboxOpen(id,keepDraft){
