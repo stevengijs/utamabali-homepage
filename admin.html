@@ -3407,7 +3407,7 @@ async function seqOpen(id){
       sb.from('projects').select('name').order('sort_order',{ascending:true})
     ]);
     SEQ.opts={
-      budget:[...new Set((bR.data||[]).map(x=>x.budget).filter(Boolean))],
+      budget:['Tot €200K','€200K–€250K','€250K–€400K','€400K+','Onbekend'],
       timeline:[...new Set((tR.data||[]).map(x=>x.timeline).filter(Boolean))],
       projects:(pR.data||[]).map(x=>x.name).filter(Boolean)
     };
