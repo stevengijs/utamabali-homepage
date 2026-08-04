@@ -389,6 +389,8 @@
   .pdr-fact .k{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b}
   .pdr-fact .v{font-size:14px;font-weight:700;margin-top:3px;color:#0f172a;word-break:break-word}
   .pdr-title{font-size:19px;font-weight:800;border:none;padding:2px 0;width:100%;outline:none;font-family:inherit}
+  .pdr-dates{flex:none;text-align:right;font-size:10.5px;line-height:1.45;color:var(--ink);white-space:nowrap;padding-top:3px}
+  .pdr-dates span{display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
   .pdr-title:focus{border-bottom:2px solid var(--brand,#0f6b4f)}
   .pipe-av{width:24px;height:24px;border-radius:50%;background:var(--brand,#0f6b4f);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
   .pipe-card-chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
@@ -3277,8 +3279,6 @@ function pipeCardDrawer(card){
   const inAt=en.first_seen_at||en.leadFirst||card.created_at||null;
   const lastAt=[en.last_activity_at,(en.chat&&en.chat.at)].filter(Boolean).sort().pop()||null;
   const facts=[['Budget',esc(en.budget||'—')],['Wanneer investeren',esc(en.timeline||'—')]];
-  facts.push(['Binnengekomen',inAt?esc(_pdDate(inAt)):'—']);
-  facts.push(['Laatste activiteit',lastAt?esc(_pdDate(lastAt)+' · '+inboxRel(lastAt)):'—']);
   if(phone)facts.push(['Telefoon',esc(phone)]);
   if(email)facts.push(['E-mail',esc(email)]);
   const acts=[];
@@ -3291,7 +3291,11 @@ function pipeCardDrawer(card){
   root.innerHTML=`<div class="pdrawer-back"></div><aside class="pdrawer" role="dialog" aria-label="Kaart">
     <div class="pdrawer-head">
       <div style="display:flex;align-items:flex-start;gap:10px">
-        <input class="pdr-title" id="pdr_title" value="${esc(card.title||'')}" ${edit?'':'readonly'} placeholder="Titel">
+        <input class="pdr-title" id="pdr_title" value="${esc(card.title||'')}" ${edit?'':'readonly'} placeholder="Titel" style="flex:1;min-width:0">
+        <div class="pdr-dates">
+          <div><span>Binnengekomen</span> ${inAt?esc(_pdDate(inAt)):'—'}</div>
+          <div><span>Laatste activiteit</span> ${lastAt?esc(_pdDate(lastAt)+' · '+inboxRel(lastAt)):'—'}</div>
+        </div>
         <button id="pdr_x" title="Sluiten" style="font-size:22px;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted)">×</button>
       </div>
       ${card.contact_id&&warmthBadge(WARMTH[card.contact_id],{big:true})?`<div style="margin-top:10px;display:flex;align-items:center;gap:8px"><span class="pdr-label" style="margin:0">Koopbereidheid</span>${warmthBadge(WARMTH[card.contact_id],{big:true})}</div>`:''}
