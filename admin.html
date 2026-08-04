@@ -375,6 +375,15 @@
   .pipe-foot-right{display:inline-flex;align-items:center;gap:7px;margin-left:auto}
   .pipe-chat{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#eef4ff;color:#1e40af;border:1px solid #cfe0ff;cursor:pointer}
   .pipe-chat:hover{background:#e0ebff}
+  .pipe-chip.task{background:#fff7e6;color:#92600a;border:1px solid #f6d98a}
+  .pdr-tasks{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+  .pdr-task{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;background:#fbfcfb;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px}
+  .pdr-task.done{opacity:.6}
+  .pdr-task-x{flex:none;background:none;border:none;font-size:18px;line-height:1;color:var(--muted);cursor:pointer}
+  .pdr-auto{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .pdr-auto-in{padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;font-family:inherit}
+  .pdr-auto #pdr_auto_note{flex:1;min-width:120px}
+  .pdr-auto .btn{background:var(--brand);color:#fff}
   /* Chat popup (from a pipeline card) */
   .chatpop-back{position:fixed;inset:0;background:rgba(15,23,42,.32);opacity:0;transition:opacity .18s;z-index:60}
   .chatpop-back.open{opacity:1}
@@ -2644,12 +2653,13 @@ function showDetail(title,bodyHTML){
 }
 
 /* ================= SALES PIPELINE (drag & drop) ================= */
-let PIPE={list:[],cur:null,cards:[],views:[],team:[],projects:[],enrich:{},filters:{project:'',assignee:'',q:''},dragId:null};
+let PIPE={list:[],cur:null,cards:[],views:[],team:[],projects:[],enrich:{},tasks:{},filters:{project:'',assignee:'',q:''},dragId:null};
 const WA_SVG='<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" aria-hidden="true"><path d="M17.47 14.38c-.29-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.14-.19.29-.74.94-.9 1.13-.17.19-.33.21-.62.07-.29-.15-1.22-.45-2.33-1.44-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.59.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.14-.64-1.55-.88-2.12-.23-.56-.47-.48-.64-.49h-.55c-.19 0-.5.07-.76.36-.26.29-1 .98-1 2.38s1.02 2.76 1.17 2.95c.14.19 2.01 3.07 4.87 4.31.68.29 1.21.47 1.62.6.68.22 1.3.19 1.79.11.55-.08 1.7-.69 1.94-1.36.24-.67.24-1.24.17-1.36-.07-.12-.26-.19-.55-.34z"/><path d="M12 2.04c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.48 1.34 4.99L2 22l5.13-1.34c1.46.8 3.11 1.22 4.79 1.22 5.5 0 9.96-4.46 9.96-9.96S17.5 2.04 12 2.04zm0 18.19c-1.5 0-2.97-.4-4.25-1.16l-.3-.18-3.04.8.81-2.97-.2-.31a8.24 8.24 0 0 1-1.26-4.39c0-4.56 3.71-8.27 8.28-8.27 4.56 0 8.27 3.71 8.27 8.27 0 4.57-3.71 8.28-8.27 8.28z"/></svg>';
 
 async function renderPipeline(){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Pipeline laden…</div>';
   try{await sb.rpc('pipeline_sync_all');}catch(e){/* best-effort CRM sync */}
+  try{await sb.rpc('pipeline_run_followups');}catch(e){/* best-effort: apply due follow-ups */}
   const [plR,tmR,prR]=await Promise.all([
     sb.from('pipelines').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
     sb.from('adm_profiles').select('id,full_name,email').order('created_at',{ascending:true}),
@@ -2670,6 +2680,11 @@ async function loadPipelineData(){
     sb.from('pipeline_views').select('*').eq('pipeline_id',PIPE.cur.id).order('created_at',{ascending:true}),
   ]);
   PIPE.cards=cR.data||[];PIPE.views=vR.data||[];
+  // Scheduled follow-up automations per card (for the card badge).
+  try{
+    const {data:tk}=await sb.from('pipeline_tasks').select('card_id,due_at,status').eq('pipeline_id',PIPE.cur.id).eq('status','scheduled');
+    PIPE.tasks={};(tk||[]).forEach(t=>{const cur=PIPE.tasks[t.card_id];if(!cur||t.due_at<cur)PIPE.tasks[t.card_id]=t.due_at;});
+  }catch(e){PIPE.tasks={};}
   await pipeLoadEnrichment();
   await warmthLoad(PIPE.cards.map(c=>c.contact_id));
   drawPipeline();
@@ -2704,6 +2719,8 @@ function pipeCardHtml(c){
   const proj=(c.project||en.project)?`<span class="pipe-chip proj">${esc(c.project||en.project)}</span>`:'';
   const budget=en.budget?`<span class="pipe-chip budget" title="Budget">${esc(en.budget)}</span>`:'';
   const tl=en.timeline?`<span class="pipe-chip tl" title="Wanneer investeren">⏱ ${esc(en.timeline)}</span>`:'';
+  const dueAt=PIPE.tasks&&PIPE.tasks[c.id];
+  const task=dueAt?`<span class="pipe-chip task" title="Opvolgen — verschuift dan automatisch naar Actie vereist">⏰ ${esc(new Date(dueAt).toLocaleDateString('nl-NL',{day:'numeric',month:'short'}))}</span>`:'';
   const val=(c.value!=null&&c.value!=='')?`<span class="pipe-chip val">${anMoney(c.value)}</span>`:'';
   const crm=c.contact_id?`<span class="pipe-chip crm" data-crm="${esc(c.contact_id)}" title="Open in CRM">CRM ↗</span>`:'';
   const chat=(c.contact_id&&en.chat&&en.chat.at)?`<span class="pipe-chat" data-chat="${esc(c.contact_id)}" title="Laatste chat: ${esc(inboxRel(en.chat.at))} — klik om te openen">${(en.chat.channels||[]).map(x=>(INBOX_CH[x]||INBOX_CH.instagram).icon).join('')||'💬'} ${esc(inboxRel(en.chat.at))}</span>`:'';
@@ -2711,7 +2728,7 @@ function pipeCardHtml(c){
   const who=c.assignee?`<span class="pipe-av" title="Eigenaar: ${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
   const warm=c.contact_id?warmthBadge(WARMTH[c.contact_id]):'';
   const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(c.title||'(naamloos)')}</div>${warm}</div>`;
-  const chips=`${proj}${budget}${tl}`;
+  const chips=`${proj}${budget}${tl}${task}`;
   const foot=(crm||wa||who||val||chat)?`<div class="pipe-card-foot"><span style="display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap">${val}${crm}${chat}</span><span class="pipe-foot-right">${wa}${who}</span></div>`:'';
   return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}">${titleRow}${chips.trim()?`<div class="pipe-card-chips">${chips}</div>`:''}${foot}</div>`;
 }
@@ -2927,6 +2944,17 @@ function pipeCardDrawer(card){
       </div>
       <div class="pdr-field"><div class="pdr-label">Waarde (€)</div><input id="pdr_value" type="number" step="1000" value="${card.value!=null?card.value:''}" ${edit?'':'readonly'}></div>
       <div class="pdr-field"><div class="pdr-label">Notities</div><textarea id="pdr_notes" rows="5" ${edit?'':'readonly'} placeholder="Interne notities voor het team…">${esc(card.notes||'')}</textarea></div>
+      <div class="pdr-field">
+        <div class="pdr-label">Taken &amp; automatiseringen</div>
+        <div id="pdr_tasks" class="pdr-tasks"><div class="muted" style="font-size:12px">Laden…</div></div>
+        ${edit?`<div class="pdr-auto">
+          <select id="pdr_auto_type" class="pdr-auto-in"><option value="followup">⏰ Opvolgen op datum</option></select>
+          <input id="pdr_auto_date" class="pdr-auto-in" type="date">
+          <input id="pdr_auto_note" class="pdr-auto-in" placeholder="Notitie (optioneel)">
+          <button class="btn btn-sm" id="pdr_auto_add">Toevoegen</button>
+        </div>
+        <div class="muted" style="font-size:11px;margin-top:5px">Op de gekozen datum verschuift deze lead automatisch naar <b>Actie vereist</b>.</div>`:''}
+      </div>
       <div class="muted" style="font-size:11.5px">${card.source==='lead'?'Automatisch aangemaakt vanuit de CRM.':'Handmatig aangemaakte kaart.'} Wijzigingen worden direct opgeslagen.</div>
     </div>
     <div class="pdrawer-foot">
@@ -2957,6 +2985,37 @@ function pipeCardDrawer(card){
   if(q('#pdr_wa'))q('#pdr_wa').onclick=e=>{e.preventDefault();pipeWhatsapp(card.id);};
   if(q('#pdr_crm'))q('#pdr_crm').onclick=e=>{e.preventDefault();close();openContactById(card.contact_id);};
   if(q('#pdr_share'))q('#pdr_share').onclick=e=>{e.preventDefault();copyLink(crmDeepLink(card.contact_id));};
+  // ---- Taken & automatiseringen ----
+  async function loadTasks(){
+    const box=q('#pdr_tasks');if(!box)return;
+    const {data,error}=await sb.rpc('pipeline_tasks_for_card',{p_card:card.id});
+    if(error){box.innerHTML='<div class="muted" style="font-size:12px">Kon taken niet laden.</div>';return;}
+    const tasks=data||[];
+    if(!tasks.length){box.innerHTML='<div class="muted" style="font-size:12px">Nog geen taken of automatiseringen.</div>';return;}
+    box.innerHTML=tasks.map(t=>{
+      const d=new Date(t.due_at).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});
+      const st=t.status==='scheduled'?'':(t.status==='done'?' · ✓ uitgevoerd':' · geannuleerd');
+      const cls=t.status==='scheduled'?'':'done';
+      return `<div class="pdr-task ${cls}"><div style="min-width:0"><b>⏰ Opvolgen op ${esc(d)}</b>${t.note?` — ${esc(t.note)}`:''}<div class="muted" style="font-size:11px">→ verschuift naar Actie vereist${st}</div></div>${(t.status==='scheduled'&&edit)?`<button class="pdr-task-x" data-cancel="${esc(t.id)}" title="Annuleren">×</button>`:''}</div>`;
+    }).join('');
+    box.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=async()=>{const {error}=await sb.rpc('pipeline_task_cancel',{p_id:b.dataset.cancel});if(error){toast('Annuleren mislukt','err');return;}toast('Taak geannuleerd','ok');loadTasks();loadPipelineData();});
+  }
+  loadTasks();
+  if(edit){
+    const add=q('#pdr_auto_add');
+    if(add)add.onclick=async()=>{
+      const dv=q('#pdr_auto_date').value;if(!dv){toast('Kies een datum','err');return;}
+      const note=q('#pdr_auto_note').value||'';
+      const due=new Date(dv+'T09:00:00').toISOString();
+      add.disabled=true;add.textContent='…';
+      const {data,error}=await sb.rpc('pipeline_task_add',{p_card:card.id,p_due:due,p_note:note});
+      add.disabled=false;add.textContent='Toevoegen';
+      if(error||(data&&data.error)){toast('Toevoegen mislukt: '+esc((error&&error.message)||(data&&data.error)),'err');return;}
+      toast('Opvolgtaak ingepland — verschuift op '+new Date(due).toLocaleDateString('nl-NL',{day:'numeric',month:'short'})+' naar Actie vereist','ok');
+      q('#pdr_auto_note').value='';q('#pdr_auto_date').value='';
+      loadTasks();loadPipelineData();
+    };
+  }
 }
 function pipeAddCard(stage){pipeCardForm(null,stage);}
 function pipeCardForm(card,defaultStage){
