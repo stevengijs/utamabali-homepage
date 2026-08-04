@@ -1605,6 +1605,24 @@ async function inboxGenSummary(gid){
   }catch(e){if(body)body.innerHTML='<div class="ibx-ip-note">Samenvatting mislukt.</div>';toast('Samenvatting mislukt','err');}
   finally{const b=$('#ibx_sum_btn');if(b){b.disabled=false;b.textContent='↻ Vernieuwen';}}
 }
+// Same AI-samenvatting as in the inbox, but for a pipeline lead (keyed by contact).
+async function pdrGenSummary(contactId){
+  const btn=document.getElementById('pdr_sum_btn'),body=document.getElementById('pdr_sum_body');
+  if(!contactId){if(body)body.innerHTML='<div class="ibx-ip-note">Deze kaart is nog niet aan een CRM-contact gekoppeld.</div>';return;}
+  if(btn){btn.disabled=true;btn.textContent='Bezig…';}
+  if(body)body.innerHTML='<div class="ibx-ip-note">Samenvatting genereren…</div>';
+  try{
+    const {data,error}=await sb.functions.invoke('inbox-summary',{body:{contact_id:contactId}});
+    if(error||!data||data.ok===false){
+      const msg=(data&&data.error==='no_key')?'Koppel eerst een OpenAI API-sleutel (integration_config.openai_api_key) om samenvattingen te genereren.':((data&&(data.note||data.detail||data.error))||(error&&error.message)||'Mislukt');
+      if(body)body.innerHTML=`<div class="ibx-ip-note">${esc(msg)}</div>`;
+      toast('Samenvatting: '+esc(msg),'err');return;
+    }
+    if(body)body.innerHTML=inboxSummaryHtml({summary:data.summary,generated_at:data.generated_at,message_count:data.message_count});
+    toast('Samenvatting bijgewerkt','ok');
+  }catch(e){if(body)body.innerHTML='<div class="ibx-ip-note">Samenvatting mislukt.</div>';toast('Samenvatting mislukt','err');}
+  finally{const b=document.getElementById('pdr_sum_btn');if(b){b.disabled=false;b.textContent='↻ Vernieuwen';}}
+}
 function inboxDrawInfo(ctx){
   const info=$('#ibx_info');if(!info)return;
   const cv=ctx.conversation||{},ct=ctx.contact||null,chans=ctx.channels||[],timeline=ctx.timeline||[];
@@ -3045,6 +3063,7 @@ function pipeCardDrawer(card){
       </div>
       <div class="pdr-field"><div class="pdr-label">Waarde (€)</div><input id="pdr_value" type="number" step="1000" value="${card.value!=null?card.value:''}" ${edit?'':'readonly'}></div>
       <div class="pdr-field"><div class="pdr-label">Notities</div><textarea id="pdr_notes" rows="5" ${edit?'':'readonly'} placeholder="Interne notities voor het team…">${esc(card.notes||'')}</textarea></div>
+      ${card.contact_id?`<div class="pdr-field"><div class="pdr-label" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button type="button" class="ibx-sum-btn" id="pdr_sum_btn">✨ Genereren</button>`:''}</div><div id="pdr_sum_body">${inboxSummaryHtml(null)}</div></div>`:''}
       <div class="pdr-field">
         <div class="pdr-label">Taken &amp; automatiseringen</div>
         <div id="pdr_tasks" class="pdr-tasks"><div class="muted" style="font-size:12px">Laden…</div></div>
@@ -3086,6 +3105,7 @@ function pipeCardDrawer(card){
   if(q('#pdr_wa'))q('#pdr_wa').onclick=e=>{e.preventDefault();pipeWhatsapp(card.id);};
   if(q('#pdr_crm'))q('#pdr_crm').onclick=e=>{e.preventDefault();close();openContactById(card.contact_id);};
   if(q('#pdr_share'))q('#pdr_share').onclick=e=>{e.preventDefault();copyLink(crmDeepLink(card.contact_id));};
+  if(q('#pdr_sum_btn'))q('#pdr_sum_btn').onclick=()=>pdrGenSummary(card.contact_id);
   // ---- Taken & automatiseringen ----
   async function loadTasks(){
     const box=q('#pdr_tasks');if(!box)return;
