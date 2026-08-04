@@ -397,6 +397,34 @@
   .chatpop.open{opacity:1;transform:translate(-50%,-50%)}
   .chatpop-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
   .chatpop-title{font-weight:700;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* E-mail sequences */
+  .seq-top{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .seq-list{display:flex;flex-direction:column}
+  .seq-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+  .seq-row:hover{background:#f6f8f7}
+  .seq-row-name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
+  .seq-row-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .seq-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:999px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
+  .seq-badge.on{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+  .seq-edit{padding:16px}
+  .seq-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .seq-flags{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 4px}
+  .seq-check{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink)}
+  .seq-h{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+  .seq-step{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fbfcfb}
+  .seq-step-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .seq-step-n{font-weight:800;font-size:12px;color:#0f6b4f}
+  .seq-daywrap{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
+  .seq-day{width:56px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;font-size:13px}
+  .seq-design{display:flex;gap:4px}
+  .seq-dbtn{font-size:11.5px;font-weight:600;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);cursor:pointer}
+  .seq-dbtn.on{background:#0f6b4f;color:#fff;border-color:#0f6b4f}
+  .seq-del{background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;line-height:1}
+  .seq-subj{margin-bottom:8px;font-weight:600}
+  .seq-enroll-add{display:flex;gap:8px;margin-bottom:8px}
+  .seq-enr-list{display:flex;flex-direction:column;gap:6px}
+  .seq-enr{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fbfcfb;border:1px solid var(--line);border-radius:9px;padding:8px 11px}
+  .seq-enr-x{background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer}
   .pipe-add{margin:0 8px 8px;padding:7px;border:1px dashed #c7cfcb;border-radius:9px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;width:calc(100% - 16px)}
   .pipe-add:hover{background:#eef2f0;color:var(--ink,#111)}
   .pc-form label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:2px}
@@ -457,6 +485,7 @@ const PAGES = [
   {key:'revenue',  label:'Revenue',                icon:'💰'},
   {key:'leads',    label:'Leads / CRM',            icon:'📇'},
   {key:'pipeline', label:'Pipeline',               icon:'🧭'},
+  {key:'sequences',label:'E-mail sequences',       icon:'📧'},
   {key:'webinars', label:'Webinar',                icon:'🎥'},
   {key:'projects', label:'Projects',               icon:'🏗️'},
   {key:'portal',   label:'Portal & Investors',     icon:'🏝️'},
@@ -813,7 +842,7 @@ function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
+  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',sequences:'E-mail sequences',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
   $('#pageTitle').textContent=titles[k]||k;
   if(k==='dashboard')return renderDashboard();
   if(k==='analytics')return renderAnalytics();
@@ -823,6 +852,7 @@ function go(k){
   if(k==='leads')return renderPeople();
   if(k==='inbox')return renderInbox();
   if(k==='pipeline')return renderPipeline();
+  if(k==='sequences')return renderSequences();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
 }
@@ -3319,6 +3349,145 @@ function showModal(title,bodyHTML,onSave){
   $('#msave').onclick=async()=>{const btn=$('#msave');btn.disabled=true;btn.textContent='Saving…';const ok=await onSave();btn.disabled=false;btn.textContent='Save';if(ok!==false)close();};
 }
 function randPw(){const c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<10;i++)s+=c[Math.floor(Math.random()*c.length)];return s+'!';}
+
+/* ================= E-MAIL SEQUENCES ================= */
+let SEQ={list:[],cur:null};
+function seqEsc(s){return esc(s);}
+function seqPlainHtml(body){const paras=String(body||'').split(/\n{2,}/).map(p=>`<p style="margin:0 0 14px">${esc(p).replace(/\n/g,'<br>')}</p>`).join('');return `<div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px;line-height:1.6;color:#1a2b23">${paras}</div>`;}
+function seqNewsletterHtml(subject,body){const paras=String(body||'').split(/\n{2,}/).map(p=>`<p style="margin:0 0 16px">${esc(p).replace(/\n/g,'<br>')}</p>`).join('');return `<div style="background:#f4f6f5;padding:20px"><div style="max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e6ebe8"><div style="background:#0f6b4f;padding:18px 24px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;font-size:17px;font-weight:800">UTAMA <span style="font-weight:500;opacity:.85">Bali</span></div><div style="padding:24px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px;line-height:1.65;color:#12211c">${paras}</div><div style="padding:16px 24px;border-top:1px solid #eef1f0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;color:#8a978f">UTAMA Bali · investeringsvilla's op Bali · invest.utamabali.com</div></div></div>`;}
+async function renderSequences(){
+  const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Sequences laden…</div>';
+  const {data,error}=await sb.rpc('seq_list');
+  if(error){v.innerHTML=`<div class="panel"><div class="empty" style="padding:20px">Kon sequences niet laden: ${esc(error.message)}</div></div>`;return;}
+  SEQ.list=data||[];seqListView();
+}
+function seqTriggerLabel(t){return t==='new_lead'?'Auto: nieuwe lead':'Handmatig';}
+function seqListView(){
+  const v=$('#view');const edit=canEdit('sequences');
+  const rows=SEQ.list.map(s=>`<div class="seq-row" data-id="${s.id}">
+      <div style="min-width:0">
+        <div class="seq-row-name">${esc(s.name)} ${s.enabled?'<span class="seq-badge on">Aan</span>':'<span class="seq-badge">Uit</span>'}</div>
+        <div class="seq-row-sub">${esc(seqTriggerLabel(s.trigger))} · ${s.step_count} e-mail${s.step_count===1?'':'s'} · ${s.active_count} actief / ${s.total_count} totaal</div>
+      </div>
+      <span class="muted" style="font-size:12px">Bewerken →</span>
+    </div>`).join('');
+  v.innerHTML=`<div class="panel" style="padding:0">
+    <div class="seq-top"><div><b>E-mail sequences</b><div class="muted" style="font-size:12px">Warm leads op met een reeks e-mails. Automatisch verzonden via info@utamabali.com; stopt zodra een lead reageert of zich afmeldt.</div></div>${edit?`<button class="btn" id="seq_new">＋ Nieuwe sequence</button>`:''}</div>
+    <div class="seq-list">${rows||'<div class="empty" style="padding:24px">Nog geen sequences. Maak er een om leads automatisch op te warmen.</div>'}</div>
+  </div>`;
+  const nw=$('#seq_new');if(nw)nw.onclick=()=>seqOpen(null);
+  v.querySelectorAll('.seq-row').forEach(r=>r.onclick=()=>seqOpen(r.dataset.id));
+}
+async function seqOpen(id){
+  const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Laden…</div>';
+  let seq={name:'',trigger:'manual',enabled:false,stop_on_reply:true,from_name:'UTAMA Bali',from_email:'info@utamabali.com'},steps=[{day_offset:0,subject:'',body:'',design:'plain'}],enrollments=[];
+  if(id){
+    const {data,error}=await sb.rpc('seq_get',{p_id:id});
+    if(error||!data||!data.sequence){v.innerHTML=`<div class="panel"><div class="empty" style="padding:20px">Kon sequence niet laden.</div></div>`;return;}
+    seq=data.sequence;steps=(data.steps&&data.steps.length)?data.steps:steps;enrollments=data.enrollments||[];
+  }
+  SEQ.cur={id:id||null,seq,steps,enrollments};
+  seqEditorView();
+}
+function seqStepCard(st,i){
+  const design=st.design==='newsletter'?'newsletter':'plain';
+  return `<div class="seq-step" data-step data-design="${design}">
+    <div class="seq-step-head">
+      <span class="seq-step-n">E-mail ${i+1}</span>
+      <label class="seq-daywrap">Dag <input class="seq-day" type="number" min="0" step="1" value="${st.day_offset!=null?st.day_offset:0}"></label>
+      <div class="seq-design">
+        <button type="button" class="seq-dbtn ${design==='plain'?'on':''}" data-design="plain">✍️ Plat</button>
+        <button type="button" class="seq-dbtn ${design==='newsletter'?'on':''}" data-design="newsletter">📰 Nieuwsbrief</button>
+      </div>
+      <span style="margin-left:auto"></span>
+      <button type="button" class="btn btn-ghost btn-sm seq-prev">Preview</button>
+      <button type="button" class="seq-del" title="Verwijderen">×</button>
+    </div>
+    <input class="seq-subj pc-in" placeholder="Onderwerp" value="${esc(st.subject||'')}">
+    <textarea class="seq-body pc-in" rows="6" placeholder="E-mailinhoud… gebruik {naam} en {project} voor personalisatie">${esc(st.body||'')}</textarea>
+  </div>`;
+}
+function seqEditorView(){
+  const v=$('#view');const edit=canEdit('sequences');const c=SEQ.cur;const s=c.seq;
+  const steps=(c.steps&&c.steps.length)?c.steps:[{day_offset:0,subject:'',body:'',design:'plain'}];
+  const stepsHtml=steps.map(seqStepCard).join('');
+  const enr=c.enrollments||[];
+  const enrHtml=enr.length?enr.map(e=>{const stlbl={active:'Actief',completed:'Afgerond',stopped:'Gestopt',opted_out:'Afgemeld'}[e.status]||e.status;const nx=e.status==='active'&&e.next_send_at?(' · volgende '+new Date(e.next_send_at).toLocaleDateString('nl-NL',{day:'numeric',month:'short'})):'';return `<div class="seq-enr"><div style="min-width:0"><b>${esc(e.contact_name||e.contact_email||'—')}</b><div class="muted" style="font-size:11px">${esc(e.contact_email||'')} · ${stlbl}${e.stopped_reason?' ('+esc(e.stopped_reason)+')':''}${nx}</div></div>${(edit&&e.status==='active')?`<button class="seq-enr-x" data-unenr="${e.id}" title="Uit sequence halen">×</button>`:''}</div>`;}).join(''):'<div class="muted" style="font-size:12px">Nog geen leads in deze sequence.</div>';
+  v.innerHTML=`<div class="panel" style="padding:0">
+    <div class="seq-top"><button class="btn btn-ghost btn-sm" id="seq_back">← Terug</button><div style="margin-left:auto;display:flex;gap:8px">${(edit&&c.id)?`<button class="btn btn-ghost btn-sm" id="seq_run">Nu verwerken</button><button class="btn btn-ghost btn-sm" id="seq_del" style="color:#b91c1c">Verwijderen</button>`:''}${edit?`<button class="btn" id="seq_save">Opslaan</button>`:''}</div></div>
+    <div class="seq-edit">
+      <div class="seq-grid2">
+        <div><label class="pdr-label">Naam van de sequence</label><input id="seq_name" class="pc-in" value="${esc(s.name||'')}" placeholder="bijv. Nurture – brochure aangevraagd"></div>
+        <div><label class="pdr-label">Instroom</label><select id="seq_trigger" class="pc-in"><option value="manual"${s.trigger==='manual'?' selected':''}>Handmatig toevoegen</option><option value="new_lead"${s.trigger==='new_lead'?' selected':''}>Automatisch bij nieuwe lead</option></select></div>
+      </div>
+      <div class="seq-flags">
+        <label class="seq-check"><input type="checkbox" id="seq_enabled" ${s.enabled?'checked':''}> Ingeschakeld (verstuurt)</label>
+        <label class="seq-check"><input type="checkbox" id="seq_stop" ${s.stop_on_reply!==false?'checked':''}> Stop zodra de lead reageert</label>
+      </div>
+      <div class="seq-h">E-mails in de reeks</div>
+      <div id="seq_steps">${stepsHtml}</div>
+      ${edit?`<button class="btn btn-ghost btn-sm" id="seq_addstep" style="margin-top:8px">＋ E-mail toevoegen</button>`:''}
+      <div class="seq-h" style="margin-top:20px">Leads in deze sequence</div>
+      ${edit?`<div class="seq-enroll-add"><input id="seq_enr_email" class="pc-in" placeholder="E-mailadres van bestaand contact…" style="flex:1"><button class="btn btn-ghost btn-sm" id="seq_enr_btn">Toevoegen</button></div>`:''}
+      <div id="seq_enr_list" class="seq-enr-list">${enrHtml}</div>
+    </div>
+  </div>`;
+  $('#seq_back').onclick=()=>renderSequences();
+  if(edit){
+    $('#seq_addstep').onclick=()=>{const wrap=$('#seq_steps');const div=document.createElement('div');div.innerHTML=seqStepCard({day_offset:seqNextDay(),subject:'',body:'',design:'plain'},wrap.children.length);const node=div.firstElementChild;wrap.appendChild(node);seqWireStep(node);};
+    $('#seq_save').onclick=seqSaveCurrent;
+    const rn=$('#seq_run');if(rn)rn.onclick=seqRunNow;
+    const dl=$('#seq_del');if(dl)dl.onclick=seqDeleteCurrent;
+    const eb=$('#seq_enr_btn');if(eb)eb.onclick=seqEnrollByEmail;
+    $('#seq_steps').querySelectorAll('.seq-step').forEach(seqWireStep);
+    $('#seq_enr_list').querySelectorAll('[data-unenr]').forEach(b=>b.onclick=async()=>{const {error}=await sb.rpc('seq_unenroll',{p_enrollment:b.dataset.unenr});if(error){toast('Mislukt','err');return;}toast('Uit sequence gehaald','ok');seqOpen(c.id);});
+  }
+}
+function seqNextDay(){const days=[...document.querySelectorAll('#seq_steps .seq-day')].map(i=>Number(i.value)||0);return days.length?Math.max(...days)+2:0;}
+function seqWireStep(node){
+  node.querySelector('.seq-del').onclick=()=>{node.remove();};
+  node.querySelectorAll('.seq-dbtn').forEach(b=>b.onclick=()=>{node.dataset.design=b.dataset.design;node.querySelectorAll('.seq-dbtn').forEach(x=>x.classList.toggle('on',x.dataset.design===b.dataset.design));});
+  node.querySelector('.seq-prev').onclick=()=>{const subj=node.querySelector('.seq-subj').value;const body=node.querySelector('.seq-body').value;const design=node.dataset.design;seqPreview(subj,body,design);};
+}
+function seqCollectSteps(){
+  return [...document.querySelectorAll('#seq_steps .seq-step')].map(node=>({
+    day_offset:String(Number(node.querySelector('.seq-day').value)||0),
+    subject:node.querySelector('.seq-subj').value,
+    body:node.querySelector('.seq-body').value,
+    design:node.dataset.design==='newsletter'?'newsletter':'plain'
+  }));
+}
+async function seqSaveCurrent(){
+  const c=SEQ.cur;const btn=$('#seq_save');if(btn){btn.disabled=true;btn.textContent='Opslaan…';}
+  const payload={p_id:c.id,p_name:$('#seq_name').value.trim(),p_trigger:$('#seq_trigger').value,p_enabled:$('#seq_enabled').checked,p_stop_on_reply:$('#seq_stop').checked,p_from_name:'UTAMA Bali',p_from_email:'info@utamabali.com',p_steps:seqCollectSteps()};
+  const {data,error}=await sb.rpc('seq_save',payload);
+  if(btn){btn.disabled=false;btn.textContent='Opslaan';}
+  if(error||(data&&data.error)){toast('Opslaan mislukt: '+esc((error&&error.message)||data.error),'err');return;}
+  toast('Sequence opgeslagen','ok');
+  SEQ.cur.id=data.id;seqOpen(data.id);
+}
+async function seqDeleteCurrent(){const c=SEQ.cur;if(!c.id)return;if(!confirm('Deze sequence verwijderen? Actieve leads stoppen.'))return;const {error}=await sb.rpc('seq_delete',{p_id:c.id});if(error){toast('Verwijderen mislukt','err');return;}toast('Verwijderd','ok');renderSequences();}
+async function seqRunNow(){const btn=$('#seq_run');if(btn){btn.disabled=true;btn.textContent='Bezig…';}try{const {data,error}=await sb.functions.invoke('sequence-run',{body:{}});if(error){toast('Verwerken mislukt','err');}else toast(`Verwerkt: ${(data&&data.sent)||0} verzonden`,'ok');}catch(e){toast('Verwerken mislukt','err');}finally{const b=$('#seq_run');if(b){b.disabled=false;b.textContent='Nu verwerken';}seqOpen(SEQ.cur.id);}}
+async function seqEnrollByEmail(){
+  const c=SEQ.cur;if(!c.id){toast('Sla de sequence eerst op','err');return;}
+  const email=($('#seq_enr_email').value||'').trim().toLowerCase();if(!email){return;}
+  const {data:ct}=await sb.from('contacts').select('id,name').ilike('email',email).limit(1).maybeSingle();
+  if(!ct){toast('Geen contact met dat e-mailadres gevonden','err');return;}
+  const {error}=await sb.rpc('seq_enroll',{p_sequence:c.id,p_contact:ct.id});
+  if(error){toast('Toevoegen mislukt: '+esc(error.message),'err');return;}
+  toast('Lead toegevoegd aan sequence','ok');$('#seq_enr_email').value='';seqOpen(c.id);
+}
+function seqPreview(subject,body,design){
+  const vars={naam:'Steven',project:'The Maison'};
+  const rb=String(body||'').replace(/\{naam\}/g,vars.naam).replace(/\{voornaam\}/g,vars.naam).replace(/\{project\}/g,vars.project);
+  const rs=String(subject||'').replace(/\{naam\}/g,vars.naam).replace(/\{project\}/g,vars.project);
+  const html=design==='newsletter'?seqNewsletterHtml(rs,rb):seqPlainHtml(rb);
+  const root=document.createElement('div');root.id='seqprev_root';
+  root.innerHTML=`<div class="chatpop-back open"></div><div class="chatpop open" style="width:min(680px,94vw);height:min(720px,88vh)"><div class="chatpop-head"><div class="chatpop-title">Preview · Onderwerp: ${esc(rs||'(leeg)')}</div><button id="seqprev_x" style="font-size:22px;background:none;border:none;cursor:pointer;color:var(--muted)">×</button></div><div style="flex:1;overflow:auto;background:#f4f6f5">${html}</div></div>`;
+  document.body.appendChild(root);
+  const close=()=>root.remove();
+  root.querySelector('.chatpop-back').onclick=close;root.querySelector('#seqprev_x').onclick=close;
+}
 
 /* ================= START ================= */
 boot();
