@@ -436,6 +436,10 @@
   .pm-tile{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
   .pm-imgwrap{aspect-ratio:4/3;background:#f1f5f9;overflow:hidden}
   .pm-imgwrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .pm-imgwrap[draggable="true"]{cursor:grab}
+  .pm-imgwrap[draggable="true"]:active{cursor:grabbing}
+  .pm-tile.pm-dragging{opacity:.45}
+  .pm-tile.pm-drop{outline:2px dashed #0f6b4f;outline-offset:2px}
   .pm-tools{display:flex;align-items:center;gap:6px;padding:7px 8px;border-top:1px solid var(--line)}
   .pm-tools button{border:1px solid var(--line);background:#fff;border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:12px;line-height:1}
   .pm-tools button:disabled{opacity:.35;cursor:default}
@@ -2056,6 +2060,7 @@ async function delRecord(resKey,id){
 
 /* ---- PROJECT RENDERS / FOTO'S (per project, met volgorde + auto-compressie) ---- */
 let PMEDIA={projectId:null,items:[]};
+let PMDRAG=null;
 const PM_BUCKET='project-media';
 function pmPublicUrl(path){try{return sb.storage.from(PM_BUCKET).getPublicUrl(path).data.publicUrl;}catch(e){return '';}}
 function pmBytes(n){if(n==null)return '';const u=['B','KB','MB','GB'];let i=0,v=Number(n);while(v>=1024&&i<u.length-1){v/=1024;i++;}return v.toFixed(v<10&&i>0?1:0)+' '+u[i];}
@@ -2088,7 +2093,7 @@ function projMediaRender(){
   const items=PMEDIA.items||[];
   const tiles=items.map((m,i)=>`
     <div class="pm-tile" data-id="${m.id}">
-      <div class="pm-imgwrap"><img src="${esc(pmPublicUrl(m.path))}" loading="lazy" alt=""></div>
+      <div class="pm-imgwrap"${canManage?' draggable="true" title="Sleep om de volgorde te wijzigen"':''}><img src="${esc(pmPublicUrl(m.path))}" loading="lazy" alt="" draggable="false"></div>
       ${canManage?`<div class="pm-tools">
         <button class="pm-mv" data-mv="-1" title="Naar voren" ${i===0?'disabled':''}>◀</button>
         <span class="pm-ord">${i+1}</span>
@@ -2116,6 +2121,15 @@ function projMediaRender(){
       t.querySelectorAll('.pm-mv').forEach(b=>b.onclick=()=>projMediaMove(id,Number(b.dataset.mv)));
       const del=t.querySelector('.pm-del');if(del)del.onclick=()=>projMediaDelete(id);
       const cap=t.querySelector('.pm-cap');if(cap)cap.addEventListener('blur',()=>projMediaCaption(id,cap.value));
+      // Slepen om te ordenen (naast de ◀ ▶ knoppen).
+      const iw=t.querySelector('.pm-imgwrap');
+      if(iw){
+        iw.addEventListener('dragstart',e=>{PMDRAG=id;t.classList.add('pm-dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',id);}catch(_e){}}});
+        iw.addEventListener('dragend',()=>{PMDRAG=null;el.querySelectorAll('.pm-tile').forEach(x=>x.classList.remove('pm-dragging','pm-drop'));});
+      }
+      t.addEventListener('dragover',e=>{if(!PMDRAG)return;e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move';if(id!==PMDRAG)t.classList.add('pm-drop');});
+      t.addEventListener('dragleave',()=>t.classList.remove('pm-drop'));
+      t.addEventListener('drop',e=>{if(!PMDRAG)return;e.preventDefault();t.classList.remove('pm-drop');const d=PMDRAG;if(d&&d!==id)projMediaReorderTo(d,id);});
     });
   }
 }
@@ -2141,6 +2155,17 @@ async function projMediaMove(id,dir){
   const items=(PMEDIA.items||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   const i=items.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=items.length)return;
   const tmp=items[i];items[i]=items[j];items[j]=tmp;
+  await pmPersistOrder(items);
+}
+// Sleep-ordenen: verplaats 'dragId' naar de plek van 'targetId'.
+async function projMediaReorderTo(dragId,targetId){
+  const items=(PMEDIA.items||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const from=items.findIndex(x=>x.id===dragId),to=items.findIndex(x=>x.id===targetId);
+  if(from<0||to<0||from===to)return;
+  const [moved]=items.splice(from,1);items.splice(to,0,moved);
+  await pmPersistOrder(items);
+}
+async function pmPersistOrder(items){
   const ups=[];items.forEach((it,idx)=>{if(it.sort_order!==idx){it.sort_order=idx;ups.push(sb.from('project_media').update({sort_order:idx}).eq('id',it.id));}});
   PMEDIA.items=items;projMediaRender();
   const rs=await Promise.all(ups);if(rs.some(r=>r&&r.error))toast('Volgorde opslaan mislukt','err');
