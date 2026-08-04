@@ -560,8 +560,8 @@ const TS = k => ({k,label:k==='granted_at'?'Granted':k==='last_activity_at'?'Las
 /* Live-data resource definitions */
 const RES = {
   /* ---- PROJECTS PAGE ---- */
-  projects:{page:'projects', table:'projects', title:'Projects', single:'Project', orderBy:'sort_order', asc:true, readOnly:true,
-    desc:'Master data per project — the single source of truth. View only here; changes are made via Claude so they sync everywhere (utamabali.com, invest. and the brochures).',
+  projects:{page:'projects', table:'projects', title:'Projects', single:'Project', orderBy:'sort_order', asc:true,
+    desc:'Master data per project. Je kunt dit hier bewerken én het blijft via Claude te wijzigen — beide passen dezelfde database aan.',
     cols:['name','location','status','units_available','units_available_list','price_current','buyers'],
     fields:[
       {k:'name',label:'Name',type:'text',req:true},
@@ -2221,18 +2221,46 @@ async function openForm(resKey,row){
     body+=`<div class="field"${full}><label>${esc(f.label)}${f.req?' *':''}</label>${input}</div>`;
   });
   body+='</div>';
-  if(ro){
-    if(resKey==='projects'&&isEdit)body+=`<div id="proj_media" style="margin-top:22px"><div class="muted" style="font-size:13px">Renders laden…</div></div>`;
-    if(resKey==='projects'&&isEdit)body+=`<div id="proj_purchases" style="margin-top:22px"><div class="muted" style="font-size:13px">Aankopen laden…</div></div>`;
-    showDetail(`${esc(R.single)}${row[R.fields[0].k]?' · '+esc(row[R.fields[0].k]):''}`,body);
-    if(resKey==='projects'&&isEdit)projMediaInit(row.id);
-    if(resKey==='projects'&&isEdit){
-      const {data:pp}=await sb.from('purchases').select('buyer_name,unit,price,status,contract_signed_at,created_at').eq('project',row.name).order('contract_signed_at',{ascending:false,nullsFirst:false});
-      const el=$('#proj_purchases');
-      if(el){const list=pp||[];
-        el.innerHTML=_sec('Aankopen ('+list.length+')',list.length?_mt(['Koper','Unit','Prijs','Datum'],list.map(x=>[`<b>${esc(x.buyer_name||'—')}</b>`,esc(x.unit||'—'),money(x.price),fmtDate(x.contract_signed_at||x.created_at)])):'<div class="muted" style="font-size:13px">Nog geen aankopen voor dit project.</div>');
-      }
+  // Projecten: bewerkbaar detailscherm (velden + opslaan) mét render-galerij en aankopen.
+  if(resKey==='projects'&&isEdit){
+    body+=`<div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn" id="proj_save">Opslaan</button>
+      <span id="proj_saved" class="muted" style="font-size:12px"></span>
+      <span class="muted" style="font-size:11.5px;margin-left:auto">Wijzigingen worden direct in de database opgeslagen.</span></div>`;
+    body+=`<div id="proj_media" style="margin-top:22px"><div class="muted" style="font-size:13px">Renders laden…</div></div>`;
+    body+=`<div id="proj_purchases" style="margin-top:22px"><div class="muted" style="font-size:13px">Aankopen laden…</div></div>`;
+    showDetail(`${esc(R.single)}${row.name?' · '+esc(row.name):''}`,body);
+    const collect=()=>{const payload={};let ok=true;R.fields.filter(f=>!f.ro).forEach(f=>{const e=$('#f_'+f.k);if(!e)return;let v=e.value;
+      if(f.type==='tags')v=v.split(',').map(s=>s.trim()).filter(Boolean);
+      else if(f.type==='bool')v=(v==='true');
+      else if(f.type==='number')v=v===''?null:Number(v);
+      else if(f.type==='datetime')v=v?new Date(v).toISOString():null;
+      else if(f.type==='date')v=v||null;
+      else v=v===''?null:v;
+      if(f.req&&(v==null||v===''))ok=false;payload[f.k]=v;});return {payload,ok};};
+    const sb_=$('#proj_save');
+    if(sb_)sb_.onclick=async()=>{
+      const {payload,ok}=collect();
+      if(!ok){toast('Vul de verplichte velden in','err');return;}
+      sb_.disabled=true;sb_.textContent='Opslaan…';
+      const res=await sb.from('projects').update(payload).eq('id',row.id).select().single();
+      sb_.disabled=false;sb_.textContent='Opslaan';
+      if(res.error){toast('Opslaan mislukt: '+res.error.message,'err');return;}
+      Object.assign(row,res.data);
+      _cache.projects=(_cache.projects||[]).map(x=>String(x.id)===String(row.id)?res.data:x);
+      const s=$('#proj_saved');if(s){s.textContent='✓ Opgeslagen';setTimeout(()=>{if(s)s.textContent='';},1600);}
+      drawTable('projects');
+    };
+    projMediaInit(row.id);
+    const {data:pp}=await sb.from('purchases').select('buyer_name,unit,price,status,contract_signed_at,created_at').eq('project',row.name).order('contract_signed_at',{ascending:false,nullsFirst:false});
+    const el=$('#proj_purchases');
+    if(el){const list=pp||[];
+      el.innerHTML=_sec('Aankopen ('+list.length+')',list.length?_mt(['Koper','Unit','Prijs','Datum'],list.map(x=>[`<b>${esc(x.buyer_name||'—')}</b>`,esc(x.unit||'—'),money(x.price),fmtDate(x.contract_signed_at||x.created_at)])):'<div class="muted" style="font-size:13px">Nog geen aankopen voor dit project.</div>');
     }
+    return;
+  }
+  if(ro){
+    showDetail(`${esc(R.single)}${row[R.fields[0].k]?' · '+esc(row[R.fields[0].k]):''}`,body);
     return;
   }
   showModal(`${isEdit?'Edit':'New'} ${R.single}`,body,async()=>{
