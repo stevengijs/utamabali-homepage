@@ -272,6 +272,11 @@
   .ibx-pipe-sel{flex:1;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;background:#fff;outline:none}
   .ibx-pipe-sel:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
   .ibx-pipe-row .btn{flex:none;background:var(--brand);color:#fff}
+  .ibx-sum-btn{font-size:11px;font-weight:700;padding:3px 9px;border:1px solid #cfe8dd;border-radius:999px;background:#eaf4ef;color:#0f6b4f;cursor:pointer}
+  .ibx-sum-btn:hover{background:#dceee6}
+  .ibx-sum-btn:disabled{opacity:.6;cursor:default}
+  .ibx-sum-text{font-size:12.5px;line-height:1.55;color:var(--ink)}
+  .ibx-sum-text b{color:var(--ink)}
   /* Unified multi-channel bits */
   .ibx-rchans{display:inline-flex;gap:2px;font-size:11px;line-height:1}
   .ibx-medico{opacity:.85;font-size:10.5px}
@@ -1510,6 +1515,28 @@ function cv_channels(data){
   return [...s];
 }
 function inboxStatusText(s){return ({active:'AI actief',booked:'Afspraak',needs_human:'Overname',closed:'Gesloten',opted_out:'Afgemeld'}[s]||s);}
+function inboxSummaryHtml(s){
+  if(!s||!s.summary)return '<div class="ibx-ip-note">Nog geen samenvatting. Klik op “Genereren” om een AI-samenvatting van dit gesprek te maken.</div>';
+  const md=esc(s.summary).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
+  const when=s.generated_at?`<div class="muted" style="font-size:10.5px;margin-top:6px">Bijgewerkt ${new Date(s.generated_at).toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${s.message_count?' · '+s.message_count+' berichten':''}</div>`:'';
+  return `<div class="ibx-sum-text">${md}</div>${when}`;
+}
+async function inboxGenSummary(gid){
+  const btn=$('#ibx_sum_btn'),body=$('#ibx_sum_body');
+  if(btn){btn.disabled=true;btn.textContent='Bezig…';}
+  if(body)body.innerHTML='<div class="ibx-ip-note">Samenvatting genereren…</div>';
+  try{
+    const {data,error}=await sb.functions.invoke('inbox-summary',{body:{group:gid}});
+    if(error||!data||data.ok===false){
+      const msg=(data&&data.error==='no_key')?'Koppel eerst een OpenAI API-sleutel (integration_config.openai_api_key) om samenvattingen te genereren.':((data&&(data.note||data.detail||data.error))||(error&&error.message)||'Mislukt');
+      if(body)body.innerHTML=`<div class="ibx-ip-note">${esc(msg)}</div>`;
+      toast('Samenvatting: '+esc(msg),'err');return;
+    }
+    if(body)body.innerHTML=inboxSummaryHtml({summary:data.summary,generated_at:data.generated_at,message_count:data.message_count});
+    toast('Samenvatting bijgewerkt','ok');
+  }catch(e){if(body)body.innerHTML='<div class="ibx-ip-note">Samenvatting mislukt.</div>';toast('Samenvatting mislukt','err');}
+  finally{const b=$('#ibx_sum_btn');if(b){b.disabled=false;b.textContent='↻ Vernieuwen';}}
+}
 function inboxDrawInfo(ctx){
   const info=$('#ibx_info');if(!info)return;
   const cv=ctx.conversation||{},ct=ctx.contact||null,chans=ctx.channels||[],timeline=ctx.timeline||[];
@@ -1563,6 +1590,7 @@ function inboxDrawInfo(ctx){
     <div class="ibx-ip-actions">${acts.join('')}</div>
     ${aiCtrl?`<div class="ibx-ip-ai">${aiCtrl}</div>`:''}
     <div class="ibx-ip-scroll">
+      <div class="ibx-ip-sec"><div class="ibx-ip-h" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button class="ibx-sum-btn" id="ibx_sum_btn">${ctx.summary&&ctx.summary.summary?'↻ Vernieuwen':'✨ Genereren'}</button>`:''}</div><div id="ibx_sum_body">${inboxSummaryHtml(ctx.summary)}</div></div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Lead</div>${leadRows.length?leadRows.map(([k,val])=>`<div class="ibx-kv"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join(''):'<div class="ibx-ip-note">Nog geen kwalificatie vastgelegd.</div>'}${winRow}</div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Contact</div>${contactHtml}</div>
       ${pipeHtml}
@@ -1573,6 +1601,7 @@ function inboxDrawInfo(ctx){
     const to=$('#ibx_takeover');if(to)to.onclick=()=>inboxTakeOver(gid);
     const rs=$('#ibx_resume');if(rs)rs.onclick=()=>inboxResume(gid);
     const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(gid);
+    const sm=$('#ibx_sum_btn');if(sm)sm.onclick=()=>inboxGenSummary(gid);
   }
 }
 async function inboxSetPipeline(id){
@@ -2243,8 +2272,12 @@ function _countryFromPhone(phone){
 function _waDigits(phone){
   let d=(phone||'').replace(/[^0-9]/g,'');
   if(!d)return '';
-  if(d.startsWith('00'))d=d.slice(2);            // 00 international prefix
-  else if(d.startsWith('0'))d='31'+d.replace(/^0+/,''); // Dutch national 06…/0… -> +31
+  if(d.startsWith('00'))d=d.slice(2);            // 00 international prefix -> drop
+  else if(d.startsWith('0')){
+    d=d.replace(/^0+/,'');                        // drop leading zero(s)
+    if(!d.startsWith('31'))d='31'+d;             // "06…" national -> +31; "0" + "31…" already has the country code
+  }
+  else if(d.startsWith('6')&&d.length===9)d='31'+d; // bare NL mobile without leading 0
   if(d.length<9||d.length>15)return '';          // implausible / truncated
   return d;
 }
