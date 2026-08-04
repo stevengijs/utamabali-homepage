@@ -3051,12 +3051,12 @@ async function pipeLoadEnrichment(){
   const ids=[...new Set(PIPE.cards.map(c=>c.contact_id).filter(Boolean))];
   if(!ids.length)return;
   const [ctR,ldR,chR]=await Promise.all([
-    sb.from('contacts').select('id,name,phone,email').in('id',ids),
+    sb.from('contacts').select('id,name,phone,email,first_seen_at,last_activity_at').in('id',ids),
     sb.from('leads').select('contact_id,budget,timeline,project,created_at').in('contact_id',ids).order('created_at',{ascending:false}),
     sb.from('inbox_conversations').select('contact_id,channel,last_message_at').in('contact_id',ids),
   ]);
-  (ctR.data||[]).forEach(ct=>{PIPE.enrich[ct.id]={name:ct.name,phone:ct.phone,email:ct.email};});
-  (ldR.data||[]).forEach(l=>{if(!l.contact_id)return;const e=PIPE.enrich[l.contact_id]||(PIPE.enrich[l.contact_id]={});if(!e.budget&&l.budget)e.budget=l.budget;if(!e.timeline&&l.timeline)e.timeline=l.timeline;if(!e.project&&l.project)e.project=l.project;});
+  (ctR.data||[]).forEach(ct=>{PIPE.enrich[ct.id]={name:ct.name,phone:ct.phone,email:ct.email,first_seen_at:ct.first_seen_at,last_activity_at:ct.last_activity_at};});
+  (ldR.data||[]).forEach(l=>{if(!l.contact_id)return;const e=PIPE.enrich[l.contact_id]||(PIPE.enrich[l.contact_id]={});if(!e.budget&&l.budget)e.budget=l.budget;if(!e.timeline&&l.timeline)e.timeline=l.timeline;if(!e.project&&l.project)e.project=l.project;if(l.created_at&&(!e.leadFirst||l.created_at<e.leadFirst))e.leadFirst=l.created_at;});
   // Chat activity per contact: latest message time + which channels are in play.
   (chR.data||[]).forEach(cv=>{if(!cv.contact_id)return;const e=PIPE.enrich[cv.contact_id]||(PIPE.enrich[cv.contact_id]={});const ch=e.chat||(e.chat={at:null,channels:[]});if(cv.channel&&!ch.channels.includes(cv.channel))ch.channels.push(cv.channel);if(cv.last_message_at&&(!ch.at||cv.last_message_at>ch.at))ch.at=cv.last_message_at;});
 }
@@ -3273,7 +3273,12 @@ function pipeCardDrawer(card){
   const teamOpts=`<option value="">— niemand —</option>`+PIPE.team.map(t=>`<option value="${t.id}"${card.assignee===t.id?' selected':''}>${esc(t.full_name||t.email)}</option>`).join('');
   const stageOpts=stages.map(s=>`<option value="${esc(s.key)}"${s.key===card.stage?' selected':''}>${esc(s.label)}</option>`).join('');
   const phone=en.phone||'',email=en.email||'';
+  const _pdDate=v=>{try{return new Date(v).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});}catch(e){return '—';}};
+  const inAt=en.first_seen_at||en.leadFirst||card.created_at||null;
+  const lastAt=[en.last_activity_at,(en.chat&&en.chat.at)].filter(Boolean).sort().pop()||null;
   const facts=[['Budget',esc(en.budget||'—')],['Wanneer investeren',esc(en.timeline||'—')]];
+  facts.push(['Binnengekomen',inAt?esc(_pdDate(inAt)):'—']);
+  facts.push(['Laatste activiteit',lastAt?esc(_pdDate(lastAt)+' · '+inboxRel(lastAt)):'—']);
   if(phone)facts.push(['Telefoon',esc(phone)]);
   if(email)facts.push(['E-mail',esc(email)]);
   const acts=[];
