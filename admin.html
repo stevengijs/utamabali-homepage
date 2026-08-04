@@ -2723,7 +2723,7 @@ function pipeCardHtml(c){
   const task=dueAt?`<span class="pipe-chip task" title="Opvolgen — verschuift dan automatisch naar Actie vereist">⏰ ${esc(new Date(dueAt).toLocaleDateString('nl-NL',{day:'numeric',month:'short'}))}</span>`:'';
   const val=(c.value!=null&&c.value!=='')?`<span class="pipe-chip val">${anMoney(c.value)}</span>`:'';
   const crm=c.contact_id?`<span class="pipe-chip crm" data-crm="${esc(c.contact_id)}" title="Open in CRM">CRM ↗</span>`:'';
-  const chat=(c.contact_id&&en.chat&&en.chat.at)?`<span class="pipe-chat" data-chat="${esc(c.contact_id)}" title="Laatste chat: ${esc(inboxRel(en.chat.at))} — klik om te openen">${(en.chat.channels||[]).map(x=>(INBOX_CH[x]||INBOX_CH.instagram).icon).join('')||'💬'} ${esc(inboxRel(en.chat.at))}</span>`:'';
+  const chat=(c.contact_id&&en.chat&&en.chat.at)?`<span class="pipe-chat" data-chat="${esc(c.contact_id)}" title="Laatste chat: ${esc(inboxRel(en.chat.at))}${(en.chat.channels||[]).length?' · '+en.chat.channels.map(x=>(INBOX_CH[x]||{}).label||x).join(', '):''} — klik om te openen">💬 ${esc(inboxRel(en.chat.at))}</span>`:'';
   const wa=_waDigits(en.phone)?`<a class="pipe-wa" data-wa="${esc(c.id)}" title="Stuur WhatsApp-bericht">${WA_SVG}</a>`:'';
   const who=c.assignee?`<span class="pipe-av" title="Eigenaar: ${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
   const warm=c.contact_id?warmthBadge(WARMTH[c.contact_id]):'';
