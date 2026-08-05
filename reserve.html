@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
+  <script src="/t.js" defer></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex" />
@@ -81,8 +82,16 @@ function itpToHtml(body){if(!body)return "";if(/<\w+[^>]*>/.test(body))return bo
 function htmlToPlain(h){return (h||"").replace(/<\/(p|div|h[1-6])>/gi,"\n\n").replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/\n{3,}/g,"\n\n").trim();}
 function isHeadingLine(t){t=(t||"").trim();return !!(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44);}
 async function api(action,extra){
-  const r=await fetch(EP,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,token,...(extra||{})})});
-  return r.json();
+  // Nooit laten crashen op netwerk-/serverfouten: geef altijd een {ok:false,error}
+  // terug zodat de knoppen herstellen en de klant een nette melding ziet
+  // (voorheen bleef de pagina hangen op "Laden…" of de knop op "Bezig…").
+  try{
+    const r=await fetch(EP,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,token,...(extra||{})})});
+    if(!r.ok){return {ok:false,error:"De server reageert even niet (status "+r.status+"). Probeer het over een minuut opnieuw."};}
+    return await r.json();
+  }catch(e){
+    return {ok:false,error:"Geen verbinding met de server. Controleer je internet en probeer het opnieuw."};
+  }
 }
 function refText(r){return `${r.project||""} ${r.unit||""} deposit`.replace(/\s+/g," ").trim();}
 function itpText(r){
@@ -219,6 +228,10 @@ async function doMarkTransfer(){
 (async function(){
   if(!token){body.innerHTML='<div class="err">Geen reservering opgegeven.</div>';return;}
   RES=await api("get");
+  if(!RES||RES.ok===false||RES.error){
+    body.innerHTML='<div class="err" style="margin:20px">'+esc((RES&&RES.error)||"Kon de reservering niet laden.")+' <a href="javascript:location.reload()">Opnieuw proberen</a></div>';
+    return;
+  }
   render();
 })();
 </script>
