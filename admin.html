@@ -302,14 +302,14 @@
   .ibx-note-b{font-size:13px;line-height:1.5;color:#4a3d0a;white-space:pre-wrap;word-wrap:break-word}
   .ibx-ip-note{font-size:12px;color:var(--muted);line-height:1.5}
   .ibx-autoem{align-self:stretch;margin:3px 0;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;overflow:hidden}
-  .ibx-autoem>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;color:#64748b}
+  .ibx-autoem .ibx-autoem-h{width:100%;background:none;border:0;font:inherit;text-align:left;list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 12px;min-height:32px;font-size:12px;color:#64748b}
   .ibx-autoem>summary::-webkit-details-marker{display:none}
   .ibx-autoem-tag{font-size:10px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:#475569;background:#e2e8f0;border-radius:999px;padding:2px 8px;white-space:nowrap}
   .ibx-autoem-sub{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#334155;font-weight:600}
   .ibx-autoem-t{color:#94a3b8;font-size:10.5px;white-space:nowrap}
   .ibx-autoem-x{color:#0f6b4f;font-size:11px;font-weight:700;white-space:nowrap}
-  .ibx-autoem>summary .ibx-autoem-x::after{content:'tonen ▼'}
-  .ibx-autoem[open]>summary .ibx-autoem-x::after{content:'verbergen ▲'}
+  .ibx-autoem .ibx-autoem-x::after{content:'tonen ▼'}
+  .ibx-autoem.open .ibx-autoem-x::after{content:'verbergen ▲'}
   .ibx-autoem-b{padding:2px 14px 12px;font-size:13px;line-height:1.55;color:#334155;border-top:1px solid #e2e8f0;margin-top:2px}
   .ibx-oth{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;background:#f8faf9;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12.5px;font-weight:600}
   .ibx-oth:hover{background:#eef5f2}
@@ -1776,10 +1776,12 @@ function inboxRenderMsgs(msgs){
       const mm=raw.match(/^\s*✉️?\s*(.*?)(?:\n{2,}([\s\S]*))?$/);
       const subject=(mm&&mm[1]?mm[1]:'').trim();
       const bodyText=(mm&&mm[2]?mm[2]:(subject?'':raw)).trim();
-      return `${sep}<details class="ibx-autoem">
-        <summary class="ibx-autoem-h"><span class="ibx-autoem-tag">🤖 Automatische e-mail</span><span class="ibx-autoem-sub">${esc(subject||'(zonder onderwerp)')}</span><span class="ibx-autoem-t">${esc(inboxClock(m.created_at))}</span><span class="ibx-autoem-x"></span></summary>
-        <div class="ibx-autoem-b">${esc(bodyText).replace(/\n/g,'<br>')}</div>
-      </details>`;
+      // Expliciete knop-toggle i.p.v. native <details>: dat element bleek in de
+      // praktijk soms als lege stippellijn te renderen (summary onzichtbaar).
+      return `${sep}<div class="ibx-autoem" data-autoem>
+        <button type="button" class="ibx-autoem-h" data-autoem-t><span class="ibx-autoem-tag">🤖 Automatische e-mail</span><span class="ibx-autoem-sub">${esc(subject||'(zonder onderwerp)')}</span><span class="ibx-autoem-t">${esc(inboxClock(m.created_at))}</span><span class="ibx-autoem-x"></span></button>
+        <div class="ibx-autoem-b" hidden>${esc(bodyText).replace(/\n/g,'<br>')}</div>
+      </div>`;
     }
     const biz=BIZ_ACCOUNTS[mch]||'';
     const bizTag=(out&&biz)?` · <span class="ibx-bizacct">${esc(biz)}</span>`:'';
@@ -1809,6 +1811,13 @@ function inboxRenderMsgs(msgs){
       <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag}<div class="ibx-btext">${esc(m.body||'')}</div>${undelNote}</div></div>
       ${metaHtml}</div>`;
   }).join('');
+  // Toggle van de ingeklapte automatische e-mails (expliciete knop, geen <details>).
+  box.querySelectorAll('[data-autoem-t]').forEach(b=>b.onclick=()=>{
+    const w=b.closest('[data-autoem]');const bd=w&&w.querySelector('.ibx-autoem-b');if(!bd)return;
+    const open=bd.hasAttribute('hidden');
+    if(open){bd.removeAttribute('hidden');w.classList.add('open');}
+    else{bd.setAttribute('hidden','');w.classList.remove('open');}
+  });
   box.scrollTop=box.scrollHeight;
 }
 async function inboxRefreshMessages(id){
