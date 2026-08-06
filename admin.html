@@ -248,6 +248,17 @@
   .ibx-mrow.out .ibx-btime{padding-right:2px}
   .ibx-undel{font-size:10.5px;margin-top:4px;color:#b45309;font-weight:700}
   .ibx-bub.human .ibx-undel{color:#ffe0b2}
+  /* Kanaalkleur per wolkje (naast het icoontje): Instagram roze, WhatsApp groen,
+     e-mail grijsblauw. Lead licht, AI iets voller, mens verzadigd met wit. */
+  .ibx-bub.ch-instagram.lead{background:#fdf2f8;border-color:#f7d5e8}
+  .ibx-bub.ch-instagram.ai{background:#fce7f3;border-color:#f2c3dc}
+  .ibx-bub.ch-instagram.human{background:#c13584}
+  .ibx-bub.ch-whatsapp.lead{background:#f0fdf4;border-color:#cdeed9}
+  .ibx-bub.ch-whatsapp.ai{background:#dcfce7;border-color:#b5e5c8}
+  .ibx-bub.ch-whatsapp.human{background:#128c7e}
+  .ibx-bub.ch-email.lead{background:#f8fafc;border-color:#e2e8f0}
+  .ibx-bub.ch-email.ai{background:#eef2f6;border-color:#d9e2ec}
+  .ibx-bub.ch-email.human{background:#475569}
   .ibx-compose{border-top:1px solid var(--line);padding:10px 12px;background:#fff}
   .ibx-aihint{font-size:11.5px;color:var(--muted);background:#f1f7f4;border:1px solid #d9ebe3;border-radius:8px;padding:7px 10px;margin-bottom:8px}
   .ibx-crow{display:flex;gap:8px;align-items:flex-end}
@@ -1830,6 +1841,7 @@ function inboxRenderMsgs(msgs){
     const out=m.direction==='out';const who=m.sender;
     const mch=m.channel||cur.channel||'instagram';
     const med=INBOX_CH[mch]||INBOX_CH.instagram;
+    const chCls=(mch==='instagram'||mch==='whatsapp'||mch==='email')?' ch-'+mch:'';
     // Automatische e-mail (sequence/outreach): duidelijk gelabeld én standaard ingeklapt,
     // zodat de lange mailtekst het overzicht in de chat niet verstoort.
     if(out&&who==='ai'&&mch==='email'){
@@ -1869,7 +1881,7 @@ function inboxRenderMsgs(msgs){
     // clear which channel it came via), plus the time once per minute-cluster.
     const metaHtml=`<div class="ibx-btime"><span class="ibx-medico" title="${esc(med.label)}">${med.icon}</span>${showTime?' '+esc(inboxClock(m.created_at)):''}</div>`;
     return `${sep}<div class="ibx-mrow ${out?'out':'in'}">
-      <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag}<div class="ibx-btext">${esc(m.body||'')}</div>${undelNote}</div></div>
+      <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}${chCls}">${tag}<div class="ibx-btext">${esc(m.body||'')}</div>${undelNote}</div></div>
       ${metaHtml}</div>`;
   }).join('');
   // Toggle van de ingeklapte automatische e-mails (expliciete knop, geen <details>).
