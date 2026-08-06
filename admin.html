@@ -250,9 +250,12 @@
   .ibx-bub.human .ibx-undel{color:#ffe0b2}
   /* Kanaalkleur per wolkje (naast het icoontje): Instagram roze, WhatsApp groen,
      e-mail grijsblauw. Lead licht, AI iets voller, mens verzadigd met wit. */
-  .ibx-bub.ch-instagram.lead{background:#fdf2f8;border-color:#f7d5e8}
-  .ibx-bub.ch-instagram.ai{background:#fce7f3;border-color:#f2c3dc}
-  .ibx-bub.ch-instagram.human{background:#c13584}
+  /* Instagram: exact de look van de echte DM-interface (grijs = lead, IG-blauw = wij) */
+  .ibx-bub.ch-instagram.lead{background:#efeff1;border-color:#e7e7ea}
+  .ibx-bub.ch-instagram.ai{background:#4e5af5;border-color:#4e5af5;color:#fff}
+  .ibx-bub.ch-instagram.ai .ibx-tag.ai{color:#dbe0ff}
+  .ibx-bub.ch-instagram.ai .ibx-undel{color:#ffe0b2}
+  .ibx-bub.ch-instagram.human{background:#4e5af5}
   .ibx-bub.ch-whatsapp.lead{background:#f0fdf4;border-color:#cdeed9}
   .ibx-bub.ch-whatsapp.ai{background:#dcfce7;border-color:#b5e5c8}
   .ibx-bub.ch-whatsapp.human{background:#128c7e}
@@ -3752,9 +3755,49 @@ function seqPlainHtml(inner){return `<div style="font-family:-apple-system,Segoe
 function seqNewsletterHtml(subject,inner){return `<div style="background:#f4f6f5;padding:20px"><div style="max-width:600px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e6ebe8"><div style="background:#000;padding:18px 24px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff"><span style="font-size:17px;font-weight:800">UTAMA <span style="font-weight:500;opacity:.85">Bali</span></span><span style="font-size:12px;color:rgba(255,255,255,.6);margin-left:12px">Boutique vastgoedontwikkeling op Bali</span></div><div style="padding:24px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px;line-height:1.65;color:#12211c">${inner}</div><div style="padding:16px 24px;border-top:1px solid #eef1f0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;color:#8a978f">UTAMA Bali · investeringsvilla's op Bali · invest.utamabali.com</div></div></div>`;}
 async function renderSequences(){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Sequences laden…</div>';
-  const {data,error}=await sb.rpc('seq_list');
+  const [{data,error},tplRes]=await Promise.all([sb.rpc('seq_list'),sb.from('outreach_templates').select('*').order('key')]);
   if(error){v.innerHTML=`<div class="panel"><div class="empty" style="padding:20px">Kon sequences niet laden: ${esc(error.message)}</div></div>`;return;}
-  SEQ.list=data||[];seqListView();
+  SEQ.list=data||[];SEQ.tpls=tplRes.data||[];seqListView();
+}
+const OTPL_LABELS={brochure:'Intro-mail + brochure (direct na aanmelding)'};
+function otplPanel(){
+  const edit=canEdit('sequences');
+  if(!SEQ.tpls||!SEQ.tpls.length)return '';
+  const cards=SEQ.tpls.map(t=>{
+    const k=esc(t.key);
+    return `<div class="panel" style="margin-top:12px" data-otpl="${k}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <b>${esc(OTPL_LABELS[t.key]||('Lead-mail: '+t.key))}</b>
+        <label class="muted" style="font-size:12px;display:flex;align-items:center;gap:6px">Versturen
+          <input type="number" min="0" max="10080" data-f="delay_minutes" value="${Number(t.delay_minutes)||0}" ${edit?'':'disabled'} style="width:70px" class="pc-in"> minuten na aanmelding (0 = direct)</label>
+      </div>
+      <div class="muted" style="font-size:11px;margin:6px 0 10px">Beschikbare velden: {naam}, {project}, {link}. Geldt voor e-mail én het eerste WhatsApp/IG-bericht.</div>
+      <div style="display:grid;gap:10px">
+        <div><label class="pdr-label">Onderwerp e-mail</label><input class="pc-in" data-f="email_subject" value="${esc(t.email_subject||'')}" ${edit?'':'disabled'}></div>
+        <div><label class="pdr-label">E-mail (HTML)</label><textarea class="pc-in" data-f="email_html" rows="8" ${edit?'':'disabled'} style="font-family:ui-monospace,monospace;font-size:12px">${esc(t.email_html||'')}</textarea></div>
+        <div><label class="pdr-label">WhatsApp-bericht (na formulier)</label><textarea class="pc-in" data-f="wa_text" rows="4" ${edit?'':'disabled'}>${esc(t.wa_text||'')}</textarea></div>
+        <div><label class="pdr-label">WhatsApp-bericht (vanuit Instagram-chat)</label><textarea class="pc-in" data-f="wa_text_ig" rows="4" ${edit?'':'disabled'}>${esc(t.wa_text_ig||'')}</textarea></div>
+      </div>
+      ${edit?`<div style="margin-top:10px;text-align:right"><button class="btn" data-otpl-save="${k}">Opslaan</button></div>`:''}
+    </div>`;
+  }).join('');
+  return `<div style="margin-top:16px"><div class="seq-h">Directe lead-mails</div>
+    <div class="muted" style="font-size:12px;margin-top:2px">Deze berichten gaan automatisch naar elke nieuwe lead. Pas de tekst aan of stel in hoeveel minuten na aanmelding ze verstuurd worden. WhatsApp gaat altijd via het bedrijfsnummer +31 6 12005900.</div>
+    ${cards}</div>`;
+}
+function otplBind(){
+  document.querySelectorAll('[data-otpl-save]').forEach(b=>b.onclick=async()=>{
+    const key=b.dataset.otplSave;const card=document.querySelector(`[data-otpl="${key}"]`);if(!card)return;
+    const upd={updated_at:new Date().toISOString()};
+    card.querySelectorAll('[data-f]').forEach(el=>{
+      upd[el.dataset.f]=el.dataset.f==='delay_minutes'?Math.max(0,Math.min(10080,parseInt(el.value,10)||0)):el.value;
+    });
+    b.disabled=true;b.textContent='Opslaan…';
+    const {error}=await sb.from('outreach_templates').update(upd).eq('key',key);
+    b.disabled=false;b.textContent='Opslaan';
+    if(error){toast('Opslaan mislukt: '+error.message,'err');return;}
+    toast('Lead-mail opgeslagen','ok');
+  });
 }
 function seqTriggerLabel(t){return t==='new_lead'?'Auto: nieuwe lead':'Handmatig';}
 function seqListView(){
@@ -3769,9 +3812,10 @@ function seqListView(){
   v.innerHTML=`<div class="panel" style="padding:0">
     <div class="seq-top"><div><b>E-mail sequences</b><div class="muted" style="font-size:12px">Warm leads op met een reeks e-mails. Automatisch verzonden via info@utamabali.com; stopt zodra een lead reageert of zich afmeldt.</div></div>${edit?`<button class="btn" id="seq_new">＋ Nieuwe sequence</button>`:''}</div>
     <div class="seq-list">${rows||'<div class="empty" style="padding:24px">Nog geen sequences. Maak er een om leads automatisch op te warmen.</div>'}</div>
-  </div>`;
+  </div>${otplPanel()}`;
   const nw=$('#seq_new');if(nw)nw.onclick=()=>seqOpen(null);
   v.querySelectorAll('.seq-row').forEach(r=>r.onclick=()=>seqOpen(r.dataset.id));
+  otplBind();
 }
 async function seqOpen(id){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Laden…</div>';
