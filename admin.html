@@ -938,6 +938,7 @@ async function renderDashboard(){
     <div style="padding:18px"><div class="muted" style="font-size:13px">Your access:</div><div style="margin-top:8px">${accessSummaryHTML()}</div></div></div>`;
   html+=`<div class="panel"><div class="panel-head"><div><h3>📅 Google Agenda</h3><div class="desc">Koppel je agenda zodat de AI-assistent je beschikbaarheid kan zien en meetings kan inplannen. Alleen jij koppelt je eigen agenda.</div></div></div><div style="padding:18px" id="gcal_body"><div class="muted" style="font-size:13px">Laden…</div></div></div>`;
   html+=`<div class="panel"><div class="panel-head"><div><h3>📅 Outlook Agenda</h3><div class="desc">Werk je met Outlook/Microsoft 365? Koppel die agenda op dezelfde manier, de AI-assistent kijkt dan in beide.</div></div></div><div style="padding:18px" id="mscal_body"><div class="muted" style="font-size:13px">Laden…</div></div></div>`;
+  html+=`<div class="panel"><div class="panel-head"><div><h3>🎯 Intro-calls</h3><div class="desc">Alle intro-calls lopen via de vaste eigenaar. Ben je tijdelijk vervangend beschikbaar (bijv. als zij reist), voeg jezelf dan toe voor een periode; de AI plant dan ook bij jou.</div></div></div><div style="padding:18px" id="intro_body"><div class="muted" style="font-size:13px">Laden…</div></div></div>`;
   v.innerHTML=html;
   v.querySelectorAll('.stat[data-go]').forEach(x=>{if(x.dataset.go)x.onclick=()=>go(x.dataset.go);});
   // OAuth return feedback
@@ -945,6 +946,7 @@ async function renderDashboard(){
   try{const p=new URLSearchParams(location.search).get('mscal');if(p){toast(p==='connected'?'Outlook Agenda gekoppeld ✓':(p==='cancelled'?'Koppeling geannuleerd':'Koppelen mislukt — probeer opnieuw'),p==='connected'?'ok':'err');history.replaceState(null,'',location.pathname+location.hash);}}catch(e){}
   gcalRender();
   mscalRender();
+  introRender();
 }
 async function mscalConnect(btn){
   const label=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='Even geduld…';}
@@ -966,6 +968,31 @@ async function mscalRender(){
     box.innerHTML=`<button class="btn btn-primary" id="mscal_conn">📅 Koppel Outlook Agenda</button><div class="muted" style="font-size:12px;margin-top:8px">Je wordt doorgestuurd naar Microsoft om toestemming te geven. Je kunt later meerdere agenda's koppelen.</div>`;
     const c=$('#mscal_conn');if(c)c.onclick=()=>mscalConnect(c);
   }
+}
+async function introRender(){
+  const box=$('#intro_body');if(!box)return;
+  const {data,error}=await sb.rpc('intro_roster');
+  if(!$('#intro_body'))return;
+  if(error||!data){box.innerHTML=`<div class="muted" style="font-size:13px">Niet beschikbaar: ${esc((error&&error.message)||'geen data')}</div>`;return;}
+  const ovr=(data.overrides||[]);
+  const fmtD=d=>{try{return new Date(d+'T00:00:00').toLocaleDateString('nl-NL',{day:'numeric',month:'short'});}catch(e){return d;}};
+  box.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><span class="badge green">Vast</span><span style="font-size:13.5px;font-weight:700">${esc(data.primary_email||'niet ingesteld')}</span><span class="muted" style="font-size:12px">doet alle intro-calls</span></div>
+    ${ovr.length?`<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">${ovr.map(o=>`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--line);border-radius:9px;padding:9px 12px"><span class="badge ${o.active?'green':'grey'}">${o.active?'Actief':'Gepland'}</span><span style="font-size:13.5px;font-weight:600">${esc(o.full_name||o.email||'Teamlid')}</span><span class="muted" style="font-size:12px">${fmtD(o.start_date)} t/m ${fmtD(o.end_date)}${o.note?' · '+esc(o.note):''}</span><span style="margin-left:auto"></span><button class="btn btn-ghost btn-sm" data-iovr="${esc(o.id)}" style="color:#b91c1c">Verwijderen</button></div>`).join('')}</div>`:''}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <input type="date" id="intro_from" class="inp" style="width:auto;padding:6px 10px">
+      <span class="muted" style="font-size:12px">t/m</span>
+      <input type="date" id="intro_to" class="inp" style="width:auto;padding:6px 10px">
+      <button class="btn btn-ghost btn-sm" id="intro_add">＋ Mij tijdelijk toevoegen</button>
+    </div>`;
+  box.querySelectorAll('[data-iovr]').forEach(b=>b.onclick=async()=>{if(!confirm('Deze periode verwijderen?'))return;const {error}=await sb.rpc('intro_override_delete',{p_id:b.dataset.iovr});if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}toast('Verwijderd','ok');introRender();});
+  const add=$('#intro_add');if(add)add.onclick=async()=>{
+    const f=$('#intro_from').value,t=$('#intro_to').value;
+    if(!f||!t){toast('Kies een begin- en einddatum','err');return;}
+    const {error}=await sb.rpc('intro_override_add',{p_start:f,p_end:t});
+    if(error){toast('Toevoegen mislukt: '+error.message,'err');return;}
+    toast('Toegevoegd — de AI plant deze periode ook bij jou','ok');introRender();
+  };
 }
 async function gcalConnect(btn){
   const label=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='Doorsturen naar Google…';}
