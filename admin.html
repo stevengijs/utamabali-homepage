@@ -505,6 +505,8 @@
   .seq-rte:empty:before{content:attr(data-ph);color:#9aa5a0}
   .seq-rte p{margin:0 0 10px}
   .seq-rte ul,.seq-rte ol{margin:0 0 10px;padding-left:20px}
+  .pipe-ho{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid #cfe8dd;background:#eaf4ef;color:#0f6b4f;cursor:pointer}
+  .pipe-ho.off{border-color:var(--line);background:#f4f5f4;color:var(--muted)}
   .pipe-add{margin:0 8px 8px;padding:7px;border:1px dashed #c7cfcb;border-radius:9px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;width:calc(100% - 16px)}
   .pipe-add:hover{background:#eef2f0;color:var(--ink,#111)}
   .pc-form label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:2px}
@@ -3198,6 +3200,24 @@ function pipeCardHtml(c){
   const foot=(crm||wa||who||val||chat)?`<div class="pipe-card-foot"><span style="display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap">${val}${crm}${chat}</span><span class="pipe-foot-right">${wa}${who}</span></div>`:'';
   return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}">${titleRow}${chips.trim()?`<div class="pipe-card-chips">${chips}</div>`:''}${foot}</div>`;
 }
+// Automatische overdrachten tussen pipelines (regels in pipeline_handoffs).
+// Toont per pipeline welke regel geldt en laat die aan/uit zetten.
+async function pipeRenderHandoffs(pipeId){
+  const box=$('#pipe_handoffs');if(!box)return;
+  const {data,error}=await sb.rpc('pipeline_handoffs_list');
+  if(!$('#pipe_handoffs')||error)return;
+  const mine=(data||[]).filter(h=>h.from_pipeline===pipeId);
+  if(!mine.length){box.innerHTML='';return;}
+  const canE=canEdit('pipeline');
+  box.innerHTML=mine.map(h=>`<span class="pipe-ho ${h.enabled?'':'off'}" ${canE?`data-ho="${esc(h.id)}" data-on="${h.enabled?1:0}"`:''} title="${h.enabled?'Actief':'Uitgeschakeld'}: zodra een lead in “${esc(h.from_stage_label)}” komt, verschijnt hij automatisch in ${esc(h.to_pipeline_name)} → “${esc(h.to_stage_label)}”.${canE?' Klik om aan/uit te zetten.':''}">${h.enabled?'⚡':'⏸'} ${esc(h.from_stage_label)} → ${esc(h.to_pipeline_name)}</span>`).join('');
+  box.querySelectorAll('[data-ho]').forEach(b=>b.onclick=async()=>{
+    const on=b.dataset.on==='1';
+    const {error}=await sb.rpc('pipeline_handoff_set',{p_id:b.dataset.ho,p_enabled:!on});
+    if(error){toast('Wijzigen mislukt: '+error.message,'err');return;}
+    toast(on?'Automatische overdracht uitgezet':'Automatische overdracht aangezet','ok');
+    pipeRenderHandoffs(pipeId);
+  });
+}
 function drawPipeline(){
   const v=$('#view');const edit=canEdit('pipeline');const cur=PIPE.cur;const stages=cur.stages||[];
   const pOpts=PIPE.list.map(p=>`<option value="${p.id}"${p.id===cur.id?' selected':''}>${esc(p.name)}</option>`).join('');
@@ -3216,6 +3236,7 @@ function drawPipeline(){
     ${edit?`<button class="btn btn-ghost btn-sm" id="pipe_saveview">Weergave opslaan</button>`:''}
     <span style="margin-left:auto"></span>
     ${cur.auto_sync?`<span class="muted" style="font-size:12px" title="Kaarten komen automatisch uit de CRM: nieuwe leads, ITP-/reserveringsaanvragen en aankopen verschuiven vanzelf mee.">⚡ Automatisch gevuld vanuit CRM</span>`:(edit?`<button class="btn btn-ghost btn-sm" id="pipe_import">⤵ Leads importeren</button>`:'')}
+    <span id="pipe_handoffs" style="display:flex;gap:6px;align-items:center"></span>
   </div>`;
   const cards=pipeFilteredCards();
   if(!stages.length){
@@ -3242,6 +3263,7 @@ function wirePipeline(){
   const nw=$('#pipe_new');if(nw)nw.onclick=pipeNewPipeline;
   const ec=$('#pipe_editcols');if(ec)ec.onclick=pipeEditColumns;
   const imp=$('#pipe_import');if(imp)imp.onclick=pipeImportLeads;
+  pipeRenderHandoffs(cur.id);
   const sv=$('#pipe_saveview');if(sv)sv.onclick=pipeSaveView;
   const q=$('#pipe_q');if(q)q.oninput=()=>{PIPE.filters.q=q.value;drawPipeline();const nq=$('#pipe_q');if(nq){nq.focus();try{nq.setSelectionRange(nq.value.length,nq.value.length);}catch(e){}}};
   const fp=$('#pipe_fproj');if(fp)fp.onchange=()=>{PIPE.filters.project=fp.value;drawPipeline();};
