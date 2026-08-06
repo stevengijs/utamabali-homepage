@@ -1465,7 +1465,7 @@ const INBOX_CH={
 /* Vanaf welk eigen account UTAMA per kanaal verzendt — getoond bij uitgaande
    berichten zodat het team ziet vanuit welk account/nummer/e-mail iets gaat.
    Vul whatsapp/email in zodra die kanalen live gaan. */
-const BIZ_ACCOUNTS={ instagram:'@stevenbalivillas', whatsapp:'', email:'info@utamabali.com' };
+const BIZ_ACCOUNTS={ instagram:'@stevenbalivillas', whatsapp:'+31 6 12005900', email:'info@utamabali.com' };
 // Small channel chip (icon + label) used to mark each message's medium.
 function inboxChip(channel,withLabel){
   const c=INBOX_CH[channel]||INBOX_CH.instagram;
@@ -1878,7 +1878,8 @@ function inboxRenderMsgs(msgs){
       </div>`;
     }
     const biz=BIZ_ACCOUNTS[mch]||'';
-    const bizTag=(out&&biz)?` · <span class="ibx-bizacct">${esc(biz)}</span>`:'';
+    // Toon bij elk uitgaand bericht via welk kanaal en welk account/nummer het ging.
+    const bizTag=(out&&biz)?` · <span class="ibx-bizacct">${esc(med.label)} ${esc(biz)}</span>`:'';
     const tag=who==='ai'?`<span class="ibx-tag ai">AI${bizTag}</span>`:who==='human'?`<span class="ibx-tag hum">${esc((m.sender_name||'Team').split('@')[0])}${bizTag}</span>`:'';
     const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
     const undelNote=undel?`<div class="ibx-undel">${m.delivery_status==='failed'?'⚠︎ Niet afgeleverd':'⏳ Niet verzonden — kanaal nog niet gekoppeld'}</div>`:'';
