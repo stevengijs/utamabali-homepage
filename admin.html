@@ -414,6 +414,16 @@
   .pipe-chat:hover{background:#e0ebff}
   .pipe-chip.task{background:#fff7e6;color:#92600a;border:1px solid #f6d98a}
   .pdr-tasks{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+  .pdr-notes{display:flex;flex-direction:column;gap:7px;margin-bottom:9px;max-height:290px;overflow-y:auto}
+  .pdr-note{border:1px solid var(--line);border-radius:9px;padding:8px 11px;background:#fbfcfb}
+  .pdr-note-h{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-bottom:3px}
+  .pdr-note-h b{color:var(--ink);font-weight:700}
+  .pdr-note-x{margin-left:auto;background:none;border:0;color:#b91c1c;font-size:11px;cursor:pointer;padding:0}
+  .pdr-note-b{font-size:13px;line-height:1.5;color:var(--ink);white-space:pre-wrap}
+  .pdr-notenew{display:flex;flex-direction:column;gap:6px}
+  .pdr-notenew textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:13px;resize:vertical}
+  .pdr-notenew .row{display:flex;align-items:center;gap:8px}
+  .pdr-notenew .row .muted{font-size:11.5px}
   .pdr-task{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;background:#fbfcfb;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px}
   .pdr-task.done{opacity:.6}
   .pdr-task-x{flex:none;background:none;border:none;font-size:18px;line-height:1;color:var(--muted);cursor:pointer}
@@ -475,6 +485,7 @@
   .seq-step-n{font-weight:800;font-size:12px;color:#0f6b4f}
   .seq-daywrap{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
   .seq-day{width:56px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;font-size:13px}
+  .seq-hour{width:48px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;font-size:13px}
   .seq-design{display:flex;gap:4px}
   .seq-dbtn{font-size:11.5px;font-weight:600;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);cursor:pointer}
   .seq-dbtn.on{background:#0f6b4f;color:#fff;border-color:#0f6b4f}
@@ -1575,7 +1586,12 @@ async function inboxOpen(id,keepDraft){
   INBOX.sel=id;
   document.querySelectorAll('.ibx-row').forEach(r=>r.classList.toggle('sel',r.dataset.id===id));
   const c=INBOX.convos.find(x=>x.id===id);
-  if(c&&c.unread_count>0){c.unread_count=0;sb.rpc('inbox_mark_read',{p_id:id});const rr=document.querySelector(`.ibx-row[data-id="${id}"]`);if(rr){rr.classList.remove('unread');const u=rr.querySelector('.ibx-unread');if(u)u.remove();}}
+  // Altijd markeren als gelezen bij openen, ook als de lokale teller al 0 stond
+  // (bijv. geopend vanuit het CRM of via een deeplink, of teller al lokaal gewist).
+  // Fouten stil laten verdwijnen zou de badge na refresh laten terugkomen.
+  if(c)c.unread_count=0;
+  { const rr=document.querySelector(`.ibx-row[data-id="${id}"]`);if(rr){rr.classList.remove('unread');const u=rr.querySelector('.ibx-unread');if(u)u.remove();} }
+  sb.rpc('inbox_mark_read',{p_id:id}).then(({error})=>{if(error)console.error('mark_read faalde:',error.message);});
   const t=$('#ibx_thread');if(!t)return;
   t.innerHTML='<div class="muted" style="padding:20px">Gesprek laden…</div>';
   const info=$('#ibx_info');if(info)info.innerHTML='<div class="muted" style="padding:16px;font-size:12.5px">Klantinfo laden…</div>';
@@ -3355,6 +3371,9 @@ async function pipeChatPopup(contactId){
     INBOX.cur={avatar:cv.avatar_url,name:bestName(cv.contact_name,cv.display_name)||cv.handle||'Onbekend',ch:INBOX_CH[cv.channel]||INBOX_CH.instagram,channel:cv.channel};
     q('#chatpop_title').innerHTML=`${esc(INBOX.cur.name)} <span class="muted" style="font-weight:500;font-size:12px">${(data.channels||[]).map(b=>(INBOX_CH[b.channel]||INBOX_CH.instagram).icon).join(' ')}</span>`;
     inboxRenderMsgs(data.messages||[]);
+    // Ook vanuit het CRM geopende chats tellen als gelezen, anders komt de
+    // ongelezen-badge in de inbox na een refresh weer terug.
+    sb.rpc('inbox_mark_read',{p_id:gid}).then(({error})=>{if(error)console.error('mark_read faalde:',error.message);});
   }catch(e){q('#ibx_msgs').innerHTML='<div class="muted" style="padding:20px">Kon de chat niet laden.</div>';}
 }
 function pipeOpenCard(id){const c=PIPE.cards.find(x=>x.id===id);if(c)pipeCardDrawer(c);}
@@ -3400,7 +3419,12 @@ function pipeCardDrawer(card){
         <div class="pdr-field"><div class="pdr-label">Eigenaar</div><select id="pdr_ass" ${edit?'':'disabled'}>${teamOpts}</select></div>
       </div>
       <div class="pdr-field"><div class="pdr-label">Waarde (€)</div><input id="pdr_value" type="number" step="1000" value="${card.value!=null?card.value:''}" ${edit?'':'readonly'}></div>
-      <div class="pdr-field"><div class="pdr-label">Notities</div><textarea id="pdr_notes" rows="5" ${edit?'':'readonly'} placeholder="Interne notities voor het team…">${esc(card.notes||'')}</textarea></div>
+      <div class="pdr-field"><div class="pdr-label">Notities</div>
+        <div id="pdr_notes_list" class="pdr-notes"><div class="muted" style="font-size:12px">Laden…</div></div>
+        ${edit?`<div class="pdr-notenew">
+          <textarea id="pdr_note_new" rows="3" placeholder="Nieuwe notitie… (Cmd/Ctrl + Enter om op te slaan)"></textarea>
+          <div class="row"><button class="btn btn-sm" id="pdr_note_add">Notitie toevoegen</button><span class="muted">Wordt bewaard met datum, tijd en jouw naam.</span></div>
+        </div>`:''}</div>
       ${card.contact_id?`<div class="pdr-field"><div class="pdr-label" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button type="button" class="ibx-sum-btn" id="pdr_sum_btn">✨ Genereren</button>`:''}</div><div id="pdr_sum_body">${inboxSummaryHtml(null)}</div></div>`:''}
       <div class="pdr-field">
         <div class="pdr-label">Taken &amp; automatiseringen</div>
@@ -3436,7 +3460,6 @@ function pipeCardDrawer(card){
     q('#pdr_value').addEventListener('blur',e=>{const v=e.target.value===''?null:Number(e.target.value);if(v!==card.value)save({value:v});});
     q('#pdr_proj').addEventListener('change',e=>save({project:e.target.value||null}));
     q('#pdr_ass').addEventListener('change',e=>save({assignee:e.target.value||null}));
-    q('#pdr_notes').addEventListener('blur',e=>{const v=e.target.value.trim()||null;if(v!==card.notes)save({notes:v});});
     q('#pdr_stage').addEventListener('change',async e=>{const k=e.target.value;if(k===card.stage)return;const mx=Math.max(0,...PIPE.cards.filter(c=>c.stage===k).map(c=>c.position||0));await save({stage:k,position:mx+1});});
     q('#pdr_del').onclick=async()=>{if(!confirm('Deze kaart verwijderen?'))return;const {error}=await sb.from('pipeline_cards').delete().eq('id',card.id);if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}close();toast('Verwijderd','ok');loadPipelineData();};
   }
@@ -3444,6 +3467,32 @@ function pipeCardDrawer(card){
   if(q('#pdr_crm'))q('#pdr_crm').onclick=e=>{e.preventDefault();close();openContactById(card.contact_id);};
   if(q('#pdr_share'))q('#pdr_share').onclick=e=>{e.preventDefault();copyLink(crmDeepLink(card.contact_id));};
   if(q('#pdr_sum_btn'))q('#pdr_sum_btn').onclick=()=>pdrGenSummary(card.contact_id);
+  // ---- Notities (los, met datum/tijd en auteur) ----
+  async function loadNotes(){
+    const box=q('#pdr_notes_list');if(!box)return;
+    const {data,error}=await sb.rpc('pipe_notes',{p_card:card.id});
+    if(!q('#pdr_notes_list'))return;
+    if(error){box.innerHTML='<div class="muted" style="font-size:12px">Kon notities niet laden.</div>';return;}
+    const notes=data||[];
+    if(!notes.length){box.innerHTML='<div class="muted" style="font-size:12px">Nog geen notities.</div>';return;}
+    box.innerHTML=notes.map(n=>`<div class="pdr-note"><div class="pdr-note-h"><b>${esc(n.author_name||'Team')}</b><span>${esc(fmtDateTime(n.created_at))}</span>${edit?`<button class="pdr-note-x" data-delnote="${esc(n.id)}" title="Verwijderen">verwijderen</button>`:''}</div><div class="pdr-note-b">${esc(n.body||'')}</div></div>`).join('');
+    box.querySelectorAll('[data-delnote]').forEach(b=>b.onclick=async()=>{if(!confirm('Deze notitie verwijderen?'))return;const {error}=await sb.rpc('pipe_note_delete',{p_id:b.dataset.delnote});if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}loadNotes();});
+  }
+  loadNotes();
+  if(edit){
+    const nb=q('#pdr_note_add'), nt=q('#pdr_note_new');
+    const addNote=async()=>{
+      const v=(nt.value||'').trim();
+      if(!v){toast('Schrijf eerst een notitie','err');return;}
+      nb.disabled=true;nb.textContent='…';
+      const {error}=await sb.rpc('pipe_note_add',{p_card:card.id,p_body:v});
+      nb.disabled=false;nb.textContent='Notitie toevoegen';
+      if(error){toast('Opslaan mislukt: '+error.message,'err');return;}
+      nt.value='';flash();loadNotes();
+    };
+    if(nb)nb.onclick=addNote;
+    if(nt)nt.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter')addNote();});
+  }
   // ---- Taken & automatiseringen ----
   async function loadTasks(){
     const box=q('#pdr_tasks');if(!box)return;
@@ -3819,7 +3868,7 @@ function seqListView(){
 }
 async function seqOpen(id){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Laden…</div>';
-  let seq={name:'',trigger:'manual',enabled:false,stop_on_reply:true,from_name:'UTAMA Bali',from_email:'info@utamabali.com'},steps=[{day_offset:0,subject:'',body:'',design:'plain'}],enrollments=[];
+  let seq={name:'',trigger:'manual',enabled:false,stop_on_reply:true,from_name:'UTAMA Bali',from_email:'info@utamabali.com'},steps=[{day_offset:0,hour_offset:0,subject:'',body:'',design:'plain'}],enrollments=[];
   if(id){
     const {data,error}=await sb.rpc('seq_get',{p_id:id});
     if(error||!data||!data.sequence){v.innerHTML=`<div class="panel"><div class="empty" style="padding:20px">Kon sequence niet laden.</div></div>`;return;}
@@ -3849,7 +3898,7 @@ function seqStepCard(st,i){
   return `<div class="seq-step" data-step data-design="${design}">
     <div class="seq-step-head">
       <span class="seq-step-n">E-mail ${i+1}</span>
-      <label class="seq-daywrap">Dag <input class="seq-day" type="number" min="0" step="1" value="${st.day_offset!=null?st.day_offset:0}"></label>
+      <label class="seq-daywrap">Dag <input class="seq-day" type="number" min="0" step="1" value="${st.day_offset!=null?st.day_offset:0}"> <span title="Extra uren bovenop de dag. Dag 0 + 2 uur = 2 uur na inschrijving.">+ <input class="seq-hour" type="number" min="0" max="23" step="1" value="${st.hour_offset!=null?st.hour_offset:0}"> uur</span></label>
       <div class="seq-design">
         <button type="button" class="seq-dbtn ${design==='plain'?'on':''}" data-design="plain">✍️ Plat</button>
         <button type="button" class="seq-dbtn ${design==='newsletter'?'on':''}" data-design="newsletter">📰 Nieuwsbrief</button>
@@ -3872,7 +3921,7 @@ function seqStepCard(st,i){
 }
 function seqEditorView(){
   const v=$('#view');const edit=canEdit('sequences');const c=SEQ.cur;const s=c.seq;
-  const steps=(c.steps&&c.steps.length)?c.steps:[{day_offset:0,subject:'',body:'',design:'plain'}];
+  const steps=(c.steps&&c.steps.length)?c.steps:[{day_offset:0,hour_offset:0,subject:'',body:'',design:'plain'}];
   const stepsHtml=steps.map(seqStepCard).join('');
   const enr=c.enrollments||[];
   const enrHtml=enr.length?enr.map(e=>{const stlbl={active:'Actief',completed:'Afgerond',stopped:'Gestopt',opted_out:'Afgemeld'}[e.status]||e.status;const nx=e.status==='active'&&e.next_send_at?(' · volgende '+new Date(e.next_send_at).toLocaleDateString('nl-NL',{day:'numeric',month:'short'})):'';return `<div class="seq-enr"><div style="min-width:0"><b>${esc(e.contact_name||e.contact_email||'—')}</b><div class="muted" style="font-size:11px">${esc(e.contact_email||'')} · ${stlbl}${e.stopped_reason?' ('+esc(e.stopped_reason)+')':''}${nx}</div></div>${(edit&&e.status==='active')?`<button class="seq-enr-x" data-unenr="${e.id}" title="Uit sequence halen">×</button>`:''}</div>`;}).join(''):'<div class="muted" style="font-size:12px">Nog geen leads in deze sequence.</div>';
@@ -3908,7 +3957,7 @@ function seqEditorView(){
   if(edit){
     const tg=$('#seq_trigger');if(tg)tg.onchange=()=>{const a=$('#seq_audience');if(a)a.style.display=(tg.value==='new_lead')?'':'none';};
     const enb=$('#seq_enabled_btn');if(enb)enb.onclick=()=>{const on=enb.dataset.on!=='1';enb.dataset.on=on?'1':'0';enb.classList.toggle('on',on);enb.classList.toggle('off',!on);enb.innerHTML='<span class="seq-toggle-dot"></span>'+(on?'Actief':'Inactief');};
-    $('#seq_addstep').onclick=()=>{const wrap=$('#seq_steps');const div=document.createElement('div');div.innerHTML=seqStepCard({day_offset:seqNextDay(),subject:'',body:'',design:'plain'},wrap.children.length);const node=div.firstElementChild;wrap.appendChild(node);seqWireStep(node);};
+    $('#seq_addstep').onclick=()=>{const wrap=$('#seq_steps');const div=document.createElement('div');div.innerHTML=seqStepCard({day_offset:seqNextDay(),hour_offset:0,subject:'',body:'',design:'plain'},wrap.children.length);const node=div.firstElementChild;wrap.appendChild(node);seqWireStep(node);};
     $('#seq_save').onclick=seqSaveCurrent;
     const rn=$('#seq_run');if(rn)rn.onclick=seqRunNow;
     const dl=$('#seq_del');if(dl)dl.onclick=seqDeleteCurrent;
@@ -3937,6 +3986,7 @@ function seqCollectSteps(){
     if(html==='<br>'||html==='<div><br></div>'||html==='<p><br></p>')html='';
     return {
       day_offset:String(Number(node.querySelector('.seq-day').value)||0),
+      hour_offset:String(Math.max(0,Math.min(23,Number(node.querySelector('.seq-hour').value)||0))),
       subject:node.querySelector('.seq-subj').value,
       body:html,
       design:node.dataset.design==='newsletter'?'newsletter':'plain'
