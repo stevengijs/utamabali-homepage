@@ -506,11 +506,17 @@
   .otpl-head code{background:#f1f4f2;border-radius:4px;padding:1px 5px;font-size:11px}
   .otpl-delay{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap;background:#f7f9f8;border:1px solid var(--line);border-radius:9px;padding:6px 10px}
   .otpl-delay .pc-in{width:64px;text-align:center}
-  /* E-mail links, de twee WhatsApp-varianten onder elkaar rechts. Onder de
-     1040px valt alles terug op een kolom, want dan wordt het te smal om te lezen. */
-  .otpl-grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:18px;align-items:start}
+  /* E-mail links, de twee WhatsApp-varianten onder elkaar rechts, met een
+     scheidslijn ertussen. Die lijn is een eigen kolom en geen rand op de
+     rechterkolom, anders loopt hij mee met de hoogte van alleen die kolom.
+     Onder 1040px valt alles terug op een kolom en verdwijnt de lijn. */
+  .otpl-grid{display:grid;grid-template-columns:minmax(0,1.12fr) 1px minmax(0,1fr);column-gap:30px;row-gap:18px;align-items:start}
+  .otpl-scheid{align-self:stretch;background:var(--line);border-radius:1px}
   .otpl-side{display:grid;gap:18px;align-content:start}
-  @media(max-width:1040px){.otpl-grid{grid-template-columns:1fr}}
+  @media(max-width:1040px){
+    .otpl-grid{grid-template-columns:1fr;column-gap:0}
+    .otpl-scheid{display:none}
+  }
   .otpl-field .pdr-label{margin-bottom:4px}
   /* Drie losse functies in een kaart: e-mail, WhatsApp na formulier en WhatsApp
      vanuit de Instagram-chat. Elk een eigen omkaderd blok met een gekleurde
@@ -619,7 +625,7 @@ const PAGES = [
   {key:'analytics',label:'Analytics',              icon:'📊'},
   {key:'revenue',  label:'Revenue',                icon:'💰'},
   {key:'leads',    label:'Leads / CRM',            icon:'📇'},
-  {key:'sequences',label:'E-mail sequences',       icon:'📧'},
+  {key:'sequences',label:'Bericht flows',          icon:'📤'},
   {key:'webinars', label:'Webinar',                icon:'🎥'},
   {key:'projects', label:'Projects',               icon:'🏗️'},
   {key:'portal',   label:'Portal & Investors',     icon:'🏝️'},
@@ -980,7 +986,7 @@ function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',sequences:'E-mail sequences',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
+  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',sequences:'Bericht flows',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
   $('#pageTitle').textContent=titles[k]||k;
   if(k==='dashboard')return renderDashboard();
   if(k==='analytics')return renderAnalytics();
@@ -3945,6 +3951,7 @@ function otplPanel(){
           <div class="seq-rte otpl-rte" contenteditable="${edit?'true':'false'}" data-ph="E-mailinhoud… gebruik {naam}, {project} en {link}">${t.email_html||''}</div>
           <textarea class="pc-in otpl-code" data-f="email_html" rows="9" ${edit?'':'disabled'} spellcheck="false" hidden>${esc(t.email_html||'')}</textarea>
         </div></div></section>
+        <div class="otpl-scheid" aria-hidden="true"></div>
         <div class="otpl-side">
           <section class="otpl-sec sec-wa"><header class="otpl-sec-h"><span class="otpl-sec-ic">💬</span><div><h4>WhatsApp na formulier</h4><p>Alleen als de lead een telefoonnummer achterliet bij het aanmeldformulier.</p></div></header><div class="otpl-sec-b">
             <textarea class="pc-in" data-f="wa_text" rows="6" ${edit?'':'disabled'}>${esc(t.wa_text||'')}</textarea>
@@ -4005,7 +4012,7 @@ function seqListView(){
       <span class="muted" style="font-size:12px">Bewerken →</span>
     </div>`).join('');
   v.innerHTML=`<div class="panel" style="padding:0">
-    <div class="seq-top"><div><b>E-mail sequences</b><div class="muted" style="font-size:12px">Warm leads op met een reeks e-mails. Automatisch verzonden via info@utamabali.com; stopt zodra een lead reageert of zich afmeldt.</div></div>${edit?`<button class="btn" id="seq_new">＋ Nieuwe sequence</button>`:''}</div>
+    <div class="seq-top"><div><b>E-mailreeksen</b><div class="muted" style="font-size:12px">Warm leads op met een reeks e-mails. Automatisch verzonden via info@utamabali.com; stopt zodra een lead reageert of zich afmeldt.</div></div>${edit?`<button class="btn" id="seq_new">＋ Nieuwe sequence</button>`:''}</div>
     <div class="seq-list">${rows||'<div class="empty" style="padding:24px">Nog geen sequences. Maak er een om leads automatisch op te warmen.</div>'}</div>
   </div>${otplPanel()}`;
   const nw=$('#seq_new');if(nw)nw.onclick=()=>seqOpen(null);
