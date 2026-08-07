@@ -517,6 +517,7 @@
      scheidslijn ertussen. Die lijn is een eigen kolom en geen rand op de
      rechterkolom, anders loopt hij mee met de hoogte van alleen die kolom.
      Onder 1040px valt alles terug op een kolom en verdwijnt de lijn. */
+  .pipe-zoekhint{margin:0 0 10px;padding:8px 12px;background:#f2f9f6;border:1px solid #cfe8dd;border-radius:9px;font-size:12.5px;color:#0f6b4f}
   .otpl-grid{display:grid;grid-template-columns:minmax(0,1.12fr) 1px minmax(0,1fr);column-gap:30px;row-gap:18px;align-items:start}
   .otpl-scheid{align-self:stretch;background:var(--line);border-radius:1px}
   .otpl-side{display:grid;gap:18px;align-content:start}
@@ -3361,12 +3362,48 @@ async function pipeLoadEnrichment(){
 }
 function pipeTeamName(id){const t=PIPE.team.find(x=>x.id===id);return t?(t.full_name||t.email||'—'):'';}
 function pipeInitials(id){const n=pipeTeamName(id);if(!n)return '?';return n.split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();}
+// De kaarttitel wordt gezet op het moment dat de kaart ontstaat, vaak nog voor
+// de naam bekend is. Dan blijft er 'Lead', '{{first_name}}' of een kale handle
+// staan, ook nadat het contact allang een echte naam heeft. De naam van het
+// contact is altijd actueler, dus die wint zodra de titel niets voorstelt.
+function pipeTitelIsLeeg(t){
+  const v=String(t||'').trim();
+  if(!v)return true;
+  if(v.includes('{{'))return true;
+  return ['lead','social lead','onbekend','(naamloos)','naamloos'].includes(v.toLowerCase());
+}
+function pipeCardName(c,en){
+  en=en||{};
+  const titel=String(c.title||'').trim();
+  const naam=String(en.name||'').trim();
+  if(naam&&pipeTitelIsLeeg(titel))return naam;
+  // ook een losse handle vervangen zodra er een volledige naam bekend is
+  if(naam&&naam.includes(' ')&&titel&&!titel.includes(' ')&&naam.toLowerCase().replace(/\s/g,'').includes(titel.toLowerCase()))return naam;
+  // geen bruikbare naam en geen bruikbare titel: nooit een rauwe merge-tag tonen
+  if(pipeTitelIsLeeg(titel))return naam||'(naamloos)';
+  return titel;
+}
 function pipeFilteredCards(){
   const f=PIPE.filters;
   return PIPE.cards.filter(c=>{
     if(f.project&&c.project!==f.project)return false;
     if(f.assignee&&String(c.assignee||'')!==f.assignee)return false;
-    if(f.q){const q=f.q.toLowerCase();const hay=((c.title||'')+' '+(c.project||'')+' '+(c.notes||'')).toLowerCase();if(!hay.includes(q))return false;}
+    if(f.q){
+      const q=f.q.trim().toLowerCase();
+      const en=(PIPE.enrich&&PIPE.enrich[c.contact_id])||{};
+      const hay=[c.title,pipeCardName(c,en),c.project,c.notes,en.name,en.email].filter(Boolean).join(' ').toLowerCase();
+      let raak=hay.includes(q);
+      // Zoek je op een telefoonnummer, dan mag de schrijfwijze verschillen:
+      // 06-28444468, +31 6 28444468 en 31628444468 horen allemaal te matchen.
+      if(!raak){
+        const qd=q.replace(/\D/g,'');
+        if(qd.length>=6){
+          const pd=String(en.phone||'').replace(/\D/g,'');
+          if(pd&&(pd.endsWith(qd)||qd.endsWith(pd.slice(-9))))raak=true;
+        }
+      }
+      if(!raak)return false;
+    }
     return true;
   });
 }
@@ -3383,7 +3420,7 @@ function pipeCardHtml(c){
   const wa=_waDigits(en.phone)?`<a class="pipe-wa" data-wa="${esc(c.id)}" title="Stuur WhatsApp-bericht">${WA_SVG}</a>`:'';
   const who=c.assignee?`<span class="pipe-av" title="Eigenaar: ${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
   const warm=c.contact_id?warmthBadge(WARMTH[c.contact_id]):'';
-  const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(c.title||'(naamloos)')}</div>${warm}</div>`;
+  const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(pipeCardName(c,en))}</div>${warm}</div>`;
   const chips=`${proj}${budget}${tl}${task}`;
   const foot=(crm||wa||who||val||chat)?`<div class="pipe-card-foot"><span style="display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap">${val}${crm}${chat}</span><span class="pipe-foot-right">${wa}${who}</span></div>`:'';
   return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}">${titleRow}${chips.trim()?`<div class="pipe-card-chips">${chips}</div>`:''}${foot}</div>`;
@@ -3427,11 +3464,24 @@ function drawPipeline(){
     <span id="pipe_handoffs" style="display:flex;gap:6px;align-items:center"></span>
   </div>`;
   const cards=pipeFilteredCards();
+  // Deze pipeline heeft meer kolommen dan er op het scherm passen. Zoek je iets
+  // en zit de treffer in een kolom buiten beeld, dan lijkt het bord leeg. Tijdens
+  // een zoekopdracht daarom alleen de kolommen tonen die iets opleveren.
+  const zoekt=!!(PIPE.filters.q||'').trim();
+  let toonStages=stages;
+  if(zoekt){
+    const metTreffer=stages.filter(st=>cards.some(c=>c.stage===st.key));
+    if(metTreffer.length)toonStages=metTreffer;
+    const waar=metTreffer.map(st=>st.label).join(', ');
+    h+=`<div class="pipe-zoekhint">${cards.length
+      ? `<b>${cards.length}</b> ${cards.length===1?'kaart':'kaarten'} gevonden in: ${esc(waar)}`
+      : `Geen kaart gevonden voor <b>${esc(PIPE.filters.q)}</b> in deze pipeline. Probeer een andere pipeline via de keuzelijst linksboven.`}</div>`;
+  }
   if(!stages.length){
     h+='<div class="panel"><div class="empty" style="padding:22px">Deze pipeline heeft nog geen kolommen. Klik op “Kolommen bewerken”.</div></div>';
   }else{
     h+=`<div class="pipe-board" id="pipe_board">`;
-    stages.forEach(st=>{
+    toonStages.forEach(st=>{
       const cs=cards.filter(c=>c.stage===st.key).sort((a,b)=>(a.position||0)-(b.position||0));
       const sum=cs.reduce((a,c)=>a+(Number(c.value)||0),0);
       h+=`<div class="pipe-col" data-stage="${esc(st.key)}">
