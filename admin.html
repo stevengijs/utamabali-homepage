@@ -517,6 +517,23 @@
      scheidslijn ertussen. Die lijn is een eigen kolom en geen rand op de
      rechterkolom, anders loopt hij mee met de hoogte van alleen die kolom.
      Onder 1040px valt alles terug op een kolom en verdwijnt de lijn. */
+  /* De samenvatting staat bovenaan omdat het de eerste vraag beantwoordt: wie is dit. */
+  /* Globale leadzoeker. Met drie pipelines is zoeken binnen één bord onwerkbaar:
+     dit vindt de persoon ongeacht waar die staat en toont meteen waar dat is. */
+  .gz-wrap{position:relative;display:flex;align-items:center}
+  .gz-in{width:290px;padding:8px 34px 8px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;font-family:inherit;background:#fff}
+  .gz-in:focus{outline:none;border-color:#0f6b4f;box-shadow:0 0 0 3px rgba(15,107,79,.12);width:340px}
+  .gz-in::-webkit-search-cancel-button{-webkit-appearance:none}
+  .gz-kbd{position:absolute;right:9px;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:1px 5px;pointer-events:none;background:#fafbfb}
+  .gz-in:focus+.gz-kbd{display:none}
+  .gz-res{position:absolute;top:calc(100% + 6px);right:0;width:430px;max-height:60vh;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 40px rgba(10,30,22,.16);z-index:80;padding:6px}
+  .gz-item{display:block;width:100%;text-align:left;background:none;border:0;font:inherit;padding:9px 11px;border-radius:9px;cursor:pointer}
+  .gz-item:hover,.gz-item.sel{background:#f2f9f6}
+  .gz-naam{font-size:13.5px;font-weight:700}
+  .gz-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .gz-pipe{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;background:#eef2f1;border-radius:999px;padding:2px 8px;margin:3px 5px 0 0}
+  .gz-leeg{padding:14px 12px;font-size:12.5px;color:var(--muted)}
+  .pdr-sum-top{background:#f7faf9;border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:14px}
   .pipe-zoekhint{margin:0 0 10px;padding:8px 12px;background:#f2f9f6;border:1px solid #cfe8dd;border-radius:9px;font-size:12.5px;color:#0f6b4f}
   .otpl-grid{display:grid;grid-template-columns:minmax(0,1.12fr) 1px minmax(0,1fr);column-gap:30px;row-gap:18px;align-items:start}
   .otpl-scheid{align-self:stretch;background:var(--line);border-radius:1px}
@@ -616,7 +633,7 @@
       </div>
     </aside>
     <main>
-      <div class="topbar"><div><div class="crumb" id="crumb">UTAMA</div><h2 id="pageTitle">Dashboard</h2></div><div style="display:flex;align-items:center;gap:14px"><button id="notifBell" class="notif-bell" title="Notificaties">🔔<span class="notif-count" id="notifCount"></span></button><div id="topRight"></div></div></div>
+      <div class="topbar"><div><div class="crumb" id="crumb">UTAMA</div><h2 id="pageTitle">Dashboard</h2></div><div style="display:flex;align-items:center;gap:14px"><div class="gz-wrap"><input id="gz_q" class="gz-in" type="search" placeholder="Zoek een lead… naam, nummer of e-mail" autocomplete="off" spellcheck="false"><kbd class="gz-kbd">⌘K</kbd><div id="gz_res" class="gz-res" hidden></div></div><button id="notifBell" class="notif-bell" title="Notificaties">🔔<span class="notif-count" id="notifCount"></span></button><div id="topRight"></div></div></div>
       <div class="content" id="view"></div>
     </main>
   </div>
@@ -988,6 +1005,7 @@ async function boot(){
   $('#meName').textContent=ME.full_name||ME.email;
   $('#meRole').textContent=isAdmin()?'Admin':'Team member';
   buildNav();
+  gzInit();  // globale leadzoeker in de kop, ook met Cmd/Ctrl+K
   if(!handleDeepLink())go('dashboard');
   window.addEventListener('hashchange',handleDeepLink);
   const bell=$('#notifBell');if(bell)bell.onclick=openNotifications;
@@ -1018,6 +1036,69 @@ function buildNav(){
   PAGES.forEach(p=>{if(!canView(p.key))return;const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${p.label}`);b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);});
 }
 function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>n.classList.toggle('active',n.dataset.k===k));}
+
+/* ================= GLOBALE LEADZOEKER =================
+   Eén veld dat een lead vindt ongeacht in welke pipeline die staat. Met drie
+   pipelines was zoeken binnen één bord onwerkbaar: zat je in Sales, dan vond je
+   een Discovery-lead niet. Klik op een resultaat opent de contactkaart, waar de
+   pipelinesectie precies laat zien waar de persoon staat. */
+let GZ={t:null,items:[],sel:-1,laatste:''};
+function gzSluit(){const r=$('#gz_res');if(r){r.hidden=true;r.innerHTML='';}GZ.items=[];GZ.sel=-1;}
+function gzTeken(items,q){
+  const r=$('#gz_res');if(!r)return;
+  GZ.items=items;GZ.sel=items.length?0:-1;
+  if(!items.length){
+    r.innerHTML=`<div class="gz-leeg">Geen lead gevonden voor <b>${esc(q)}</b>. Probeer een deel van de naam, het 06-nummer of het e-mailadres.</div>`;
+    r.hidden=false;return;
+  }
+  r.innerHTML=items.map((it,i)=>{
+    const pipes=(it.pipelines||[]).map(p=>`<span class="gz-pipe">${esc(p.pipeline)} · ${esc(p.fase)}</span>`).join('');
+    const kan=(it.kanalen||[]).filter(Boolean).map(x=>(INBOX_CH[x]||{}).label||x).join(', ');
+    const sub=[it.telefoon,it.email,kan].filter(Boolean).join(' · ');
+    return `<button class="gz-item${i===0?' sel':''}" data-gz="${esc(it.contact_id)}" data-i="${i}">
+      <div class="gz-naam">${esc(it.naam)}</div>
+      ${sub?`<div class="gz-sub">${esc(sub)}</div>`:''}
+      ${pipes||'<span class="gz-pipe">Nog in geen pipeline</span>'}
+    </button>`;
+  }).join('');
+  r.hidden=false;
+  r.querySelectorAll('[data-gz]').forEach(b=>b.onclick=()=>gzOpen(b.dataset.gz));
+}
+async function gzOpen(id){
+  gzSluit();const inp=$('#gz_q');if(inp)inp.value='';
+  const {data}=await sb.from('contacts').select('*').eq('id',id).single();
+  if(data)openPerson(data);else toast('Contact niet gevonden','err');
+}
+async function gzZoek(q){
+  q=(q||'').trim();
+  if(q.length<2){gzSluit();return;}
+  const {data,error}=await sb.rpc('lead_zoek',{p_q:q,p_limit:12});
+  if(GZ.laatste!==q)return;               // trager antwoord van een oudere toets negeren
+  if(error){gzSluit();return;}
+  gzTeken(data||[],q);
+}
+function gzInit(){
+  const inp=$('#gz_q');if(!inp||inp.dataset.wired)return;
+  inp.dataset.wired='1';
+  inp.oninput=()=>{
+    const q=inp.value;GZ.laatste=q.trim();
+    clearTimeout(GZ.t);GZ.t=setTimeout(()=>gzZoek(q),180);
+  };
+  inp.onkeydown=e=>{
+    if(e.key==='Escape'){gzSluit();inp.blur();return;}
+    if(!GZ.items.length)return;
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault();
+      GZ.sel=(GZ.sel+(e.key==='ArrowDown'?1:-1)+GZ.items.length)%GZ.items.length;
+      const r=$('#gz_res');if(r)r.querySelectorAll('.gz-item').forEach((b,i)=>b.classList.toggle('sel',i===GZ.sel));
+    }
+    if(e.key==='Enter'&&GZ.sel>=0){e.preventDefault();gzOpen(GZ.items[GZ.sel].contact_id);}
+  };
+  document.addEventListener('click',e=>{const w=e.target.closest('.gz-wrap');if(!w)gzSluit();});
+  document.addEventListener('keydown',e=>{
+    if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();inp.focus();inp.select();}
+  });
+}
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
@@ -3677,6 +3758,7 @@ function pipeCardDrawer(card){
     </div>
     <div class="pdrawer-body">
       ${acts.length?`<div class="pdr-actions">${acts.join('')}</div>`:''}
+      ${card.contact_id?`<div class="pdr-field pdr-sum-top"><div class="pdr-label" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button type="button" class="ibx-sum-btn" id="pdr_sum_btn">✨ Genereren</button>`:''}</div><div id="pdr_sum_body">${inboxSummaryHtml(null)}</div></div>`:''}
       <div class="pdr-facts">${facts.map(f=>`<div class="pdr-fact"><div class="k">${f[0]}</div><div class="v">${f[1]}</div></div>`).join('')}</div>
       <div class="pdr-grid2">
         <div class="pdr-field"><div class="pdr-label">Project</div><select id="pdr_proj" ${edit?'':'disabled'}>${projOpts}</select></div>
@@ -3689,7 +3771,6 @@ function pipeCardDrawer(card){
           <textarea id="pdr_note_new" rows="3" placeholder="Nieuwe notitie… (Cmd/Ctrl + Enter om op te slaan)"></textarea>
           <div class="row"><button class="btn btn-sm" id="pdr_note_add">Notitie toevoegen</button><span class="muted">Wordt bewaard met datum, tijd en jouw naam.</span></div>
         </div>`:''}</div>
-      ${card.contact_id?`<div class="pdr-field"><div class="pdr-label" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button type="button" class="ibx-sum-btn" id="pdr_sum_btn">✨ Genereren</button>`:''}</div><div id="pdr_sum_body">${inboxSummaryHtml(null)}</div></div>`:''}
       <div class="pdr-field">
         <div class="pdr-label">Taken &amp; automatiseringen</div>
         <div id="pdr_tasks" class="pdr-tasks"><div class="muted" style="font-size:12px">Laden…</div></div>
