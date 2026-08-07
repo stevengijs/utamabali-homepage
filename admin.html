@@ -254,6 +254,13 @@
   .ibx-bub.ch-instagram.ai .ibx-bhead{color:#dbe0ff;border-color:rgba(255,255,255,.22)}
   .ibx-bub.ch-instagram.human .ibx-bhead{color:#dbe0ff;border-color:rgba(255,255,255,.22)}
   .ibx-btext{white-space:pre-wrap;word-wrap:break-word}
+  /* Gedeelde foto's. Kwamen eerder binnen als kale CDN-link en vulden dan een
+     half scherm met tekst; nu als miniatuur, klikbaar naar het origineel. */
+  .ibx-img{display:block;max-width:260px;max-height:320px;width:auto;border-radius:10px;margin:2px 0;cursor:zoom-in;background:#e9edeb}
+  .ibx-img-wrap{display:flex;flex-direction:column;gap:5px}
+  .ibx-img-fail{font-size:11.5px;opacity:.75}
+  .ibx-lightbox{position:fixed;inset:0;background:rgba(8,20,16,.88);display:grid;place-items:center;z-index:9999;cursor:zoom-out;padding:24px}
+  .ibx-lightbox img{max-width:96vw;max-height:92vh;border-radius:12px}
   .ibx-btime{font-size:10.5px;opacity:.55;padding:0 2px}
   .ibx-mrow.in .ibx-btime{padding-left:33px}
   .ibx-mrow.out .ibx-btime{padding-right:2px}
@@ -895,6 +902,26 @@ function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;'
 /* Kanaal-waarden komen (via t.js/analytics) uit URL-parameters die een bezoeker
    zelf kan bepalen. In een class-attribuut mag daarom alleen een bekende waarde;
    al het andere wordt 'other' (stored-XSS-preventie, security-review 2026-08-05). */
+// Een gedeelde foto komt binnen als kale link (Instagram-CDN of WhatsApp-media),
+// of, na het cachen door inbox-ingest, als bijlage. Beide tonen we als miniatuur.
+function isImgUrl(u){
+  u=String(u||'').trim();
+  if(!/^https?:\/\/\S+$/i.test(u))return false;
+  return /lookaside\.fbsbx\.com|ig_messaging_cdn|\/inbox-media\/|\.(jpe?g|png|webp|gif)(\?|$)/i.test(u);
+}
+function msgMedia(m){
+  const uit=[];
+  const att=m.attachments;
+  if(Array.isArray(att))att.forEach(a=>{const u=(a&&(a.url||a.href))||(typeof a==='string'?a:'');if(isImgUrl(u))uit.push(u);});
+  const b=String(m.body||'').trim();
+  if(isImgUrl(b)&&!uit.length)uit.push(b);
+  return uit;
+}
+function imgHtml(urls){
+  return `<div class="ibx-img-wrap">${urls.map(u=>
+    `<img class="ibx-img" src="${esc(u)}" alt="Gedeelde foto" loading="lazy" referrerpolicy="no-referrer" data-zoom="${esc(u)}" onerror="this.outerHTML='<div class=\'ibx-img-fail\'>\u{1F4F7} Foto niet meer beschikbaar</div>'">`
+  ).join('')}</div>`;
+}
 function chanClass(c){c=String(c||'').toLowerCase();return ['direct','organic','social','paid','referral','campaign','email','internal'].includes(c)?c:'other';}
 function money(v){if(v==null||v==='')return '—';return '€'+Number(v).toLocaleString('nl-NL');}
 function fmtDate(v){if(!v)return '—';const d=new Date(v);return d.toLocaleDateString('nl-NL',{day:'2-digit',month:'short',year:'numeric'});}
@@ -1991,15 +2018,29 @@ function inboxRenderMsgs(msgs){
     // Show the time only once per minute-cluster: on the last message before the
     // clock minute changes (or the last message / a day change). Avoids repeating
     // the same "23:44" under every bubble.
+    // Foto's apart tonen; is de tekst alleen de fotolink, dan die niet herhalen.
+    const media=msgMedia(m);
+    const rawBody=String(m.body||'').trim();
+    const bodyTxt=(media.length===1&&rawBody===media[0])?'':rawBody;
     const nx=list[i+1];
     const showTime=!nx||inboxClock(nx.created_at)!==inboxClock(m.created_at)||inboxDayKey(nx.created_at)!==day;
     // Meta line under each bubble: the message's medium icon always (so it's
     // clear which channel it came via), plus the time once per minute-cluster.
     const metaHtml=`<div class="ibx-btime"><span class="ibx-medico" title="${esc(med.label)}">${med.icon}</span>${showTime?' '+esc(inboxClock(m.created_at)):''}</div>`;
     return `${sep}<div class="ibx-mrow ${out?'out':'in'}">
-      <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}${chCls}">${tag}<div class="ibx-btext">${esc(m.body||'')}</div>${undelNote}</div></div>
+      <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}${chCls}">${tag}${media.length?imgHtml(media):''}${bodyTxt?`<div class="ibx-btext">${esc(bodyTxt)}</div>`:''}${undelNote}</div></div>
       ${metaHtml}</div>`;
   }).join('');
+  // Foto op ware grootte bekijken.
+  box.querySelectorAll('[data-zoom]').forEach(im=>im.onclick=()=>{
+    const ov=document.createElement('div');
+    ov.className='ibx-lightbox';
+    ov.innerHTML=`<img src="${esc(im.dataset.zoom)}" alt="" referrerpolicy="no-referrer">`;
+    const sluit=()=>{ov.remove();document.removeEventListener('keydown',esc2);};
+    const esc2=e=>{if(e.key==='Escape')sluit();};
+    ov.onclick=sluit; document.addEventListener('keydown',esc2);
+    document.body.appendChild(ov);
+  });
   // Toggle van de ingeklapte automatische e-mails (expliciete knop, geen <details>).
   box.querySelectorAll('[data-autoem-t]').forEach(b=>b.onclick=()=>{
     const w=b.closest('[data-autoem]');const bd=w&&w.querySelector('.ibx-autoem-b');if(!bd)return;
