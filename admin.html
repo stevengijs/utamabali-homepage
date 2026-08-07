@@ -2866,7 +2866,7 @@ function _helloWaUrl(phone,name,project){
 }
 async function openPerson(p){
   showDetail('Contact','<div class="muted">Loading…</div>');
-  const [lr,pr,wr,dr,rr,projR,rvR]=await Promise.all([
+  const [lr,pr,wr,dr,rr,projR,rvR,pcR,plR]=await Promise.all([
     sb.from('leads').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
     sb.from('purchases').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
     sb.from('webinar_registrations').select('*').eq('email',p.email).order('created_at',{ascending:false}),
@@ -2874,8 +2874,11 @@ async function openPerson(p){
     sb.from('referrals').select('*').or('referrer_contact_id.eq.'+p.id+',referred_contact_id.eq.'+p.id),
     sb.from('projects').select('name,slug,price_current').order('sort_order',{ascending:true}),
     sb.from('reservations').select('*').or('contact_id.eq.'+p.id+',email.eq.'+p.email).order('created_at',{ascending:false}),
+    sb.from('pipeline_cards').select('id,pipeline_id,stage,assignee,value,stage_changed_at').eq('contact_id',p.id),
+    sb.from('pipelines').select('id,name,stages').order('sort_order',{ascending:true}),
   ]);
   const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[],resvs=rvR.data||[];
+  const pCards=pcR.data||[],pLines=plR.data||[];
   await warmthLoad([p.id]);
   const _waProj=(leads.find(l=>l.project)||{}).project||'';
   const _waUrl=_helloWaUrl(p.phone,p.name,_waProj);
@@ -2951,6 +2954,36 @@ async function openPerson(p){
     </div>
   </div>
   <hr style="border:none;border-top:1px solid var(--line);margin:22px 0 2px">`;
+  // Waar staat deze lead in de pipelines? Stond alleen in de inbox, niet hier.
+  {
+    const kanPipe=canEdit('pipeline');
+    let ph='';
+    if(!pCards.length){
+      ph = `<div class="muted" style="font-size:13px">Staat in geen enkele pipeline.</div>`;
+    } else {
+      ph = `<div style="display:flex;flex-direction:column;gap:8px">` + pCards.map(c=>{
+        const lijn=pLines.find(x=>x.id===c.pipeline_id);
+        const stages=(lijn&&lijn.stages)||[];
+        const st=stages.find(x=>x.key===c.stage);
+        const kleur=(st&&st.color)||'#64748b';
+        const sinds=c.stage_changed_at?` <span class="muted" style="font-size:11.5px">sinds ${esc(fmtDate(c.stage_changed_at))}</span>`:'';
+        // PIPE.team is pas gevuld nadat de pipelinepagina is geopend; zonder naam niets tonen
+        const wieNaam=c.assignee?pipeTeamName(c.assignee):'';
+        const wie=wieNaam?`<span class="muted" style="font-size:11.5px">· ${esc(wieNaam)}</span>`:'';
+        const opts=stages.map(x=>`<option value="${esc(x.key)}"${x.key===c.stage?' selected':''}>${esc(x.label)}</option>`).join('');
+        return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:9px 12px">
+          <span style="font-size:13px;font-weight:600">${esc((lijn&&lijn.name)||'Pipeline')}</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px"><span style="width:8px;height:8px;border-radius:50%;background:${esc(kleur)}"></span>${esc((st&&st.label)||c.stage||'—')}</span>
+          ${sinds}${wie}
+          <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+            ${kanPipe&&opts?`<select class="pc-in pd-pipe-sel" data-card="${esc(c.id)}" style="width:auto;padding:5px 8px;font-size:12.5px">${opts}</select>`:''}
+            <button class="btn btn-ghost btn-sm" data-pd-openpipe="${esc(c.pipeline_id)}">Open bord ↗</button>
+          </span>
+        </div>`;
+      }).join('') + `</div>`;
+    }
+    body+=_sec('Pipeline', ph);
+  }
   const manageLeads=canEdit('leads')||canEdit('portal');
   body+=_sec('Aanvragen & interesse ('+leads.length+')',_hint('Binnengekomen via de site: brochure-aanvragen, reserveringsaanvragen en dataroom-verzoeken — het type staat per regel. Klik "Maak ITP" om van een aanvraag een reservering te maken.')+_mt(['Type','Project','Unit','Budget','Wanneer investeren','Date','Status',manageLeads?'Actie':''],leads.map(l=>{
     const open=(l.type==='dataroom_request'||l.type==='reservation')&&!l.handled_at;
@@ -3050,6 +3083,21 @@ async function openPerson(p){
     mb.querySelectorAll('[data-confirmpaid]').forEach(b=>b.onclick=()=>markReservationPaid(b.dataset.confirmpaid,Number(b.dataset.amt)||null,p));
     mb.querySelectorAll('[data-mkitp]').forEach(b=>b.onclick=()=>openReservationForm(p,projList,{project:b.dataset.mkproj,unit:b.dataset.mkunit,leadId:b.dataset.mkitp}));
     mb.querySelectorAll('[data-ldone]').forEach(b=>b.onclick=async()=>{await markLeadHandled(b.dataset.ldone);toast('Afgerond','ok');openPerson(p);});
+    // Pipelinesectie: fase wijzigen en doorklikken naar het bord.
+    mb.querySelectorAll('.pd-pipe-sel').forEach(sel=>sel.onchange=async()=>{
+      const {error}=await sb.from('pipeline_cards')
+        .update({stage:sel.value,stage_changed_at:new Date().toISOString()}).eq('id',sel.dataset.card);
+      if(error){toast('Verplaatsen mislukt: '+error.message,'err');return;}
+      toast('Verplaatst','ok');openPerson(p);
+    });
+    mb.querySelectorAll('[data-pd-openpipe]').forEach(b=>b.onclick=()=>{
+      PENDING_PIPE=b.dataset.pdOpenpipe;
+      const pl=(PIPE.list||[]).find(x=>x.id===PENDING_PIPE);
+      if(pl)PIPE.cur=pl;
+      // showDetail houdt zijn sluitfunctie in een closure, dus de overlay hier zelf dichtdoen
+      const ov=$('#overlay');if(ov){ov.style.display='none';ov.innerHTML='';}
+      go('pipeline');
+    });
     mb.querySelectorAll('[data-grantlead]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.grantlead,true,null));
     mb.querySelectorAll('[data-viewr]').forEach(b=>b.onclick=()=>openReservation(b.dataset.viewr));
     mb.querySelectorAll('[data-editip]').forEach(b=>b.onclick=()=>openItpEditor(PERSON_RESV[b.dataset.editip],p));
@@ -3258,6 +3306,7 @@ function showDetail(title,bodyHTML){
 
 /* ================= SALES PIPELINE (drag & drop) ================= */
 let PIPE={list:[],cur:null,cards:[],views:[],team:[],projects:[],enrich:{},tasks:{},filters:{project:'',assignee:'',q:''},dragId:null};
+let PENDING_PIPE=null;
 const WA_SVG='<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" aria-hidden="true"><path d="M17.47 14.38c-.29-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.14-.19.29-.74.94-.9 1.13-.17.19-.33.21-.62.07-.29-.15-1.22-.45-2.33-1.44-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.59.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.14-.64-1.55-.88-2.12-.23-.56-.47-.48-.64-.49h-.55c-.19 0-.5.07-.76.36-.26.29-1 .98-1 2.38s1.02 2.76 1.17 2.95c.14.19 2.01 3.07 4.87 4.31.68.29 1.21.47 1.62.6.68.22 1.3.19 1.79.11.55-.08 1.7-.69 1.94-1.36.24-.67.24-1.24.17-1.36-.07-.12-.26-.19-.55-.34z"/><path d="M12 2.04c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.48 1.34 4.99L2 22l5.13-1.34c1.46.8 3.11 1.22 4.79 1.22 5.5 0 9.96-4.46 9.96-9.96S17.5 2.04 12 2.04zm0 18.19c-1.5 0-2.97-.4-4.25-1.16l-.3-.18-3.04.8.81-2.97-.2-.31a8.24 8.24 0 0 1-1.26-4.39c0-4.56 3.71-8.27 8.28-8.27 4.56 0 8.27 3.71 8.27 8.27 0 4.57-3.71 8.28-8.27 8.28z"/></svg>';
 
 async function renderPipeline(){
@@ -3275,6 +3324,9 @@ async function renderPipeline(){
     if(canEdit('pipeline')){await sb.from('pipelines').insert({name:'Sales pipeline',created_by:ME.id});return renderPipeline();}
     v.innerHTML='<div class="panel"><div class="lock-note">Nog geen pipeline. Vraag een admin om er een aan te maken.</div></div>';return;
   }
+  // Kwam je hier via "Open bord" op een contactkaart, dan is dat bord de keuze;
+  // PIPE.list is dan mogelijk nog leeg geweest op het moment van klikken.
+  if(PENDING_PIPE){const w=PIPE.list.find(p=>p.id===PENDING_PIPE);PENDING_PIPE=null;if(w)PIPE.cur=w;}
   PIPE.cur=(PIPE.cur&&PIPE.list.find(p=>p.id===PIPE.cur.id))||PIPE.list[0];
   await loadPipelineData();
 }
@@ -3399,7 +3451,11 @@ function wirePipeline(){
   const nw=$('#pipe_new');if(nw)nw.onclick=pipeNewPipeline;
   const ec=$('#pipe_editcols');if(ec)ec.onclick=pipeEditColumns;
   const imp=$('#pipe_import');if(imp)imp.onclick=pipeImportLeads;
-  pipeRenderHandoffs(cur.id);
+  // `cur` is een lokale in drawPipeline en bestaat hier niet. Deze regel gooide
+  // daardoor een ReferenceError, waarna ALLES hieronder ongebonden bleef:
+  // zoeken, de filters, opgeslagen weergaves en het slepen van kaarten.
+  // Los daarvan afgeschermd, zodat één kapotte widget de rest niet meesleurt.
+  try{ pipeRenderHandoffs(PIPE.cur&&PIPE.cur.id); }catch(e){ console.error('handoffs:',e); }
   const sv=$('#pipe_saveview');if(sv)sv.onclick=pipeSaveView;
   const q=$('#pipe_q');if(q)q.oninput=()=>{PIPE.filters.q=q.value;drawPipeline();const nq=$('#pipe_q');if(nq){nq.focus();try{nq.setSelectionRange(nq.value.length,nq.value.length);}catch(e){}}};
   const fp=$('#pipe_fproj');if(fp)fp.onchange=()=>{PIPE.filters.project=fp.value;drawPipeline();};
