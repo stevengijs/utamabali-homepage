@@ -533,6 +533,18 @@
   .gz-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
   .gz-pipe{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;background:#eef2f1;border-radius:999px;padding:2px 8px;margin:3px 5px 0 0}
   .gz-leeg{padding:14px 12px;font-size:12.5px;color:var(--muted)}
+  /* Agenda: rijen per dag, status als kleurbadge, verlopen zonder uitkomst rood. */
+  .ag-dag{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px}
+  .ag-rij{display:flex;align-items:flex-start;gap:12px;padding:9px 4px;border-top:1px solid var(--line)}
+  .ag-rij:first-of-type{border-top:none}
+  .ag-rij.af{opacity:.55}
+  .ag-tijd{flex:none;width:96px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .ag-tijd .muted{font-weight:500;font-size:11.5px}
+  .ag-mid{flex:1;min-width:0}
+  .ag-lead{background:none;border:0;padding:0;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--ink)}
+  .ag-lead:hover{text-decoration:underline}
+  .ag-badge{flex:none;font-size:10.5px;font-weight:800;border-radius:999px;padding:3px 9px;align-self:center}
+  .ag-acts{flex:none;display:flex;gap:4px;align-self:center}
   .pdr-sum-top{background:#f7faf9;border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:14px}
   .pipe-zoekhint{margin:0 0 10px;padding:8px 12px;background:#f2f9f6;border:1px solid #cfe8dd;border-radius:9px;font-size:12.5px;color:#0f6b4f}
   .otpl-grid{display:grid;grid-template-columns:minmax(0,1.12fr) 1px minmax(0,1fr);column-gap:30px;row-gap:18px;align-items:start}
@@ -654,6 +666,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const PAGES = [
   {key:'inbox',    label:'Inbox',                  icon:'💬'},
   {key:'pipeline', label:'Pipeline',               icon:'🧭'},
+  {key:'agenda',   label:'Agenda',                 icon:'📅'},
   {key:'analytics',label:'Analytics',              icon:'📊'},
   {key:'revenue',  label:'Revenue',                icon:'💰'},
   {key:'leads',    label:'Leads / CRM',            icon:'📇'},
@@ -1102,7 +1115,7 @@ function gzInit(){
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',sequences:'Bericht flows',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
+  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
   $('#pageTitle').textContent=titles[k]||k;
   if(k==='dashboard')return renderDashboard();
   if(k==='analytics')return renderAnalytics();
@@ -1112,6 +1125,7 @@ function go(k){
   if(k==='leads')return renderPeople();
   if(k==='inbox')return renderInbox();
   if(k==='pipeline')return renderPipeline();
+  if(k==='agenda')return renderAgenda();
   if(k==='sequences')return renderSequences();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
@@ -2946,6 +2960,157 @@ function _helloWaUrl(phone,name,project){
   const msg=`${hi} dit is ${sender}${title}. We hebben zojuist een aanmelding ontvangen voor ${projPhrase}. Klopt dat?\n\nIk stuur na iedere aanmelding altijd even persoonlijk een bericht om kennis te maken.`;
   return 'https://wa.me/'+digits+'?text='+encodeURIComponent(msg);
 }
+/* ================= AGENDA =================
+   Eigen afsprakenlijst van het CRM. Het team belt via persoonlijke nummers,
+   dus die afspraken bestaan nergens anders: niet in de gekoppelde agenda's
+   van de AI-planner en niet in de inbox. Hier staan ze wel, per lead, met
+   wie belt en wat de uitkomst was. */
+let AG={team:[],teamGeladen:false};
+async function agTeam(){
+  if(AG.teamGeladen)return AG.team;
+  const {data}=await sb.from('adm_profiles').select('id,full_name,email').order('created_at',{ascending:true});
+  AG.team=data||[];AG.teamGeladen=true;return AG.team;
+}
+function agTeamNaam(id){const t=AG.team.find(x=>x.id===id);return t?(t.full_name||t.email||'?'):'';}
+const AG_STATUS={gepland:['Gepland','#2563eb','#eff6ff'],afgerond:['Afgerond','#0f9d74','#ecfdf5'],
+  no_show:['No-show','#b91c1c','#fef2f2'],geannuleerd:['Geannuleerd','#64748b','#f8fafc']};
+function agKlok(d){return new Date(d).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});}
+// Dagsleutel in LOKALE tijd: toISOString() is UTC en zou een afspraak om
+// 00:30 's nachts bij de vorige dag indelen.
+function agDagsleutel(x){const d=new Date(x);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function agDagkop(d){
+  const nu=new Date();
+  if(agDagsleutel(d)===agDagsleutel(nu))return 'Vandaag';
+  if(agDagsleutel(d)===agDagsleutel(new Date(nu.getTime()+864e5)))return 'Morgen';
+  return new Date(d).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+}
+async function renderAgenda(){
+  const v=$('#view');const edit=canEdit('agenda');
+  v.innerHTML='<div class="empty" style="padding:24px">Laden…</div>';
+  await agTeam();
+  const van=new Date(Date.now()-14*864e5).toISOString();
+  const tot=new Date(Date.now()+60*864e5).toISOString();
+  const {data,error}=await sb.from('afspraken')
+    .select('*, contacts(name, phone)')
+    .gte('starts_at',van).lte('starts_at',tot)
+    .order('starts_at',{ascending:true});
+  if(error){v.innerHTML=`<div class="panel"><div class="empty" style="padding:22px">Kon agenda niet laden: ${esc(error.message)}</div></div>`;return;}
+  const alle=data||[];
+  const nu=Date.now();
+  // Verlopen maar nooit afgehandeld: apart bovenaan, dat is werkvoorraad.
+  const open=alle.filter(a=>a.status==='gepland'&&new Date(a.starts_at).getTime()<nu-a.duur_min*60000);
+  const komend=alle.filter(a=>!(a.status==='gepland'&&new Date(a.starts_at).getTime()<nu-a.duur_min*60000)&&new Date(a.starts_at).getTime()>nu-864e5);
+
+  const rij=a=>{
+    const st=AG_STATUS[a.status]||AG_STATUS.gepland;
+    const naam=(a.contacts&&a.contacts.name)||'(naamloos)';
+    const tel=(a.contacts&&a.contacts.phone)||'';
+    const eind=new Date(new Date(a.starts_at).getTime()+a.duur_min*60000);
+    const wie=a.assignee?agTeamNaam(a.assignee):'';
+    return `<div class="ag-rij${a.status!=='gepland'?' af':''}">
+      <div class="ag-tijd">${agKlok(a.starts_at)}<span class="muted">–${agKlok(eind)}</span></div>
+      <div class="ag-mid">
+        <button class="ag-lead" data-agopen="${esc(a.contact_id)}">${esc(naam)}</button>
+        <span class="muted" style="font-size:11.5px">${esc(a.titel)}${tel?' · '+esc(tel):''}${wie?' · met '+esc(wie):''}</span>
+        ${a.notitie?`<div class="muted" style="font-size:11.5px;margin-top:2px">${esc(a.notitie)}</div>`:''}
+      </div>
+      <span class="ag-badge" style="color:${st[1]};background:${st[2]}">${st[0]}</span>
+      ${edit&&a.status==='gepland'?`<span class="ag-acts">
+        <button class="btn btn-ghost btn-sm" data-agst="afgerond" data-agid="${esc(a.id)}" title="Markeer als afgerond">✓</button>
+        <button class="btn btn-ghost btn-sm" data-agst="no_show" data-agid="${esc(a.id)}" title="Lead kwam niet opdagen">✗</button>
+        <button class="btn btn-ghost btn-sm" data-agst="geannuleerd" data-agid="${esc(a.id)}" title="Annuleer de afspraak">🗑</button>
+      </span>`:''}
+    </div>`;
+  };
+
+  let h=`<div class="pipe-toolbar" style="margin-bottom:14px">
+    ${edit?`<button class="btn" id="ag_nieuw">＋ Afspraak</button>`:''}
+    <span class="muted" style="font-size:12px">Handmatig ingeplande afspraken, los van de gekoppelde agenda's. Klik op een naam voor de contactkaart.</span>
+  </div>`;
+
+  if(open.length){
+    h+=`<div class="panel" style="border-color:#fecaca"><div class="panel-head"><div><h3 style="color:#b91c1c">Nog af te handelen (${open.length})</h3><div class="desc">Deze afspraken zijn geweest maar hebben geen uitkomst. Zet ze op afgerond, no-show of geannuleerd.</div></div></div>
+      ${open.map(a=>`<div style="margin-bottom:4px"><span class="muted" style="font-size:11.5px">${esc(agDagkop(a.starts_at))} · </span></div>`+rij(a)).join('')}</div>`;
+  }
+  if(!komend.length&&!open.length){
+    h+='<div class="panel"><div class="empty" style="padding:26px">Nog geen afspraken. Plan de eerste via ＋ Afspraak, of via de knop op een contactkaart.</div></div>';
+  } else if(komend.length){
+    const perDag={};
+    komend.forEach(a=>{const k=agDagsleutel(a.starts_at);(perDag[k]=perDag[k]||[]).push(a);});
+    h+=Object.keys(perDag).sort().map(k=>`<div class="panel" style="margin-bottom:12px">
+      <div class="ag-dag">${esc(agDagkop(perDag[k][0].starts_at))}</div>
+      ${perDag[k].map(rij).join('')}</div>`).join('');
+  }
+  v.innerHTML=h;
+
+  const nw=$('#ag_nieuw');if(nw)nw.onclick=()=>agNieuweAfspraak();
+  v.querySelectorAll('[data-agopen]').forEach(b=>b.onclick=async()=>{
+    const {data:c}=await sb.from('contacts').select('*').eq('id',b.dataset.agopen).single();
+    if(c)openPerson(c);
+  });
+  v.querySelectorAll('[data-agst]').forEach(b=>b.onclick=async()=>{
+    const {error:e}=await sb.from('afspraken').update({status:b.dataset.agst,updated_at:new Date().toISOString()}).eq('id',b.dataset.agid);
+    if(e){toast('Bijwerken mislukt: '+e.message,'err');return;}
+    toast('Afspraak bijgewerkt','ok');renderAgenda();
+  });
+}
+// Vanaf de Agenda-pagina: eerst de lead zoeken, dan het formulier.
+function agNieuweAfspraak(){
+  showDetail('Nieuwe afspraak',`<div style="max-width:560px">
+    <div class="muted" style="font-size:12.5px;margin-bottom:10px">Voor welke lead is de afspraak?</div>
+    <input id="agz_q" class="pc-in" placeholder="Zoek op naam, nummer of e-mail…" autocomplete="off">
+    <div id="agz_res" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+  </div>`);
+  const inp=$('#agz_q'),res=$('#agz_res');let t=null;inp.focus();
+  inp.oninput=()=>{clearTimeout(t);t=setTimeout(async()=>{
+    const q=inp.value.trim();if(q.length<2){res.innerHTML='';return;}
+    const {data,error}=await sb.rpc('lead_zoek',{p_q:q,p_limit:8});
+    if(error){res.innerHTML=`<div class="muted" style="font-size:12px">${esc(error.message)}</div>`;return;}
+    res.innerHTML=(data||[]).map(x=>`<button class="btn btn-ghost" data-agpick="${esc(x.contact_id)}" data-agnaam="${esc(x.naam)}" style="text-align:left;display:block;padding:10px 12px">
+      <div style="font-weight:700;font-size:13.5px">${esc(x.naam)}</div>
+      <div class="muted" style="font-size:11.5px">${[x.telefoon,x.email].filter(Boolean).map(esc).join(' · ')||'geen contactgegevens'}</div>
+    </button>`).join('')||'<div class="muted" style="font-size:12px">Geen lead gevonden.</div>';
+    res.querySelectorAll('[data-agpick]').forEach(b=>b.onclick=()=>afspraakVorm({id:b.dataset.agpick,name:b.dataset.agnaam},()=>{const ov=$('#overlay');if(ov){ov.style.display='none';ov.innerHTML='';}renderAgenda();}));
+  },200);};
+}
+// Het formulier zelf; werkt vanuit de Agenda-pagina en vanaf de contactkaart.
+async function afspraakVorm(c, klaar){
+  await agTeam();
+  const mb=document.querySelector('#overlay .modal-body');if(!mb)return;
+  const vandaag=new Date().toISOString().slice(0,10);
+  const wieOpts=AG.team.map(t=>`<option value="${esc(t.id)}"${ME&&t.id===ME.id?' selected':''}>${esc(t.full_name||t.email)}</option>`).join('');
+  mb.innerHTML=`<div style="max-width:520px">
+    <h3 style="margin:0 0 4px">Afspraak met ${esc(c.name||'(naamloos)')}</h3>
+    <div class="muted" style="font-size:12.5px;margin-bottom:14px">Voor gesprekken die buiten de gekoppelde agenda's om lopen, bijvoorbeeld via een persoonlijk nummer.</div>
+    <div class="pdr-grid2">
+      <div class="pdr-field"><div class="pdr-label">Datum</div><input id="af_d" type="date" class="pc-in" value="${vandaag}"></div>
+      <div class="pdr-field"><div class="pdr-label">Tijd</div><input id="af_t" type="time" class="pc-in" value="10:00"></div>
+    </div>
+    <div class="pdr-grid2">
+      <div class="pdr-field"><div class="pdr-label">Duur</div><select id="af_du" class="pc-in"><option value="15">15 min.</option><option value="30" selected>30 min.</option><option value="45">45 min.</option><option value="60">1 uur</option></select></div>
+      <div class="pdr-field"><div class="pdr-label">Wie belt</div><select id="af_w" class="pc-in">${wieOpts}</select></div>
+    </div>
+    <div class="pdr-field"><div class="pdr-label">Onderwerp</div><input id="af_ti" class="pc-in" value="Intro-call"></div>
+    <div class="pdr-field"><div class="pdr-label">Notitie (optioneel)</div><input id="af_n" class="pc-in" placeholder="Bijv. belt via eigen 06, wil eerst cijfers zien"></div>
+    <div style="display:flex;gap:8px;margin-top:14px"><button class="btn" id="af_ok">Afspraak opslaan</button><button class="btn btn-ghost" id="af_x">Annuleren</button></div>
+  </div>`;
+  $('#af_x').onclick=()=>klaar(false);
+  $('#af_ok').onclick=async()=>{
+    const d=$('#af_d').value,t=$('#af_t').value;
+    if(!d||!t){toast('Vul datum en tijd in','err');return;}
+    const start=new Date(d+'T'+t);
+    if(isNaN(start.getTime())){toast('Ongeldige datum of tijd','err');return;}
+    const b=$('#af_ok');b.disabled=true;b.textContent='Opslaan…';
+    const {error}=await sb.from('afspraken').insert({
+      contact_id:c.id, titel:$('#af_ti').value.trim()||'Intro-call',
+      starts_at:start.toISOString(), duur_min:parseInt($('#af_du').value,10)||30,
+      assignee:$('#af_w').value||null, notitie:$('#af_n').value.trim()||null,
+      created_by:ME?ME.id:null});
+    if(error){toast('Opslaan mislukt: '+error.message,'err');b.disabled=false;b.textContent='Afspraak opslaan';return;}
+    toast('Afspraak ingepland','ok');klaar(true);
+  };
+}
+
 /* ================= LEADS SAMENVOEGEN =================
    Dubbele leads ontstaan als iemand zich twee keer aanmeldt met een tikfout in
    nummer of e-mailadres. De data kan niet weten welk gegeven klopt, dus de
@@ -3092,6 +3257,7 @@ async function openPerson(p){
         ${_waUrl?`<a class="btn btn-sm" id="pd_wa" style="text-decoration:none;background:#25D366;color:#fff;border-color:#25D366;font-weight:600" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
         <button class="btn btn-ghost btn-sm" id="pd_share" title="Kopieer een link naar dit contact om te delen met je team">🔗 Deel</button>
         ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
+        ${canEdit('agenda')?`<button class="btn btn-ghost btn-sm" id="pd_afspraak" title="Plan handmatig een afspraak met deze lead">📅 Afspraak</button>`:''}
         ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_merge" title="Voeg een dubbele lead samen met deze">⇄ Samenvoegen</button>`:''}
       </div>
     </div>
@@ -3220,6 +3386,7 @@ async function openPerson(p){
   const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
   const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
   const mg=$('#pd_merge'); if(mg)mg.onclick=()=>openMergeFlow(p);
+  const af=$('#pd_afspraak'); if(af)af.onclick=()=>afspraakVorm(p,()=>openPerson(p));
   const sh=$('#pd_share'); if(sh)sh.onclick=()=>copyLink(crmDeepLink(p.id));
   inboxRenderContactChat(p.id);
   // Recompute the WhatsApp greeting at the moment of clicking (send time), not when the contact was opened.
