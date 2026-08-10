@@ -534,6 +534,32 @@
   .gz-pipe{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;background:#eef2f1;border-radius:999px;padding:2px 8px;margin:3px 5px 0 0}
   .gz-leeg{padding:14px 12px;font-size:12.5px;color:var(--muted)}
   /* Agenda: rijen per dag, status als kleurbadge, verlopen zonder uitkomst rood. */
+  #afOverlay{position:fixed;inset:0;background:rgba(10,25,18,.45);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}
+  #afOverlay .af-modal{background:#fff;border-radius:14px;padding:22px 24px;width:min(560px,94vw);max-height:88vh;overflow-y:auto;box-shadow:0 24px 70px rgba(10,30,20,.3)}
+  .ag-views{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .ag-vbtn{background:#fff;border:0;font:inherit;font-size:12.5px;font-weight:600;padding:7px 14px;cursor:pointer;color:var(--muted)}
+  .ag-vbtn+.ag-vbtn{border-left:1px solid var(--line)}
+  .ag-vbtn.on{background:var(--brand);color:#fff}
+  .ag-nav{display:inline-flex;align-items:center;gap:4px}
+  .ag-chip{display:block;width:100%;text-align:left;background:#f8faf9;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:11px;font-weight:600;padding:4px 6px;margin-top:4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ag-chip:hover{background:#eef5f2}
+  .ag-chip.af{opacity:.5;text-decoration:line-through}
+  .ag-week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+  .ag-wkol{background:#fff;border:1px solid var(--line);border-radius:11px;padding:8px;min-height:130px}
+  .ag-wkol.nu{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+  .ag-wkop{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
+  .ag-wkop b{color:var(--ink);font-size:13px}
+  .ag-maand{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}
+  .ag-mkoppen{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+  .ag-mkoppen span{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:2px 6px}
+  .ag-mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .ag-mcel{border:1px solid var(--line);border-radius:8px;min-height:84px;padding:4px}
+  .ag-mcel.buiten{opacity:.4}
+  .ag-mcel.nu{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+  .ag-mdag{background:none;border:0;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;padding:1px 4px;border-radius:5px}
+  .ag-mdag:hover{background:#eef5f2}
+  .ag-meer{display:block;background:none;border:0;font:inherit;font-size:10.5px;color:var(--muted);cursor:pointer;padding:2px 4px}
+  .ag-stsel{flex:none;align-self:center;border:0;border-radius:999px;font:inherit;font-size:10.5px;font-weight:800;padding:3px 9px;cursor:pointer;-webkit-appearance:none;appearance:none}
   .ag-dag{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px}
   .ag-rij{display:flex;align-items:flex-start;gap:12px;padding:9px 4px;border-top:1px solid var(--line)}
   .ag-rij:first-of-type{border-top:none}
@@ -2028,6 +2054,7 @@ function inboxDrawInfo(ctx){
       <div class="ibx-ip-sec"><div class="ibx-ip-h" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button class="ibx-sum-btn" id="ibx_sum_btn">${ctx.summary&&ctx.summary.summary?'↻ Vernieuwen':'✨ Genereren'}</button>`:''}</div><div id="ibx_sum_body">${inboxSummaryHtml(ctx.summary)}</div></div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Lead</div>${leadRows.length?leadRows.map(([k,val])=>`<div class="ibx-kv"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join(''):'<div class="ibx-ip-note">Nog geen kwalificatie vastgelegd.</div>'}${winRow}</div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Contact</div>${contactHtml}</div>
+      ${cv.contact_id&&canEdit('agenda')?`<div class="ibx-ip-sec"><div class="ibx-ip-h">Afspraak</div><button class="btn btn-ghost btn-sm" id="ibx_afspraak" style="width:100%">📅 Afspraak inplannen</button></div>`:''}
       ${pipeHtml}
       ${chansHtml?`<div class="ibx-ip-sec"><div class="ibx-ip-h">Kanalen</div>${chansHtml}</div>`:''}
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Historie</div>${tlHtml}</div>
@@ -2037,6 +2064,7 @@ function inboxDrawInfo(ctx){
     const rs=$('#ibx_resume');if(rs)rs.onclick=()=>inboxResume(gid);
     const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(gid);
     const sm=$('#ibx_sum_btn');if(sm)sm.onclick=()=>inboxGenSummary(gid);
+    const afb=$('#ibx_afspraak');if(afb)afb.onclick=()=>afspraakVorm({id:cv.contact_id,name:nm});
   }
 }
 async function inboxSetPipeline(id){
@@ -2965,7 +2993,18 @@ function _helloWaUrl(phone,name,project){
    dus die afspraken bestaan nergens anders: niet in de gekoppelde agenda's
    van de AI-planner en niet in de inbox. Hier staan ze wel, per lead, met
    wie belt en wat de uitkomst was. */
-let AG={team:[],teamGeladen:false};
+let AG={team:[],teamGeladen:false,view:'lijst',anker:null};
+// Eigen kleine popup, los van de grote overlay. Nodig omdat het formulier ook
+// vanuit de inbox en de pipeline-lade opent, waar die overlay niet bestaat of
+// al door iets anders gebruikt wordt.
+function afPopup(html){
+  let ov=document.getElementById('afOverlay');
+  if(!ov){ov=document.createElement('div');ov.id='afOverlay';document.body.appendChild(ov);}
+  ov.innerHTML=`<div class="af-modal">${html}</div>`;
+  ov.style.display='flex';
+  ov.onclick=e=>{if(e.target===ov)afPopupSluit();};
+}
+function afPopupSluit(){const ov=document.getElementById('afOverlay');if(ov){ov.style.display='none';ov.innerHTML='';}}
 async function agTeam(){
   if(AG.teamGeladen)return AG.team;
   const {data}=await sb.from('adm_profiles').select('id,full_name,email').order('created_at',{ascending:true});
@@ -2988,8 +3027,9 @@ async function renderAgenda(){
   const v=$('#view');const edit=canEdit('agenda');
   v.innerHTML='<div class="empty" style="padding:24px">Laden…</div>';
   await agTeam();
-  const van=new Date(Date.now()-14*864e5).toISOString();
-  const tot=new Date(Date.now()+60*864e5).toISOString();
+  const _anker=AG.anker?new Date(AG.anker):new Date();
+  const van=new Date(Math.min(Date.now()-14*864e5,_anker.getTime()-45*864e5)).toISOString();
+  const tot=new Date(Math.max(Date.now()+60*864e5,_anker.getTime()+45*864e5)).toISOString();
   const {data,error}=await sb.from('afspraken')
     .select('*, contacts(name, phone)')
     .gte('starts_at',van).lte('starts_at',tot)
@@ -3014,25 +3054,64 @@ async function renderAgenda(){
         <span class="muted" style="font-size:11.5px">${esc(a.titel)}${tel?' · '+esc(tel):''}${wie?' · met '+esc(wie):''}</span>
         ${a.notitie?`<div class="muted" style="font-size:11.5px;margin-top:2px">${esc(a.notitie)}</div>`:''}
       </div>
-      <span class="ag-badge" style="color:${st[1]};background:${st[2]}">${st[0]}</span>
-      ${edit&&a.status==='gepland'?`<span class="ag-acts">
-        <button class="btn btn-ghost btn-sm" data-agst="afgerond" data-agid="${esc(a.id)}" title="Markeer als afgerond">✓</button>
-        <button class="btn btn-ghost btn-sm" data-agst="no_show" data-agid="${esc(a.id)}" title="Lead kwam niet opdagen">✗</button>
-        <button class="btn btn-ghost btn-sm" data-agst="geannuleerd" data-agid="${esc(a.id)}" title="Annuleer de afspraak">🗑</button>
-      </span>`:''}
+      ${edit?`<select class="ag-stsel" data-agsel="${esc(a.id)}" style="color:${st[1]};background:${st[2]}" title="Status wijzigen">
+          ${Object.keys(AG_STATUS).map(k=>`<option value="${k}"${k===a.status?' selected':''}>${AG_STATUS[k][0]}</option>`).join('')}
+        </select>
+        <span class="ag-acts"><button class="btn btn-ghost btn-sm" data-agdel="${esc(a.id)}" title="Verwijder deze afspraak definitief">🗑</button></span>`
+      :`<span class="ag-badge" style="color:${st[1]};background:${st[2]}">${st[0]}</span>`}
     </div>`;
   };
 
-  let h=`<div class="pipe-toolbar" style="margin-bottom:14px">
+  const anker=AG.anker?new Date(AG.anker):new Date();
+  const periode=(()=>{
+    if(AG.view==='week'){
+      const ma=new Date(anker);ma.setDate(ma.getDate()-((ma.getDay()+6)%7));ma.setHours(0,0,0,0);
+      const zo=new Date(ma.getTime()+6*864e5);
+      return ma.toLocaleDateString('nl-NL',{day:'numeric',month:'short'})+' t/m '+zo.toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+    }
+    if(AG.view==='maand')return anker.toLocaleDateString('nl-NL',{month:'long',year:'numeric'});
+    return '';
+  })();
+  let h=`<div class="pipe-toolbar" style="margin-bottom:14px;flex-wrap:wrap">
     ${edit?`<button class="btn" id="ag_nieuw">＋ Afspraak</button>`:''}
+    <span class="ag-views">${['lijst','week','maand'].map(w=>`<button class="ag-vbtn${AG.view===w?' on':''}" data-agview="${w}">${w[0].toUpperCase()+w.slice(1)}</button>`).join('')}</span>
+    ${AG.view!=='lijst'?`<span class="ag-nav"><button class="btn btn-ghost btn-sm" data-agnav="-1">‹</button><button class="btn btn-ghost btn-sm" data-agnav="0">Vandaag</button><button class="btn btn-ghost btn-sm" data-agnav="1">›</button><b style="font-size:13px;margin-left:4px">${esc(periode)}</b></span>`:''}
     <span class="muted" style="font-size:12px">Handmatig ingeplande afspraken, los van de gekoppelde agenda's. Klik op een naam voor de contactkaart.</span>
   </div>`;
 
-  if(open.length){
+  const chip=a=>{
+    const st=AG_STATUS[a.status]||AG_STATUS.gepland;
+    const naam=(a.contacts&&a.contacts.name)||'(naamloos)';
+    return `<button class="ag-chip${a.status!=='gepland'?' af':''}" data-agopen="${esc(a.contact_id)}" title="${esc(naam)} · ${esc(a.titel)}${a.notitie?' · '+esc(a.notitie):''} (${st[0]})" style="border-left:3px solid ${st[1]}">${agKlok(a.starts_at)} ${esc(naam)}</button>`;
+  };
+  if(AG.view==='week'){
+    const ma=new Date(anker);ma.setDate(ma.getDate()-((ma.getDay()+6)%7));ma.setHours(0,0,0,0);
+    h+='<div class="ag-week">'+Array.from({length:7},(_,i)=>{
+      const dag=new Date(ma.getTime()+i*864e5);
+      const k=agDagsleutel(dag);
+      const items=alle.filter(a=>agDagsleutel(a.starts_at)===k).sort((x,y)=>new Date(x.starts_at)-new Date(y.starts_at));
+      const vandaag=k===agDagsleutel(new Date());
+      return `<div class="ag-wkol${vandaag?' nu':''}"><div class="ag-wkop">${dag.toLocaleDateString('nl-NL',{weekday:'short'})} <b>${dag.getDate()}</b></div>${items.map(chip).join('')||'<div class="muted" style="font-size:11px;padding:6px 4px"> </div>'}</div>`;
+    }).join('')+'</div>';
+  } else if(AG.view==='maand'){
+    const eerste=new Date(anker.getFullYear(),anker.getMonth(),1);
+    const start=new Date(eerste);start.setDate(start.getDate()-((start.getDay()+6)%7));
+    let cellen='';
+    for(let i=0;i<42;i++){
+      const dag=new Date(start.getTime()+i*864e5);
+      const k=agDagsleutel(dag);
+      const items=alle.filter(a=>agDagsleutel(a.starts_at)===k).sort((x,y)=>new Date(x.starts_at)-new Date(y.starts_at));
+      const inMaand=dag.getMonth()===anker.getMonth();
+      const vandaag=k===agDagsleutel(new Date());
+      cellen+=`<div class="ag-mcel${inMaand?'':' buiten'}${vandaag?' nu':''}"><button class="ag-mdag" data-agdag="${k}" title="Open deze dag in weekweergave">${dag.getDate()}</button>${items.slice(0,3).map(chip).join('')}${items.length>3?`<button class="ag-meer" data-agdag="${k}">+${items.length-3} meer</button>`:''}</div>`;
+      if(i===41&&dag.getMonth()===anker.getMonth())continue;
+    }
+    h+=`<div class="ag-maand"><div class="ag-mkoppen">${['ma','di','wo','do','vr','za','zo'].map(d=>`<span>${d}</span>`).join('')}</div><div class="ag-mgrid">${cellen}</div></div>`;
+  } else if(open.length){
     h+=`<div class="panel" style="border-color:#fecaca"><div class="panel-head"><div><h3 style="color:#b91c1c">Nog af te handelen (${open.length})</h3><div class="desc">Deze afspraken zijn geweest maar hebben geen uitkomst. Zet ze op afgerond, no-show of geannuleerd.</div></div></div>
       ${open.map(a=>`<div style="margin-bottom:4px"><span class="muted" style="font-size:11.5px">${esc(agDagkop(a.starts_at))} · </span></div>`+rij(a)).join('')}</div>`;
   }
-  if(!komend.length&&!open.length){
+  if(AG.view!=='lijst'){ /* week en maand hierboven afgehandeld */ } else if(!komend.length&&!open.length){
     h+='<div class="panel"><div class="empty" style="padding:26px">Nog geen afspraken. Plan de eerste via ＋ Afspraak, of via de knop op een contactkaart.</div></div>';
   } else if(komend.length){
     const perDag={};
@@ -3044,19 +3123,37 @@ async function renderAgenda(){
   v.innerHTML=h;
 
   const nw=$('#ag_nieuw');if(nw)nw.onclick=()=>agNieuweAfspraak();
+  v.querySelectorAll('[data-agview]').forEach(b=>b.onclick=()=>{AG.view=b.dataset.agview;renderAgenda();});
+  v.querySelectorAll('[data-agnav]').forEach(b=>b.onclick=()=>{
+    const r=parseInt(b.dataset.agnav,10);
+    if(r===0){AG.anker=null;}
+    else{const d=AG.anker?new Date(AG.anker):new Date();
+      // eerst naar de 1e, anders schiet 31 aug +1 maand door naar 1 oktober
+      if(AG.view==='maand'){d.setDate(1);d.setMonth(d.getMonth()+r);}else d.setDate(d.getDate()+7*r);
+      AG.anker=d.toISOString();}
+    renderAgenda();
+  });
+  v.querySelectorAll('[data-agdag]').forEach(b=>b.onclick=()=>{AG.view='week';AG.anker=new Date(b.dataset.agdag+'T12:00:00').toISOString();renderAgenda();});
   v.querySelectorAll('[data-agopen]').forEach(b=>b.onclick=async()=>{
     const {data:c}=await sb.from('contacts').select('*').eq('id',b.dataset.agopen).single();
     if(c)openPerson(c);
   });
-  v.querySelectorAll('[data-agst]').forEach(b=>b.onclick=async()=>{
-    const {error:e}=await sb.from('afspraken').update({status:b.dataset.agst,updated_at:new Date().toISOString()}).eq('id',b.dataset.agid);
+  v.querySelectorAll('[data-agsel]').forEach(sel=>sel.onchange=async()=>{
+    const {error:e}=await sb.from('afspraken').update({status:sel.value,updated_at:new Date().toISOString()}).eq('id',sel.dataset.agsel);
     if(e){toast('Bijwerken mislukt: '+e.message,'err');return;}
-    toast('Afspraak bijgewerkt','ok');renderAgenda();
+    toast('Status bijgewerkt','ok');renderAgenda();
+  });
+  v.querySelectorAll('[data-agdel]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Deze afspraak definitief verwijderen?'))return;
+    const {error:e}=await sb.from('afspraken').delete().eq('id',b.dataset.agdel);
+    if(e){toast('Verwijderen mislukt: '+e.message,'err');return;}
+    toast('Afspraak verwijderd','ok');renderAgenda();
   });
 }
 // Vanaf de Agenda-pagina: eerst de lead zoeken, dan het formulier.
 function agNieuweAfspraak(){
-  showDetail('Nieuwe afspraak',`<div style="max-width:560px">
+  afPopup(`<div>
+    <h3 style="margin:0 0 4px">Nieuwe afspraak</h3>
     <div class="muted" style="font-size:12.5px;margin-bottom:10px">Voor welke lead is de afspraak?</div>
     <input id="agz_q" class="pc-in" placeholder="Zoek op naam, nummer of e-mail…" autocomplete="off">
     <div id="agz_res" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
@@ -3070,13 +3167,16 @@ function agNieuweAfspraak(){
       <div style="font-weight:700;font-size:13.5px">${esc(x.naam)}</div>
       <div class="muted" style="font-size:11.5px">${[x.telefoon,x.email].filter(Boolean).map(esc).join(' · ')||'geen contactgegevens'}</div>
     </button>`).join('')||'<div class="muted" style="font-size:12px">Geen lead gevonden.</div>';
-    res.querySelectorAll('[data-agpick]').forEach(b=>b.onclick=()=>afspraakVorm({id:b.dataset.agpick,name:b.dataset.agnaam},()=>{const ov=$('#overlay');if(ov){ov.style.display='none';ov.innerHTML='';}renderAgenda();}));
+    res.querySelectorAll('[data-agpick]').forEach(b=>b.onclick=()=>afspraakVorm({id:b.dataset.agpick,name:b.dataset.agnaam}));
   },200);};
 }
-// Het formulier zelf; werkt vanuit de Agenda-pagina en vanaf de contactkaart.
-async function afspraakVorm(c, klaar){
+// Het formulier zelf, in de eigen popup. Aanroepbaar vanaf de contactkaart, de
+// Agenda-pagina, het inbox-paneel en de pipeline-lade. Na opslaan ververst de
+// Agenda-pagina zichzelf als die openstaat.
+async function afspraakVorm(c){
   await agTeam();
-  const mb=document.querySelector('#overlay .modal-body');if(!mb)return;
+  afPopup('<div id="af_body"></div>');
+  const mb=document.getElementById('af_body');if(!mb)return;
   const vandaag=new Date().toISOString().slice(0,10);
   const wieOpts=AG.team.map(t=>`<option value="${esc(t.id)}"${ME&&t.id===ME.id?' selected':''}>${esc(t.full_name||t.email)}</option>`).join('');
   mb.innerHTML=`<div style="max-width:520px">
@@ -3094,7 +3194,7 @@ async function afspraakVorm(c, klaar){
     <div class="pdr-field"><div class="pdr-label">Notitie (optioneel)</div><input id="af_n" class="pc-in" placeholder="Bijv. belt via eigen 06, wil eerst cijfers zien"></div>
     <div style="display:flex;gap:8px;margin-top:14px"><button class="btn" id="af_ok">Afspraak opslaan</button><button class="btn btn-ghost" id="af_x">Annuleren</button></div>
   </div>`;
-  $('#af_x').onclick=()=>klaar(false);
+  $('#af_x').onclick=()=>afPopupSluit();
   $('#af_ok').onclick=async()=>{
     const d=$('#af_d').value,t=$('#af_t').value;
     if(!d||!t){toast('Vul datum en tijd in','err');return;}
@@ -3107,7 +3207,8 @@ async function afspraakVorm(c, klaar){
       assignee:$('#af_w').value||null, notitie:$('#af_n').value.trim()||null,
       created_by:ME?ME.id:null});
     if(error){toast('Opslaan mislukt: '+error.message,'err');b.disabled=false;b.textContent='Afspraak opslaan';return;}
-    toast('Afspraak ingepland','ok');klaar(true);
+    toast('Afspraak ingepland','ok');afPopupSluit();
+    if(CURRENT==='agenda')renderAgenda();
   };
 }
 
@@ -3386,7 +3487,7 @@ async function openPerson(p){
   const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
   const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
   const mg=$('#pd_merge'); if(mg)mg.onclick=()=>openMergeFlow(p);
-  const af=$('#pd_afspraak'); if(af)af.onclick=()=>afspraakVorm(p,()=>openPerson(p));
+  const af=$('#pd_afspraak'); if(af)af.onclick=()=>afspraakVorm(p);
   const sh=$('#pd_share'); if(sh)sh.onclick=()=>copyLink(crmDeepLink(p.id));
   inboxRenderContactChat(p.id);
   // Recompute the WhatsApp greeting at the moment of clicking (send time), not when the contact was opened.
@@ -4014,6 +4115,7 @@ function pipeCardDrawer(card){
           <button class="btn btn-sm" id="pdr_auto_add">Toevoegen</button>
         </div>
         <div class="muted" style="font-size:11px;margin-top:5px">Op de gekozen datum verschuift deze lead automatisch naar <b>Actie vereist</b>.</div>`:''}
+        ${card.contact_id&&canEdit('agenda')?`<button class="btn btn-ghost btn-sm" id="pdr_afspraak" style="margin-top:10px">📅 Afspraak inplannen</button>`:''}
       </div>
       <div class="muted" style="font-size:11.5px">${card.source==='lead'?'Automatisch aangemaakt vanuit de CRM.':'Handmatig aangemaakte kaart.'} Wijzigingen worden direct opgeslagen.</div>
     </div>
@@ -4088,6 +4190,8 @@ function pipeCardDrawer(card){
   }
   loadTasks();
   if(edit){
+    const afk=q('#pdr_afspraak');
+    if(afk)afk.onclick=()=>afspraakVorm({id:card.contact_id,name:card.title||'(naamloos)'});
     const add=q('#pdr_auto_add');
     if(add)add.onclick=async()=>{
       const dv=q('#pdr_auto_date').value;if(!dv){toast('Kies een datum','err');return;}
