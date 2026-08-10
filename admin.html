@@ -2946,6 +2946,70 @@ function _helloWaUrl(phone,name,project){
   const msg=`${hi} dit is ${sender}${title}. We hebben zojuist een aanmelding ontvangen voor ${projPhrase}. Klopt dat?\n\nIk stuur na iedere aanmelding altijd even persoonlijk een bericht om kennis te maken.`;
   return 'https://wa.me/'+digits+'?text='+encodeURIComponent(msg);
 }
+/* ================= LEADS SAMENVOEGEN =================
+   Dubbele leads ontstaan als iemand zich twee keer aanmeldt met een tikfout in
+   nummer of e-mailadres. De data kan niet weten welk gegeven klopt, dus de
+   gebruiker kiest hier expliciet welke van de twee de juiste gegevens heeft.
+   contact_merge_manual verhuist daarna alles (chats, aanvragen, kaarten,
+   reserveringen) naar de gekozen lead en verwijdert het duplicaat. */
+function _mergePersoonHtml(c, extra){
+  const regels=[c.phone, c.email].filter(Boolean).map(esc).join('<br>')||'<span class="muted">geen contactgegevens</span>';
+  return `<div style="font-size:14px;font-weight:750">${esc(c.name||'(naamloos)')}</div>
+    <div style="font-size:12.5px;margin-top:5px;line-height:1.55">${regels}</div>
+    ${extra?`<div class="muted" style="font-size:11.5px;margin-top:6px">${extra}</div>`:''}`;
+}
+async function openMergeFlow(p){
+  const mb=document.querySelector('#overlay .modal-body'); if(!mb)return;
+  mb.innerHTML=`<div style="max-width:640px">
+    <h3 style="margin:0 0 4px">Samenvoegen met een dubbele lead</h3>
+    <div class="muted" style="font-size:12.5px;margin-bottom:14px">Zoek het duplicaat van <b>${esc(p.name||'dit contact')}</b>. Alle chats, aanvragen en pipelinekaarten van beide worden straks een lead.</div>
+    <input id="mg_q" class="pc-in" placeholder="Zoek op naam, nummer of e-mail…" autocomplete="off">
+    <div id="mg_res" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+  </div>`;
+  const inp=$('#mg_q'), res=$('#mg_res'); let t=null;
+  inp.focus();
+  inp.oninput=()=>{clearTimeout(t);t=setTimeout(async()=>{
+    const q=inp.value.trim(); if(q.length<2){res.innerHTML='';return;}
+    const {data,error}=await sb.rpc('lead_zoek',{p_q:q,p_limit:8});
+    if(error){res.innerHTML=`<div class="muted" style="font-size:12px">Zoeken mislukt: ${esc(error.message)}</div>`;return;}
+    const items=(data||[]).filter(x=>x.contact_id!==p.id);
+    res.innerHTML=items.length?items.map(x=>
+      `<button class="btn btn-ghost" data-mgpick="${esc(x.contact_id)}" style="text-align:left;display:block;padding:10px 12px">
+        <div style="font-weight:700;font-size:13.5px">${esc(x.naam)}</div>
+        <div class="muted" style="font-size:11.5px">${[x.telefoon,x.email].filter(Boolean).map(esc).join(' · ')||'geen contactgegevens'}</div>
+      </button>`).join('')
+      :'<div class="muted" style="font-size:12px">Geen andere lead gevonden.</div>';
+    res.querySelectorAll('[data-mgpick]').forEach(b=>b.onclick=()=>mergeKies(p.id,b.dataset.mgpick));
+  },200);};
+}
+async function mergeKies(idA,idB){
+  const mb=document.querySelector('#overlay .modal-body'); if(!mb)return;
+  const {data:cs,error}=await sb.from('contacts').select('id,name,phone,email,created_at').in('id',[idA,idB]);
+  if(error||!cs||cs.length!==2){toast('Kon contacten niet laden','err');return;}
+  const [a,b]=cs;
+  mb.innerHTML=`<div style="max-width:680px">
+    <h3 style="margin:0 0 4px">Welke gegevens kloppen?</h3>
+    <div class="muted" style="font-size:12.5px;margin-bottom:14px">De lead die je kiest houdt zijn naam, nummer en e-mailadres. Van de ander verhuizen alle chats, aanvragen en kaarten hierheen; ontbrekende velden vullen aan. Dit is niet terug te draaien.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      ${[a,b].map(c=>`<div style="border:1px solid var(--line);border-radius:12px;padding:14px">
+        ${_mergePersoonHtml(c,'in CRM sinds '+fmtDate(c.created_at))}
+        <button class="btn btn-sm" data-mgkeep="${esc(c.id)}" style="margin-top:12px;width:100%">Deze gegevens kloppen</button>
+      </div>`).join('')}
+    </div>
+    <div style="margin-top:14px"><button class="btn btn-ghost btn-sm" id="mg_terug">← Terug</button></div>
+  </div>`;
+  $('#mg_terug').onclick=async()=>{const {data}=await sb.from('contacts').select('*').eq('id',idA).single();if(data)openPerson(data);};
+  mb.querySelectorAll('[data-mgkeep]').forEach(btn=>btn.onclick=async()=>{
+    const keep=btn.dataset.mgkeep, dupe=keep===a.id?b.id:a.id;
+    btn.disabled=true;btn.textContent='Samenvoegen…';
+    const {data,error}=await sb.rpc('contact_merge_manual',{p_keep:keep,p_dupe:dupe});
+    if(error){toast('Samenvoegen mislukt: '+error.message,'err');btn.disabled=false;btn.textContent='Deze gegevens kloppen';return;}
+    toast('Leads samengevoegd','ok');
+    if(typeof PIPE!=='undefined'&&PIPE.cur&&CURRENT==='pipeline')loadPipelineData();
+    const {data:c}=await sb.from('contacts').select('*').eq('id',keep).single();
+    if(c)openPerson(c);
+  });
+}
 async function openPerson(p){
   showDetail('Contact','<div class="muted">Loading…</div>');
   const [lr,pr,wr,dr,rr,projR,rvR,pcR,plR]=await Promise.all([
@@ -3028,6 +3092,7 @@ async function openPerson(p){
         ${_waUrl?`<a class="btn btn-sm" id="pd_wa" style="text-decoration:none;background:#25D366;color:#fff;border-color:#25D366;font-weight:600" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
         <button class="btn btn-ghost btn-sm" id="pd_share" title="Kopieer een link naar dit contact om te delen met je team">🔗 Deel</button>
         ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
+        ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_merge" title="Voeg een dubbele lead samen met deze">⇄ Samenvoegen</button>`:''}
       </div>
     </div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:14px">
@@ -3154,6 +3219,7 @@ async function openPerson(p){
   }
   const mb=document.querySelector('#overlay .modal-body'); if(mb)mb.innerHTML=body;
   const eb=$('#pd_editc'); if(eb)eb.onclick=()=>openForm('contacts',p);
+  const mg=$('#pd_merge'); if(mg)mg.onclick=()=>openMergeFlow(p);
   const sh=$('#pd_share'); if(sh)sh.onclick=()=>copyLink(crmDeepLink(p.id));
   inboxRenderContactChat(p.id);
   // Recompute the WhatsApp greeting at the moment of clicking (send time), not when the contact was opened.
