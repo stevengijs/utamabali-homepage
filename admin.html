@@ -3243,21 +3243,39 @@ function belPopup(c){
     <div class="pdr-field" id="bel_tijd_veld"><div class="pdr-label">Wanneer</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${['over 5 minuten','over een kwartier','vandaag rond ','morgen rond '].map((t,i)=>`<button class="btn btn-ghost btn-sm bel-tijd${i===0?' on':''}" data-beltijd="${esc(t)}">${esc(t.trim())}</button>`).join('')}
       <input id="bel_tijd_uur" class="pc-in" type="time" value="15:00" style="width:110px;display:none"></div></div>
-    <div class="pdr-field"><div class="pdr-label">Bericht</div><div id="bel_prev" class="muted" style="font-size:12.5px;line-height:1.55;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:#f8faf9"></div></div>
+    <div class="pdr-field"><div class="pdr-label" style="display:flex;justify-content:space-between;align-items:center"><span>Bericht</span><button type="button" id="bel_reset" class="btn btn-ghost btn-sm" style="display:none">↻ Standaardtekst</button></div>
+      <textarea id="bel_msg" class="pc-in" rows="4" style="line-height:1.55;font-size:12.5px"></textarea>
+      <div id="bel_hint" class="muted" style="font-size:11.5px;margin-top:4px"></div></div>
     <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" id="bel_ok">Verstuur</button><button class="btn btn-ghost" id="bel_x">Annuleren</button></div>
   </div>`);
-  let type='aankondiging', tijdBasis='over 5 minuten';
+  let type='aankondiging', tijdBasis='over 5 minuten', aangepast=false, vensterOpen=null;
   const prev=()=>{
     const uur=$('#bel_tijd_uur');
     const tijd=tijdBasis.endsWith(' ')?tijdBasis+(uur&&uur.value?uur.value:''):tijdBasis;
-    $('#bel_prev').textContent=belTekst(type,voornaam,$('#bel_wie').value.trim()||'Ashley',tijd,$('#bel_nr').value.trim());
+    // eigen bewerkingen niet overschrijven; de herstelknop zet de standaardtekst terug
+    if(!aangepast)$('#bel_msg').value=belTekst(type,voornaam,$('#bel_wie').value.trim()||'Ashley',tijd,$('#bel_nr').value.trim());
     $('#bel_tijd_veld').style.display=type==='gemist'?'none':'';
     $('#bel_nr_veld').style.display=type==='gemist'?'none':'';
     return tijd;
   };
+  // venstercheck: binnen 24u mag vrije tekst, daarbuiten gaat het vaste template
+  sb.functions.invoke('call-announce',{body:{action:'check',contact_id:c.id}}).then(({data})=>{
+    vensterOpen=!!(data&&data.window_open);
+    const msg=$('#bel_msg'),hint=$('#bel_hint');if(!msg)return;
+    if(vensterOpen){
+      hint.textContent='Chatvenster open: dit bericht gaat precies zo de deur uit. Pas het gerust aan.';
+    }else{
+      msg.readOnly=true;msg.style.background='#f6f8f7';
+      const tpl=data&&(type==='gemist'?data.missed_template:data.call_template);
+      hint.textContent=tpl
+        ? 'Deze lead heeft langer dan 24 uur niets gestuurd, dus Meta staat alleen het vaste goedgekeurde template toe. De tekst hierboven is die templatetekst; aanpassen kan pas als de lead reageert.'
+        : 'Chatvenster dicht en er is nog geen goedgekeurd template geregistreerd. Versturen lukt pas na registratie van het template.';
+    }
+  }).catch(()=>{});
   document.querySelectorAll('[data-beltype]').forEach(b=>b.onclick=()=>{
     type=b.dataset.beltype;
     document.querySelectorAll('[data-beltype]').forEach(x=>x.classList.toggle('on',x===b));
+    aangepast=false;$('#bel_reset').style.display='none';
     prev();
   });
   document.querySelectorAll('[data-beltijd]').forEach(b=>b.onclick=()=>{
@@ -3267,6 +3285,8 @@ function belPopup(c){
     prev();
   });
   $('#bel_tijd_uur').oninput=prev;$('#bel_wie').oninput=prev;$('#bel_nr').oninput=prev;
+  $('#bel_msg').addEventListener('input',()=>{aangepast=true;$('#bel_reset').style.display='';});
+  $('#bel_reset').onclick=()=>{aangepast=false;$('#bel_reset').style.display='none';prev();};
   prev();
   $('#bel_x').onclick=()=>afPopupSluit();
   $('#bel_ok').onclick=async()=>{
@@ -3275,7 +3295,7 @@ function belPopup(c){
     const nummer=$('#bel_nr').value.trim();
     localStorage.setItem('utama_beller',beller);localStorage.setItem('utama_bel_nummer',nummer);
     const b=$('#bel_ok');b.disabled=true;b.textContent='Versturen…';
-    const {data,error}=await sb.functions.invoke('call-announce',{body:{type,contact_id:c.id,tijd,beller,nummer}});
+    const {data,error}=await sb.functions.invoke('call-announce',{body:{type,contact_id:c.id,tijd,beller,nummer,tekst:$('#bel_msg').value.trim()}});
     if(error||!data||!data.ok){
       const nb=(data&&data.note)||(data&&data.detail)||(error&&error.message)||'onbekende fout';
       toast('Niet verstuurd: '+nb,'err');b.disabled=false;b.textContent='Verstuur';return;
