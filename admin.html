@@ -560,8 +560,11 @@
   .ag-mdag:hover{background:#eef5f2}
   .ag-meer{display:block;background:none;border:0;font:inherit;font-size:10.5px;color:var(--muted);cursor:pointer;padding:2px 4px}
   .ag-stsel{flex:none;align-self:center;border:0;border-radius:999px;font:inherit;font-size:10.5px;font-weight:800;padding:3px 9px;cursor:pointer;-webkit-appearance:none;appearance:none}
-  .ag-dag{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px}
-  .ag-rij{display:flex;align-items:flex-start;gap:12px;padding:9px 4px;border-top:1px solid var(--line)}
+  /* .panel heeft zelf geen padding; deze wrapper geeft de agendalijst lucht
+     zodat de dagkop en de rijen niet tegen de randen plakken. */
+  .ag-panel{padding:16px 22px 10px}
+  .ag-dag{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+  .ag-rij{display:flex;align-items:flex-start;gap:14px;padding:14px 2px;border-top:1px solid var(--line)}
   .ag-rij:first-of-type{border-top:none}
   .ag-rij.af{opacity:.55}
   .ag-tijd{flex:none;width:96px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -3109,14 +3112,14 @@ async function renderAgenda(){
     h+=`<div class="ag-maand"><div class="ag-mkoppen">${['ma','di','wo','do','vr','za','zo'].map(d=>`<span>${d}</span>`).join('')}</div><div class="ag-mgrid">${cellen}</div></div>`;
   } else if(open.length){
     h+=`<div class="panel" style="border-color:#fecaca"><div class="panel-head"><div><h3 style="color:#b91c1c">Nog af te handelen (${open.length})</h3><div class="desc">Deze afspraken zijn geweest maar hebben geen uitkomst. Zet ze op afgerond, no-show of geannuleerd.</div></div></div>
-      ${open.map(a=>`<div style="margin-bottom:4px"><span class="muted" style="font-size:11.5px">${esc(agDagkop(a.starts_at))} · </span></div>`+rij(a)).join('')}</div>`;
+      <div class="ag-panel" style="padding-top:2px">${open.map(a=>`<div class="muted" style="font-size:11.5px;margin-top:8px">${esc(agDagkop(a.starts_at))}</div>`+rij(a)).join('')}</div></div>`;
   }
   if(AG.view!=='lijst'){ /* week en maand hierboven afgehandeld */ } else if(!komend.length&&!open.length){
     h+='<div class="panel"><div class="empty" style="padding:26px">Nog geen afspraken. Plan de eerste via ＋ Afspraak, of via de knop op een contactkaart.</div></div>';
   } else if(komend.length){
     const perDag={};
     komend.forEach(a=>{const k=agDagsleutel(a.starts_at);(perDag[k]=perDag[k]||[]).push(a);});
-    h+=Object.keys(perDag).sort().map(k=>`<div class="panel" style="margin-bottom:12px">
+    h+=Object.keys(perDag).sort().map(k=>`<div class="panel ag-panel" style="margin-bottom:14px">
       <div class="ag-dag">${esc(agDagkop(perDag[k][0].starts_at))}</div>
       ${perDag[k].map(rij).join('')}</div>`).join('');
   }
