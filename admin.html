@@ -409,6 +409,8 @@
   .pdr-act:hover{background:#f5f7f6}
   .pdr-act.wa{background:#25D366;color:#fff;border-color:#25D366}
   .pdr-act.wa:hover{filter:brightness(.95)}
+  .lead-wa-groen{background:#25D366;color:#fff;border-color:#25D366;font-weight:600;text-decoration:none}
+  .lead-wa-groen:hover{filter:brightness(.95)}
   .pdr-stages{display:flex;gap:6px;flex-wrap:wrap}
   .pdr-stage{padding:5px 11px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:var(--muted);transition:all .1s}
   .pdr-stage:hover{background:#f2f5f4}
@@ -1840,13 +1842,6 @@ async function inboxOpen(id,keepDraft){
   inboxDrawThread(tr.data,keepDraft);
   inboxDrawInfo((cr&&cr.data)?cr.data:{conversation:tr.data.conversation});
 }
-function inboxFacts(cv){
-  const f=[];if(cv.interest)f.push(['Interesse',cv.interest]);
-  const tl={now:'Nu',['3-6m']:'3–6 mnd',exploring:'Oriënteert'}[cv.timeline]||cv.timeline;if(tl)f.push(['Timing',tl]);
-  if(cv.budget_band)f.push(['Budget',cv.budget_band]);
-  if(cv.is_qualified!=null)f.push(['Gekwalificeerd',cv.is_qualified?'Ja':'Nee']);
-  return f.map(([k,val])=>`<span class="ibx-fact"><b>${esc(k)}:</b> ${esc(val)}</span>`).join('');
-}
 function inboxComposerHint(){
   const k=INBOX.sendCh;const c=INBOX_CH[k]||INBOX_CH.instagram;const acct=BIZ_ACCOUNTS[k];
   return `Verzendt via <b>${c.icon} ${esc(c.label)}</b>${acct?` als <b>${esc(acct)}</b>`:''}. Zodra jij stuurt, neem je het over en pauzeert de AI.`;
@@ -1968,39 +1963,55 @@ function inboxSummaryHtml(s){
   const when=s.generated_at?`<div class="muted" style="font-size:10.5px;margin-top:6px">Bijgewerkt ${new Date(s.generated_at).toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${s.message_count?' · '+s.message_count+' berichten':''}</div>`:'';
   return `<ul class="ibx-sum-list">${items}</ul>${when}`;
 }
-async function inboxGenSummary(gid){
-  const btn=$('#ibx_sum_btn'),body=$('#ibx_sum_body');
+// Eén samenvattingsgenerator voor alle drie de leadweergaven (inbox-paneel,
+// contactkaart, pipeline-drawer). De edge function accepteert {group}
+// (inbox-gesprek) of {contact_id} (CRM-contact).
+async function leadSumGen(reqBody,btnId,bodyId){
+  const btn=document.getElementById(btnId),body=document.getElementById(bodyId);
   if(btn){btn.disabled=true;btn.textContent='Bezig…';}
   if(body)body.innerHTML='<div class="ibx-ip-note">Samenvatting genereren…</div>';
   try{
-    const {data,error}=await sb.functions.invoke('inbox-summary',{body:{group:gid}});
-    if(error||!data||data.ok===false){
-      const msg=(data&&data.error==='no_key')?'Koppel eerst een OpenAI API-sleutel (integration_config.openai_api_key) om samenvattingen te genereren.':((data&&(data.note||data.detail||data.error))||(error&&error.message)||'Mislukt');
+    let {data,error}=await sb.functions.invoke('inbox-summary',{body:reqBody});
+    // Bij een 4xx geeft invoke geen data terug; de reden zit in de response-body.
+    if(error&&!data&&error.context&&typeof error.context.json==='function'){try{data=await error.context.json();}catch(_e){}}
+    if(error||!data||data.ok===false||data.error){
+      const kaal={no_key:'Koppel eerst een Anthropic API-sleutel (integration_config.anthropic_api_key) om samenvattingen te genereren.',
+        no_conversations:'Deze lead heeft nog geen inbox-gesprekken om samen te vatten.',
+        no_messages:'Deze lead heeft nog geen berichten om samen te vatten.',
+        no_contact:'Nog geen CRM-contact aan dit gesprek gekoppeld.'}[data&&data.error];
+      const msg=kaal||((data&&(data.note||data.detail||data.error))||(error&&error.message)||'Mislukt');
       if(body)body.innerHTML=`<div class="ibx-ip-note">${esc(msg)}</div>`;
       toast('Samenvatting: '+esc(msg),'err');return;
     }
     if(body)body.innerHTML=inboxSummaryHtml({summary:data.summary,generated_at:data.generated_at,message_count:data.message_count});
     toast('Samenvatting bijgewerkt','ok');
   }catch(e){if(body)body.innerHTML='<div class="ibx-ip-note">Samenvatting mislukt.</div>';toast('Samenvatting mislukt','err');}
-  finally{const b=$('#ibx_sum_btn');if(b){b.disabled=false;b.textContent='↻ Vernieuwen';}}
+  finally{const b=document.getElementById(btnId);if(b){b.disabled=false;b.textContent='↻ Vernieuwen';}}
 }
-// Same AI-samenvatting as in the inbox, but for a pipeline lead (keyed by contact).
-async function pdrGenSummary(contactId){
-  const btn=document.getElementById('pdr_sum_btn'),body=document.getElementById('pdr_sum_body');
-  if(!contactId){if(body)body.innerHTML='<div class="ibx-ip-note">Deze kaart is nog niet aan een CRM-contact gekoppeld.</div>';return;}
-  if(btn){btn.disabled=true;btn.textContent='Bezig…';}
-  if(body)body.innerHTML='<div class="ibx-ip-note">Samenvatting genereren…</div>';
-  try{
-    const {data,error}=await sb.functions.invoke('inbox-summary',{body:{contact_id:contactId}});
-    if(error||!data||data.ok===false){
-      const msg=(data&&data.error==='no_key')?'Koppel eerst een OpenAI API-sleutel (integration_config.openai_api_key) om samenvattingen te genereren.':((data&&(data.note||data.detail||data.error))||(error&&error.message)||'Mislukt');
-      if(body)body.innerHTML=`<div class="ibx-ip-note">${esc(msg)}</div>`;
-      toast('Samenvatting: '+esc(msg),'err');return;
-    }
-    if(body)body.innerHTML=inboxSummaryHtml({summary:data.summary,generated_at:data.generated_at,message_count:data.message_count});
-    toast('Samenvatting bijgewerkt','ok');
-  }catch(e){if(body)body.innerHTML='<div class="ibx-ip-note">Samenvatting mislukt.</div>';toast('Samenvatting mislukt','err');}
-  finally{const b=document.getElementById('pdr_sum_btn');if(b){b.disabled=false;b.textContent='↻ Vernieuwen';}}
+function inboxGenSummary(gid){return leadSumGen({group:gid},'ibx_sum_btn','ibx_sum_body');}
+function pdrGenSummary(contactId){
+  if(!contactId){const b=document.getElementById('pdr_sum_body');if(b)b.innerHTML='<div class="ibx-ip-note">Deze kaart is nog niet aan een CRM-contact gekoppeld.</div>';return;}
+  return leadSumGen({contact_id:contactId},'pdr_sum_btn','pdr_sum_body');
+}
+function pdGenSummary(contactId){return leadSumGen({contact_id:contactId},'pd_sum_btn','pd_sum_body');}
+// Eén vaste actievolgorde op elke leadweergave: eerst contact leggen
+// (WhatsApp, Bellen, Mailen), dan plannen (Afspraak, Belpoging), dan
+// navigatie (CRM, Deel). Surface-eigen extra's (Bewerken, Samenvoegen)
+// komen via extraHtml achteraan. De aanroeper bindt de handlers op
+// {prefix}_wa/_mail/_afspraak/_bel/_crm/_share.
+function leadActieRij(o){
+  const cls=o.cls||'btn btn-ghost btn-sm',p=o.prefix,out=[];
+  const wa=(typeof _waDigits==='function')?_waDigits(o.phone||''):String(o.phone||'').replace(/[^0-9]/g,'');
+  if(o.waHref||wa)out.push(`<a class="${o.waCls||cls}" id="${p}_wa" href="${o.waHref||('https://wa.me/'+wa)}" target="_blank" rel="noopener" title="Open WhatsApp met deze lead">💬 WhatsApp</a>`);
+  if(o.phone)out.push(`<a class="${cls}" id="${p}_tel" href="tel:${esc(String(o.phone).replace(/[^0-9+]/g,''))}">📞 Bellen</a>`);
+  if(o.email)out.push(o.mailCompose
+    ?`<button class="${cls}" id="${p}_mail">✉️ Mailen</button>`
+    :`<a class="${cls}" id="${p}_mail" href="mailto:${esc(o.email)}">✉️ Mailen</a>`);
+  if(o.contactId&&canEdit('agenda'))out.push(`<button class="${cls}" id="${p}_afspraak" title="Plan een afspraak met deze lead">📅 Afspraak</button>`);
+  if(o.contactId&&canEdit('inbox'))out.push(`<button class="${cls}" id="${p}_bel" title="Kondig een belpoging aan via WhatsApp, of stuur het niet-opgenomen-bericht">📣 Belpoging</button>`);
+  if(o.contactId&&o.toonCrm)out.push(`<button class="${cls}" id="${p}_crm" title="Open het volledige dossier in het CRM">CRM →</button>`);
+  if(o.contactId)out.push(`<button class="${cls}" id="${p}_share" title="Kopieer een link naar dit contact om te delen met je team">🔗 Deel</button>`);
+  return out.join('')+(o.extraHtml||'');
 }
 function inboxDrawInfo(ctx){
   const info=$('#ibx_info');if(!info)return;
@@ -2011,13 +2022,7 @@ function inboxDrawInfo(ctx){
   const edit=canEdit('inbox');
   const phone=(ct&&ct.phone)||(cv.channel==='whatsapp'?cv.handle:'')||'';
   const email=(ct&&ct.email)||'';
-  const wa=(typeof _waDigits==='function')?_waDigits(phone):(phone||'').replace(/[^0-9]/g,'');
-  const acts=[];
-  if(cv.contact_id)acts.push(`<button class="btn btn-ghost btn-sm" onclick="openContactById('${cv.contact_id}')">CRM →</button>`);
-  if(wa)acts.push(`<a class="btn btn-ghost btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>`);
-  if(phone)acts.push(`<a class="btn btn-ghost btn-sm" href="tel:${esc(phone)}">Bellen</a>`);
-  if(email)acts.push(`<button class="btn btn-ghost btn-sm" onclick="inboxComposeVia('email')">✉️ Mailen</button>`);
-  if(cv.contact_id)acts.push(`<button class="btn btn-ghost btn-sm" onclick="copyLink(crmDeepLink('${cv.contact_id}'))">Deel</button>`);
+  const actsHtml=leadActieRij({prefix:'ibx',phone,email,mailCompose:true,contactId:cv.contact_id,toonCrm:true});
   const aiCtrl=edit?(cv.ai_enabled
     ?`<button class="btn btn-sm ibx-take" id="ibx_takeover">✋ Overnemen (AI pauzeren)</button>`
     :`<button class="btn btn-ghost btn-sm" id="ibx_resume">↩︎ Terug naar AI</button>`):'';
@@ -2052,24 +2057,28 @@ function inboxDrawInfo(ctx){
       <div class="ibx-ip-id"><div class="ibx-ip-name">${(()=>{const u=inboxProfileUrl(cv);return u?`<a class="ibx-proflink" href="${u}" target="_blank" rel="noopener" title="Open Instagram-profiel">${esc(nm)} <span class="ibx-ext">↗</span></a>`:esc(nm);})()}</div><div class="ibx-ip-sub">${cv.handle?(()=>{const u=inboxProfileUrl(cv);return u?`<a class="ibx-proflink" href="${u}" target="_blank" rel="noopener">${esc(cv.handle)}</a>`:esc(cv.handle);})():''}</div></div>
       ${cv.warmth!=null?warmthBadge(cv.warmth,{big:true}):''}
     </div>
-    <div class="ibx-ip-actions">${acts.join('')}</div>
+    <div class="ibx-ip-actions">${actsHtml}</div>
     ${aiCtrl?`<div class="ibx-ip-ai">${aiCtrl}</div>`:''}
     <div class="ibx-ip-scroll">
       <div class="ibx-ip-sec"><div class="ibx-ip-h" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button class="ibx-sum-btn" id="ibx_sum_btn">${ctx.summary&&ctx.summary.summary?'↻ Vernieuwen':'✨ Genereren'}</button>`:''}</div><div id="ibx_sum_body">${inboxSummaryHtml(ctx.summary)}</div></div>
-      <div class="ibx-ip-sec"><div class="ibx-ip-h">Lead</div>${leadRows.length?leadRows.map(([k,val])=>`<div class="ibx-kv"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join(''):'<div class="ibx-ip-note">Nog geen kwalificatie vastgelegd.</div>'}${winRow}</div>
+      <div class="ibx-ip-sec"><div class="ibx-ip-h">Leadgegevens</div>${leadRows.length?leadRows.map(([k,val])=>`<div class="ibx-kv"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join(''):'<div class="ibx-ip-note">Nog geen kwalificatie vastgelegd.</div>'}${winRow}</div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Contact</div>${contactHtml}</div>
-      ${cv.contact_id&&canEdit('agenda')?`<div class="ibx-ip-sec"><div class="ibx-ip-h">Acties</div><button class="btn btn-ghost btn-sm" id="ibx_afspraak" style="width:100%">📅 Afspraak inplannen</button>${canEdit('inbox')?`<button class="btn btn-ghost btn-sm" id="ibx_bel" style="width:100%;margin-top:6px">📞 Belpoging aankondigen</button>`:''}</div>`:''}
       ${pipeHtml}
       ${chansHtml?`<div class="ibx-ip-sec"><div class="ibx-ip-h">Kanalen</div>${chansHtml}</div>`:''}
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Historie</div>${tlHtml}</div>
     </div>`;
+  // Acties uit de vaste rij: bewust buiten de edit-gate gebonden, elke knop
+  // heeft zijn eigen permissiecheck al in leadActieRij.
+  const crmB=$('#ibx_crm');if(crmB)crmB.onclick=()=>openContactById(cv.contact_id);
+  const shB=$('#ibx_share');if(shB)shB.onclick=()=>copyLink(crmDeepLink(cv.contact_id));
+  const mlB=$('#ibx_mail');if(mlB)mlB.onclick=()=>inboxComposeVia('email');
+  const afb=$('#ibx_afspraak');if(afb)afb.onclick=()=>afspraakVorm({id:cv.contact_id,name:nm});
+  const blb=$('#ibx_bel');if(blb)blb.onclick=()=>belPopup({id:cv.contact_id,name:nm});
   if(edit){
     const to=$('#ibx_takeover');if(to)to.onclick=()=>inboxTakeOver(gid);
     const rs=$('#ibx_resume');if(rs)rs.onclick=()=>inboxResume(gid);
     const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(gid);
     const sm=$('#ibx_sum_btn');if(sm)sm.onclick=()=>inboxGenSummary(gid);
-    const afb=$('#ibx_afspraak');if(afb)afb.onclick=()=>afspraakVorm({id:cv.contact_id,name:nm});
-    const blb=$('#ibx_bel');if(blb)blb.onclick=()=>belPopup({id:cv.contact_id,name:nm});
   }
 }
 async function inboxSetPipeline(id){
@@ -2914,11 +2923,7 @@ async function notifComplete(id,t){
   toast('Afgerond','ok');refreshNotifBadge();if(CURRENT==='leads')renderPeople();
 }
 function afterNotifAction(){refreshNotifBadge();openNotifications();if(CURRENT==='leads')renderPeople();}
-async function openContactById(id){
-  if(!id){toast('Geen contact gekoppeld','err');return;}
-  const {data}=await sb.from('contacts').select('*').eq('id',id).single();
-  if(data)openPerson(data);else toast('Contact niet gevonden','err');
-}
+// openContactById staat verderop (één definitie; hier stond een duplicaat).
 async function makeItpFromReservationLead(leadId){
   const {data:l}=await sb.from('leads').select('*').eq('id',leadId).single();
   if(!l){toast('Aanvraag niet gevonden','err');return;}
@@ -3448,20 +3453,25 @@ async function openPerson(p){
         </div>
       </div>
       <div class="row-actions" style="flex-wrap:wrap">
-        ${_waUrl?`<a class="btn btn-sm" id="pd_wa" style="text-decoration:none;background:#25D366;color:#fff;border-color:#25D366;font-weight:600" href="${_waUrl}" target="_blank" rel="noopener">💬 Stuur intro bericht via WhatsApp</a>`:''}
-        <button class="btn btn-ghost btn-sm" id="pd_share" title="Kopieer een link naar dit contact om te delen met je team">🔗 Deel</button>
-        ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc">Edit contact</button>`:''}
-        ${canEdit('agenda')?`<button class="btn btn-ghost btn-sm" id="pd_afspraak" title="Plan handmatig een afspraak met deze lead">📅 Afspraak</button>`:''}
-        ${p.phone&&canEdit('inbox')?`<button class="btn btn-ghost btn-sm" id="pd_bel" title="Kondig een belpoging aan via WhatsApp, of stuur het niet-opgenomen-bericht">📞 Belpoging</button>`:''}
-        ${canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_merge" title="Voeg een dubbele lead samen met deze">⇄ Samenvoegen</button>`:''}
+        ${leadActieRij({prefix:'pd',phone:p.phone,email:p.email,waHref:_waUrl||'',waCls:'btn btn-sm lead-wa-groen',mailCompose:false,contactId:p.id,toonCrm:false,
+          extraHtml:(canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc" title="Contactgegevens bewerken">✏️ Bewerken</button><button class="btn btn-ghost btn-sm" id="pd_merge" title="Voeg een dubbele lead samen met deze">⇄ Samenvoegen</button>`:'')})}
       </div>
     </div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:14px">
-      <span class="muted" style="font-size:12px"><b style="color:var(--ink,#111);font-weight:600">${leads.length}</b> inquiries · <b style="color:var(--ink,#111);font-weight:600">${purch.length}</b> purchases · <b style="color:var(--ink,#111);font-weight:600">${webs.length}</b> webinars</span>
-      <span class="muted" style="font-size:12px;margin-left:auto">First seen ${fmtDate(p.first_seen_at)} · Last activity ${fmtDate(p.last_activity_at)}</span>
+      <span class="muted" style="font-size:12px"><b style="color:var(--ink,#111);font-weight:600">${leads.length}</b> aanvragen · <b style="color:var(--ink,#111);font-weight:600">${purch.length}</b> aankopen · <b style="color:var(--ink,#111);font-weight:600">${webs.length}</b> webinars</span>
+      <span class="muted" style="font-size:12px;margin-left:auto">Eerste contact ${fmtDate(p.first_seen_at)} · Laatste activiteit ${fmtDate(p.last_activity_at)}</span>
     </div>
   </div>
   <hr style="border:none;border-top:1px solid var(--line);margin:22px 0 2px">`;
+  // Zelfde kop als inbox-paneel en pipeline-drawer: eerst AI-samenvatting, dan
+  // leadgegevens (kwalificatie). Beide worden async bijgeladen na het renderen.
+  // Alleen met inbox-kijkrechten: de bron (inbox_conversations/inbox_summaries)
+  // is RLS-afgeschermd en zou anders stil leeg blijven, wat als "geen
+  // kwalificatie" zou lezen terwijl de data er wel is.
+  if(canView('inbox')){
+    body+=`<div style="margin-top:20px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">AI-samenvatting</div>${canEdit('inbox')?`<button type="button" class="ibx-sum-btn" id="pd_sum_btn">✨ Genereren</button>`:''}</div><div id="pd_sum_body" data-cid="${esc(p.id)}">${inboxSummaryHtml(null)}</div></div>`;
+    body+=_sec('Leadgegevens',`<div id="pd_kwal" class="pdr-facts" data-cid="${esc(p.id)}"><div class="muted" style="font-size:13px">Laden…</div></div>`);
+  }
   // Waar staat deze lead in de pipelines? Stond alleen in de inbox, niet hier.
   {
     const kanPipe=canEdit('pipeline');
@@ -3506,7 +3516,7 @@ async function openPerson(p){
     }
     return cells;
   })));
-  body+=_sec('Purchases ('+purch.length+')',_mt(['Project','Unit','Status','Price','Deposit','Date'],purch.map(x=>[esc(x.project||'—'),esc(x.unit||'—'),statusBadge(x.status),money(x.price),money(x.deposit_amount),fmtDate(x.created_at)])));
+  body+=_sec('Aankopen ('+purch.length+')',_mt(['Project','Unit','Status','Prijs','Aanbetaling','Datum'],purch.map(x=>[esc(x.project||'—'),esc(x.unit||'—'),statusBadge(x.status),money(x.price),money(x.deposit_amount),fmtDate(x.created_at)])));
 
   // reservations & €5K deposit flow
   const manageResv=canEdit('portal')||canEdit('leads');
@@ -3534,7 +3544,7 @@ async function openPerson(p){
     }).join(''):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
   if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-ghost btn-sm" id="newResv">+ Nieuwe reservering</button></div>`;
   body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',_hint('De ITP + €5.000-aanbetaling die je van een aanvraag maakt. Hier open, verstuur en bevestig je alles.')+resvHtml);
-  body+=_sec('Webinar registrations ('+webs.length+')',_mt(['Attended','Budget','Horizon','Call booked','Date'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
+  body+=_sec('Webinar-registraties ('+webs.length+')',_mt(['Aanwezig','Budget','Horizon','Call geboekt','Datum'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
 
   // ----- interactive dataroom access -----
   const manageDr=canEdit('portal')||canEdit('leads');
@@ -3560,7 +3570,7 @@ async function openPerson(p){
     const opts=projList.filter(pr=>!(pr.name in drMap)).map(pr=>`<option value="${esc(pr.name)}">${esc(pr.name)}</option>`).join('');
     if(opts)drHtml+=`<div style="margin-top:10px;display:flex;gap:8px;align-items:center"><select id="dr_grant_sel" style="max-width:240px;padding:8px 10px;border:1px solid var(--line);border-radius:8px">${opts}</select><button class="btn btn-ghost btn-sm" id="dr_grant_btn">+ Enable for project</button></div>`;
   }
-  body+=_sec('Dataroom access',drHtml);
+  body+=_sec('Dataroom-toegang',drHtml);
   body+=_sec('Referrals ('+refs.length+')',_mt(['Code','Status','Reward'],refs.map(x=>[esc(x.code||'—'),statusBadge(x.status),money(x.reward_amount)])));
   // Chatgeschiedenis (Inbox — Instagram / WhatsApp / e-mail)
   body+=_sec('Chatgeschiedenis','<div id="pd_chat" class="muted" style="font-size:13px">Laden…</div>');
@@ -3584,6 +3594,34 @@ async function openPerson(p){
   const af=$('#pd_afspraak'); if(af)af.onclick=()=>afspraakVorm(p);
   const bl=$('#pd_bel'); if(bl)bl.onclick=()=>belPopup(p);
   const sh=$('#pd_share'); if(sh)sh.onclick=()=>copyLink(crmDeepLink(p.id));
+  const sm=$('#pd_sum_btn'); if(sm)sm.onclick=()=>pdGenSummary(p.id);
+  // Kwalificatie en gecachte AI-samenvatting async bijladen; zelfde bron als
+  // het inbox-paneel, zodat alle leadweergaven hetzelfde laten zien. De
+  // data-cid-guard voorkomt dat een traag antwoord in de kaart van een
+  // inmiddels geopend ander contact schrijft.
+  if(canView('inbox'))(async()=>{
+    try{
+      const [cvR,sumR]=await Promise.all([
+        sb.from('inbox_conversations').select('interest,timeline,budget_band,is_qualified').eq('contact_id',p.id),
+        sb.from('inbox_summaries').select('summary,generated_at,message_count').eq('contact_id',p.id).maybeSingle()
+      ]);
+      const kw=$('#pd_kwal');
+      if(kw&&kw.dataset.cid===String(p.id)){
+        const cvs=cvR.data||[];
+        const pak=k=>{const r=cvs.find(c=>c[k]!=null&&c[k]!=='');return r?r[k]:null;};
+        const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
+        const q=cvs.some(c=>c.is_qualified===true)?'Ja ✓':(cvs.some(c=>c.is_qualified===false)?'Nee':null);
+        const rows=[['Interesse',pak('interest')],['Timing',tlmap[pak('timeline')]||pak('timeline')],['Budget',pak('budget_band')],['Gekwalificeerd',q]].filter(r=>r[1]);
+        if(rows.length)kw.innerHTML=rows.map(([k,v])=>`<div class="pdr-fact"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');
+        else{kw.classList.remove('pdr-facts');kw.innerHTML='<div class="muted" style="font-size:13px">Nog geen kwalificatie vastgelegd. Dit vult zich vanuit de inbox-gesprekken.</div>';}
+      }
+      const sbd=$('#pd_sum_body');
+      if(sumR.data&&sumR.data.summary&&sbd&&sbd.dataset.cid===String(p.id)){
+        sbd.innerHTML=inboxSummaryHtml(sumR.data);
+        const sbt=$('#pd_sum_btn');if(sbt)sbt.textContent='↻ Vernieuwen';
+      }
+    }catch(e){}
+  })();
   inboxRenderContactChat(p.id);
   // Recompute the WhatsApp greeting at the moment of clicking (send time), not when the contact was opened.
   const wab=$('#pd_wa'); if(wab)wab.addEventListener('click',(e)=>{ const u=_helloWaUrl(p.phone,p.name,_waProj); if(!u){e.preventDefault();toast('Geen geldig telefoonnummer','err');return;} wab.href=u; });
@@ -3611,7 +3649,6 @@ async function openPerson(p){
     });
     mb.querySelectorAll('[data-grantlead]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.grantlead,true,null));
     mb.querySelectorAll('[data-viewr]').forEach(b=>b.onclick=()=>openReservation(b.dataset.viewr));
-    mb.querySelectorAll('[data-editip]').forEach(b=>b.onclick=()=>openItpEditor(PERSON_RESV[b.dataset.editip],p));
     mb.querySelectorAll('[data-wa]').forEach(b=>b.onclick=()=>sendReservation(PERSON_RESV[b.dataset.wa],p,'whatsapp'));
     mb.querySelectorAll('[data-mail]').forEach(b=>b.onclick=()=>sendReservation(PERSON_RESV[b.dataset.mail],p,'email'));
     const nr=$('#newResv');if(nr)nr.onclick=()=>openReservationForm(p,projList);
@@ -4165,12 +4202,7 @@ function pipeCardDrawer(card){
   const facts=[['Budget',esc(en.budget||'—')],['Wanneer investeren',esc(en.timeline||'—')]];
   if(phone)facts.push(['Telefoon',esc(phone)]);
   if(email)facts.push(['E-mail',esc(email)]);
-  const acts=[];
-  if(_waDigits(phone))acts.push(`<a class="pdr-act wa" id="pdr_wa" href="#">${WA_SVG} WhatsApp</a>`);
-  if(phone)acts.push(`<a class="pdr-act" href="tel:${esc(phone.replace(/[^0-9+]/g,''))}">📞 Bellen</a>`);
-  if(email)acts.push(`<a class="pdr-act" href="mailto:${esc(email)}">✉️ Mailen</a>`);
-  if(card.contact_id)acts.push(`<a class="pdr-act" id="pdr_crm" href="#">🔗 Open in CRM</a>`);
-  if(card.contact_id)acts.push(`<a class="pdr-act" id="pdr_share" href="#" title="Kopieer een deelbare link naar dit contact">↗ Deel</a>`);
+  const actsHtml=leadActieRij({prefix:'pdr',cls:'pdr-act',waCls:'pdr-act wa',waHref:_waDigits(phone)?'#':'',phone,email,mailCompose:false,contactId:card.contact_id,toonCrm:true});
   const root=document.createElement('div');root.id='pdrawer_root';
   root.innerHTML=`<div class="pdrawer-back"></div><aside class="pdrawer" role="dialog" aria-label="Kaart">
     <div class="pdrawer-head">
@@ -4186,7 +4218,7 @@ function pipeCardDrawer(card){
       <div class="pdr-field" style="margin-top:12px"><div class="pdr-label">Fase / kolom wijzigen</div><select id="pdr_stage" ${edit?'':'disabled'}>${stageOpts}</select></div>
     </div>
     <div class="pdrawer-body">
-      ${acts.length?`<div class="pdr-actions">${acts.join('')}</div>`:''}
+      ${actsHtml?`<div class="pdr-actions">${actsHtml}</div>`:''}
       ${card.contact_id?`<div class="pdr-field pdr-sum-top"><div class="pdr-label" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button type="button" class="ibx-sum-btn" id="pdr_sum_btn">✨ Genereren</button>`:''}</div><div id="pdr_sum_body">${inboxSummaryHtml(null)}</div></div>`:''}
       <div class="pdr-facts">${facts.map(f=>`<div class="pdr-fact"><div class="k">${f[0]}</div><div class="v">${f[1]}</div></div>`).join('')}</div>
       <div class="pdr-grid2">
@@ -4210,8 +4242,6 @@ function pipeCardDrawer(card){
           <button class="btn btn-sm" id="pdr_auto_add">Toevoegen</button>
         </div>
         <div class="muted" style="font-size:11px;margin-top:5px">Op de gekozen datum verschuift deze lead automatisch naar <b>Actie vereist</b>.</div>`:''}
-        ${card.contact_id&&canEdit('agenda')?`<button class="btn btn-ghost btn-sm" id="pdr_afspraak" style="margin-top:10px">📅 Afspraak inplannen</button>`:''}
-        ${card.contact_id&&canEdit('inbox')?`<button class="btn btn-ghost btn-sm" id="pdr_bel" style="margin-top:10px;margin-left:6px">📞 Belpoging</button>`:''}
       </div>
       <div class="muted" style="font-size:11.5px">${card.source==='lead'?'Automatisch aangemaakt vanuit de CRM.':'Handmatig aangemaakte kaart.'} Wijzigingen worden direct opgeslagen.</div>
     </div>
@@ -4243,6 +4273,22 @@ function pipeCardDrawer(card){
   if(q('#pdr_crm'))q('#pdr_crm').onclick=e=>{e.preventDefault();close();openContactById(card.contact_id);};
   if(q('#pdr_share'))q('#pdr_share').onclick=e=>{e.preventDefault();copyLink(crmDeepLink(card.contact_id));};
   if(q('#pdr_sum_btn'))q('#pdr_sum_btn').onclick=()=>pdrGenSummary(card.contact_id);
+  // Gecachte samenvatting bijladen, net als inbox-paneel en contactkaart.
+  // q() is aan deze drawer-root gebonden en de root verdwijnt bij sluiten,
+  // dus een traag antwoord kan nooit in een andere weergave schrijven.
+  if(card.contact_id&&canView('inbox'))(async()=>{
+    try{
+      const {data}=await sb.from('inbox_summaries').select('summary,generated_at,message_count').eq('contact_id',card.contact_id).maybeSingle();
+      const b=q('#pdr_sum_body');
+      if(data&&data.summary&&b){b.innerHTML=inboxSummaryHtml(data);const t=q('#pdr_sum_btn');if(t)t.textContent='↻ Vernieuwen';}
+    }catch(e){}
+  })();
+  // Afspraak en Belpoging horen bij agenda-/inboxrechten, niet bij
+  // pipeline-editrechten; daarom hier buiten de if(edit) gebonden. Eerder
+  // zaten deze handlers in de edit-gate en waren de knoppen dood voor
+  // teamleden zonder pipeline-rechten.
+  {const afk=q('#pdr_afspraak');if(afk)afk.onclick=e=>{e.preventDefault();afspraakVorm({id:card.contact_id,name:card.title||'(naamloos)'});};}
+  {const blk=q('#pdr_bel');if(blk)blk.onclick=e=>{e.preventDefault();belPopup({id:card.contact_id,name:card.title||'(naamloos)'});};}
   // ---- Notities (los, met datum/tijd en auteur) ----
   async function loadNotes(){
     const box=q('#pdr_notes_list');if(!box)return;
@@ -4286,10 +4332,6 @@ function pipeCardDrawer(card){
   }
   loadTasks();
   if(edit){
-    const afk=q('#pdr_afspraak');
-    if(afk)afk.onclick=()=>afspraakVorm({id:card.contact_id,name:card.title||'(naamloos)'});
-    const blk=q('#pdr_bel');
-    if(blk)blk.onclick=()=>belPopup({id:card.contact_id,name:card.title||'(naamloos)'});
     const add=q('#pdr_auto_add');
     if(add)add.onclick=async()=>{
       const dv=q('#pdr_auto_date').value;if(!dv){toast('Kies een datum','err');return;}
