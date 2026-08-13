@@ -3453,7 +3453,7 @@ async function openPerson(p){
           ${_attr?`<span class="src-badge ${chanClass(_attrChan)}" title="Hoe deze lead binnenkwam (eerste bezoek)">${esc(_attrLabel)}${_attrHead?' · '+esc(_attrHead):''}</span>`:''}
         </div>
       </div>
-      <div class="row-actions" style="flex-wrap:wrap">
+      <div class="row-actions" style="display:flex;flex-wrap:wrap;gap:8px;row-gap:8px">
         ${leadActieRij({prefix:'pd',phone:p.phone,email:p.email,waHref:_waUrl||'',waCls:'btn btn-sm lead-wa-groen',mailCompose:false,contactId:p.id,toonCrm:false,
           extraHtml:(canEdit('leads')?`<button class="btn btn-ghost btn-sm" id="pd_editc" title="Contactgegevens bewerken">✏️ Bewerken</button><button class="btn btn-ghost btn-sm" id="pd_merge" title="Voeg een dubbele lead samen met deze">⇄ Samenvoegen</button>`:'')})}
       </div>
