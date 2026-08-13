@@ -3541,6 +3541,7 @@ async function openPerson(p){
             ${manageResv&&(r.email||p.email)?`<button class="btn btn-ghost btn-sm" data-mail="${r.id}">E-mail</button>`:''}
             <button class="btn btn-ghost btn-sm" data-copy="${link}" data-copyid="${r.id}">Link</button>
             ${(!paid&&manageResv)?`<button class="btn btn-primary btn-sm" data-confirmpaid="${r.id}" data-amt="${r.deposit_amount||''}">Confirm paid</button>`:''}
+            ${isAdmin()?`<button class="btn btn-ghost btn-sm" data-delresv="${r.id}" title="Reservering definitief verwijderen" style="color:#b91c1c">🗑</button>`:''}
           </div>
         </div></div>`;
     }).join(''):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
@@ -3633,6 +3634,15 @@ async function openPerson(p){
     const gb=$('#dr_grant_btn');if(gb)gb.onclick=()=>{const s=$('#dr_grant_sel');if(s&&s.value)setDataroom(p,s.value,true,null);};
     mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}const rv=b.dataset.copyid?PERSON_RESV[b.dataset.copyid]:null;if(rv&&!rv.sent_at&&confirm('Link gekopieerd. Verstuur je hem zelf naar de klant? Dan markeer ik de ITP als verstuurd.')){await sb.from('reservations').update({sent_at:new Date().toISOString(),sent_via:'link'}).eq('id',rv.id);rv.sent_at=new Date().toISOString();toast('Gemarkeerd als verstuurd','ok');openPerson(p);return;}toast('Reserveringslink gekopieerd','ok');});
     mb.querySelectorAll('[data-confirmpaid]').forEach(b=>b.onclick=()=>markReservationPaid(b.dataset.confirmpaid,Number(b.dataset.amt)||null,p));
+    mb.querySelectorAll('[data-delresv]').forEach(b=>b.onclick=async()=>{
+      const rv=PERSON_RESV[b.dataset.delresv];if(!rv)return;
+      const zwaar=[];if(rv.itp_signed_at)zwaar.push('getekend');if(rv.status==='deposit_paid'||rv.payment_status==='paid')zwaar.push('betaald');
+      const extra=zwaar.length?'\n\nLET OP: deze ITP is al '+zwaar.join(' en ')+'. Verwijderen wist dat definitief.':'';
+      if(!confirm('Reservering '+(rv.project||'')+' '+(rv.unit||'')+' definitief verwijderen? De reserveringslink stopt dan met werken.'+extra))return;
+      const {error}=await sb.from('reservations').delete().eq('id',rv.id);
+      if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}
+      toast('Reservering verwijderd','ok');refreshNotifBadge();openPerson(p);
+    });
     mb.querySelectorAll('[data-mkitp]').forEach(b=>b.onclick=()=>openReservationForm(p,projList,{project:b.dataset.mkproj,unit:b.dataset.mkunit,leadId:b.dataset.mkitp}));
     mb.querySelectorAll('[data-ldone]').forEach(b=>b.onclick=async()=>{await markLeadHandled(b.dataset.ldone);toast('Afgerond','ok');openPerson(p);});
     // Pipelinesectie: fase wijzigen en doorklikken naar het bord.
@@ -3803,6 +3813,7 @@ async function openReservation(id){
       <button class="btn btn-ghost btn-sm" data-copy="${link}">Link kopiëren</button>
       ${(!paid&&manage)?`<button class="btn btn-primary btn-sm" data-confirm2="${r.id}" data-amt="${r.deposit_amount||''}">Confirm paid</button>`:''}
       ${r.contact_id?`<button class="btn btn-ghost btn-sm" data-openc="${r.contact_id}">Open contact</button>`:''}
+      ${isAdmin()?`<button class="btn btn-ghost btn-sm" data-delresv2="${r.id}" title="Reservering definitief verwijderen" style="color:#b91c1c;margin-left:auto">🗑 Verwijderen</button>`:''}
     </div>`;
   const mb=document.querySelector('#overlay .modal-body');if(!mb)return;
   mb.innerHTML=h;
@@ -3813,6 +3824,14 @@ async function openReservation(id){
   mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}if(!r.sent_at&&confirm('Link gekopieerd. Verstuur je hem zelf naar de klant? Dan markeer ik de ITP als verstuurd.')){await sb.from('reservations').update({sent_at:new Date().toISOString(),sent_via:'link'}).eq('id',r.id);r.sent_at=new Date().toISOString();toast('Gemarkeerd als verstuurd','ok');openReservation(r.id);return;}toast('Link gekopieerd','ok');});
   mb.querySelectorAll('[data-confirm2]').forEach(b=>b.onclick=async()=>{await bannerConfirmPaid(b.dataset.confirm2,Number(b.dataset.amt)||null);openReservation(r.id);});
   mb.querySelectorAll('[data-openc]').forEach(b=>b.onclick=()=>openContactById(b.dataset.openc));
+  mb.querySelectorAll('[data-delresv2]').forEach(b=>b.onclick=async()=>{
+    const zwaar=[];if(r.itp_signed_at)zwaar.push('getekend');if(r.status==='deposit_paid'||r.payment_status==='paid')zwaar.push('betaald');
+    const extra=zwaar.length?'\n\nLET OP: deze ITP is al '+zwaar.join(' en ')+'. Verwijderen wist dat definitief.':'';
+    if(!confirm('Reservering '+(r.project||'')+' '+(r.unit||'')+' definitief verwijderen? De reserveringslink stopt dan met werken.'+extra))return;
+    const {error}=await sb.from('reservations').delete().eq('id',r.id);
+    if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}
+    toast('Reservering verwijderd','ok');refreshNotifBadge();closeOverlay();
+  });
 }
 function downloadItpPdf(r){
   if(!window.jspdf){toast('PDF-bibliotheek nog aan het laden, probeer zo nog eens','err');return;}
