@@ -230,7 +230,20 @@ function makePdf(r,signer){
       "Koper: digitaal ondertekend door "+signer+" op "+new Date().toLocaleString("nl-NL"),
       "Verkoper: digitaal ondertekend bij uitgifte van deze ITP"
     ];
-    lines.forEach(t=>{doc.setFont("helvetica",isHeadingLine(t)?"bold":"normal");const wrapped=doc.splitTextToSize(t,W);wrapped.forEach(w=>{if(y>780){doc.addPage();y=64;}doc.text(w,M,y);y+=15;});});
+    lines.forEach(t=>{
+      const kop=isHeadingLine(t);
+      const m=!kop&&/^([A-Za-z][A-Za-z .]{0,24}:)\s(.+)$/.exec(t);
+      if(m){
+        doc.setFont("helvetica","bold");
+        const lw=doc.getTextWidth(m[1]+" ");
+        if(lw+doc.getTextWidth(m[2])<=W){
+          if(y>780){doc.addPage();y=64;}
+          doc.text(m[1],M,y);doc.setFont("helvetica","normal");doc.text(m[2],M+lw,y);y+=15;return;
+        }
+      }
+      doc.setFont("helvetica",kop?"bold":"normal");
+      const wrapped=doc.splitTextToSize(t,W);wrapped.forEach(w=>{if(y>780){doc.addPage();y=64;}doc.text(w,M,y);y+=15;});
+    });
     // Watermerk op elke pagina: dit exemplaar is het getekende exemplaar.
     const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight();
     for(let i=1;i<=doc.getNumberOfPages();i++){
