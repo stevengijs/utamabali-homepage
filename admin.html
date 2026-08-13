@@ -1842,6 +1842,9 @@ async function inboxOpen(id,keepDraft){
   if(tr.error||!tr.data||!tr.data.conversation){t.innerHTML=`<div class="empty" style="padding:20px">Kon gesprek niet laden${tr.error?': '+esc(tr.error.message):''}.</div>`;return;}
   inboxDrawThread(tr.data,keepDraft);
   inboxDrawInfo((cr&&cr.data)?cr.data:{conversation:tr.data.conversation});
+  // Vanuit "Mailen" op contactkaart/pipeline-drawer: composer meteen op het
+  // gevraagde kanaal zetten zodra het gesprek getekend is.
+  if(INBOX.pendingSendCh){const ch=INBOX.pendingSendCh;INBOX.pendingSendCh=null;inboxComposeVia(ch);}
 }
 function inboxComposerHint(){
   const k=INBOX.sendCh;const c=INBOX_CH[k]||INBOX_CH.instagram;const acct=BIZ_ACCOUNTS[k];
@@ -2005,9 +2008,7 @@ function leadActieRij(o){
   const wa=(typeof _waDigits==='function')?_waDigits(o.phone||''):String(o.phone||'').replace(/[^0-9]/g,'');
   if(o.waHref||wa)out.push(`<a class="${o.waCls||cls}" id="${p}_wa" href="${o.waHref||('https://wa.me/'+wa)}" target="_blank" rel="noopener" title="Open WhatsApp met deze lead">💬 WhatsApp</a>`);
   if(o.phone)out.push(`<a class="${cls}" id="${p}_tel" href="tel:${esc(String(o.phone).replace(/[^0-9+]/g,''))}">📞 Bellen</a>`);
-  if(o.email)out.push(o.mailCompose
-    ?`<button class="${cls}" id="${p}_mail">✉️ Mailen</button>`
-    :`<a class="${cls}" id="${p}_mail" href="mailto:${esc(o.email)}">✉️ Mailen</a>`);
+  if(o.email)out.push(`<button class="${cls}" id="${p}_mail" title="Mail deze lead vanuit de portal-inbox">✉️ Mailen</button>`);
   if(o.contactId&&canEdit('agenda'))out.push(`<button class="${cls}" id="${p}_afspraak" title="Plan een afspraak met deze lead">📅 Afspraak</button>`);
   if(o.contactId&&canEdit('inbox'))out.push(`<button class="${cls}" id="${p}_bel" title="Kondig een belpoging aan via WhatsApp, of stuur het niet-opgenomen-bericht">📣 Belpoging</button>`);
   if(o.contactId&&o.toonCrm)out.push(`<button class="${cls}" id="${p}_crm" title="Open het volledige dossier in het CRM">CRM →</button>`);
@@ -3595,6 +3596,7 @@ async function openPerson(p){
   const af=$('#pd_afspraak'); if(af)af.onclick=()=>afspraakVorm(p);
   const bl=$('#pd_bel'); if(bl)bl.onclick=()=>belPopup(p);
   const sh=$('#pd_share'); if(sh)sh.onclick=()=>copyLink(crmDeepLink(p.id));
+  const ml=$('#pd_mail'); if(ml)ml.onclick=()=>leadMailViaInbox(p.id,p.email);
   const sm=$('#pd_sum_btn'); if(sm)sm.onclick=()=>pdGenSummary(p.id);
   // Kwalificatie en gecachte AI-samenvatting async bijladen; zelfde bron als
   // het inbox-paneel, zodat alle leadweergaven hetzelfde laten zien. De
@@ -3680,6 +3682,24 @@ async function inboxRenderContactChat(contactId){
   }).join('');
 }
 function openInboxThread(id){INBOX.sel=id;if(!canView('inbox')){toast('Je hebt geen toegang tot de Inbox','err');return;}closeOverlay();go('inbox');}
+// Mailen vanaf contactkaart/pipeline-drawer: in de portal-inbox, niet in de
+// eigen mailclient. Opent het gesprek van dit contact met de composer op
+// e-mail; alleen zonder enig inbox-gesprek valt hij terug op mailto.
+async function leadMailViaInbox(contactId,email){
+  if(!canView('inbox')){if(email)location.href='mailto:'+email;return;}
+  try{
+    const {data}=await sb.from('inbox_conversations').select('id,channel').eq('contact_id',contactId);
+    const convs=data||[];
+    if(convs.length){
+      const em=convs.find(c=>c.channel==='email')||convs[0];
+      INBOX.pendingSendCh='email';
+      openInboxThread(em.id);
+      return;
+    }
+  }catch(e){}
+  if(email){toast('Nog geen inbox-gesprek met dit contact; je mailclient opent','ok');location.href='mailto:'+email;}
+  else toast('Geen e-mailadres bekend','err');
+}
 let PERSON_RESV={};
 function itpDraft(r){
   // Volledige Engelstalige ITP naar het vaste UTAMA-model. Alles is daarna
@@ -3728,6 +3748,7 @@ function openItpEditor(r,person){
       <button type="button" data-cmd="underline" title="Onderstreept"><u>U</u></button>
       <button type="button" data-cmd="insertUnorderedList" title="Opsomming">• lijst</button>
       <button type="button" data-heading title="Maak kopje (vet, hoofdletters)">Kopje</button>
+      <button type="button" id="itp_reset" style="margin-left:auto" title="Vervang de tekst door de nieuwste standaard-ITP, met de projectgegevens opnieuw ingevuld">↻ Standaardtekst</button>
     </div>
     <div id="itp_edit" contenteditable="true" class="rte">${html}</div></div>
     <div class="hint">Dit is wat de klant op de reserveringspagina ziet en digitaal tekent. Selecteer tekst en klik op een knop om op te maken.</div>`;
@@ -3740,6 +3761,14 @@ function openItpEditor(r,person){
   setTimeout(()=>{
     document.querySelectorAll('.rte-tb [data-cmd]').forEach(b=>b.onmousedown=e=>{e.preventDefault();document.execCommand(b.dataset.cmd,false,null);});
     const hb=document.querySelector('.rte-tb [data-heading]');if(hb)hb.onmousedown=e=>{e.preventDefault();const sel=window.getSelection&&window.getSelection().toString();if(sel){document.execCommand('bold');}else{document.execCommand('insertHTML',false,'<b>KOPJE</b><br>');}};
+    const rb=document.getElementById('itp_reset');
+    if(rb)rb.onclick=async()=>{
+      if(!confirm('Huidige tekst vervangen door de nieuwste standaard-ITP? Je huidige tekst in dit venster gaat verloren (pas definitief na Save).'))return;
+      let le=null;
+      try{const {data}=await sb.from('projects').select('legal_entity').eq('name',r.project||'').maybeSingle();le=(data&&data.legal_entity)||null;}catch(e){}
+      const ed=$('#itp_edit');if(ed)ed.innerHTML=itpDraft({...r,legal_entity:le});
+      toast('Standaardtekst opnieuw gegenereerd — controleer en klik Save','ok');
+    };
   },0);
 }
 function itpStatusLine(r){
@@ -4293,6 +4322,7 @@ function pipeCardDrawer(card){
   if(q('#pdr_wa'))q('#pdr_wa').onclick=e=>{e.preventDefault();pipeWhatsapp(card.id);};
   if(q('#pdr_crm'))q('#pdr_crm').onclick=e=>{e.preventDefault();close();openContactById(card.contact_id);};
   if(q('#pdr_share'))q('#pdr_share').onclick=e=>{e.preventDefault();copyLink(crmDeepLink(card.contact_id));};
+  if(q('#pdr_mail'))q('#pdr_mail').onclick=e=>{e.preventDefault();close();leadMailViaInbox(card.contact_id,email);};
   if(q('#pdr_sum_btn'))q('#pdr_sum_btn').onclick=()=>pdrGenSummary(card.contact_id);
   // Gecachte samenvatting bijladen, net als inbox-paneel en contactkaart.
   // q() is aan deze drawer-root gebonden en de root verdwijnt bij sluiten,
