@@ -746,6 +746,7 @@ const RES = {
       {k:'yield_max',label:'Yield max %',type:'number'},
       {k:'payback_years',label:'Payback (years)',type:'number'},
       {k:'lease_structure',label:'Lease structure',type:'text'},
+      {k:'legal_entity',label:'Juridische entiteit (PT) op ITP/contracten',type:'text'},
       {k:'reservation_amount',label:'Reservation deposit (€)',type:'number',money:true},
       {k:'planning_start',label:'Planning: start',type:'date'},
       {k:'planning_casco',label:'Planning: casco',type:'date'},
@@ -2929,7 +2930,7 @@ async function makeItpFromReservationLead(leadId){
   if(!l){toast('Aanvraag niet gevonden','err');return;}
   const c=l.contact_id?(await sb.from('contacts').select('*').eq('id',l.contact_id).single()).data:null;
   const person=c||{id:l.contact_id,name:l.name,email:l.email,phone:l.phone};
-  const {data:projs}=await sb.from('projects').select('name,slug,price_current').order('sort_order',{ascending:true});
+  const {data:projs}=await sb.from('projects').select('name,slug,price_current,legal_entity').order('sort_order',{ascending:true});
   openReservationForm(person,projs||[],{project:l.project,unit:l.unit,leadId:l.id});
 }
 function drawPeople(){
@@ -3382,7 +3383,7 @@ async function openPerson(p){
     sb.from('webinar_registrations').select('*').eq('email',p.email).order('created_at',{ascending:false}),
     sb.from('dataroom_access').select('*').or('contact_id.eq.'+p.id+',contact_email.eq.'+p.email),
     sb.from('referrals').select('*').or('referrer_contact_id.eq.'+p.id+',referred_contact_id.eq.'+p.id),
-    sb.from('projects').select('name,slug,price_current').order('sort_order',{ascending:true}),
+    sb.from('projects').select('name,slug,price_current,legal_entity').order('sort_order',{ascending:true}),
     sb.from('reservations').select('*').or('contact_id.eq.'+p.id+',email.eq.'+p.email).order('created_at',{ascending:false}),
     sb.from('pipeline_cards').select('id,pipeline_id,stage,assignee,value,stage_changed_at').eq('contact_id',p.id),
     sb.from('pipelines').select('id,name,stages').order('sort_order',{ascending:true}),
@@ -3690,11 +3691,12 @@ function itpDraft(r){
   const vandaag=new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'});
   const geldig=(r.hold_expires_at?new Date(r.hold_expires_at):new Date(Date.now()+30*864e5)).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   const proj=esc(r.project||''),unit=esc(r.unit||''),naam=esc(r.name||'');
+  const pt=esc(r.legal_entity||'PT UTAMA');
   return `<p><b>INTENT TO PURCHASE (ITP)</b><br>Date: ${vandaag}</p>`
     +`<p><b>FROM</b><br>Name: ${naam}${r.email?'<br>Email: '+esc(r.email):''}${r.phone?'<br>Mobile: '+esc(r.phone):''}</p>`
-    +`<p><b>TO</b><br>Steven Gijsman<br>PT BANGUNAN BETON INDONESIA</p>`
+    +`<p><b>TO</b><br>Steven Gijsman<br>${pt}</p>`
     +`<p><b>SUBJECT</b><br>Intent to Purchase – Leasehold (${proj}${unit?' · '+unit:''})</p>`
-    +`<p>Dear Steven Gijsman / PT BANGUNAN BETON INDONESIA,<br>I, ${naam}, hereby express my intent to purchase a villa within project ${proj}, under the following terms and conditions.</p>`
+    +`<p>Dear Steven Gijsman / ${pt},<br>I, ${naam}, hereby express my intent to purchase a villa within project ${proj}, under the following terms and conditions.</p>`
     +`<p><b>PROPERTY</b><br>Project: ${proj}<br>Unit: ${unit||'Villa selection to be determined.'}<br>Fully furnished, turn-key delivery<br>Leasehold: 30 + 30 years</p>`
     +`<p><b>PURCHASE PRICE</b><br>Total Purchase Price: ${price}</p>`
     +`<p><b>DEPOSIT</b><br>Buyer shall pay ${dep} as a deposit forming part of the Purchase Price (the “Deposit”).<br>The Deposit shall be deducted from the first instalment payable at notary signing.<br>The Deposit shall be fully refundable in the event that:<br>– legal due diligence results in a negative outcome; or<br>– material discrepancies are identified relating to land title, leasehold rights, zoning, permits, or ownership structure.</p>`
@@ -3705,7 +3707,7 @@ function itpDraft(r){
     +`<p><b>NEXT STEPS</b><br>1. Sign this ITP and transfer the ${dep} deposit. This reserves the unit for you.<br>Please transfer to:<br>Bank: BUNQ B.V.<br>Naam: Steven Gijsman<br>IBAN: NL40BUNQ2025524439<br>OR<br>Bank Name: OCBC<br>Account Number: 160810204315<br>Account Name: Steven Roland Gijsman<br>Swift Code: NISPIDJAXXX<br>Branch Code: 7160<br>Bank Code: 028<br>Clearing Code: 0280024<br>Bank Address: Jl. Teuku Umar No. 2–4, Denpasar 80114, Bali – Indonesia<br>2. Drafting of the lease and construction contract. A notary will prepare the contract, detailing all terms, timelines, pricing, and responsibilities.<br>3. Review and sign the contracts digitally. After reviewing the contracts, signing will happen in a meeting with the notary.<br>4. Make the first payment &amp; start your villa journey. Once the contract is signed, complete the first payment as outlined in ‘Payment Terms’ and the villa is yours!<br>5. You will be added to a WhatsApp group for bi-weekly project updates, and our marketing team will coordinate the preparation for your villa’s Airbnb launch.</p>`
     +`<p><b>VALIDITY</b><br>This ITP will remain valid until ${geldig}.</p>`
     +`<p><b>BUYER</b><br>Name: ${naam}<br>Signature:<br>Date:</p>`
-    +`<p><b>ACCEPTED BY SELLER</b><br>PT BANGUNAN BETON INDONESIA<br>Name: Steven Gijsman<br>Title: Director<br>Signature:<br>Date:</p>`;
+    +`<p><b>ACCEPTED BY SELLER</b><br>${pt}<br>Name: Steven Gijsman<br>Title: Director<br>Signature:<br>Date:</p>`;
 }
 /* upgrade any legacy plain-text ITP to HTML (bold ALL-CAPS heading lines) */
 function itpToHtml(body){
@@ -3823,7 +3825,7 @@ async function markReservationPaid(id,amount,person){
 const RESV_SITE='https://utamabali.com';
 function openReservationForm(p,projList,prefill){
   prefill=prefill||{};
-  const opts=(projList||[]).map(pr=>`<option value="${esc(pr.name)}" data-price="${pr.price_current||''}" ${prefill.project&&(prefill.project||'').toLowerCase()===(pr.name||'').toLowerCase()?'selected':''}>${esc(pr.name)}</option>`).join('');
+  const opts=(projList||[]).map(pr=>`<option value="${esc(pr.name)}" data-price="${pr.price_current||''}" data-entity="${esc(pr.legal_entity||'')}" ${prefill.project&&(prefill.project||'').toLowerCase()===(pr.name||'').toLowerCase()?'selected':''}>${esc(pr.name)}</option>`).join('');
   const bodyH=`<div class="grid2">
     <div class="field"><label>Project</label><select id="rv_project">${opts}</select></div>
     <div class="field"><label>Unit</label><input id="rv_unit" placeholder="bv. 2BR #3" value="${esc(prefill.unit||'')}"></div>
@@ -3832,10 +3834,11 @@ function openReservationForm(p,projList,prefill){
   </div><div class="hint">De ITP wordt automatisch opgemaakt (bewerkbaar) met een deelbare link. Daarna open je meteen de ITP-editor om te versturen via WhatsApp of e-mail.</div>`;
   showModal('ITP opstellen / reservering',bodyH,async()=>{
     const project=$('#rv_project').value;const unit=$('#rv_unit').value.trim();
+    const legal_entity=((($('#rv_project').selectedOptions||[])[0]||{}).dataset||{}).entity||null;
     const unit_price=$('#rv_price').value?Number($('#rv_price').value):null;
     const deposit=$('#rv_dep').value?Number($('#rv_dep').value):5000;
     const token=((crypto&&crypto.randomUUID)?crypto.randomUUID():('t'+Date.now())).replace(/-/g,'')+Math.random().toString(36).slice(2,8);
-    const itp_body=itpDraft({name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit});
+    const itp_body=itpDraft({name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit,legal_entity});
     const {data:row,error}=await sb.from('reservations').insert({token,contact_id:p.id,name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit,itp_body,source:'admin',created_by:(ME.full_name||ME.email)}).select().single();
     if(error){toast(error.message,'err');return false;}
     if(prefill.leadId)await markLeadHandled(prefill.leadId);
