@@ -216,7 +216,7 @@ function makePdf(r,signer){
       "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
       ...htmlToPlain(itpFilled(rr)).split("\n"),"",
       "ONDERTEKENING",
-      "Koper: digitaal ondertekend door "+signer+" \u2014 "+new Date().toLocaleString("nl-NL"),
+      "Koper: digitaal ondertekend door "+signer+" op "+new Date().toLocaleString("nl-NL"),
       "Verkoper: digitaal ondertekend bij uitgifte van deze ITP"
     ]:[
       "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
@@ -227,15 +227,17 @@ function makePdf(r,signer){
       "Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.","",
       "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
       "ONDERTEKENING",
-      "Koper: digitaal ondertekend door "+signer+" \u2014 "+new Date().toLocaleString("nl-NL"),
+      "Koper: digitaal ondertekend door "+signer+" op "+new Date().toLocaleString("nl-NL"),
       "Verkoper: digitaal ondertekend bij uitgifte van deze ITP"
     ];
     lines.forEach(t=>{doc.setFont("helvetica",isHeadingLine(t)?"bold":"normal");const wrapped=doc.splitTextToSize(t,W);wrapped.forEach(w=>{if(y>780){doc.addPage();y=64;}doc.text(w,M,y);y+=15;});});
     // Watermerk op elke pagina: dit exemplaar is het getekende exemplaar.
     const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight();
     for(let i=1;i<=doc.getNumberOfPages();i++){
-      doc.setPage(i);doc.setFont("helvetica","bold");doc.setFontSize(78);doc.setTextColor(228,232,230);
+      doc.setPage(i);doc.saveGraphicsState();doc.setGState(new doc.GState({opacity:0.08}));
+      doc.setFont("helvetica","bold");doc.setFontSize(78);doc.setTextColor(15,107,79);
       doc.text("ONDERTEKEND",pw/2,ph/2,{angle:45,align:"center"});
+      doc.restoreGraphicsState();
     }
     doc.setTextColor(30);
     return doc.output("datauristring").split(",")[1];
