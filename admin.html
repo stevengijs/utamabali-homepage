@@ -3675,21 +3675,27 @@ async function inboxRenderContactChat(contactId){
   if(error){cur.innerHTML='<div class="muted" style="font-size:13px">Kon chatgeschiedenis niet laden.</div>';return;}
   const threads=data||[];
   if(!threads.length){cur.innerHTML='<div class="muted" style="font-size:13px">Nog geen gesprekken in de inbox voor dit contact. Instagram- en WhatsApp-chats verschijnen hier zodra ze binnenkomen.</div>';return;}
-  cur.innerHTML=threads.map(t=>{
-    const ch=INBOX_CH[t.channel]||INBOX_CH.instagram;
-    const bubbles=(t.messages||[]).map(m=>{
-      const out=m.direction==='out',who=m.sender;
-      const tag=who==='ai'?'AI':who==='human'?esc((m.sender_name||'Team').split('@')[0]):'';
-      const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
-      return `<div class="pdc-row ${out?'out':'in'}"><div class="pdc-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag?`<span class="pdc-tag">${tag}</span>`:''}<span class="pdc-txt">${esc(m.body||'')}</span><span class="pdc-time">${inboxRel(m.created_at)}${undel?' · niet geleverd':''}</span></div></div>`;
-    }).join('')||'<div class="muted" style="font-size:12px">Geen berichten.</div>';
-    return `<div class="pdc-thread">
-      <div class="pdc-head"><span class="ibx-chtag" style="color:${ch.color};background:${ch.bg};border-color:${ch.bd}">${ch.icon} ${ch.label}</span>
-        <span class="muted" style="font-size:12px">${esc(inboxStatusText(t.status))} · ${inboxRel(t.last_message_at)}</span>
-        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="openInboxThread('${t.id}')">Open in Inbox →</button></div>
-      <div class="pdc-msgs">${bubbles}</div>
-    </div>`;
-  }).join('');
+  // Eén doorlopend gesprek over alle kanalen heen, net als de inbox zelf:
+  // alle berichten chronologisch met een kanaal-icoontje per bericht.
+  const alle=[];
+  threads.forEach(t=>{(t.messages||[]).forEach(m=>alle.push(Object.assign({},m,{channel:m.channel||t.channel})));});
+  alle.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const nieuwste=threads.slice().sort((a,b)=>new Date(b.last_message_at||0)-new Date(a.last_message_at||0))[0];
+  const kanalen=threads.map(t=>{const ch=INBOX_CH[t.channel]||INBOX_CH.instagram;return `<span class="ibx-chtag" style="color:${ch.color};background:${ch.bg};border-color:${ch.bd}">${ch.icon} ${ch.label}</span>`;}).join(' ');
+  const bubbles=alle.map(m=>{
+    const out=m.direction==='out',who=m.sender;
+    const mch=INBOX_CH[m.channel]||INBOX_CH.instagram;
+    const tag=who==='ai'?'AI':who==='human'?esc((m.sender_name||'Team').split('@')[0]):'';
+    const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
+    return `<div class="pdc-row ${out?'out':'in'}"><div class="pdc-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag?`<span class="pdc-tag">${tag}</span>`:''}<span class="pdc-txt">${esc(m.body||'')}</span><span class="pdc-time">${mch.icon} ${inboxRel(m.created_at)}${undel?' · niet geleverd':''}</span></div></div>`;
+  }).join('')||'<div class="muted" style="font-size:12px">Geen berichten.</div>';
+  cur.innerHTML=`<div class="pdc-thread">
+    <div class="pdc-head">${kanalen}
+      <span class="muted" style="font-size:12px">${inboxRel(nieuwste.last_message_at)}</span>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="openInboxThread('${nieuwste.id}')">Open in Inbox →</button></div>
+    <div class="pdc-msgs" style="max-height:340px">${bubbles}</div>
+  </div>`;
+  const ms=cur.querySelector('.pdc-msgs');if(ms)ms.scrollTop=ms.scrollHeight;
 }
 function openInboxThread(id){INBOX.sel=id;if(!canView('inbox')){toast('Je hebt geen toegang tot de Inbox','err');return;}closeOverlay();go('inbox');}
 // Mailen vanaf contactkaart/pipeline-drawer: in de portal-inbox, niet in de
