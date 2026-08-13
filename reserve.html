@@ -106,6 +106,10 @@ function itpFilled(r){
     const d=new Date(r.itp_signed_at).toLocaleDateString("nl-NL",{day:"numeric",month:"short",year:"numeric"});
     const wie=r.itp_signer_name||r.name||"";
     b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: \u2713 Digitally signed by "+esc(wie)+br+"Date: "+esc(d));
+  }else{
+    // Nog niet getekend: maak duidelijk dat dit vanzelf wordt ingevuld,
+    // anders lijkt het alsof de koper hier zelf iets moet invullen.
+    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+'Signature: <i style="color:#6f7f78">wordt automatisch ingevuld na de digitale ondertekening hieronder</i>'+br+'Date: <i style="color:#6f7f78">wordt automatisch ingevuld</i>');
   }
   return b;
 }
