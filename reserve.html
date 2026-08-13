@@ -100,24 +100,25 @@ function itpFilled(r){
   if(!b)return b;
   // Verkoper tekent bij uitgifte: een leeg verkopersblok wordt altijd gevuld,
   // ook op ITP's die zijn aangemaakt voordat de standaardtekst dit meekreeg.
-  const uit=new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("nl-NL",{day:"numeric",month:"short",year:"numeric"});
+  const uit=new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
   b=b.replace(/(<b>\s*ACCEPTED BY SELLER\s*<\/b>[\s\S]{0,260}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: \u2713 Digitally signed"+br+"Date: "+esc(uit));
   if(r.itp_signed_at){
-    const d=new Date(r.itp_signed_at).toLocaleDateString("nl-NL",{day:"numeric",month:"short",year:"numeric"});
+    const d=new Date(r.itp_signed_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
     const wie=r.itp_signer_name||r.name||"";
     b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: \u2713 Digitally signed by "+esc(wie)+br+"Date: "+esc(d));
   }else{
     // Nog niet getekend: maak duidelijk dat dit vanzelf wordt ingevuld,
     // anders lijkt het alsof de koper hier zelf iets moet invullen.
-    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+'Signature: <i style="color:#6f7f78">wordt automatisch ingevuld na de digitale ondertekening hieronder</i>'+br+'Date: <i style="color:#6f7f78">wordt automatisch ingevuld</i>');
+    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+'Signature: <i style="color:#6f7f78">filled in automatically after you sign digitally below</i>'+br+'Date: <i style="color:#6f7f78">filled in automatically</i>');
   }
   return b;
 }
 function itpText(r){
   const today=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
   if(r.itp_body&&r.itp_body.trim()){
-    const banner=r.itp_signed_at?`<div class="ok-badge" style="display:block;margin:0 0 12px">\u2713 Door beide partijen ondertekend \u2014 ${esc(r.itp_signer_name||r.name||"")} op ${new Date(r.itp_signed_at).toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"})} \u00b7 UTAMA digitaal bij uitgifte</div>`:"";
-    return `<h2>Intentieverklaring tot aankoop (ITP)</h2><p class="muted">Opgesteld op ${today}</p>${banner}<div>${itpFilled(r)}</div>`;
+    const banner=r.itp_signed_at?`<div class="ok-badge" style="display:block;margin:0 0 12px">\u2713 Signed by both parties: ${esc(r.itp_signer_name||r.name||"")} on ${new Date(r.itp_signed_at).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})} \u00b7 UTAMA digitally upon issuance</div>`:"";
+    const prepared=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+    return `<h2>Intent to Purchase (ITP)</h2><p class="muted">Prepared on ${prepared}</p>${banner}<div>${itpFilled(r)}</div>`;
   }
   return `
     <h2>Intentieverklaring tot aankoop (ITP)</h2>
@@ -209,26 +210,26 @@ function makePdf(r,signer){
   try{
     const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"pt",format:"a4"});
     const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
-    doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("UTAMA — Intentieverklaring tot aankoop",M,y);y+=26;
+    doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("UTAMA: Intent to Purchase (ITP)",M,y);y+=26;
     doc.setFont("helvetica","normal");doc.setFontSize(10.5);doc.setTextColor(30);
     const rr=Object.assign({},r,{itp_signed_at:r.itp_signed_at||new Date().toISOString(),itp_signer_name:signer});
     const lines=(r.itp_body&&r.itp_body.trim())?[
-      "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
+      "Prepared on "+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
       ...htmlToPlain(itpFilled(rr)).split("\n"),"",
-      "ONDERTEKENING",
-      "Koper: digitaal ondertekend door "+signer+" op "+new Date().toLocaleString("nl-NL"),
-      "Verkoper: digitaal ondertekend bij uitgifte van deze ITP"
+      "SIGNATURES",
+      "Buyer: digitally signed by "+signer+" on "+new Date().toLocaleString("en-GB"),
+      "Seller: digitally signed upon issuance of this ITP"
     ]:[
-      "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
+      "Prepared on "+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
       "PARTIJEN","Verkoper: PT Bali Utama Property","Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
       "OBJECT","Project: "+(r.project||"—"),"Unit: "+(r.unit||"—"),(r.unit_price?"Indicatieve koopsom: €"+Number(r.unit_price).toLocaleString("nl-NL"):""),"",
       "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL")+" aan PT Bali Utama Property.",
       "Referentie: "+refText(r),
       "Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.","",
       "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
-      "ONDERTEKENING",
-      "Koper: digitaal ondertekend door "+signer+" op "+new Date().toLocaleString("nl-NL"),
-      "Verkoper: digitaal ondertekend bij uitgifte van deze ITP"
+      "SIGNATURES",
+      "Buyer: digitally signed by "+signer+" on "+new Date().toLocaleString("en-GB"),
+      "Seller: digitally signed upon issuance of this ITP"
     ];
     lines.forEach(t=>{
       const kop=isHeadingLine(t);
@@ -249,7 +250,7 @@ function makePdf(r,signer){
     for(let i=1;i<=doc.getNumberOfPages();i++){
       doc.setPage(i);doc.saveGraphicsState();doc.setGState(new doc.GState({opacity:0.08}));
       doc.setFont("helvetica","bold");doc.setFontSize(78);doc.setTextColor(15,107,79);
-      doc.text("ONDERTEKEND",pw/2,ph/2,{angle:45,align:"center"});
+      doc.text("SIGNED",pw/2,ph/2,{angle:45,align:"center"});
       doc.restoreGraphicsState();
     }
     doc.setTextColor(30);

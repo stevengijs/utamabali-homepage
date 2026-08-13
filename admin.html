@@ -3758,10 +3758,10 @@ function itpToHtml(body){
 function itpMetHandtekening(r){
   let b=itpToHtml(r.itp_body)||'';
   if(!b)return b;
-  const uit=new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});
+  const uit=new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   b=b.replace(/(<b>\s*ACCEPTED BY SELLER\s*<\/b>[\s\S]{0,260}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+'Signature: \u2713 Digitally signed'+br+'Date: '+esc(uit));
   if(r.itp_signed_at){
-    const d=new Date(r.itp_signed_at).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});
+    const d=new Date(r.itp_signed_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const wie=r.itp_signer_name||r.name||'';
     b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+'Signature: \u2713 Digitally signed by '+esc(wie)+br+'Date: '+esc(d));
   }
@@ -3876,11 +3876,11 @@ function downloadItpPdf(r){
   if(!window.jspdf){toast('PDF-bibliotheek nog aan het laden, probeer zo nog eens','err');return;}
   const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4'});
   const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
-  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('UTAMA — Intentieverklaring tot aankoop',M,y);y+=26;
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('UTAMA: Intent to Purchase (ITP)',M,y);y+=26;
   doc.setFontSize(10.5);doc.setTextColor(30);
   const body=htmlToPlain(itpMetHandtekening(r)||itpDraft(r));
-  const lines=['Opgesteld op '+new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'}),'',...body.split('\n')];
-  if(r.itp_signed_at)lines.push('','ONDERTEKENING','Koper: digitaal ondertekend door '+(r.itp_signer_name||'')+' op '+fmtDateTime(r.itp_signed_at),'Verkoper: digitaal ondertekend bij uitgifte van deze ITP','Verificatie-hash: '+(r.itp_hash||''));
+  const lines=['Prepared on '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),'',...body.split('\n')];
+  if(r.itp_signed_at)lines.push('','SIGNATURES','Buyer: digitally signed by '+(r.itp_signer_name||'')+' on '+fmtDateTime(r.itp_signed_at),'Seller: digitally signed upon issuance of this ITP','Verification hash: '+(r.itp_hash||''));
   lines.forEach(t=>{
     const kop=isHeadingLine(t);
     const m=!kop&&/^([A-Za-z][A-Za-z .]{0,24}:)\s(.+)$/.exec(t);
@@ -3900,7 +3900,7 @@ function downloadItpPdf(r){
     for(let i=1;i<=doc.getNumberOfPages();i++){
       doc.setPage(i);doc.saveGraphicsState();doc.setGState(new doc.GState({opacity:0.08}));
       doc.setFont('helvetica','bold');doc.setFontSize(78);doc.setTextColor(15,107,79);
-      doc.text('ONDERTEKEND',pw/2,ph/2,{angle:45,align:'center'});
+      doc.text('SIGNED',pw/2,ph/2,{angle:45,align:'center'});
       doc.restoreGraphicsState();
     }
     doc.setTextColor(30);
