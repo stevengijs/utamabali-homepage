@@ -3784,7 +3784,9 @@ function openItpEditor(r,person){
     const html=$('#itp_edit').innerHTML;
     const {error}=await sb.from('reservations').update({itp_body:html}).eq('id',r.id);
     if(error){toast(error.message,'err');return false;}
-    toast('ITP opgeslagen','ok');if(person&&person.id)openPerson(person);else openReservation(r.id);return true;
+    // Na opslaan door naar het reserveringsscherm met de verstuurknoppen
+    // (WhatsApp/E-mail/Link); sluiten daarvan brengt je terug bij de lead.
+    toast('ITP opgeslagen — verstuur hem nu','ok');openReservation(r.id);return true;
   });
   // Sluiten brengt je terug naar het leadrecord (of de reservering), niet
   // naar de onderliggende pagina; dat voelde als 'teruggegooid naar dashboard'.
