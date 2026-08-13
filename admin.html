@@ -3681,13 +3681,31 @@ async function inboxRenderContactChat(contactId){
 function openInboxThread(id){INBOX.sel=id;if(!canView('inbox')){toast('Je hebt geen toegang tot de Inbox','err');return;}closeOverlay();go('inbox');}
 let PERSON_RESV={};
 function itpDraft(r){
-  const dep='€'+Number(r.deposit_amount||5000).toLocaleString('nl-NL');
-  const price=r.unit_price?'<br>Indicatieve koopsom: €'+Number(r.unit_price).toLocaleString('nl-NL'):'';
-  return `<p><b>PARTIJEN</b><br>Verkoper: PT Bali Utama Property<br>Koper: ${esc(r.name||'')}${r.email?' ('+esc(r.email)+')':''}</p>`
-    +`<p><b>OBJECT</b><br>Project: ${esc(r.project||'')}<br>Unit: ${esc(r.unit||'')}${price}</p>`
-    +`<p><b>RESERVERINGSDEPOSIT</b><br>De koper betaalt een reserveringsdeposit van ${dep} aan PT Bali Utama Property om de unit te reserveren. Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.</p>`
-    +`<p><b>VERVOLG</b><br>Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.</p>`
-    +`<p><b>VOORWAARDEN</b><br>De aanbetaling is volledig retourneerbaar indien het papierwerk aan onze kant niet blijkt te kloppen. Je reservering zet de huidige prijs vast.</p>`;
+  // Volledige Engelstalige ITP naar het vaste UTAMA-model. Alles is daarna
+  // vrij te bewerken in de editor; dit is alleen de gegenereerde beginversie.
+  const cur=(r.currency||'EUR').toUpperCase();
+  const fmt=v=>(cur==='EUR'?'€':cur+' ')+Number(v).toLocaleString('nl-NL');
+  const dep=fmt(r.deposit_amount||10000);
+  const price=r.unit_price?fmt(r.unit_price):'(to be confirmed)';
+  const vandaag=new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const geldig=(r.hold_expires_at?new Date(r.hold_expires_at):new Date(Date.now()+30*864e5)).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const proj=esc(r.project||''),unit=esc(r.unit||''),naam=esc(r.name||'');
+  return `<p><b>INTENT TO PURCHASE (ITP)</b><br>Date: ${vandaag}</p>`
+    +`<p><b>FROM</b><br>Name: ${naam}${r.email?'<br>Email: '+esc(r.email):''}${r.phone?'<br>Mobile: '+esc(r.phone):''}</p>`
+    +`<p><b>TO</b><br>Steven Gijsman<br>PT BANGUNAN BETON INDONESIA</p>`
+    +`<p><b>SUBJECT</b><br>Intent to Purchase – Leasehold (${proj}${unit?' · '+unit:''})</p>`
+    +`<p>Dear Steven Gijsman / PT BANGUNAN BETON INDONESIA,<br>I, ${naam}, hereby express my intent to purchase a villa within project ${proj}, under the following terms and conditions.</p>`
+    +`<p><b>PROPERTY</b><br>Project: ${proj}<br>Unit: ${unit||'Villa selection to be determined.'}<br>Fully furnished, turn-key delivery<br>Leasehold: 30 + 30 years</p>`
+    +`<p><b>PURCHASE PRICE</b><br>Total Purchase Price: ${price}</p>`
+    +`<p><b>DEPOSIT</b><br>Buyer shall pay ${dep} as a deposit forming part of the Purchase Price (the “Deposit”).<br>The Deposit shall be deducted from the first instalment payable at notary signing.<br>The Deposit shall be fully refundable in the event that:<br>– legal due diligence results in a negative outcome; or<br>– material discrepancies are identified relating to land title, leasehold rights, zoning, permits, or ownership structure.</p>`
+    +`<p><b>PAYMENT TERMS</b><br>The total Purchase Price shall be paid in instalments as follows:<br>– ${dep} deposit upon signing of this ITP;<br>– 60% payable upon signing of the notarial leasehold and construction agreements, minus the deposit;<br>– 20% payable after milestone 3 (as detailed in the notarised contracts);<br>– 10% payable after milestone 4 (as detailed in the notarised contracts);<br>– 10% payable upon final completion of the villa and key handover.</p>`
+    +`<p><b>FORMALISATION</b><br>The payment schedule, construction milestones, deliverables and timelines referred to in this Intent to Purchase are indicative only and shall be further detailed, formalised and become legally binding solely in the definitive leasehold agreement and construction contract.</p>`
+    +`<p><b>SELLER REPRESENTATIONS</b><br>The Seller represents and warrants that:<br>– the land status and leasehold title are valid and undisputed;<br>– the lessor is fully authorized to grant and extend the leasehold;<br>– the land is correctly zoned for the intended development; and<br>– all applicable permits and approvals required for construction and delivery are in place or will be lawfully obtained.</p>`
+    +`<p><b>CONDITIONS</b><br>– This document constitutes a non-binding Intent to Purchase.<br>– The definitive leasehold and construction agreements shall be prepared by the appointed notary.<br>– In the event negotiations are terminated due to fault or breach by the Seller, any amounts paid by Buyer shall be refunded in full.<br>– Upon receipt of the Deposit, the Seller undertakes not to offer or sell the reserved property to any third party until the definitive agreements are signed or negotiations are formally terminated in writing.</p>`
+    +`<p><b>NEXT STEPS</b><br>1. Sign this ITP and transfer the ${dep} deposit. This reserves the unit for you.<br>Please transfer to:<br>Bank: BUNQ B.V.<br>Naam: Steven Gijsman<br>IBAN: NL40BUNQ2025524439<br>OR<br>Bank Name: OCBC<br>Account Number: 160810204315<br>Account Name: Steven Roland Gijsman<br>Swift Code: NISPIDJAXXX<br>Branch Code: 7160<br>Bank Code: 028<br>Clearing Code: 0280024<br>Bank Address: Jl. Teuku Umar No. 2–4, Denpasar 80114, Bali – Indonesia<br>2. Drafting of the lease and construction contract. A notary will prepare the contract, detailing all terms, timelines, pricing, and responsibilities.<br>3. Review and sign the contracts digitally. After reviewing the contracts, signing will happen in a meeting with the notary.<br>4. Make the first payment &amp; start your villa journey. Once the contract is signed, complete the first payment as outlined in ‘Payment Terms’ and the villa is yours!<br>5. You will be added to a WhatsApp group for bi-weekly project updates, and our marketing team will coordinate the preparation for your villa’s Airbnb launch.</p>`
+    +`<p><b>VALIDITY</b><br>This ITP will remain valid until ${geldig}.</p>`
+    +`<p><b>BUYER</b><br>Name: ${naam}<br>Signature:<br>Date:</p>`
+    +`<p><b>ACCEPTED BY SELLER</b><br>PT BANGUNAN BETON INDONESIA<br>Name: Steven Gijsman<br>Title: Director<br>Signature:<br>Date:</p>`;
 }
 /* upgrade any legacy plain-text ITP to HTML (bold ALL-CAPS heading lines) */
 function itpToHtml(body){
@@ -3817,7 +3835,7 @@ function openReservationForm(p,projList,prefill){
     const unit_price=$('#rv_price').value?Number($('#rv_price').value):null;
     const deposit=$('#rv_dep').value?Number($('#rv_dep').value):5000;
     const token=((crypto&&crypto.randomUUID)?crypto.randomUUID():('t'+Date.now())).replace(/-/g,'')+Math.random().toString(36).slice(2,8);
-    const itp_body=itpDraft({name:p.name,email:p.email,project,unit,unit_price,deposit_amount:deposit});
+    const itp_body=itpDraft({name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit});
     const {data:row,error}=await sb.from('reservations').insert({token,contact_id:p.id,name:p.name,email:p.email,phone:p.phone,project,unit,unit_price,deposit_amount:deposit,itp_body,source:'admin',created_by:(ME.full_name||ME.email)}).select().single();
     if(error){toast(error.message,'err');return false;}
     if(prefill.leadId)await markLeadHandled(prefill.leadId);
