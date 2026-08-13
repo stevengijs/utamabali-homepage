@@ -3777,6 +3777,14 @@ function openItpEditor(r,person){
     if(error){toast(error.message,'err');return false;}
     toast('ITP opgeslagen','ok');if(person&&person.id)openPerson(person);else openReservation(r.id);return true;
   });
+  // Sluiten brengt je terug naar het leadrecord (of de reservering), niet
+  // naar de onderliggende pagina; dat voelde als 'teruggegooid naar dashboard'.
+  {
+    const terug=()=>{if(person&&person.id)openPerson(person);else openReservation(r.id);};
+    const mx=$('#mx');if(mx)mx.onclick=terug;
+    const mc=$('#mcancel');if(mc)mc.onclick=terug;
+    const ov=$('#overlay');if(ov)ov.onclick=e=>{if(e.target===ov)terug();};
+  }
   setTimeout(()=>{
     document.querySelectorAll('.rte-tb [data-cmd]').forEach(b=>b.onmousedown=e=>{e.preventDefault();document.execCommand(b.dataset.cmd,false,null);});
     const hb=document.querySelector('.rte-tb [data-heading]');if(hb)hb.onmousedown=e=>{e.preventDefault();const sel=window.getSelection&&window.getSelection().toString();if(sel){document.execCommand('bold');}else{document.execCommand('insertHTML',false,'<b>KOPJE</b><br>');}};
@@ -3833,6 +3841,11 @@ async function openReservation(id){
   mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}if(!r.sent_at&&confirm('Link gekopieerd. Verstuur je hem zelf naar de klant? Dan markeer ik de ITP als verstuurd.')){await sb.from('reservations').update({sent_at:new Date().toISOString(),sent_via:'link'}).eq('id',r.id);r.sent_at=new Date().toISOString();toast('Gemarkeerd als verstuurd','ok');openReservation(r.id);return;}toast('Link gekopieerd','ok');});
   mb.querySelectorAll('[data-confirm2]').forEach(b=>b.onclick=async()=>{await bannerConfirmPaid(b.dataset.confirm2,Number(b.dataset.amt)||null);openReservation(r.id);});
   mb.querySelectorAll('[data-openc]').forEach(b=>b.onclick=()=>openContactById(b.dataset.openc));
+  if(r.contact_id){
+    const terug=()=>openContactById(r.contact_id);
+    const mx=$('#mx');if(mx)mx.onclick=terug;
+    const mc=$('#mcancel');if(mc)mc.onclick=terug;
+  }
   mb.querySelectorAll('[data-delresv2]').forEach(b=>b.onclick=async()=>{
     const zwaar=[];if(r.itp_signed_at)zwaar.push('getekend');if(r.status==='deposit_paid'||r.payment_status==='paid')zwaar.push('betaald');
     const extra=zwaar.length?'\n\nLET OP: deze ITP is al '+zwaar.join(' en ')+'. Verwijderen wist dat definitief.':'';
@@ -3914,6 +3927,12 @@ function openReservationForm(p,projList,prefill){
     setTimeout(()=>{if(row)openItpEditor(row,p);else openPerson(p);refreshNotifBadge();},60);
     return true;
   });
+  if(p&&p.id){
+    const terug=()=>openPerson(p);
+    const mx=$('#mx');if(mx)mx.onclick=terug;
+    const mc=$('#mcancel');if(mc)mc.onclick=terug;
+    const ov=$('#overlay');if(ov)ov.onclick=e=>{if(e.target===ov)terug();};
+  }
   setTimeout(()=>{const ps=$('#rv_project'),pr=$('#rv_price');if(ps&&pr){const sync=()=>{const o=ps.selectedOptions[0];if(o&&o.dataset.price&&!pr.value)pr.value=o.dataset.price;};ps.onchange=sync;sync();}},0);
 }
 async function setDataroom(person,project,enable,rowId){
