@@ -3534,12 +3534,12 @@ async function openPerson(p){
       return `<div style="border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
           <div style="font-size:13px"><b>${esc(r.project||'—')} · ${esc(r.unit||'—')}</b> <span class="muted">${money(r.deposit_amount)} deposit</span><br>
-            ITP: ${r.itp_signed_at?'<span class="badge green">getekend '+fmtDate(r.itp_signed_at)+'</span>':(r.itp_body?'<span class="badge blue">opgemaakt</span>':'<span class="badge grey">concept</span>')} · Betaling: ${payBadge(r)}${r.sent_at?' · <span class="muted">verstuurd '+fmtDate(r.sent_at)+(r.sent_via?' ('+esc(r.sent_via)+')':'')+'</span>':''}</div>
+            ITP: ${r.itp_signed_at?'<span class="badge green">getekend '+fmtDate(r.itp_signed_at)+'</span>':(r.sent_at?'<span class="badge blue">verstuurd '+fmtDate(r.sent_at)+(r.sent_via?' via '+esc(r.sent_via):'')+'</span>':'<span class="badge amber">concept · niet verstuurd</span>')} · Betaling: ${payBadge(r)}</div>
           <div class="row-actions" style="flex-wrap:wrap;justify-content:flex-end">
             <button class="btn btn-primary btn-sm" data-viewr="${r.id}">ITP openen</button>
             ${manageResv&&(r.phone||p.phone)?`<button class="btn btn-ghost btn-sm" style="color:#0f6b4f" data-wa="${r.id}">WhatsApp</button>`:''}
             ${manageResv&&(r.email||p.email)?`<button class="btn btn-ghost btn-sm" data-mail="${r.id}">E-mail</button>`:''}
-            <button class="btn btn-ghost btn-sm" data-copy="${link}">Link</button>
+            <button class="btn btn-ghost btn-sm" data-copy="${link}" data-copyid="${r.id}">Link</button>
             ${(!paid&&manageResv)?`<button class="btn btn-primary btn-sm" data-confirmpaid="${r.id}" data-amt="${r.deposit_amount||''}">Confirm paid</button>`:''}
           </div>
         </div></div>`;
@@ -3631,7 +3631,7 @@ async function openPerson(p){
   if(mb){
     mb.querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>setDataroom(p,b.dataset.project,b.dataset.enable==='1',b.dataset.id||null));
     const gb=$('#dr_grant_btn');if(gb)gb.onclick=()=>{const s=$('#dr_grant_sel');if(s&&s.value)setDataroom(p,s.value,true,null);};
-    mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}toast('Reserveringslink gekopieerd','ok');});
+    mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}const rv=b.dataset.copyid?PERSON_RESV[b.dataset.copyid]:null;if(rv&&!rv.sent_at&&confirm('Link gekopieerd. Verstuur je hem zelf naar de klant? Dan markeer ik de ITP als verstuurd.')){await sb.from('reservations').update({sent_at:new Date().toISOString(),sent_via:'link'}).eq('id',rv.id);rv.sent_at=new Date().toISOString();toast('Gemarkeerd als verstuurd','ok');openPerson(p);return;}toast('Reserveringslink gekopieerd','ok');});
     mb.querySelectorAll('[data-confirmpaid]').forEach(b=>b.onclick=()=>markReservationPaid(b.dataset.confirmpaid,Number(b.dataset.amt)||null,p));
     mb.querySelectorAll('[data-mkitp]').forEach(b=>b.onclick=()=>openReservationForm(p,projList,{project:b.dataset.mkproj,unit:b.dataset.mkunit,leadId:b.dataset.mkitp}));
     mb.querySelectorAll('[data-ldone]').forEach(b=>b.onclick=async()=>{await markLeadHandled(b.dataset.ldone);toast('Afgerond','ok');openPerson(p);});
@@ -3773,7 +3773,10 @@ function openItpEditor(r,person){
 }
 function itpStatusLine(r){
   const paid=(r.status==='deposit_paid'||r.payment_status==='paid');
-  const itp=r.itp_signed_at?`<span class="badge green">Getekend ${fmtDateTime(r.itp_signed_at)}${r.itp_signer_name?' door '+esc(r.itp_signer_name):''}</span>`:(r.itp_body?'<span class="badge blue">Opgemaakt (nog niet getekend)</span>':'<span class="badge grey">Concept</span>');
+  // Status volgt het echte proces: concept tot je hem daadwerkelijk verstuurt
+  // (via de WhatsApp/E-mail-knop), daarna verstuurd, daarna getekend. Dat er
+  // al tekst klaarstaat (itp_body) zegt niets over indienen.
+  const itp=r.itp_signed_at?`<span class="badge green">Getekend ${fmtDateTime(r.itp_signed_at)}${r.itp_signer_name?' door '+esc(r.itp_signer_name):''}</span>`:(r.sent_at?'<span class="badge blue">Verstuurd, wacht op ondertekening</span>':'<span class="badge amber">Concept · nog niet naar de klant verstuurd</span>');
   const pay=paid?`<span class="badge green">Aanbetaling ontvangen ${r.paid_at?fmtDate(r.paid_at):''}</span>`:(r.payment_status==='transfer_reported'?'<span class="badge amber">Aanbetaling gemeld — nog te bevestigen</span>':'<span class="badge grey">Nog geen aanbetaling</span>');
   const sent=r.sent_at?`<span class="badge grey">Verstuurd ${fmtDateTime(r.sent_at)}${r.sent_via?' ('+esc(r.sent_via)+')':''}</span>`:'<span class="badge grey">Nog niet verstuurd</span>';
   return `<div style="display:flex;flex-direction:column;gap:6px;margin:8px 0 4px"><div>ITP: ${itp}</div><div>Betaling: ${pay}</div><div>Verzending: ${sent}</div></div>`;
@@ -3807,7 +3810,7 @@ async function openReservation(id){
   mb.querySelectorAll('[data-editip2]').forEach(b=>b.onclick=()=>openItpEditor(r,null));
   mb.querySelectorAll('[data-wa2]').forEach(b=>b.onclick=()=>sendReservation(r,{name:r.name,email:r.email,phone:r.phone},'whatsapp'));
   mb.querySelectorAll('[data-mail2]').forEach(b=>b.onclick=()=>sendReservation(r,{name:r.name,email:r.email,phone:r.phone},'email'));
-  mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}toast('Link gekopieerd','ok');});
+  mb.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}if(!r.sent_at&&confirm('Link gekopieerd. Verstuur je hem zelf naar de klant? Dan markeer ik de ITP als verstuurd.')){await sb.from('reservations').update({sent_at:new Date().toISOString(),sent_via:'link'}).eq('id',r.id);r.sent_at=new Date().toISOString();toast('Gemarkeerd als verstuurd','ok');openReservation(r.id);return;}toast('Link gekopieerd','ok');});
   mb.querySelectorAll('[data-confirm2]').forEach(b=>b.onclick=async()=>{await bannerConfirmPaid(b.dataset.confirm2,Number(b.dataset.amt)||null);openReservation(r.id);});
   mb.querySelectorAll('[data-openc]').forEach(b=>b.onclick=()=>openContactById(b.dataset.openc));
 }
