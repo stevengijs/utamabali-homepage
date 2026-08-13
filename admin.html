@@ -3786,7 +3786,9 @@ function openItpEditor(r,person){
     if(error){toast(error.message,'err');return false;}
     // Na opslaan door naar het reserveringsscherm met de verstuurknoppen
     // (WhatsApp/E-mail/Link); sluiten daarvan brengt je terug bij de lead.
-    toast('ITP opgeslagen — verstuur hem nu','ok');openReservation(r.id);return true;
+    // Pas ná het sluiten van deze modal openen: showModal wist de overlay na
+    // onSave, wat een direct geopend scherm meteen weer leeggooide.
+    toast('ITP opgeslagen — verstuur hem nu','ok');setTimeout(()=>openReservation(r.id),80);return true;
   });
   // Sluiten brengt je terug naar het leadrecord (of de reservering), niet
   // naar de onderliggende pagina; dat voelde als 'teruggegooid naar dashboard'.
