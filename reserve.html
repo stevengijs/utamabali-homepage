@@ -97,10 +97,15 @@ async function api(action,extra){
 function refText(r){return `${r.project||""} ${r.unit||""} deposit`.replace(/\s+/g," ").trim();}
 function itpFilled(r){
   let b=itpToHtml(r.itp_body)||"";
-  if(b&&r.itp_signed_at){
+  if(!b)return b;
+  // Verkoper tekent bij uitgifte: een leeg verkopersblok wordt altijd gevuld,
+  // ook op ITP's die zijn aangemaakt voordat de standaardtekst dit meekreeg.
+  const uit=new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("nl-NL",{day:"numeric",month:"short",year:"numeric"});
+  b=b.replace(/(<b>\s*ACCEPTED BY SELLER\s*<\/b>[\s\S]{0,260}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: \u2713 Digitally signed"+br+"Date: "+esc(uit));
+  if(r.itp_signed_at){
     const d=new Date(r.itp_signed_at).toLocaleDateString("nl-NL",{day:"numeric",month:"short",year:"numeric"});
     const wie=r.itp_signer_name||r.name||"";
-    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:/i,(m,voor,br)=>voor+"Signature: \u2713 Digitally signed by "+esc(wie)+br+"Date: "+esc(d));
+    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: \u2713 Digitally signed by "+esc(wie)+br+"Date: "+esc(d));
   }
   return b;
 }
