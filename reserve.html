@@ -94,10 +94,20 @@ async function api(action,extra){
   }
 }
 function refText(r){return `${r.project||""} ${r.unit||""} deposit`.replace(/\s+/g," ").trim();}
+function itpFilled(r){
+  let b=itpToHtml(r.itp_body)||"";
+  if(b&&r.itp_signed_at){
+    const d=new Date(r.itp_signed_at).toLocaleDateString("nl-NL",{day:"numeric",month:"short",year:"numeric"});
+    const wie=r.itp_signer_name||r.name||"";
+    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:/i,(m,voor,br)=>voor+"Signature: \u2713 Digitally signed by "+esc(wie)+br+"Date: "+esc(d));
+  }
+  return b;
+}
 function itpText(r){
   const today=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
   if(r.itp_body&&r.itp_body.trim()){
-    return `<h2>Intentieverklaring tot aankoop (ITP)</h2><p class="muted">Opgesteld op ${today}</p><div>${itpToHtml(r.itp_body)}</div>`;
+    const banner=r.itp_signed_at?`<div class="ok-badge" style="display:block;margin:0 0 12px">\u2713 Door beide partijen ondertekend \u2014 ${esc(r.itp_signer_name||r.name||"")} op ${new Date(r.itp_signed_at).toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"})} \u00b7 UTAMA digitaal bij uitgifte</div>`:"";
+    return `<h2>Intentieverklaring tot aankoop (ITP)</h2><p class="muted">Opgesteld op ${today}</p>${banner}<div>${itpFilled(r)}</div>`;
   }
   return `
     <h2>Intentieverklaring tot aankoop (ITP)</h2>
@@ -170,7 +180,7 @@ function render(){
       <div class="note">Ondertekenen legt je intentie vast met tijdstempel. De aanbetaling volgt in de volgende stap.</div>`;
   }else{
     const reported=r.payment_status==="transfer_reported";
-    h+=`<div style="margin:16px 0"><span class="ok-badge">✓ ITP ondertekend door ${esc(r.itp_signer_name||r.name||"")}</span></div>`;
+    h+=`<div style="margin:16px 0"><span class="ok-badge">✓ ITP ondertekend door ${esc(r.itp_signer_name||r.name||"")}${r.itp_signed_at?" op "+new Date(r.itp_signed_at).toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}):""}</span></div>`;
     h+=bankBlock(r);
     h+=`<div id="msg"></div>`;
     if(reported){
@@ -191,10 +201,13 @@ function makePdf(r,signer){
     const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
     doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("UTAMA — Intentieverklaring tot aankoop",M,y);y+=26;
     doc.setFont("helvetica","normal");doc.setFontSize(10.5);doc.setTextColor(30);
+    const rr=Object.assign({},r,{itp_signed_at:r.itp_signed_at||new Date().toISOString(),itp_signer_name:signer});
     const lines=(r.itp_body&&r.itp_body.trim())?[
       "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
-      ...htmlToPlain(itpToHtml(r.itp_body)).split("\n"),"",
-      "ONDERTEKENING","Digitaal ondertekend door: "+signer,"Datum: "+new Date().toLocaleString("nl-NL")
+      ...htmlToPlain(itpFilled(rr)).split("\n"),"",
+      "ONDERTEKENING",
+      "Koper: digitaal ondertekend door "+signer+" \u2014 "+new Date().toLocaleString("nl-NL"),
+      "Verkoper: digitaal ondertekend bij uitgifte van deze ITP"
     ]:[
       "Opgesteld op "+new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),"",
       "PARTIJEN","Verkoper: PT Bali Utama Property","Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
@@ -203,9 +216,18 @@ function makePdf(r,signer){
       "Referentie: "+refText(r),
       "Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.","",
       "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
-      "ONDERTEKENING","Digitaal ondertekend door: "+signer,"Datum: "+new Date().toLocaleString("nl-NL")
+      "ONDERTEKENING",
+      "Koper: digitaal ondertekend door "+signer+" \u2014 "+new Date().toLocaleString("nl-NL"),
+      "Verkoper: digitaal ondertekend bij uitgifte van deze ITP"
     ];
     lines.forEach(t=>{doc.setFont("helvetica",isHeadingLine(t)?"bold":"normal");const wrapped=doc.splitTextToSize(t,W);wrapped.forEach(w=>{if(y>780){doc.addPage();y=64;}doc.text(w,M,y);y+=15;});});
+    // Watermerk op elke pagina: dit exemplaar is het getekende exemplaar.
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight();
+    for(let i=1;i<=doc.getNumberOfPages();i++){
+      doc.setPage(i);doc.setFont("helvetica","bold");doc.setFontSize(78);doc.setTextColor(228,232,230);
+      doc.text("ONDERTEKEND",pw/2,ph/2,{angle:45,align:"center"});
+    }
+    doc.setTextColor(30);
     return doc.output("datauristring").split(",")[1];
   }catch(e){return null;}
 }

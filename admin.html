@@ -3737,13 +3737,22 @@ function itpDraft(r){
     +`<p><b>NEXT STEPS</b><br>1. Sign this ITP and transfer the ${dep} deposit. This reserves the unit for you.<br>Please transfer to:<br>Bank: BUNQ B.V.<br>Naam: Steven Gijsman<br>IBAN: NL40BUNQ2025524439<br>OR<br>Bank Name: OCBC<br>Account Number: 160810204315<br>Account Name: Steven Roland Gijsman<br>Swift Code: NISPIDJAXXX<br>Branch Code: 7160<br>Bank Code: 028<br>Clearing Code: 0280024<br>Bank Address: Jl. Teuku Umar No. 2–4, Denpasar 80114, Bali – Indonesia<br>2. Drafting of the lease and construction contract. A notary will prepare the contract, detailing all terms, timelines, pricing, and responsibilities.<br>3. Review and sign the contracts digitally. After reviewing the contracts, signing will happen in a meeting with the notary.<br>4. Make the first payment &amp; start your villa journey. Once the contract is signed, complete the first payment as outlined in ‘Payment Terms’ and the villa is yours!<br>5. You will be added to a WhatsApp group for bi-weekly project updates, and our marketing team will coordinate the preparation for your villa’s Airbnb launch.</p>`
     +`<p><b>VALIDITY</b><br>This ITP will remain valid until ${geldig}.</p>`
     +`<p><b>BUYER</b><br>Name: ${naam}<br>Signature:<br>Date:</p>`
-    +`<p><b>ACCEPTED BY SELLER</b><br>${pt}<br>Name: Steven Gijsman<br>Title: Director<br>Signature:<br>Date:</p>`;
+    +`<p><b>ACCEPTED BY SELLER</b><br>${pt}<br>Name: Steven Gijsman<br>Title: Director<br>Signature: \u2713 Digitally signed<br>Date: ${vandaag}</p>`;
 }
 /* upgrade any legacy plain-text ITP to HTML (bold ALL-CAPS heading lines) */
 function itpToHtml(body){
   if(!body)return '';
   if(/<\w+[^>]*>/.test(body))return body;
   return body.split('\n').map(line=>{const t=line.trim();if(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44)return '<b>'+esc(t)+'</b>';return esc(line);}).join('<br>');
+}
+function itpMetHandtekening(r){
+  let b=itpToHtml(r.itp_body)||'';
+  if(b&&r.itp_signed_at){
+    const d=new Date(r.itp_signed_at).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});
+    const wie=r.itp_signer_name||r.name||'';
+    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:/i,(m,voor,br)=>voor+'Signature: \u2713 Digitally signed by '+esc(wie)+br+'Date: '+esc(d));
+  }
+  return b;
 }
 function htmlToPlain(h){return (h||'').replace(/<\/(p|div|h[1-6])>/gi,'\n\n').replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/\n{3,}/g,'\n\n').trim();}
 function isHeadingLine(t){t=(t||'').trim();return !!(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44);}
@@ -3839,10 +3848,18 @@ function downloadItpPdf(r){
   const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
   doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('UTAMA — Intentieverklaring tot aankoop',M,y);y+=26;
   doc.setFontSize(10.5);doc.setTextColor(30);
-  const body=htmlToPlain(itpToHtml(r.itp_body)||itpDraft(r));
+  const body=htmlToPlain(itpMetHandtekening(r)||itpDraft(r));
   const lines=['Opgesteld op '+new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'}),'',...body.split('\n')];
-  if(r.itp_signed_at)lines.push('','ONDERTEKENING','Digitaal ondertekend door: '+(r.itp_signer_name||''),'Datum: '+fmtDateTime(r.itp_signed_at),'Verificatie-hash: '+(r.itp_hash||''));
+  if(r.itp_signed_at)lines.push('','ONDERTEKENING','Koper: digitaal ondertekend door '+(r.itp_signer_name||'')+' \u2014 '+fmtDateTime(r.itp_signed_at),'Verkoper: digitaal ondertekend bij uitgifte van deze ITP','Verificatie-hash: '+(r.itp_hash||''));
   lines.forEach(t=>{doc.setFont('helvetica',isHeadingLine(t)?'bold':'normal');const w=doc.splitTextToSize(t,W);w.forEach(x=>{if(y>790){doc.addPage();y=64;}doc.text(x,M,y);y+=15;});});
+  if(r.itp_signed_at){
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight();
+    for(let i=1;i<=doc.getNumberOfPages();i++){
+      doc.setPage(i);doc.setFont('helvetica','bold');doc.setFontSize(78);doc.setTextColor(228,232,230);
+      doc.text('ONDERTEKEND',pw/2,ph/2,{angle:45,align:'center'});
+    }
+    doc.setTextColor(30);
+  }
   doc.save('ITP-'+((r.project||'')+'-'+(r.unit||'')).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')+'.pdf');
   toast('ITP-PDF gedownload','ok');
 }
