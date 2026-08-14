@@ -1056,6 +1056,9 @@ async function boot(){
   window.addEventListener('hashchange',handleDeepLink);
   const bell=$('#notifBell');if(bell)bell.onclick=openNotifications;
   refreshNotifBadge();
+  // Bel-teller ook live bijwerken terwijl het portaal openstaat (bijv. als een
+  // klant intussen een ITP tekent of een aanbetaling meldt).
+  setInterval(refreshNotifBadge,60000);
 }
 /* Shareable deep links: utamabali.com/admin#contact/<id> opens that contact for the team */
 function crmDeepLink(contactId){return location.origin+location.pathname+'#contact/'+contactId;}
