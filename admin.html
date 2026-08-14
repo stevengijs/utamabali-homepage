@@ -3541,7 +3541,7 @@ async function openPerson(p){
             ${manageResv&&(r.email||p.email)?`<button class="btn btn-ghost btn-sm" data-mail="${r.id}">E-mail</button>`:''}
             <button class="btn btn-ghost btn-sm" data-copy="${link}" data-copyid="${r.id}">Link</button>
             ${(!paid&&manageResv)?`<button class="btn btn-primary btn-sm" data-confirmpaid="${r.id}" data-amt="${r.deposit_amount||''}">Confirm paid</button>`:''}
-            ${isAdmin()?`<button class="btn btn-ghost btn-sm" data-delresv="${r.id}" title="Reservering definitief verwijderen" style="color:#b91c1c">🗑</button>`:''}
+            ${manageResv?`<button class="btn btn-ghost btn-sm" data-delresv="${r.id}" title="Reservering definitief verwijderen" style="color:#b91c1c">🗑</button>`:''}
           </div>
         </div></div>`;
     }).join(''):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
@@ -3847,7 +3847,7 @@ async function openReservation(id){
       <button class="btn btn-ghost btn-sm" data-copy="${link}">Link kopiëren</button>
       ${(!paid&&manage)?`<button class="btn btn-primary btn-sm" data-confirm2="${r.id}" data-amt="${r.deposit_amount||''}">Confirm paid</button>`:''}
       ${r.contact_id?`<button class="btn btn-ghost btn-sm" data-openc="${r.contact_id}">Open contact</button>`:''}
-      ${isAdmin()?`<button class="btn btn-ghost btn-sm" data-delresv2="${r.id}" title="Reservering definitief verwijderen" style="color:#b91c1c;margin-left:auto">🗑 Verwijderen</button>`:''}
+      ${manage?`<button class="btn btn-ghost btn-sm" data-delresv2="${r.id}" title="Reservering definitief verwijderen" style="color:#b91c1c;margin-left:auto">🗑 Verwijderen</button>`:''}
     </div>`;
   const mb=document.querySelector('#overlay .modal-body');if(!mb)return;
   mb.innerHTML=h;
