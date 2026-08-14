@@ -3727,7 +3727,7 @@ function itpDraft(r){
   const vandaag=new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'});
   const geldig=(r.hold_expires_at?new Date(r.hold_expires_at):new Date(Date.now()+30*864e5)).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   const proj=esc(r.project||''),unit=esc(r.unit||''),naam=esc(r.name||'');
-  const pt=esc(r.legal_entity||'PT UTAMA');
+  const pt=esc(r.legal_entity||'PT. BALI UTAMA PROPERTY');
   return `<p><b>INTENT TO PURCHASE (ITP)</b><br>Date: ${vandaag}</p>`
     +`<p><b>FROM</b><br>Name: ${naam}${r.email?'<br>Email: '+esc(r.email):''}${r.phone?'<br>Mobile: '+esc(r.phone):''}</p>`
     +`<p><b>TO</b><br>Steven Gijsman<br>${pt}</p>`
