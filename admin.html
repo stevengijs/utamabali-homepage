@@ -963,6 +963,41 @@ const $ = s => document.querySelector(s);
 const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
 function toast(msg,type){const t=el('div','toast '+(type||''),msg);$('#toasts').append(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),400);},3600);}
 function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+// Allowlist-sanitizer voor rijke HTML die van een gebruiker/lead komt (ITP-body,
+// sequence-mails). Deny-by-default: onbekende tags worden uitgepakt (inhoud
+// blijft als tekst), gevaarlijke tags (script/style/iframe/…) verdwijnen, alle
+// attributen worden gestript behalve een veilige href (alleen http/https/mailto).
+// Zo kan geen on*-handler, javascript:-URL of <img onerror> meer uitvoeren.
+function sanitizeHtml(dirty){
+  if(dirty==null)return '';
+  const allowed={A:1,B:1,STRONG:1,I:1,EM:1,U:1,P:1,BR:1,UL:1,OL:1,LI:1,SPAN:1,DIV:1,H1:1,H2:1,H3:1,H4:1,BLOCKQUOTE:1,HR:1};
+  const drop={SCRIPT:1,STYLE:1,IFRAME:1,OBJECT:1,EMBED:1,LINK:1,META:1,SVG:1,MATH:1,IMG:1,VIDEO:1,AUDIO:1,SOURCE:1,FORM:1,INPUT:1,BUTTON:1,TEXTAREA:1,BASE:1};
+  const doc=new DOMParser().parseFromString('<div id="__sz">'+String(dirty)+'</div>','text/html');
+  const root=doc.getElementById('__sz');
+  const walk=node=>{
+    [...node.childNodes].forEach(ch=>{
+      if(ch.nodeType===8){ch.remove();return;}          // comments weg
+      if(ch.nodeType!==1)return;                          // tekst behouden
+      const tag=ch.tagName;
+      if(drop[tag]){ch.remove();return;}                  // gevaarlijk: helemaal weg
+      if(!allowed[tag]){                                   // onbekend: uitpakken
+        walk(ch);
+        while(ch.firstChild)node.insertBefore(ch.firstChild,ch);
+        node.removeChild(ch);return;
+      }
+      [...ch.attributes].forEach(a=>{
+        if(tag==='A'&&a.name.toLowerCase()==='href'){
+          const v=(a.value||'').trim();
+          if(/^(https?:|mailto:)/i.test(v)){ch.setAttribute('href',v);ch.setAttribute('rel','noopener noreferrer');ch.setAttribute('target','_blank');}
+          else ch.removeAttribute('href');
+        } else ch.removeAttribute(a.name);                // on*, style, src, alles weg
+      });
+      walk(ch);
+    });
+  };
+  walk(root);
+  return root.innerHTML;
+}
 /* Kanaal-waarden komen (via t.js/analytics) uit URL-parameters die een bezoeker
    zelf kan bepalen. In een class-attribuut mag daarom alleen een bekende waarde;
    al het andere wordt 'other' (stored-XSS-preventie, security-review 2026-08-05). */
@@ -1021,7 +1056,7 @@ function cell(resKey,f,row){
   if(def.type==='datetime')return fmtDateTime(v);
   if(def.type==='date')return fmtDate(v);
   if(f.endsWith('_id'))return `<span class="muted" title="${esc(v)}">${shortId(v)}</span>`;
-  if(f==='url'||f.endsWith('_url'))return v?`<a href="${esc(v)}" target="_blank" rel="noopener">link ↗</a>`:'<span class="muted">—</span>';
+  if(f==='url'||f.endsWith('_url')){if(!v)return '<span class="muted">—</span>';const safe=/^https?:\/\//i.test(String(v).trim());return safe?`<a href="${esc(v)}" target="_blank" rel="noopener noreferrer">link ↗</a>`:esc(v);}
   if(v==null||v==='')return '<span class="muted">—</span>';
   return esc(v);
 }
@@ -3755,7 +3790,7 @@ function itpDraft(r){
 /* upgrade any legacy plain-text ITP to HTML (bold ALL-CAPS heading lines) */
 function itpToHtml(body){
   if(!body)return '';
-  if(/<\w+[^>]*>/.test(body))return body;
+  if(/<\w+[^>]*>/.test(body))return sanitizeHtml(body);
   return body.split('\n').map(line=>{const t=line.trim();if(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44)return '<b>'+esc(t)+'</b>';return esc(line);}).join('<br>');
 }
 function itpMetHandtekening(r){
@@ -3788,7 +3823,7 @@ function openItpEditor(r,person){
     <div id="itp_edit" contenteditable="true" class="rte">${html}</div></div>
     <div class="hint">Dit is wat de klant op de reserveringspagina ziet en digitaal tekent. Selecteer tekst en klik op een knop om op te maken.</div>`;
   showModal('ITP bewerken · '+esc(r.project||'')+' '+esc(r.unit||''),bodyH,async()=>{
-    const html=$('#itp_edit').innerHTML;
+    const html=sanitizeHtml($('#itp_edit').innerHTML);
     const {error}=await sb.from('reservations').update({itp_body:html}).eq('id',r.id);
     if(error){toast(error.message,'err');return false;}
     // Na opslaan door naar het reserveringsscherm met de verstuurknoppen
@@ -5027,11 +5062,14 @@ function seqPreview(subject,body,design){
   const vars={naam:'Steven',project:'The Maison'};
   const rb=String(body||'').replace(/\{naam\}/g,vars.naam).replace(/\{voornaam\}/g,vars.naam).replace(/\{project\}/g,vars.project);
   const rs=String(subject||'').replace(/\{naam\}/g,vars.naam).replace(/\{project\}/g,vars.project);
-  const inner=seqBodyInner(rb);
+  const inner=sanitizeHtml(seqBodyInner(rb));
   const html=design==='newsletter'?seqNewsletterHtml(rs,inner):seqPlainHtml(inner);
   const root=document.createElement('div');root.id='seqprev_root';
-  root.innerHTML=`<div class="chatpop-back open"></div><div class="chatpop open" style="width:min(680px,94vw);height:min(720px,88vh)"><div class="chatpop-head"><div class="chatpop-title">Preview · Onderwerp: ${esc(rs||'(leeg)')}</div><button id="seqprev_x" style="font-size:22px;background:none;border:none;cursor:pointer;color:var(--muted)">×</button></div><div style="flex:1;overflow:auto;background:#f4f6f5">${html}</div></div>`;
+  // Preview in een sandboxed iframe zonder allow-scripts: e-mail-HTML mag geen
+  // JS draaien, dus ook een ongesaneerd restje kan niets in de CRM-sessie doen.
+  root.innerHTML=`<div class="chatpop-back open"></div><div class="chatpop open" style="width:min(680px,94vw);height:min(720px,88vh)"><div class="chatpop-head"><div class="chatpop-title">Preview · Onderwerp: ${esc(rs||'(leeg)')}</div><button id="seqprev_x" style="font-size:22px;background:none;border:none;cursor:pointer;color:var(--muted)">×</button></div><iframe sandbox="" style="flex:1;width:100%;border:0;background:#f4f6f5"></iframe></div>`;
   document.body.appendChild(root);
+  {const ifr=root.querySelector('iframe');if(ifr)ifr.srcdoc=`<!doctype html><meta charset="utf-8"><body style="margin:0;font-family:Arial,sans-serif">${html}</body>`;}
   const close=()=>root.remove();
   root.querySelector('.chatpop-back').onclick=close;root.querySelector('#seqprev_x').onclick=close;
 }

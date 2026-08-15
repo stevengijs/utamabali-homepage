@@ -25,7 +25,12 @@
   try {
     vid = localStorage.getItem("_ua_vid");
     if (!vid) { vid = uuid(); localStorage.setItem("_ua_vid", vid); }
-  } catch (e) { vid = ""; }
+  } catch (e) { vid = uuid(); }
+  if (!vid) vid = uuid();
+
+  /* Expose the in-memory ids so the lead form can link a submission to this session
+     even when sessionStorage/localStorage is blocked (Safari private, Brave, iOS ITP). */
+  try { window._ua_sid = sid; window._ua_vid = vid; } catch (e) {}
 
   var UA = navigator.userAgent || "";
   function device() {
@@ -111,10 +116,16 @@
     var ref = document.referrer || "", refhost = "";
     try { if (ref) refhost = new URL(ref).hostname.replace(/^www\./, ""); } catch (e) {}
     var host = location.hostname.replace(/^www\./, "");
+    // Gevoelige query-parameters (bv. het ITP-reserveringstoken) nooit in de
+    // analytics-store of referrer laten belanden. utm_* worden hieronder al
+    // apart gelogd, dus het volledige search-deel voegt niets toe.
+    var safeQ = new URLSearchParams(location.search);
+    ["token", "secret", "email", "signer", "pdf", "sig", "hash", "key"].forEach(function (k) { safeQ.delete(k); });
+    var safeSearch = safeQ.toString();
     send({
       t: "pv", eid: eid, sid: sid, vid: vid, ns: ns,
       site: host,
-      path: location.pathname + location.search,
+      path: location.pathname + (safeSearch ? "?" + safeSearch : ""),
       title: (document.title || "").slice(0, 200),
       ref: ref, refhost: refhost,
       channel: channel(q.get("utm_medium"), q.get("utm_source"), refhost, host, q),

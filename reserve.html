@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
+  <meta name="referrer" content="no-referrer">
   <script src="/t.js" defer></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -79,7 +80,31 @@ const body=$("#body");
 let RES=null;
 function euro(n){n=Number(n)||0;return "€"+n.toLocaleString("nl-NL");}
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
-function itpToHtml(body){if(!body)return "";if(/<\w+[^>]*>/.test(body))return body;return body.split("\n").map(line=>{const t=line.trim();if(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44)return "<b>"+esc(t)+"</b>";return esc(line);}).join("<br>");}
+// Allowlist-sanitizer: de ITP-body is rijke HTML die door het team is opgesteld,
+// maar wordt hier aan de klant getoond. Deny-by-default zodat een eventuele
+// script/onerror-payload nooit in de browser van de klant uitvoert.
+function sanitizeHtml(dirty){
+  if(dirty==null)return "";
+  const allowed={A:1,B:1,STRONG:1,I:1,EM:1,U:1,P:1,BR:1,UL:1,OL:1,LI:1,SPAN:1,DIV:1,H1:1,H2:1,H3:1,H4:1,BLOCKQUOTE:1,HR:1};
+  const drop={SCRIPT:1,STYLE:1,IFRAME:1,OBJECT:1,EMBED:1,LINK:1,META:1,SVG:1,MATH:1,IMG:1,VIDEO:1,AUDIO:1,SOURCE:1,FORM:1,INPUT:1,BUTTON:1,TEXTAREA:1,BASE:1};
+  const doc=new DOMParser().parseFromString('<div id="__sz">'+String(dirty)+'</div>',"text/html");
+  const root=doc.getElementById("__sz");
+  const walk=node=>{[...node.childNodes].forEach(ch=>{
+    if(ch.nodeType===8){ch.remove();return;}
+    if(ch.nodeType!==1)return;
+    const tag=ch.tagName;
+    if(drop[tag]){ch.remove();return;}
+    if(!allowed[tag]){walk(ch);while(ch.firstChild)node.insertBefore(ch.firstChild,ch);node.removeChild(ch);return;}
+    [...ch.attributes].forEach(a=>{
+      if(tag==="A"&&a.name.toLowerCase()==="href"){const v=(a.value||"").trim();if(/^(https?:|mailto:)/i.test(v)){ch.setAttribute("href",v);ch.setAttribute("rel","noopener noreferrer");ch.setAttribute("target","_blank");}else ch.removeAttribute("href");}
+      else ch.removeAttribute(a.name);
+    });
+    walk(ch);
+  });};
+  walk(root);
+  return root.innerHTML;
+}
+function itpToHtml(body){if(!body)return "";if(/<\w+[^>]*>/.test(body))return sanitizeHtml(body);return body.split("\n").map(line=>{const t=line.trim();if(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44)return "<b>"+esc(t)+"</b>";return esc(line);}).join("<br>");}
 function htmlToPlain(h){return (h||"").replace(/<\/(p|div|h[1-6])>/gi,"\n\n").replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/\n{3,}/g,"\n\n").trim();}
 function isHeadingLine(t){t=(t||"").trim();return !!(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44);}
 async function api(action,extra){
