@@ -1718,7 +1718,7 @@ function partnerBadge(partner){
 }
 function warmthBadge(score,opts){
   const t=warmthTier(score);if(!t)return '';const big=opts&&opts.big;
-  return `<span class="warmth-badge" title="Koopbereidheid ${score}/100 — ${t.label}. Op basis van websitegedrag (tijd, pagina's, ROI-calculator), budget, koop-timeline, geldig WhatsApp-nummer en fase." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
+  return `<span class="warmth-badge" title="Koopbereidheid ${score}/100 · ${t.label}. Op basis van bereikbaarheid, echte reacties, websitegedrag (tijd, pagina's, ROI-calculator, brochure), budget, koop-timeline en mijlpalen. Fake of onbereikbare gegevens tellen als koud." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
 }
 /* ================= INBOX (unified IG / WA / email) ================= */
 let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{},sendCh:'',channels:[],unreadOnly:false,showAuto:false};
@@ -3749,7 +3749,7 @@ async function inboxRenderContactChat(contactId){
   cur.innerHTML=`<div class="pdc-thread">
     <div class="pdc-head">${kanalen}
       <span class="muted" style="font-size:12px">${inboxRel(nieuwste.last_message_at)}</span>
-      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="openInboxThread('${nieuwste.id}')">Open in Inbox →</button></div>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="openInboxThread('c:${contactId}')">Open in Inbox →</button></div>
     <div class="pdc-msgs" style="max-height:340px">${bubbles}</div>
   </div>`;
   const ms=cur.querySelector('.pdc-msgs');if(ms)ms.scrollTop=ms.scrollHeight;
@@ -3764,9 +3764,10 @@ async function leadMailViaInbox(contactId,email){
     const {data}=await sb.from('inbox_conversations').select('id,channel').eq('contact_id',contactId);
     const convs=data||[];
     if(convs.length){
-      const em=convs.find(c=>c.channel==='email')||convs[0];
+      // Open de kanaaloverstijgende tijdlijn van dit contact (groepssleutel), niet
+      // één los gesprek, zodat WhatsApp/IG/e-mail samen te zien zijn.
       INBOX.pendingSendCh='email';
-      openInboxThread(em.id);
+      openInboxThread('c:'+contactId);
       return;
     }
   }catch(e){}
