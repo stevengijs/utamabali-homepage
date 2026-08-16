@@ -3572,7 +3572,7 @@ async function openPerson(p){
       return `<div style="border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
           <div style="font-size:13px"><b>${esc(r.project||'—')} · ${esc(r.unit||'—')}</b> <span class="muted">${money(r.deposit_amount)} deposit</span><br>
-            ITP: ${r.itp_signed_at?'<span class="badge green">getekend '+fmtDate(r.itp_signed_at)+'</span>':(r.sent_at?'<span class="badge blue">verstuurd '+fmtDate(r.sent_at)+(r.sent_via?' via '+esc(r.sent_via):'')+'</span>':'<span class="badge amber">concept · niet verstuurd</span>')} · Betaling: ${payBadge(r)}</div>
+            ITP: ${r.itp_signed_at?'<span class="badge green">✓ ondertekend '+fmtDate(r.itp_signed_at)+(r.itp_signer_name?' door '+esc(r.itp_signer_name):'')+'</span>':(r.sent_at?'<span class="badge blue">verstuurd '+fmtDate(r.sent_at)+(r.sent_via?' via '+esc(r.sent_via):'')+'</span> <span class="badge amber">nog niet ondertekend</span>':'<span class="badge amber">concept · niet verstuurd</span>')} · Betaling: ${payBadge(r)}</div>
           <div class="row-actions" style="flex-wrap:wrap;justify-content:flex-end">
             <button class="btn btn-primary btn-sm" data-viewr="${r.id}">ITP openen</button>
             ${manageResv&&(r.phone||p.phone)?`<button class="btn btn-ghost btn-sm" style="color:#0f6b4f" data-wa="${r.id}">WhatsApp</button>`:''}
