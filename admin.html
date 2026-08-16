@@ -1481,8 +1481,27 @@ async function renderAnalytics(){
       else if(p.indexOf('/'+slug+'/brochure')===0)broch.add(e.visitor_hash);
     });
     let conv=0;landing.forEach(h=>{if(broch.has(h))conv++;});
-    return {name,slug,landing:landing.size,brochure:broch.size,converted:conv,rate:landing.size?conv/landing.size:null};
-  }).filter(Boolean).sort((a,b)=>b.landing-a.landing);
+    return {name,slug,landingPath:'/'+slug,brochurePath:'/'+slug+'/brochure',landing:landing.size,brochure:broch.size,converted:conv,rate:landing.size?conv/landing.size:null};
+  }).filter(Boolean);
+  // Losse landingspagina's (/lp/...) die we testen ook meenemen. Elke LP met
+  // verkeer wordt gekoppeld aan de brochure van het bijbehorende project (de
+  // brochureknop op de LP wijst naar /<project>/brochure). Auto-detectie, dus
+  // een nieuwe LP verschijnt vanzelf zodra er verkeer op komt.
+  const _norm=path=>(path||'').toLowerCase().split('?')[0].split('#')[0].replace(/\/+$/,'')||'/';
+  const _projSlugs=projs.map(p=>(p.slug||'').toLowerCase()).filter(Boolean);
+  const _lpLand={};
+  ev.forEach(e=>{if(!e.visitor_hash)return;const p=_norm(e.path);if(p.indexOf('/lp/')===0)(_lpLand[p]=_lpLand[p]||new Set()).add(e.visitor_hash);});
+  Object.keys(_lpLand).forEach(lp=>{
+    const seg=lp.replace(/^\/lp\//,'');
+    let proj='';_projSlugs.forEach(s=>{if(seg.indexOf(s)===0&&s.length>proj.length)proj=s;});
+    const brochPath=proj?'/'+proj+'/brochure':null;
+    const land=_lpLand[lp],broch=new Set();
+    if(brochPath)ev.forEach(e=>{if(!e.visitor_hash)return;const p=_norm(e.path);if(p.indexOf(brochPath)===0&&land.has(e.visitor_hash))broch.add(e.visitor_hash);});
+    let conv=0;land.forEach(h=>{if(broch.has(h))conv++;});
+    const pr=projs.find(p=>(p.slug||'').toLowerCase()===proj);
+    CONV_DATA.push({name:(pr?pr.name:'Landingspagina')+' · LP '+seg,slug:lp,landingPath:lp,brochurePath:brochPath||'(geen brochure gekoppeld)',landing:land.size,brochure:broch.size,converted:conv,rate:land.size?conv/land.size:null});
+  });
+  CONV_DATA.sort((a,b)=>b.landing-a.landing);
 
   // ---- render ----
   const kpis=[
@@ -1659,13 +1678,13 @@ function drawConvPanel(){
     return `<div style="display:flex;align-items:center;gap:10px;min-width:150px"><div style="flex:1;background:#eef0ef;border-radius:6px;height:10px;overflow:hidden"><div style="height:100%;width:${Math.min(100,p)}%;background:${col};border-radius:6px"></div></div><b style="white-space:nowrap;color:${col}">${r.rate==null?'—':p+'%'}</b></div>`;};
   let h=`<div class="table-wrap"><table><thead><tr><th>Landingspagina</th><th>Bezoekers</th><th>Naar brochure</th><th>Conversie</th></tr></thead><tbody>`;
   rows.forEach(r=>{
-    h+=`<tr><td><b>${esc(r.name)}</b><div class="muted" style="font-size:12px">/${esc(r.slug)} → /${esc(r.slug)}/brochure</div></td>`
+    h+=`<tr><td><b>${esc(r.name)}</b><div class="muted" style="font-size:12px">${esc(r.landingPath||('/'+r.slug))} → ${esc(r.brochurePath||('/'+r.slug+'/brochure'))}</div></td>`
      +`<td style="font-weight:650">${anInt(r.landing)}</td>`
      +`<td style="font-weight:650">${anInt(r.converted)}</td>`
      +`<td>${pctBar(r)}</td></tr>`;
   });
   h+='</tbody></table></div>';
-  h+=`<div class="rev-row"><span class="muted" style="font-size:12px">"Naar brochure" = unieke bezoekers die de projectpagina bekeken én op de brochurepagina kwamen (dus de brochure aanvroegen).</span></div>`;
+  h+=`<div class="rev-row"><span class="muted" style="font-size:12px">"Naar brochure" = unieke bezoekers die de landings- of projectpagina bekeken én op de brochurepagina kwamen (dus de brochure aanvroegen). Losse landingspagina's (/lp/...) staan hier ook bij.</span></div>`;
   box.innerHTML=h;
 }
 /* Resolve Meta campaign/ad IDs -> names (shared cache), for the Bron columns */
