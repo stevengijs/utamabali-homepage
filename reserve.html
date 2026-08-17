@@ -142,7 +142,7 @@ function itpText(r){
   const today=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
   if(r.itp_body&&r.itp_body.trim()){
     const banner=r.itp_signed_at?`<div class="ok-badge" style="display:block;margin:0 0 12px">\u2713 Signed by both parties: ${esc(r.itp_signer_name||r.name||"")} on ${new Date(r.itp_signed_at).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})} \u00b7 UTAMA digitally upon issuance</div>`:"";
-    const prepared=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+    const prepared=new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
     return `<h2>Intent to Purchase (ITP)</h2><p class="muted">Prepared on ${prepared}</p>${banner}<div>${itpFilled(r)}</div>`;
   }
   return `
@@ -239,13 +239,13 @@ function makePdf(r,signer){
     doc.setFont("helvetica","normal");doc.setFontSize(10.5);doc.setTextColor(30);
     const rr=Object.assign({},r,{itp_signed_at:r.itp_signed_at||new Date().toISOString(),itp_signer_name:signer});
     const lines=(r.itp_body&&r.itp_body.trim())?[
-      "Prepared on "+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
+      "Prepared on "+new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
       ...htmlToPlain(itpFilled(rr)).split("\n"),"",
       "SIGNATURES",
       "Buyer: digitally signed by "+signer+" on "+new Date().toLocaleString("en-GB"),
       "Seller: digitally signed upon issuance of this ITP"
     ]:[
-      "Prepared on "+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
+      "Prepared on "+new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
       "PARTIJEN","Verkoper: PT Bali Utama Property","Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
       "OBJECT","Project: "+(r.project||"—"),"Unit: "+(r.unit||"—"),(r.unit_price?"Indicatieve koopsom: €"+Number(r.unit_price).toLocaleString("nl-NL"):""),"",
       "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL")+" aan PT Bali Utama Property.",
