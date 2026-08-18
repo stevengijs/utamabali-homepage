@@ -337,6 +337,8 @@
   .ibx-autoem .ibx-autoem-h{width:100%;background:none;border:0;font:inherit;text-align:left;list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 12px;min-height:32px;font-size:12px;color:#64748b}
   .ibx-autoem>summary::-webkit-details-marker{display:none}
   .ibx-autoem-tag{font-size:10px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:#475569;background:#e2e8f0;border-radius:999px;padding:2px 8px;white-space:nowrap}
+  .ibx-autoem-tag.pay{color:#15803d;background:#dcfce7}
+  .ibx-autoem.pay{border-color:#bbf7d0;background:#f0fdf4}
   .ibx-autoem-sub{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#334155;font-weight:600}
   .ibx-autoem-t{color:#94a3b8;font-size:10.5px;white-space:nowrap}
   .ibx-autoem-x{color:#0f6b4f;font-size:11px;font-weight:700;white-space:nowrap}
@@ -2172,18 +2174,24 @@ function inboxRenderMsgs(msgs){
     // zodat de lange mailtekst het overzicht in de chat niet verstoort.
     if(out&&who==='ai'&&mch==='email'){
       const raw=String(m.body||'');
-      const mm=raw.match(/^\s*✉️?\s*(.*?)(?:\n{2,}([\s\S]*))?$/);
+      // Portaal-bevestigingen (bijv. betaalbevestiging) starten met 💶 en krijgen een
+      // eigen groene badge, zodat ze los staan van de marketing-sequencemails.
+      const isPay=/^\s*💶/.test(raw);
+      const mm=raw.match(/^\s*(?:✉️|💶)?\s*(.*?)(?:\n{2,}([\s\S]*))?$/);
       const subject=(mm&&mm[1]?mm[1]:'').trim();
       const bodyText=(mm&&mm[2]?mm[2]:(subject?'':raw)).trim();
+      const tagCls=isPay?'ibx-autoem-tag pay':'ibx-autoem-tag';
+      const tagLbl=isPay?'💶 Betaalbevestiging':'🤖 Automatische e-mail';
+      const blkCls=isPay?'ibx-autoem pay':'ibx-autoem';
       // Sommige oude logregels bevatten alleen het onderwerp en geen tekst. Die
       // niet als uitklapbaar tonen, anders klik je open op een lege ruimte.
       if(!bodyText){
-        return `${sep}<div class="ibx-autoem leeg"><div class="ibx-autoem-h"><span class="ibx-autoem-tag">🤖 Automatische e-mail</span><span class="ibx-autoem-sub">${esc(subject||'(zonder onderwerp)')}</span><span class="ibx-autoem-t">${esc(inboxClock(m.created_at))}</span><span class="ibx-autoem-t">geen tekst bewaard</span></div></div>`;
+        return `${sep}<div class="${blkCls} leeg"><div class="ibx-autoem-h"><span class="${tagCls}">${tagLbl}</span><span class="ibx-autoem-sub">${esc(subject||'(zonder onderwerp)')}</span><span class="ibx-autoem-t">${esc(inboxClock(m.created_at))}</span><span class="ibx-autoem-t">geen tekst bewaard</span></div></div>`;
       }
       // Expliciete knop-toggle i.p.v. native <details>: dat element bleek in de
       // praktijk soms als lege stippellijn te renderen (summary onzichtbaar).
-      return `${sep}<div class="ibx-autoem" data-autoem>
-        <button type="button" class="ibx-autoem-h" data-autoem-t><span class="ibx-autoem-tag">🤖 Automatische e-mail</span><span class="ibx-autoem-sub">${esc(subject||'(zonder onderwerp)')}</span><span class="ibx-autoem-t">${esc(inboxClock(m.created_at))}</span><span class="ibx-autoem-x"></span></button>
+      return `${sep}<div class="${blkCls}" data-autoem>
+        <button type="button" class="ibx-autoem-h" data-autoem-t><span class="${tagCls}">${tagLbl}</span><span class="ibx-autoem-sub">${esc(subject||'(zonder onderwerp)')}</span><span class="ibx-autoem-t">${esc(inboxClock(m.created_at))}</span><span class="ibx-autoem-x"></span></button>
         <div class="ibx-autoem-b" hidden>${esc(bodyText).replace(/\n/g,'<br>')}</div>
       </div>`;
     }
