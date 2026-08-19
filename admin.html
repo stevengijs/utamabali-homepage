@@ -2530,7 +2530,11 @@ async function pmCompress(file){
     const scale=Math.min(1,maxDim/Math.max(w,h));
     const cw=Math.max(1,Math.round(w*scale)),ch=Math.max(1,Math.round(h*scale));
     const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
-    cv.getContext('2d').drawImage(bmp,0,0,cw,ch);
+    const cx=cv.getContext('2d');
+    // JPEG kent geen transparantie: zonder witte ondergrond worden transparante
+    // vlakken zwart (speelde bij plattegronden/PNG's met vrijstaande achtergrond).
+    cx.fillStyle='#ffffff'; cx.fillRect(0,0,cw,ch);
+    cx.drawImage(bmp,0,0,cw,ch);
     const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.82));
     if(bmp.close)bmp.close();
     if(blob&&blob.size<file.size)return {blob,width:cw,height:ch};
