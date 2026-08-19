@@ -1631,7 +1631,7 @@ async function renderRecentVisitors(){
   const canMark=canEdit('analytics')||(ME&&ME.is_admin);
   const dev=d=>({desktop:'🖥️',mobile:'📱',tablet:'📲'}[d]||'💻');
   const cleanCity=c=>c?c.replace(/^(Gemeente|Municipality of|Municipality|Provincie|Province of|Regency of|Kota|Kabupaten)\s+/i,'').trim():c;
-  const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-dune':'The Dune'}[s]||null);
+  const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-reload':'The Reload'}[s]||null);
   const pageName=path=>{let p=(path||'/').split('?')[0].split('#')[0];if(p==='/'||p==='')return 'Homepage';const seg=p.replace(/^\/+|\/+$/g,'').split('/');let name=projName(seg[0])||({referral:'Referral',portal:'Investeerdersportaal',dataroom:'Dataroom',webinar:'Webinar',webinar3:'Webinar'}[seg[0]]||seg[0].replace(/-/g,' '));if(/\/brochure(\/|$)/.test(p))name+=' — Brochure';else if(/\/dataroom(\/|$)/.test(p))name+=' — Dataroom';return name;};
   const srcOf=e=>{const c=(e.channel||'direct').toLowerCase();let detail='';
     if(e.utm_campaign)detail=metaName(e.utm_campaign);else if(e.utm_source)detail=e.utm_source;else if(e.referrer_host)detail=e.referrer_host;
@@ -2323,7 +2323,7 @@ async function renderLiveVisitors(){
   const knownMap={};(kvd||[]).forEach(k=>{knownMap[k.visitor_id]=k.label;});
   const dev=d=>({desktop:'🖥️',mobile:'📱',tablet:'📲'}[d]||'💻');
   const ago=ms=>{const s=Math.max(0,Math.round(ms/1000));if(s<15)return 'net nu';if(s<60)return s+' sec geleden';const m=Math.round(s/60);return m+' min geleden';};
-  const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-dune':'The Dune'}[s]||null);
+  const projName=s=>({'the-maison':'The Maison','moka':'MOKA','the-reload':'The Reload'}[s]||null);
   const pageName=path=>{
     let p=(path||'/').split('?')[0].split('#')[0];
     if(p==='/'||p==='')return 'Homepage';
@@ -3797,7 +3797,7 @@ let PERSON_RESV={};
 /* Bankgegevens per verkopende PT (juridische entiteit). Dit is de ENIGE plek waar
    de ITP rekeningnummers toont: uitsluitend PT-rekeningen, geen privérekeningen.
    Houd in sync met de betaalpagina reserve.html (exact dezelfde nummers) en met
-   projects.legal_entity. The Maison + The Dune = PT. BANGUNAN BETON INDONESIA;
+   projects.legal_entity. The Maison + The Reload = PT. BANGUNAN BETON INDONESIA;
    MOKA = PT. BALI UTAMA PROPERTY. Onbekende entiteit -> geen nummer, maar een
    nette "volgt per e-mail"-regel (nooit per ongeluk naar de verkeerde PT). */
 const PT_BANK={

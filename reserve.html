@@ -82,9 +82,9 @@ function euro(n){n=Number(n)||0;return "€"+n.toLocaleString("nl-NL");}
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 // Bankgegevens per verkopende PT. Houd EXACT in sync met admin.html (PT_BANK in de
 // ITP-generator) en met projects.legal_entity. Uitsluitend PT-rekeningen, nooit
-// privé. The Maison + The Dune = PT. BANGUNAN BETON INDONESIA; MOKA = PT. BALI
+// privé. The Maison + The Reload = PT. BANGUNAN BETON INDONESIA; MOKA = PT. BALI
 // UTAMA PROPERTY. Onbekend project -> geen nummer (nooit naar de verkeerde PT).
-const PROJECT_PT={"the maison":"PT. BANGUNAN BETON INDONESIA","the dune":"PT. BANGUNAN BETON INDONESIA","moka":"PT. BALI UTAMA PROPERTY"};
+const PROJECT_PT={"the maison":"PT. BANGUNAN BETON INDONESIA","the reload":"PT. BANGUNAN BETON INDONESIA","moka":"PT. BALI UTAMA PROPERTY"};
 const PT_BANK={
   "PT. BANGUNAN BETON INDONESIA":{bank:"OCBC NISP",name:"PT. BANGUNAN BETON INDONESIA",acct:"160800023303",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"},
   "PT. BALI UTAMA PROPERTY":{bank:"OCBC NISP",name:"PT Bali Utama Property",acct:"160800023394",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"}
