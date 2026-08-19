@@ -2559,6 +2559,7 @@ function projMediaRender(){
         <span class="pm-ord">${i+1}</span>
         <button class="pm-mv" data-mv="1" title="Naar achter" ${i===items.length-1?'disabled':''}>▶</button>
         <button class="pm-hero ${isHero?'on':''}" title="${isHero?'Dit is de omslagfoto (hero rechtsboven op de projectpagina)':'Maak dit de omslagfoto'}">${isHero?'★':'☆'}</button>
+        <button class="pm-kind" title="Wissel: render/foto of plattegrond">${m.kind==='floorplan'?'📐 Plattegrond':'🖼 Render'}</button>
         <span style="flex:1"></span>
         <button class="pm-del" title="Verwijderen">🗑</button>
       </div>
@@ -2569,7 +2570,7 @@ function projMediaRender(){
     `${canManage?`<div class="pm-bar">
         <button class="btn btn-sm" id="pm_upl_btn">⬆ Renders / foto's uploaden</button>
         <input type="file" id="pm_upl_in" accept="image/*" multiple style="display:none">
-        <span class="muted" style="font-size:11.5px">Grote renders worden automatisch verkleind. Sleep om te ordenen · ★ = omslagfoto (de grote hero-foto op de projectpagina).</span>
+        <span class="muted" style="font-size:11.5px">Grote renders worden automatisch verkleind. Sleep om te ordenen · ★ = omslagfoto (de grote hero-foto op de projectpagina) · 🖼/📐 = markeer als render (galerij) of plattegrond (aparte Plattegronden-sectie in brochure + PDF).</span>
       </div>`:''}
      <div id="pm_prog" class="muted" style="font-size:12px;margin:4px 0"></div>
      <div class="pm-grid">${tiles||'<div class="muted" style="font-size:13px;padding:6px 0">Nog geen renders. Upload de eerste hierboven.</div>'}</div>`);
@@ -2582,6 +2583,7 @@ function projMediaRender(){
       t.querySelectorAll('.pm-mv').forEach(b=>b.onclick=()=>projMediaMove(id,Number(b.dataset.mv)));
       const del=t.querySelector('.pm-del');if(del)del.onclick=()=>projMediaDelete(id);
       const hero=t.querySelector('.pm-hero');if(hero)hero.onclick=()=>projMediaSetHero(id);
+      const kindb=t.querySelector('.pm-kind');if(kindb)kindb.onclick=()=>projMediaSetKind(id);
       const cap=t.querySelector('.pm-cap');if(cap)cap.addEventListener('blur',()=>projMediaCaption(id,cap.value));
       // Slepen om te ordenen (naast de ◀ ▶ knoppen).
       const iw=t.querySelector('.pm-imgwrap');
@@ -2612,6 +2614,15 @@ async function projMediaUpload(projectId,files){
   if(prog)prog.textContent='';
   if(done)toast(`${done} render${done===1?'':'s'} toegevoegd${fail?` · ${fail} mislukt`:''}`,fail?'err':'ok');
   projMediaReload(projectId);
+}
+async function projMediaSetKind(id){
+  // Wissel tussen 'render' (foto/render, gaat in de galerij) en 'floorplan'
+  // (plattegrond, komt in de aparte Plattegronden-sectie in brochure + PDF).
+  const it=(PMEDIA.items||[]).find(x=>x.id===id); if(!it) return;
+  const next=(it.kind==='floorplan')?'render':'floorplan';
+  const {error}=await sb.from('project_media').update({kind:next}).eq('id',id);
+  if(error){toast('Kon type niet wijzigen: '+error.message,'err'); return;}
+  projMediaReload(PMEDIA.projectId);
 }
 async function projMediaMove(id,dir){
   const items=(PMEDIA.items||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
