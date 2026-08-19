@@ -3783,6 +3783,21 @@ async function leadMailViaInbox(contactId,email){
   else toast('Geen e-mailadres bekend','err');
 }
 let PERSON_RESV={};
+/* Bankgegevens per verkopende PT (juridische entiteit). Dit is de ENIGE plek waar
+   de ITP rekeningnummers toont: uitsluitend PT-rekeningen, geen privérekeningen.
+   Houd in sync met de betaalpagina reserve.html (exact dezelfde nummers) en met
+   projects.legal_entity. The Maison + The Dune = PT. BANGUNAN BETON INDONESIA;
+   MOKA = PT. BALI UTAMA PROPERTY. Onbekende entiteit -> geen nummer, maar een
+   nette "volgt per e-mail"-regel (nooit per ongeluk naar de verkeerde PT). */
+const PT_BANK={
+  'PT. BANGUNAN BETON INDONESIA':{bank:'OCBC NISP',name:'PT. BANGUNAN BETON INDONESIA',acct:'160800023303',swift:'NISPIDJAXXX',branch:'7160',code:'028',clearing:'0280024',address:'Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia'},
+  'PT. BALI UTAMA PROPERTY':{bank:'OCBC NISP',name:'PT Bali Utama Property',acct:'160800023394',swift:'NISPIDJAXXX',branch:'7160',code:'028',clearing:'0280024',address:'Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia'}
+};
+function ptBankHtml(entity){
+  const b=PT_BANK[entity];
+  if(!b)return `<p><i>The bank details for ${esc(entity||'the selling entity')} will be provided separately by email.</i></p>`;
+  return `<p><b>Bank Name:</b> ${b.bank}<br><b>Account Name:</b> ${b.name}<br><b>Account Number:</b> ${b.acct}<br><b>Swift Code:</b> ${b.swift}<br><b>Branch Code:</b> ${b.branch}<br><b>Bank Code:</b> ${b.code}<br><b>Clearing Code:</b> ${b.clearing}<br><b>Bank Address:</b> ${b.address}</p>`;
+}
 function itpDraft(r){
   // Volledige Engelstalige ITP naar het vaste UTAMA-model. Alles is daarna
   // vrij te bewerken in de editor; dit is alleen de gegenereerde beginversie.
@@ -3793,7 +3808,8 @@ function itpDraft(r){
   const vandaag=new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'});
   const geldig=(r.hold_expires_at?new Date(r.hold_expires_at):new Date(Date.now()+30*864e5)).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   const proj=esc(r.project||''),unit=esc(r.unit||''),naam=esc(r.name||'');
-  const pt=esc(r.legal_entity||'PT. BALI UTAMA PROPERTY');
+  const ptRaw=r.legal_entity||'PT. BALI UTAMA PROPERTY';
+  const pt=esc(ptRaw);
   return `<p><b>INTENT TO PURCHASE (ITP)</b><br>Date: ${vandaag}</p>`
     +`<p><b>FROM</b><br>Name: ${naam}${r.email?'<br>Email: '+esc(r.email):''}${r.phone?'<br>Mobile: '+esc(r.phone):''}</p>`
     +`<p><b>TO</b><br>Steven Gijsman<br>${pt}</p>`
@@ -3807,9 +3823,7 @@ function itpDraft(r){
     +`<p><b>SELLER REPRESENTATIONS</b><br>The Seller represents and warrants that:<br>– the land status and leasehold title are valid and undisputed;<br>– the lessor is fully authorized to grant and extend the leasehold;<br>– the land is correctly zoned for the intended development; and<br>– all applicable permits and approvals required for construction and delivery are in place or will be lawfully obtained.</p>`
     +`<p><b>CONDITIONS</b><br>– This document constitutes a non-binding Intent to Purchase.<br>– The definitive leasehold and construction agreements shall be prepared by the appointed notary.<br>– In the event negotiations are terminated due to fault or breach by the Seller, any amounts paid by Buyer shall be refunded in full.<br>– Upon receipt of the Deposit, the Seller undertakes not to offer or sell the reserved property to any third party until the definitive agreements are signed or negotiations are formally terminated in writing.</p>`
     +`<p><b>NEXT STEPS</b><br>1. Sign this ITP and transfer the ${dep} deposit. This reserves the unit for you.<br>Please transfer to:</p>`
-    +`<p><b>Bank:</b> BUNQ B.V.<br><b>Naam:</b> Steven Gijsman<br><b>IBAN:</b> NL40BUNQ2025524439</p>`
-    +`<p><b>OR</b></p>`
-    +`<p><b>Bank Name:</b> OCBC<br><b>Account Number:</b> 160810204315<br><b>Account Name:</b> Steven Roland Gijsman<br><b>Swift Code:</b> NISPIDJAXXX<br><b>Branch Code:</b> 7160<br><b>Bank Code:</b> 028<br><b>Clearing Code:</b> 0280024<br><b>Bank Address:</b> Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia</p>`
+    +ptBankHtml(ptRaw)
     +`<p>2. Drafting of the lease and construction contract. A notary will prepare the contract, detailing all terms, timelines, pricing, and responsibilities.<br>3. Review and sign the contracts digitally. After reviewing the contracts, signing will happen in a meeting with the notary.<br>4. Make the first payment &amp; start your villa journey. Once the contract is signed, complete the first payment as outlined in \u2018Payment Terms\u2019 and the villa is yours!<br>5. You will be added to a WhatsApp group for bi-weekly project updates, and our marketing team will coordinate the preparation for your villa\u2019s Airbnb launch.</p>`
     +`<p><b>VALIDITY</b><br>This ITP will remain valid until ${geldig}.</p>`
     +`<p><b>BUYER</b><br>Name: ${naam}<br>Signature:<br>Date:</p>`

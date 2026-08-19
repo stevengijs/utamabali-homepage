@@ -68,7 +68,7 @@
     <div class="card-h"><h1 id="title">Reserveer je unit</h1><div class="sub" id="subtitle">Bevestig en beveilig je unit met een aanbetaling.</div></div>
     <div class="card-b" id="body"><div class="center muted" style="padding:30px">Laden…</div></div>
   </div>
-  <div class="note">Beveiligd · UTAMA Bali · PT Bali Utama Property</div>
+  <div class="note">Beveiligd · UTAMA Bali</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -80,6 +80,17 @@ const body=$("#body");
 let RES=null;
 function euro(n){n=Number(n)||0;return "€"+n.toLocaleString("nl-NL");}
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+// Bankgegevens per verkopende PT. Houd EXACT in sync met admin.html (PT_BANK in de
+// ITP-generator) en met projects.legal_entity. Uitsluitend PT-rekeningen, nooit
+// privé. The Maison + The Dune = PT. BANGUNAN BETON INDONESIA; MOKA = PT. BALI
+// UTAMA PROPERTY. Onbekend project -> geen nummer (nooit naar de verkeerde PT).
+const PROJECT_PT={"the maison":"PT. BANGUNAN BETON INDONESIA","the dune":"PT. BANGUNAN BETON INDONESIA","moka":"PT. BALI UTAMA PROPERTY"};
+const PT_BANK={
+  "PT. BANGUNAN BETON INDONESIA":{bank:"OCBC NISP",name:"PT. BANGUNAN BETON INDONESIA",acct:"160800023303",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"},
+  "PT. BALI UTAMA PROPERTY":{bank:"OCBC NISP",name:"PT Bali Utama Property",acct:"160800023394",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"}
+};
+function ptFor(r){return PT_BANK[PROJECT_PT[((r&&r.project)||"").trim().toLowerCase()]]||null;}
+function sellerName(r){const b=ptFor(r);return b?b.name:"UTAMA";}
 // Allowlist-sanitizer: de ITP-body is rijke HTML die door het team is opgesteld,
 // maar wordt hier aan de klant getoond. Deny-by-default zodat een eventuele
 // script/onerror-payload nooit in de browser van de klant uitvoert.
@@ -149,11 +160,11 @@ function itpText(r){
     <h2>Intentieverklaring tot aankoop (ITP)</h2>
     <p class="muted">Opgesteld op ${today}</p>
     <h3>Partijen</h3>
-    <p><b>Verkoper:</b> PT Bali Utama Property<br><b>Koper:</b> ${esc(r.name||"—")}${r.email?` (${esc(r.email)})`:""}</p>
+    <p><b>Verkoper:</b> ${esc(sellerName(r))}<br><b>Koper:</b> ${esc(r.name||"—")}${r.email?` (${esc(r.email)})`:""}</p>
     <h3>Object</h3>
     <p><b>Project:</b> ${esc(r.project||"—")}<br><b>Unit:</b> ${esc(r.unit||"—")}${r.unit_price?`<br><b>Indicatieve koopsom:</b> ${euro(r.unit_price)}`:""}</p>
     <h3>Reserveringsdeposit</h3>
-    <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> aan PT Bali Utama Property om de bovengenoemde unit te reserveren. Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement ("credited against the first payment due under the Development and Construction Agreement").</p>
+    <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> aan ${esc(sellerName(r))} om de bovengenoemde unit te reserveren. Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement ("credited against the first payment due under the Development and Construction Agreement").</p>
     <h3>Vervolg</h3>
     <p>Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.</p>
     <h3>Voorwaarden deposit</h3>
@@ -173,25 +184,20 @@ function summary(r){
 }
 function bankBlock(r){
   const ref=refText(r);
-  return `<h3 style="margin:6px 0 4px;font-size:15px">Aanbetaling — ${euro(r.deposit_amount)}</h3>
-    <p class="muted" style="font-size:13px;margin:0 0 12px">Maak de aanbetaling over aan <b>PT Bali Utama Property</b> met onderstaand betalingskenmerk. Kies één van de twee rekeningen.</p>
+  const b=ptFor(r);
+  const rows=b?`<div class="bank2"><div class="bt">Bankoverschrijving · Indonesië</div>
+        <div class="row"><span>Bank</span><b>${esc(b.bank)}</b></div>
+        <div class="row"><span>Naam</span><b>${esc(b.name)}</b></div>
+        <div class="row"><span>Rekeningnr.</span><b>${esc(b.acct)}</b><button class="cp" data-copy="${esc(b.acct)}">Kopieer</button></div>
+        <div class="row"><span>SWIFT</span><b>${esc(b.swift)}</b></div>
+        <div class="row"><span>Branch</span><b>${esc(b.branch)}</b></div>
+        <div class="row"><span>Bank code</span><b>${esc(b.code)}</b></div>
+        <div class="row"><span>Adres</span><b>${esc(b.address)}</b></div>
+      </div>`:`<div class="bank2"><div class="row"><span>Bank</span><b>De bankgegevens worden apart per e-mail verstrekt.</b></div></div>`;
+  return `<h3 style="margin:6px 0 4px;font-size:15px">Aanbetaling van ${euro(r.deposit_amount)}</h3>
+    <p class="muted" style="font-size:13px;margin:0 0 12px">Maak de aanbetaling over aan <b>${esc(sellerName(r))}</b> met onderstaand betalingskenmerk.</p>
     <div class="bank"><div class="k">Betalingskenmerk (vermeld dit bij je overschrijving)</div><div class="v" id="ref">${esc(ref)}</div><div style="margin-top:8px"><button class="cp" data-copy="${esc(ref)}">Kopieer kenmerk</button></div></div>
-    <div class="banks">
-      <div class="bank2"><div class="bt">Optie 1 · Europa (EUR)</div>
-        <div class="row"><span>Bank</span><b>BUNQ B.V.</b></div>
-        <div class="row"><span>Naam</span><b>Steven Gijsman</b></div>
-        <div class="row"><span>IBAN</span><b>NL40BUNQ2025524439</b><button class="cp" data-copy="NL40BUNQ2025524439">Kopieer</button></div>
-      </div>
-      <div class="bank2"><div class="bt">Optie 2 · Indonesië</div>
-        <div class="row"><span>Bank</span><b>OCBC NISP</b></div>
-        <div class="row"><span>Naam</span><b>PT Bali Utama Property</b></div>
-        <div class="row"><span>Rekeningnr.</span><b>160800023394</b><button class="cp" data-copy="160800023394">Kopieer</button></div>
-        <div class="row"><span>SWIFT</span><b>NISPIDJAXXX</b></div>
-        <div class="row"><span>Branch</span><b>7160</b></div>
-        <div class="row"><span>Bank code</span><b>028</b></div>
-        <div class="row"><span>Adres</span><b>Jl. Teuku Umar No 2-4, Denpasar 80114, Bali — Indonesia</b></div>
-      </div>
-    </div>`;
+    <div class="banks">${rows}</div>`;
 }
 function render(){
   const r=RES;
