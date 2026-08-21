@@ -66,6 +66,35 @@
 
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:8px}
   .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  /* Bericht flows, prestatiepaneel */
+  .fs-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .fs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:16px 18px}
+  .fs-kpi{border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:#fff}
+  .fs-kpi .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .fs-kpi .v{font-size:24px;font-weight:800;margin-top:3px;line-height:1.1}
+  .fs-kpi .s{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .fs-sec{padding:4px 18px 16px}
+  .fs-sec h4{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:12px 0 10px}
+  .fs-ch{display:flex;align-items:center;gap:10px;padding:7px 0;cursor:pointer;user-select:none}
+  .fs-ch.off{opacity:.38}
+  .fs-ch .nm{width:96px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px}
+  .fs-ch .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .fs-ch .track{flex:1;height:9px;border-radius:999px;background:#eef0ee;overflow:hidden;display:flex}
+  .fs-ch .fill{height:100%}
+  .fs-ch .num{width:118px;text-align:right;font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .fs-ch .num b{color:var(--ink,#12211c)}
+  .fs-chart{position:relative;height:132px;display:flex;align-items:flex-end;gap:2px;padding-top:6px}
+  .fs-bar{flex:1;min-width:3px;display:flex;flex-direction:column;justify-content:flex-end;gap:1px;cursor:default}
+  .fs-bar .s{background:#cfe0d8;border-radius:2px 2px 0 0}
+  .fs-bar .r{background:#0f6b4f;border-radius:2px 2px 0 0}
+  .fs-bar:hover .s{background:#b6d2c6}
+  .fs-tip{position:absolute;background:#12211c;color:#fff;font-size:11.5px;padding:6px 9px;border-radius:7px;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .1s;z-index:5}
+  .fs-tip.on{opacity:1}
+  .fs-steps{width:100%;border-collapse:collapse;font-size:13px}
+  .fs-steps th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
+  .fs-steps td{padding:7px 8px;border-bottom:1px solid var(--line)}
+  .fs-steps td.n{text-align:right;font-weight:700;white-space:nowrap}
+  .fs-drop{font-size:11.5px;color:#b5462b;margin-left:6px}
   .stat .k{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
   .stat .v{font-size:28px;font-weight:750;margin-top:6px}
   .stat .s{font-size:12px;color:var(--muted);margin-top:2px}
@@ -4949,6 +4978,119 @@ function otplBind(){
     toast('Lead-mail opgeslagen','ok');
   });
 }
+
+/* ---- Bericht flows: prestaties (interactief) ----------------------------
+   Bron: flow_stats(dagen). Verzonden/reacties komen uit het inbox-grootboek,
+   de sequence-tabel geeft de opbouw per stap. Opens en clicks worden nergens
+   vastgelegd, die tonen we daarom bewust niet (zie de voetnoot in het paneel). */
+const FS = { days:30, data:null, off:{} };
+const FS_COL = { email:'#0f6b4f', whatsapp:'#25D366', instagram:'#C13584' };
+const FS_LBL = { email:'E-mail', whatsapp:'WhatsApp', instagram:'Instagram' };
+function fsPanel(){
+  return `<div class="panel" style="padding:0;margin-bottom:14px">
+    <div class="fs-head">
+      <div><b>Prestaties</b><div class="muted" style="font-size:12px">Wat er uitging en wat het opleverde. Klik op een kanaal om het in of uit de grafiek te zetten.</div></div>
+      <div class="seg" id="fs_seg">
+        <button data-d="7">7 dagen</button><button data-d="30" class="on">30 dagen</button><button data-d="90">90 dagen</button>
+      </div>
+    </div>
+    <div id="fs_body"><div class="muted" style="padding:18px">Laden…</div></div>
+  </div>`;
+}
+function fsNum(n){ return (n||0).toLocaleString('nl-NL'); }
+function fsRender(){
+  const d=FS.data, host=document.getElementById('fs_body'); if(!host) return;
+  if(!d){ host.innerHTML='<div class="empty" style="padding:20px">Kon de cijfers niet laden.</div>'; return; }
+  const chans=(d.channels||[]).filter(c=>FS_LBL[c.channel]||true);
+  const active=chans.filter(c=>!FS.off[c.channel]);
+  const actSet=new Set(active.map(c=>c.channel));
+  const sent=active.reduce((a,c)=>a+ +c.sent,0), rep=active.reduce((a,c)=>a+ +c.replies,0);
+  const rate= sent? Math.round(rep*1000/sent)/10 : 0;
+  const maxSent=Math.max(1,...chans.map(c=>+c.sent));
+
+  // tijdlijn optellen over de geselecteerde kanalen
+  const byDay={};
+  (d.timeline||[]).forEach(t=>{ if(!actSet.has(t.channel)) return;
+    const k=t.d; byDay[k]=byDay[k]||{s:0,r:0}; byDay[k].s+= +t.sent; byDay[k].r+= +t.replies; });
+  const days=Object.keys(byDay).sort();
+  const maxDay=Math.max(1,...days.map(k=>byDay[k].s+byDay[k].r));
+  const bars=days.map(k=>{
+    const v=byDay[k], hs=Math.round(v.s/maxDay*104), hr=Math.round(v.r/maxDay*104);
+    const dd=new Date(k+'T00:00:00').toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+    return `<div class="fs-bar" data-tip="${esc(dd)} · ${v.s} verzonden, ${v.r} reacties">
+      <div class="r" style="height:${hr}px"></div><div class="s" style="height:${hs}px"></div></div>`;
+  }).join('');
+
+  const chRows=chans.map(c=>{
+    const off=FS.off[c.channel]?' off':'';
+    const w=Math.round(+c.sent/maxSent*100);
+    const rw=(+c.sent)? Math.round(+c.replies/ +c.sent*100):0;
+    const col=FS_COL[c.channel]||'#0f6b4f';
+    return `<div class="fs-ch${off}" data-ch="${esc(c.channel)}">
+      <div class="nm"><span class="dot" style="background:${col}"></span>${esc(FS_LBL[c.channel]||c.channel)}</div>
+      <div class="track"><span class="fill" style="width:${w}%;background:${col}22"></span></div>
+      <div class="num"><b>${fsNum(c.sent)}</b> uit · <b>${fsNum(c.replies)}</b> terug (${c.reply_rate}%)</div>
+    </div>`;
+  }).join('') || '<div class="muted" style="font-size:13px">Nog geen berichten in deze periode.</div>';
+
+  // sequence-stappen met uitval t.o.v. stap 1
+  const bySeq={};
+  (d.steps||[]).forEach(st=>{ (bySeq[st.seq]=bySeq[st.seq]||[]).push(st); });
+  const stepTables=Object.keys(bySeq).map(name=>{
+    const rows=bySeq[name]; const first=Math.max(1, +rows[0].sent||0);
+    return `<h4>${esc(name)}</h4><table class="fs-steps"><thead><tr><th>Stap</th><th>Onderwerp</th><th style="text-align:right">Verzonden</th></tr></thead><tbody>`+
+      rows.map(r=>{
+        const pct=Math.round(+r.sent/first*100);
+        const drop=(+r.sent < first)? `<span class="fs-drop">${pct}%</span>`:'';
+        return `<tr><td>${r.step}</td><td>${esc(r.subject||'')}</td><td class="n">${fsNum(r.sent)}${drop}</td></tr>`;
+      }).join('')+`</tbody></table>`;
+  }).join('') || '';
+
+  const fail=+(d.totals&&d.totals.failed||0), pend=+(d.totals&&d.totals.pending||0);
+  host.innerHTML=`
+    <div class="fs-kpis">
+      <div class="fs-kpi"><div class="k">Verzonden</div><div class="v">${fsNum(sent)}</div><div class="s">berichten de deur uit</div></div>
+      <div class="fs-kpi"><div class="k">Reacties</div><div class="v">${fsNum(rep)}</div><div class="s">leads die terugschreven</div></div>
+      <div class="fs-kpi"><div class="k">Reactiepercentage</div><div class="v">${rate}%</div><div class="s">van alles wat uitging</div></div>
+      <div class="fs-kpi"><div class="k">Mislukt / wachtrij</div><div class="v">${fsNum(fail)}${pend?` <span style="font-size:14px;color:#8a8f8b">/ ${fsNum(pend)}</span>`:''}</div><div class="s">${fail?'niet afgeleverd':'alles afgeleverd'}</div></div>
+    </div>
+    <div class="fs-sec">
+      <h4>Per kanaal</h4>${chRows}
+      <h4>Per dag</h4>
+      <div class="fs-chart" id="fs_chart">${bars||'<div class="muted" style="font-size:13px">Geen data.</div>'}<div class="fs-tip" id="fs_tip"></div></div>
+      ${stepTables}
+      <div class="an-note" style="margin-top:14px">Opens en clicks worden nu niet bijgehouden: daarvoor is een koppeling met Resend-webhooks nodig. Wel meetbaar: wat er uitging en wie er terugschreef.</div>
+    </div>`;
+
+  host.querySelectorAll('.fs-ch').forEach(r=>r.onclick=()=>{
+    const c=r.dataset.ch; FS.off[c]=!FS.off[c]; fsRender();
+  });
+  const chart=document.getElementById('fs_chart'), tip=document.getElementById('fs_tip');
+  if(chart&&tip){
+    chart.querySelectorAll('.fs-bar').forEach(b=>{
+      b.onmouseenter=()=>{ tip.textContent=b.dataset.tip; tip.classList.add('on');
+        const cr=chart.getBoundingClientRect(), br=b.getBoundingClientRect();
+        tip.style.left=Math.min(Math.max(0,br.left-cr.left-60),cr.width-150)+'px'; tip.style.top='0px'; };
+      b.onmouseleave=()=>tip.classList.remove('on');
+    });
+  }
+}
+async function fsLoad(days){
+  FS.days=days||FS.days;
+  const host=document.getElementById('fs_body');
+  if(host) host.innerHTML='<div class="muted" style="padding:18px">Laden…</div>';
+  try{ const {data,error}=await sb.rpc('flow_stats',{p_days:FS.days}); FS.data=error?null:data; }
+  catch(e){ FS.data=null; }
+  fsRender();
+}
+function fsBind(){
+  const seg=document.getElementById('fs_seg'); if(!seg) return;
+  seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); fsLoad(+b.dataset.d);
+  });
+  fsLoad(FS.days);
+}
 function seqTriggerLabel(t){return t==='new_lead'?'Auto: nieuwe lead':'Handmatig';}
 function seqListView(){
   const v=$('#view');const edit=canEdit('sequences');
@@ -4959,13 +5101,14 @@ function seqListView(){
       </div>
       <span class="muted" style="font-size:12px">Bewerken →</span>
     </div>`).join('');
-  v.innerHTML=`<div class="panel" style="padding:0">
+  v.innerHTML=fsPanel()+`<div class="panel" style="padding:0">
     <div class="seq-top"><div><b>E-mailreeksen</b><div class="muted" style="font-size:12px">Warm leads op met een reeks e-mails. Automatisch verzonden via info@utamabali.com; stopt zodra een lead reageert of zich afmeldt.</div></div>${edit?`<button class="btn" id="seq_new">＋ Nieuwe sequence</button>`:''}</div>
     <div class="seq-list">${rows||'<div class="empty" style="padding:24px">Nog geen sequences. Maak er een om leads automatisch op te warmen.</div>'}</div>
   </div>${otplPanel()}`;
   const nw=$('#seq_new');if(nw)nw.onclick=()=>seqOpen(null);
   v.querySelectorAll('.seq-row').forEach(r=>r.onclick=()=>seqOpen(r.dataset.id));
   otplBind();
+  fsBind();
 }
 async function seqOpen(id){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Laden…</div>';
