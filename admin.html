@@ -5007,6 +5007,7 @@ function fsNum(n){ return (n||0).toLocaleString('nl-NL'); }
 function fsRender(){
   const d=FS.data, host=document.getElementById('fs_body'); if(!host) return;
   if(!d){ host.innerHTML='<div class="empty" style="padding:20px">Kon de cijfers niet laden.</div>'; return; }
+  const em=d.email||{tracked:0,opened:0,clicked:0,bounced:0,has_data:false};
   const chans=(d.channels||[]).filter(c=>FS_LBL[c.channel]||true);
   const active=chans.filter(c=>!FS.off[c.channel]);
   const actSet=new Set(active.map(c=>c.channel));
@@ -5044,11 +5045,13 @@ function fsRender(){
   (d.steps||[]).forEach(st=>{ (bySeq[st.seq]=bySeq[st.seq]||[]).push(st); });
   const stepTables=Object.keys(bySeq).map(name=>{
     const rows=bySeq[name]; const first=Math.max(1, +rows[0].sent||0);
-    return `<h4>${esc(name)}</h4><table class="fs-steps"><thead><tr><th>Stap</th><th>Onderwerp</th><th style="text-align:right">Verzonden</th></tr></thead><tbody>`+
+    const kol=em.has_data?'<th style="text-align:right">Geopend</th><th style="text-align:right">Geklikt</th>':'';
+    return `<h4>${esc(name)}</h4><table class="fs-steps"><thead><tr><th>Stap</th><th>Onderwerp</th><th style="text-align:right">Verzonden</th>${kol}</tr></thead><tbody>`+
       rows.map(r=>{
         const pct=Math.round(+r.sent/first*100);
         const drop=(+r.sent < first)? `<span class="fs-drop">${pct}%</span>`:'';
-        return `<tr><td>${r.step}</td><td>${esc(r.subject||'')}</td><td class="n">${fsNum(r.sent)}${drop}</td></tr>`;
+        const extra=em.has_data?`<td class="n">${fsNum(r.opened)}</td><td class="n">${fsNum(r.clicked)}</td>`:'';
+        return `<tr><td>${r.step}</td><td>${esc(r.subject||'')}</td><td class="n">${fsNum(r.sent)}${drop}</td>${extra}</tr>`;
       }).join('')+`</tbody></table>`;
   }).join('') || '';
 
@@ -5059,13 +5062,18 @@ function fsRender(){
       <div class="fs-kpi"><div class="k">Reacties</div><div class="v">${fsNum(rep)}</div><div class="s">leads die terugschreven</div></div>
       <div class="fs-kpi"><div class="k">Reactiepercentage</div><div class="v">${rate}%</div><div class="s">van alles wat uitging</div></div>
       <div class="fs-kpi"><div class="k">Mislukt / wachtrij</div><div class="v">${fsNum(fail)}${pend?` <span style="font-size:14px;color:#8a8f8b">/ ${fsNum(pend)}</span>`:''}</div><div class="s">${fail?'niet afgeleverd':'alles afgeleverd'}</div></div>
+      ${em.has_data?`
+      <div class="fs-kpi"><div class="k">Geopend</div><div class="v">${fsNum(em.opened)}${em.tracked?` <span style="font-size:14px;color:#8a8f8b">${Math.round(em.opened*100/em.tracked)}%</span>`:''}</div><div class="s">van ${fsNum(em.tracked)} gevolgde mails</div></div>
+      <div class="fs-kpi"><div class="k">Geklikt</div><div class="v">${fsNum(em.clicked)}${em.tracked?` <span style="font-size:14px;color:#8a8f8b">${Math.round(em.clicked*100/em.tracked)}%</span>`:''}</div><div class="s">${fsNum(em.bounced)} bounced</div></div>`:''}
     </div>
     <div class="fs-sec">
       <h4>Per kanaal</h4>${chRows}
       <h4>Per dag</h4>
       <div class="fs-chart" id="fs_chart">${bars||'<div class="muted" style="font-size:13px">Geen data.</div>'}<div class="fs-tip" id="fs_tip"></div></div>
       ${stepTables}
-      <div class="an-note" style="margin-top:14px">Opens en clicks worden nu niet bijgehouden: daarvoor is een koppeling met Resend-webhooks nodig. Wel meetbaar: wat er uitging en wie er terugschreef.</div>
+      <div class="an-note" style="margin-top:14px">${em.has_data
+        ? 'Opens en clicks komen binnen via Resend. Een open telt een keer per mail, ook als iemand hem vaker opent. Let op: sommige mailprogramma\'s blokkeren de open-pixel, het echte aantal ligt dus iets hoger.'
+        : 'Opens en clicks worden nog niet ontvangen. Zet in Resend een webhook naar /functions/v1/resend-webhook en sla het signing secret op als resend_webhook_secret. Zodra er events binnenkomen verschijnen ze hier vanzelf.'}</div>
     </div>`;
 
   host.querySelectorAll('.fs-ch').forEach(r=>r.onclick=()=>{
