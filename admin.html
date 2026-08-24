@@ -3871,10 +3871,20 @@ function itpDraft(r){
   const fmt=v=>(cur==='EUR'?'€':cur+' ')+Number(v).toLocaleString('nl-NL');
   const dep=fmt(r.deposit_amount||10000);
   const price=r.unit_price?fmt(r.unit_price):'(to be confirmed)';
-  const vandaag=new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const geldig=(r.hold_expires_at?new Date(r.hold_expires_at):new Date(Date.now()+30*864e5)).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  // Datums staan in een Engelstalig juridisch stuk, dus voluit geschreven:
+  // "24 August 2026". Het oude 24-08-2026 is voor een deel van de lezers
+  // dubbelzinnig, en juist in dit document mag over een datum geen twijfel zijn.
+  const datum=d=>d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const vandaag=datum(new Date());
+  // Dezelfde datum draagt twee rollen: tot wanneer de ITP geldig is, en tot
+  // wanneer de verkoper de unit exclusief vasthoudt (de uitzondering onder
+  // CONDITIONS). Eén bron, zodat ze nooit uit elkaar kunnen lopen.
+  const geldig=datum(r.hold_expires_at?new Date(r.hold_expires_at):new Date(Date.now()+30*864e5));
   const proj=esc(r.project||''),unit=esc(r.unit||''),naam=esc(r.name||'');
-  const ptRaw=r.legal_entity||'PT. BALI UTAMA PROPERTY';
+  // De entiteit komt uit projects.legal_entity en verschilt per project. Nooit
+  // terugvallen op een echte PT-naam: dan staat er stilzwijgend de verkeerde
+  // vennootschap onder een contract. Liever zichtbaar leeg, dan valt het op.
+  const ptRaw=r.legal_entity||'(legal entity not set)';
   const pt=esc(ptRaw);
   return `<p><b>INTENT TO PURCHASE (ITP)</b><br>Date: ${vandaag}</p>`
     +`<p><b>FROM</b><br>Name: ${naam}${r.email?'<br>Email: '+esc(r.email):''}${r.phone?'<br>Mobile: '+esc(r.phone):''}</p>`
@@ -3887,7 +3897,7 @@ function itpDraft(r){
     +`<p><b>PAYMENT TERMS</b><br>The total Purchase Price shall be paid in instalments as follows:<br>– ${dep} deposit upon signing of this ITP;<br>– 60% payable upon signing of the notarial leasehold and construction agreements, minus the deposit;<br>– 20% payable after milestone 3 (as detailed in the notarised contracts);<br>– 10% payable after milestone 4 (as detailed in the notarised contracts);<br>– 10% payable upon final completion of the villa and key handover.<br>Notary costs amount to 1% of the transaction value and are payable by the Buyer, in addition to the Purchase Price.</p>`
     +`<p><b>FORMALISATION</b><br>The payment schedule, construction milestones, deliverables and timelines referred to in this Intent to Purchase are indicative only and shall be further detailed, formalised and become legally binding solely in the definitive leasehold agreement and construction contract.</p>`
     +`<p><b>SELLER REPRESENTATIONS</b><br>The Seller represents and warrants that:<br>– the land status and leasehold title are valid and undisputed;<br>– the lessor is fully authorized to grant and extend the leasehold;<br>– the land is correctly zoned for the intended development; and<br>– all applicable permits and approvals required for construction and delivery are in place or will be lawfully obtained.</p>`
-    +`<p><b>CONDITIONS</b><br>– This document constitutes a non-binding Intent to Purchase.<br>– The definitive leasehold and construction agreements shall be prepared by the appointed notary.<br>– In the event negotiations are terminated due to fault or breach by the Seller, any amounts paid by Buyer shall be refunded in full.<br>– Upon receipt of the Deposit, the Seller undertakes not to offer or sell the reserved property to any third party until the definitive agreements are signed or negotiations are formally terminated in writing.</p>`
+    +`<p><b>CONDITIONS</b><br>1. This Letter of Intent serves as a preliminary agreement. The formal purchase agreement will be drafted by the notary based on the details of the reservation contract.<br>2. If negotiations are terminated due to the fault or breach of ${pt}, the full reservation fee will be refunded to the Buyer.<br>3. The Buyer must sign the purchase agreement and complete the transaction within 14 days of signing this Letter of Intent, unless otherwise agreed in writing.<br>Exception: Regardless of the 14-day period, the Seller agrees to hold the unit exclusively for the Buyer until ${geldig}. If the Buyer has not completed the transaction by this date, the Seller may release the unit back to the market without refund of the reservation fee.</p>`
     +`<p><b>NEXT STEPS</b><br>1. Sign this ITP and transfer the ${dep} deposit. This reserves the unit for you.<br>Please transfer to:</p>`
     +ptBankHtml(ptRaw)
     +`<p>2. Drafting of the lease and construction contract. A notary will prepare the contract, detailing all terms, timelines, pricing, and responsibilities.<br>3. Review and sign the contracts digitally. After reviewing the contracts, signing will happen in a meeting with the notary.<br>4. Make the first payment &amp; start your villa journey. Once the contract is signed, complete the first payment as outlined in \u2018Payment Terms\u2019 and the villa is yours!<br>5. You will be added to a WhatsApp group for bi-weekly project updates, and our marketing team will coordinate the preparation for your villa\u2019s Airbnb launch.</p>`
