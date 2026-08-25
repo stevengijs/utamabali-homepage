@@ -12,36 +12,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* Donker thema.
-     Let op de rolsplitsing. --ink was hiervoor twee dingen tegelijk: de
-     tekstkleur én de vulling van de donkere banen en knoppen. Op een crème
-     pagina kan dat, want daar is "sterk" en "donker" hetzelfde. Op een zwarte
-     pagina niet: dan zou een knop zwart op zwart worden, of de donkere baan
-     ineens wit. Daarom:
-       --ink     de sterke kleur (tekst en knopvulling), hier dus licht
-       --on-ink  wat leesbaar is óp die sterke kleur
-       --band    de contrasterende volle baan (aanpak, usp, slot-cta)
-       --chip    het kleine label op een projectkaart
-     De crème waarden staan er in commentaar bij, zodat terugdraaien één
-     handeling is. */
-  --sand:#0A0A0B;    /* was #FAF5EA, paginavlak */
-  --sand-2:#121214;  /* was #F1E9DB */
-  --paper:#16161A;   /* was #FEFBF6, kaarten en verhoogde vlakken */
-  --ink:#F6F2E9;     /* was #17140F */
-  --ink-soft:#E4DED1;/* was #332A1F */
-  --ink-2:#FFFDF8;   /* was #211C14 */
-  --muted:#A29B90;   /* was #5B564C */
-  --line:#26262B;    /* was #E7DECD */
-  --on-ink:#0A0A0B;  /* was #fff */
-  --band:#141417;    /* was gelijk aan --ink */
-  --band-fg:#F6F2E9; /* was #fff */
-  --chip:#F6F2E9; --chip-fg:#0A0A0B;
-  --nav-bg:rgba(10,10,11,.92); /* was rgba(250,245,234,.92) */
-  --accent:var(--accent);
-  --terra:#C9825A; --ok:#4CAF86; --opt:#B6BE96;
-  /* Een slagschaduw is op zwart onzichtbaar, dus het reliëf komt nu van een
-     lichte haarlijn, met de schaduw eronder voor diepte. */
-  --shadow:rgba(255,255,255,.07) 0 0 0 1px, rgba(0,0,0,.55) 0 4px 14px 0;
+  --sand:#FAF5EA; --sand-2:#F1E9DB; --paper:#FEFBF6;
+  --ink:#17140F; --ink-soft:#332A1F; --ink-2:#211C14; --muted:#5B564C; --line:#E7DECD;
+  --terra:#8B5A3C; --ok:#2E7D5B; --opt:#9CA47C;
+  --shadow:rgba(0,0,0,.02) 0 0 0 1px, rgba(0,0,0,.04) 0 2px 6px 0, rgba(0,0,0,.1) 0 4px 8px 0;
   --radius:14px; --radius-btn:8px; --radius-sheet:20px; --radius-pill:9999px;
 }
 *{box-sizing:border-box}
@@ -56,7 +30,7 @@ img{display:block;max-width:100%}
 /* ---- mockup chrome (not part of the deliverable page) ---- */
 
 /* ---- nav ---- */
-nav{position:sticky;top:0;z-index:50;background:var(--nav-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav{position:sticky;top:0;z-index:50;background:rgba(250,245,234,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 nav .row{display:flex;align-items:center;justify-content:space-between;height:64px}
 .brand{font-weight:800;font-size:20px;letter-spacing:.32em;text-transform:uppercase;text-decoration:none;color:var(--ink)}
 nav .links{display:flex;gap:26px;font-size:14px;font-weight:500}
@@ -66,8 +40,8 @@ nav .links a:hover{color:var(--ink)}
 .nav-right{display:flex;align-items:center;gap:14px}
 .lang{display:flex;gap:3px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-pill);padding:3px}
 .lang button{border:none;background:transparent;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted);padding:5px 11px;min-height:40px;min-width:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);cursor:pointer}
-.lang button.on{background:var(--ink);color:var(--on-ink)}
-.btn{border:none;background:var(--ink);color:var(--on-ink);font-family:inherit;font-weight:600;font-size:14.5px;padding:12px 22px;border-radius:var(--radius-btn);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:opacity .15s}
+.lang button.on{background:var(--ink);color:#fff}
+.btn{border:none;background:var(--ink);color:#fff;font-family:inherit;font-weight:600;font-size:14.5px;padding:12px 22px;border-radius:var(--radius-btn);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:opacity .15s}
 .btn:hover{opacity:.85}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .btn.lg{padding:15px 28px;font-size:15.5px}
@@ -83,7 +57,7 @@ nav .links a:hover{color:var(--ink)}
 .hero p{font-size:18px;color:rgba(255,255,255,.82);margin:0 0 28px;max-width:46ch}
 .btns{display:flex;gap:12px;flex-wrap:wrap}
 .btn.ghost-light{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
-.btn.ghost-light:hover{background:#fff;color:var(--on-ink)}
+.btn.ghost-light:hover{background:#fff;color:var(--ink)}
 
 /* ---- process (hoe het werkt) ---- */
 .process-sec{border-bottom:1px solid var(--line);background:var(--paper);padding:56px 0 60px}
@@ -105,7 +79,7 @@ nav .links a:hover{color:var(--ink)}
 section.pane{padding:72px 0}
 .sec-head{max-width:640px;margin-bottom:36px}
 .sec-head h2{font-size:clamp(26px,3.4vw,36px);margin-bottom:14px}
-.sec-head p{font-size:16.5px;color:var(--muted);margin:0}
+.sec-head p{font-size:16.5px;color:#4c463b;margin:0}
 
 /* ---- portfolio ---- */
 .pgrid{display:grid;grid-template-columns:1fr;gap:20px}
@@ -116,7 +90,7 @@ section.pane{padding:72px 0}
 .pcard .badge{position:absolute;top:14px;left:14px;z-index:1;background:rgba(254,251,246,.95);color:var(--ink);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:6px 12px;border-radius:var(--radius-pill)}
 .pcard.soldout .img::after{background:rgba(23,20,15,.5)}
 .pcard.notlink{cursor:default}
-.pcard .stamp{position:absolute;top:14px;right:14px;z-index:1;background:var(--chip);color:var(--chip-fg);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:6px 13px;border-radius:var(--radius-pill);transform:rotate(-5deg);box-shadow:var(--shadow)}
+.pcard .stamp{position:absolute;top:14px;right:14px;z-index:1;background:#fff;color:var(--ink);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:6px 13px;border-radius:var(--radius-pill);transform:rotate(-5deg);box-shadow:var(--shadow)}
 .pcard .loc{position:absolute;left:18px;bottom:52px;z-index:1;color:#fff;font-size:12px;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
 .pcard .name{position:absolute;left:18px;bottom:18px;z-index:1;color:#fff;font-size:24px;font-weight:800;letter-spacing:-.02em}
 .pcard .body{padding:18px 20px 22px}
@@ -124,32 +98,32 @@ section.pane{padding:72px 0}
 .pcard .arrow{display:inline-flex;align-items:center;gap:5px;margin-top:12px;font-size:13.5px;font-weight:700;color:var(--ink)}
 
 /* ---- aanpak (dark) ---- */
-.aanpak{background:var(--band);color:var(--band-fg)}
-.aanpak .sec-head h2,.aanpak .sec-head p{color:var(--band-fg)}
+.aanpak{background:var(--ink);color:#fff}
+.aanpak .sec-head h2,.aanpak .sec-head p{color:#fff}
 .aanpak .sec-head p{color:rgba(255,255,255,.68)}
-.aanpak .sec-head .eyebrow{color:var(--accent)}
+.aanpak .sec-head .eyebrow{color:#E0875C}
 .afeat-grid{display:grid;grid-template-columns:1fr;gap:0}
 @media(min-width:760px){.afeat-grid{grid-template-columns:1fr 1fr;gap:0 40px}}
 .afeat{display:flex;gap:22px;padding:24px 0;border-top:1px solid rgba(255,255,255,.14)}
-.afeat .nn{font-weight:800;font-size:22px;color:var(--accent);flex:none;width:42px}
+.afeat .nn{font-weight:800;font-size:22px;color:#E0875C;flex:none;width:42px}
 .afeat h4{margin:0 0 6px;font-size:16.5px;font-weight:700}
 .afeat p{margin:0;font-size:14px;line-height:1.6;color:rgba(255,255,255,.62)}
 
 /* ---- USP / zekerheid (dark, interactieve lijst + wisselende foto) ---- */
-.usp-sec{background:var(--band);color:var(--band-fg);margin-top:56px}
-.usp-sec .sec-head h2,.usp-sec .sec-head p{color:var(--band-fg)}
+.usp-sec{background:var(--ink);color:#fff;margin-top:56px}
+.usp-sec .sec-head h2,.usp-sec .sec-head p{color:#fff}
 .usp-sec .sec-head p{color:rgba(255,255,255,.68)}
-.usp-sec .sec-head .eyebrow{color:var(--accent)}
+.usp-sec .sec-head .eyebrow{color:#E0875C}
 .usp-grid{display:grid;grid-template-columns:1fr;gap:32px}
 @media(min-width:900px){.usp-grid{grid-template-columns:1fr .95fr;gap:56px;align-items:center}}
 .usp-list{display:flex;flex-direction:column}
 .usp-item{display:flex;align-items:flex-start;gap:16px;padding:22px 0;border-top:1px solid rgba(255,255,255,.14);cursor:pointer}
 .usp-item:last-child{border-bottom:1px solid rgba(255,255,255,.14)}
 .usp-item .dot{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);margin-top:6px;position:relative}
-.usp-item.active .dot{border-color:var(--band-fg)}
-.usp-item.active .dot::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--band-fg)}
+.usp-item.active .dot{border-color:#fff}
+.usp-item.active .dot::after{content:"";position:absolute;inset:5px;border-radius:50%;background:#fff}
 .usp-item h4{margin:0 0 8px;font-size:22px;font-weight:800;color:rgba(255,255,255,.35);transition:color .15s}
-.usp-item.active h4{color:var(--band-fg)}
+.usp-item.active h4{color:#fff}
 .usp-item p{margin:0;font-size:13.5px;color:rgba(255,255,255,.4);transition:color .15s}
 .usp-item.active p{color:rgba(255,255,255,.7)}
 .usp-photo-wrap{display:none}
@@ -164,11 +138,11 @@ section.pane{padding:72px 0}
 @media(min-width:860px){.founder{grid-template-columns:.85fr 1.15fr;gap:52px}}
 .founder-photo{border-radius:var(--radius-sheet);overflow:hidden;box-shadow:var(--shadow)}
 .founder-photo img{width:100%;height:100%;object-fit:cover;aspect-ratio:4/5}
-.founder-body p{font-size:15.5px;color:var(--muted);line-height:1.7;max-width:60ch;margin:0 0 16px}
+.founder-body p{font-size:15.5px;color:#3f3a30;line-height:1.7;max-width:60ch;margin:0 0 16px}
 .founder-body h2{font-size:28px;margin:8px 0 18px}
 
 /* ---- slot CTA ---- */
-.cta-sec{background:var(--band)}
+.cta-sec{background:var(--ink)}
 .cta-final{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sheet);padding:52px 40px;text-align:center;max-width:720px;margin:0 auto}
 .cta-final h2{font-size:clamp(24px,3vw,32px);margin-bottom:12px}
 .cta-final p{font-size:16px;color:var(--muted);margin:0 0 26px}
