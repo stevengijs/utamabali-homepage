@@ -2529,6 +2529,16 @@ async function renderRevenue(){
   ]);
   if(purR.error){v.innerHTML=`<div class="panel"><div class="empty">Couldn’t load revenue: ${esc(purR.error.message)}</div></div>`;return;}
   const projs=projR.data||[],P=purR.data||[];
+  // Gereserveerde units telden nergens mee: ze staan niet in purchases (nog niet
+  // verkocht) en niet in units_available (terecht niet vrij). The Maison liet
+  // daardoor "2 of 4 units" zien terwijl er 6 zijn, en de portefeuillewaarde
+  // miste twee villa's. De beschikbaarheid komt uit dezelfde functie als het
+  // siteplan op de website, zodat beide altijd hetzelfde zeggen.
+  const besch={};
+  await Promise.all(projs.filter(pr=>pr.slug).map(async pr=>{
+    const {data}=await sb.rpc('project_availability',{p_slug:pr.slug});
+    if(data)besch[pr.slug]=data;
+  }));
   P.forEach(x=>{x._c=revClass(x.status);x._p=Number(x.price)||0;x._d=Number(x.deposit_amount)||0;x._r=(x.received_amount==null)?null:Number(x.received_amount);});
   const sales=P.filter(x=>x._c!=='lost'&&x._c!=='pipeline');
 
@@ -2541,8 +2551,14 @@ async function renderRevenue(){
     const untrk=deals.some(x=>x._r==null);
     const askPrice=Number(pr.price_current||pr.price_start)||0;
     const avail=(pr.units_available==null)?Math.max(0,(Number(pr.units_total)||sold)-sold):Number(pr.units_available);
+    // Getekend maar nog niet afgerekend. Tegen de huidige vraagprijs, want dat
+    // is wat deze units gaan opleveren; de al verkochte staan op hun eigen
+    // contractprijs en die kan lager liggen.
+    const b=besch[pr.slug];
+    const resv=b?(Number(b.reserved)||0):Math.max(0,(Number(pr.units_total)||0)-sold-avail);
     return {name:pr.name,slug:pr.slug,status:pr.status,sold,soldRev,recv,toRecv,untrk,askPrice,avail,
-      remaining:avail*askPrice, total:sold+avail, avg:sold?soldRev/sold:0, deals};
+      resv, resvValue:resv*askPrice,
+      remaining:avail*askPrice, total:sold+resv+avail, avg:sold?soldRev/sold:0, deals};
   });
   // deals whose project isn't in the projects table
   const known=new Set(projs.map(p=>(p.name||'').toLowerCase()));
@@ -2552,7 +2568,7 @@ async function renderRevenue(){
   orphan.forEach(x=>{const k=(x.project||'Overig').trim();(orphanByName[k]=orphanByName[k]||[]).push(x);});
   Object.keys(orphanByName).sort().forEach(nm=>{
     const ds=orphanByName[nm];const orv=ds.reduce((a,x)=>a+x._p,0);const odt=ds.filter(x=>x._r!=null);
-    rows.push({name:nm,slug:null,status:'uitverkocht',sold:ds.length,soldRev:orv,recv:odt.reduce((a,x)=>a+x._r,0),toRecv:odt.reduce((a,x)=>a+Math.max(0,x._p-x._r),0),untrk:ds.some(x=>x._r==null),askPrice:0,avail:0,remaining:0,total:ds.length,avg:orv/ds.length,deals:ds});
+    rows.push({name:nm,slug:null,status:'uitverkocht',sold:ds.length,soldRev:orv,recv:odt.reduce((a,x)=>a+x._r,0),toRecv:odt.reduce((a,x)=>a+Math.max(0,x._p-x._r),0),untrk:ds.some(x=>x._r==null),askPrice:0,avail:0,resv:0,resvValue:0,remaining:0,total:ds.length,avg:orv/ds.length,deals:ds});
   });
 
   // ----- project filter (dropdown at top): scope all figures to one project, or all -----
@@ -2569,9 +2585,14 @@ async function renderRevenue(){
   const totalSold=scopeSales.length;
   const remainingValue=scopeRows.reduce((a,r)=>a+r.remaining,0);
   const totalAvail=scopeRows.reduce((a,r)=>a+r.avail,0);
-  const portfolioValue=totalRevenue+remainingValue;
+  const totalResv=scopeRows.reduce((a,r)=>a+(r.resv||0),0);
+  const resvValue=scopeRows.reduce((a,r)=>a+(r.resvValue||0),0);
+  // Alle units tellen mee, ook de gereserveerde. Anders klopt de noemer niet:
+  // The Maison heeft er 6, niet 4.
+  const totalUnits=totalSold+totalResv+totalAvail;
+  const portfolioValue=totalRevenue+resvValue+remainingValue;
   const avgPrice=totalSold?totalRevenue/totalSold:0;
-  const sellThrough=(totalSold+totalAvail)?totalSold/(totalSold+totalAvail):0;
+  const sellThrough=totalUnits?totalSold/totalUnits:0;
   // Funds received vs still to come (per-deal received_amount; deals without a figure are 'untracked')
   const tracked=scopeSales.filter(x=>x._r!=null), untracked=scopeSales.filter(x=>x._r==null);
   const received=tracked.reduce((a,x)=>a+x._r,0);
@@ -2583,13 +2604,14 @@ async function renderRevenue(){
     ['Ontvangen',anMoney(received),'daadwerkelijk binnengekomen','#0f9d74'],
     ['Nog te ontvangen',anMoney(toReceive),'openstaande termijnen · excl. voorraad','#b7791f'],
     ['Avg. sale price',totalSold?anMoney(avgPrice):'—','per sold unit'],
+    ['Gereserveerd',anMoney(resvValue),totalResv+' unit'+(totalResv===1?'':'s')+' · ITP getekend, nog niet afgerekend','#5e30eb'],
     ['Remaining inventory',anMoney(remainingValue),totalAvail+' units for sale'],
-    ['Sell-through rate',anPct(sellThrough),totalSold+' of '+(totalSold+totalAvail)+' units'],
-    ['Total portfolio value',anMoney(portfolioValue),'sold + remaining'],
+    ['Sell-through rate',anPct(sellThrough),totalSold+' of '+totalUnits+' units'],
+    ['Total portfolio value',anMoney(portfolioValue),'verkocht + gereserveerd + voorraad'],
   ];
 
   let html='';
-  html+=`<div class="an-note">💰 <b>Deals to date</b> = contractwaarde van reeds verkochte units. <b>Ontvangen</b> = daarvan al binnengekomen. <b>Nog te ontvangen</b> = openstaande termijnen op díe verkochte units — dus <b>exclusief</b> nog te verkopen voorraad; de waarde van onverkochte units staat apart onder <b>Voorraad (te verkopen)</b>. Bron: <b>MASTER_MOKA_MAISON.xlsx</b> (Moneybird UTAMA + Maison + Privé) — laatste sync 31 jul 2026.${untrackedVal>0?` Let op: <b>${anMoney(untrackedVal)}</b> (${untracked.length} deal${untracked.length===1?'':'s'}) nog niet bijgehouden.`:''}</div>`;
+  html+=`<div class="an-note">💰 <b>Deals to date</b> = contractwaarde van reeds verkochte units. <b>Ontvangen</b> = daarvan al binnengekomen. <b>Nog te ontvangen</b> = openstaande termijnen op díe verkochte units — dus <b>exclusief</b> nog te verkopen voorraad; de waarde van onverkochte units staat apart onder <b>Voorraad (te verkopen)</b>. <b>Gereserveerd</b> = units waarvan de ITP is getekend maar de aanbetaling nog niet is afgerekend, gerekend tegen de huidige vraagprijs. Bron: <b>MASTER_MOKA_MAISON.xlsx</b> (Moneybird UTAMA + Maison + Privé) — laatste sync 31 jul 2026.${untrackedVal>0?` Let op: <b>${anMoney(untrackedVal)}</b> (${untracked.length} deal${untracked.length===1?'':'s'}) nog niet bijgehouden.`:''}</div>`;
   const revOpts=`<option value="">Alle projecten</option>`+projNames.map(n=>`<option value="${esc(n)}"${REV_PROJ===n?' selected':''}>${esc(n)}</option>`).join('');
   html+=`<div class="toolbar" style="margin:0 0 14px;display:flex;align-items:center;gap:10px"><label class="muted" style="font-size:13px;font-weight:600">Project</label><select id="rev_proj" style="padding:7px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;min-width:220px">${revOpts}</select>${selRow?`<span class="muted" style="font-size:13px">— alle cijfers hieronder tonen alleen <b>${esc(selRow.name)}</b></span>`:''}</div>`;
   html+='<div class="cards">'+kpis.map(k=>`<div class="stat"><div class="k">${k[0]}</div><div class="v"${k[3]?` style="color:${k[3]}"`:''}>${k[1]}</div><div class="s">${k[2]}</div></div>`).join('')+'</div>';
