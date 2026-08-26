@@ -1272,7 +1272,23 @@ async function renderDashboard(){
   const stats=[];
   if(canView('analytics')){const since=new Date(Date.now()-30*864e5).toISOString();const {count:pv}=await sb.from('analytics_events').select('*',{count:'exact',head:true}).gte('created_at',since);stats.push(['Page views (30d)',pv||0,'website analytics','analytics']);}
   if(canView('revenue')){const {data:pd}=await sb.from('purchases').select('status,price');const sales=(pd||[]).filter(x=>revClass(x.status)!=='lost');stats.push(['Deals to date',anMoney(sales.reduce((a,x)=>a+(Number(x.price)||0),0)),sales.length+' unit'+(sales.length===1?'':'s')+' sold','revenue']);}
-  if(canView('leads')){const {data:rd}=await sb.from('reservations').select('status,itp_signed_at,payment_status');const open=(rd||[]).filter(x=>x.itp_signed_at&&x.status!=='deposit_paid'&&x.payment_status!=='paid');if(open.length)stats.push(['ITP getekend · open',open.length,'wacht op aanbetaling','leads']);}
+  if(canView('leads')){
+    const {data:rd}=await sb.from('reservations').select('status,itp_signed_at,payment_status,unit_price,deposit_amount,cleared_at');
+    // Getekend maar nog niet rond: de ITP staat, de aanbetaling niet. Een
+    // vrijgegeven reservering (cleared_at) telt niet meer mee, anders blijft een
+    // ingetrokken deal in de vooruitblik staan.
+    const open=(rd||[]).filter(x=>x.itp_signed_at&&!x.cleared_at&&x.status!=='deposit_paid'&&x.payment_status!=='paid');
+    if(open.length){
+      stats.push(['ITP getekend · open',open.length,'wacht op aanbetaling','leads']);
+      // De waarde die nog te tekenen is, dus de volledige villaprijs en niet de
+      // aanbetaling. Zonder prijs op de reservering telt hij als 0; dat staat er
+      // dan bij, anders lijkt het bedrag lager dan het is.
+      const zonderPrijs=open.filter(x=>!Number(x.unit_price)).length;
+      const waarde=open.reduce((a,x)=>a+(Number(x.unit_price)||0),0);
+      stats.push(['Te tekenen dealwaarde',anMoney(waarde),
+        zonderPrijs?(zonderPrijs+' zonder prijs, niet meegeteld'):'ITP getekend, nog niet rond','leads']);
+    }
+  }
   if(canView('leads')){stats.push(['Leads',await count('leads'),'site inquiries & reservations','leads']);stats.push(['Contacts',await count('contacts'),'known people','leads']);}
   if(canView('webinars')){stats.push(['Webinar signups',await count('webinar_registrations'),'registrations','webinars']);}
   if(canView('projects')){stats.push(['Projects',await count('projects'),'active projects','projects']);}
@@ -1791,7 +1807,14 @@ let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{},sendCh:''
 // onbeantwoord, tot 22 dagen lang, terwijl de ongelezen-teller op nul stond
 // omdat ze wél gelezen waren. Zelfde regel als inbox_wachtende_gesprekken() in
 // de database, die de dagelijkse melding naar Ashley voedt.
-const inboxWachtOpOns = c => c.last_direction === 'in' || !c.last_message_at;
+const inboxWachtOpOns = c => {
+  // Afgevinkt als "geen antwoord nodig", en er kwam sindsdien niets nieuws?
+  // Dan wacht er niemand. Zodra de lead wel weer schrijft schuift
+  // last_message_at over afgehandeld_tot heen en staat het vanzelf terug.
+  if(c.afgehandeld_tot && c.last_message_at && new Date(c.afgehandeld_tot) >= new Date(c.last_message_at)) return false;
+  if(c.afgehandeld_tot && !c.last_message_at) return false;
+  return c.last_direction === 'in' || !c.last_message_at;
+};
 let INBOX_TIMER=null;
 /* Echte kanaal-iconen (inline SVG, 12px, kleuren mee via currentColor) i.p.v. emoji. */
 const CH_ICON={
@@ -2179,6 +2202,13 @@ function inboxDrawInfo(ctx){
   const relCtrl=edit?(isRelatie
     ?`<button class="btn btn-sm ibx-rel" id="ibx_relatie_terug" title="Terug naar de gewone leadpijplijn">↩︎ Toch een lead</button>`
     :`<button class="btn btn-sm ibx-rel" id="ibx_relatie" title="Verplaats dit contact naar de pipeline Relaties &amp; overig en haal het uit Discovery. Werkt niet als er een lead, reservering of aankoop op staat.">🤝 Geen lead</button>`):'';
+  // Niet elk laatste bericht vraagt om een antwoord: een bedankje, een duim, een
+  // afsluiter. Zonder deze knop bleven die eeuwig onder Onbeantwoord staan, want
+  // de enige uitweg was zelf iets terugsturen.
+  const afgehandeld=!!(cv.afgehandeld_tot&&cv.last_message_at&&new Date(cv.afgehandeld_tot)>=new Date(cv.last_message_at));
+  const geenAntwCtrl=edit?(afgehandeld
+    ?`<button class="btn btn-sm ibx-rel" id="ibx_antw_terug" title="Zet dit gesprek terug op onbeantwoord">↩︎ Toch beantwoorden</button>`
+    :`<button class="btn btn-sm ibx-rel" id="ibx_geen_antw" title="Haal dit gesprek uit Onbeantwoord. Schrijft de lead daarna opnieuw, dan komt het vanzelf terug.">✓ Geen antwoord nodig</button>`):'';
   const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
   const leadRows=[['Interesse',cv.interest],['Timing',tlmap[cv.timeline]||cv.timeline],['Budget',cv.budget_band],
     ['Gekwalificeerd',cv.is_qualified==null?null:(cv.is_qualified?'Ja ✓':'Nee')],['Eigenaar',cv.assigned_name]].filter(r=>r[1]);
@@ -2211,7 +2241,7 @@ function inboxDrawInfo(ctx){
       ${cv.warmth!=null?warmthBadge(cv.warmth,{big:true}):''}
     </div>
     <div class="ibx-ip-actions">${actsHtml}</div>
-    ${(aiCtrl||relCtrl)?`<div class="ibx-ip-ai">${aiCtrl}${relCtrl}</div>`:''}
+    ${(aiCtrl||relCtrl||geenAntwCtrl)?`<div class="ibx-ip-ai">${aiCtrl}${relCtrl}${geenAntwCtrl}</div>`:''}
     <div class="ibx-ip-scroll">
       <div class="ibx-ip-sec"><div class="ibx-ip-h" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button class="ibx-sum-btn" id="ibx_sum_btn">${ctx.summary&&ctx.summary.summary?'↻ Vernieuwen':'✨ Genereren'}</button>`:''}</div><div id="ibx_sum_body">${inboxSummaryHtml(ctx.summary)}</div></div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Leadgegevens</div>${leadRows.length?leadRows.map(([k,val])=>`<div class="ibx-kv"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join(''):'<div class="ibx-ip-note">Nog geen kwalificatie vastgelegd.</div>'}${winRow}</div>
@@ -2232,6 +2262,8 @@ function inboxDrawInfo(ctx){
     const rs=$('#ibx_resume');if(rs)rs.onclick=()=>inboxResume(gid);
     const rl=$('#ibx_relatie');if(rl)rl.onclick=()=>inboxRelatie(INBOX.sel,true);
     const rlt=$('#ibx_relatie_terug');if(rlt)rlt.onclick=()=>inboxRelatie(INBOX.sel,false);
+    const ga=$('#ibx_geen_antw');if(ga)ga.onclick=()=>inboxGeenAntwoord(INBOX.sel,true);
+    const gat=$('#ibx_antw_terug');if(gat)gat.onclick=()=>inboxGeenAntwoord(INBOX.sel,false);
     const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(gid);
     const sm=$('#ibx_sum_btn');if(sm)sm.onclick=()=>inboxGenSummary(gid);
   }
@@ -2375,14 +2407,31 @@ async function inboxTakeOver(id){
   if(error){toast('Overnemen mislukt: '+esc(error.message),'err');return;}
   toast('Je hebt dit gesprek overgenomen — de AI is gepauzeerd','ok');await inboxOpen(id,true);await inboxLoad();
 }
-async function inboxRelatie(id,aan){
-  // De database beslist, niet de knop: relatie_markeer weigert zodra er een
-  // lead, reservering of aankoop op het contact staat. Zo kan een verkeerde
-  // klik geen echte klant uit de verkooppijplijn halen.
-  const {data,error}=await sb.rpc('relatie_markeer',{p_conversation:id,p_aan:aan});
+async function inboxGeenAntwoord(id,aan){
+  const {data,error}=await sb.rpc('inbox_geen_antwoord_nodig',{p_conversation:id,p_aan:aan});
   if(error){toast('Mislukt: '+esc(error.message),'err');return;}
   if(data&&data.ok===false){toast('Kan niet: '+esc(data.reden||'onbekende reden'),'err');return;}
-  toast(aan?'Verplaatst naar Relaties & overig':'Terug in de leadpijplijn','ok');
+  toast(aan?'Uit Onbeantwoord gehaald':'Weer als onbeantwoord gemarkeerd','ok');
+  await inboxOpen(id,true);await inboxLoad();
+}
+async function inboxRelatie(id,aan,forceer){
+  // De database beslist, niet de knop: relatie_markeer weigert zodra er een
+  // lead, reservering of aankoop op het contact staat. Voor de bot is dat een
+  // harde grens. Jij mag hem overrulen, maar dan wel bewust: je krijgt eerst te
+  // zien wát je overrult. Verplaatsen is niet destructief (de kaart verhuist,
+  // notities en taken blijven staan) en "Toch een lead" zet alles terug.
+  const {data,error}=await sb.rpc('relatie_markeer',{p_conversation:id,p_aan:aan,p_forceer:!!forceer});
+  if(error){toast('Mislukt: '+esc(error.message),'err');return;}
+  if(data&&data.ok===false){
+    if(data.te_forceren&&!forceer){
+      if(confirm('Let op: '+(data.reden||'dit contact hoort mogelijk in de verkooppijplijn')+'.\n\nToch verplaatsen naar Relaties & overig? Je kunt dit altijd terugdraaien met "Toch een lead".')){
+        return inboxRelatie(id,aan,true);
+      }
+      return;
+    }
+    toast('Kan niet: '+esc(data.reden||'onbekende reden'),'err');return;
+  }
+  toast(aan?(data&&data.geforceerd?'Verplaatst naar Relaties & overig (geforceerd)':'Verplaatst naar Relaties & overig'):'Terug in de leadpijplijn','ok');
   await inboxOpen(id,true);await inboxLoad();
 }
 async function inboxResume(id){
