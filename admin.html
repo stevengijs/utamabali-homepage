@@ -2168,6 +2168,13 @@ function inboxDrawInfo(ctx){
   const aiCtrl=edit?(cv.ai_enabled
     ?`<button class="btn btn-sm ibx-take" id="ibx_takeover">✋ Overnemen (AI pauzeren)</button>`
     :`<button class="btn btn-ghost btn-sm" id="ibx_resume">↩︎ Terug naar AI</button>`):'';
+  // Niet elk gesprek is een verkooptraject. Een vriend, een samenwerkingsvoorstel
+  // of een leverancier hoort niet in Discovery, maar in Relaties & overig. De
+  // knop is ook het vangnet als de bot dat zelf verkeerd inschat.
+  const isRelatie=!!(ct&&ct.partner==='RELATIE');
+  const relCtrl=edit?(isRelatie
+    ?`<button class="btn btn-ghost btn-sm" id="ibx_relatie_terug" title="Terug naar de gewone leadpijplijn">↩︎ Toch een lead</button>`
+    :`<button class="btn btn-ghost btn-sm" id="ibx_relatie" title="Verplaats dit contact naar de pipeline Relaties &amp; overig en haal het uit Discovery. Werkt niet als er een lead, reservering of aankoop op staat.">🤝 Geen lead</button>`):'';
   const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
   const leadRows=[['Interesse',cv.interest],['Timing',tlmap[cv.timeline]||cv.timeline],['Budget',cv.budget_band],
     ['Gekwalificeerd',cv.is_qualified==null?null:(cv.is_qualified?'Ja ✓':'Nee')],['Eigenaar',cv.assigned_name]].filter(r=>r[1]);
@@ -2200,7 +2207,7 @@ function inboxDrawInfo(ctx){
       ${cv.warmth!=null?warmthBadge(cv.warmth,{big:true}):''}
     </div>
     <div class="ibx-ip-actions">${actsHtml}</div>
-    ${aiCtrl?`<div class="ibx-ip-ai">${aiCtrl}</div>`:''}
+    ${(aiCtrl||relCtrl)?`<div class="ibx-ip-ai">${aiCtrl}${relCtrl}</div>`:''}
     <div class="ibx-ip-scroll">
       <div class="ibx-ip-sec"><div class="ibx-ip-h" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button class="ibx-sum-btn" id="ibx_sum_btn">${ctx.summary&&ctx.summary.summary?'↻ Vernieuwen':'✨ Genereren'}</button>`:''}</div><div id="ibx_sum_body">${inboxSummaryHtml(ctx.summary)}</div></div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Leadgegevens</div>${leadRows.length?leadRows.map(([k,val])=>`<div class="ibx-kv"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join(''):'<div class="ibx-ip-note">Nog geen kwalificatie vastgelegd.</div>'}${winRow}</div>
@@ -2219,6 +2226,8 @@ function inboxDrawInfo(ctx){
   if(edit){
     const to=$('#ibx_takeover');if(to)to.onclick=()=>inboxTakeOver(gid);
     const rs=$('#ibx_resume');if(rs)rs.onclick=()=>inboxResume(gid);
+    const rl=$('#ibx_relatie');if(rl)rl.onclick=()=>inboxRelatie(INBOX.sel,true);
+    const rlt=$('#ibx_relatie_terug');if(rlt)rlt.onclick=()=>inboxRelatie(INBOX.sel,false);
     const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(gid);
     const sm=$('#ibx_sum_btn');if(sm)sm.onclick=()=>inboxGenSummary(gid);
   }
@@ -2361,6 +2370,16 @@ async function inboxTakeOver(id){
   const {error}=await sb.rpc('inbox_take_over',{p_id:id});
   if(error){toast('Overnemen mislukt: '+esc(error.message),'err');return;}
   toast('Je hebt dit gesprek overgenomen — de AI is gepauzeerd','ok');await inboxOpen(id,true);await inboxLoad();
+}
+async function inboxRelatie(id,aan){
+  // De database beslist, niet de knop: relatie_markeer weigert zodra er een
+  // lead, reservering of aankoop op het contact staat. Zo kan een verkeerde
+  // klik geen echte klant uit de verkooppijplijn halen.
+  const {data,error}=await sb.rpc('relatie_markeer',{p_conversation:id,p_aan:aan});
+  if(error){toast('Mislukt: '+esc(error.message),'err');return;}
+  if(data&&data.ok===false){toast('Kan niet: '+esc(data.reden||'onbekende reden'),'err');return;}
+  toast(aan?'Verplaatst naar Relaties & overig':'Terug in de leadpijplijn','ok');
+  await inboxOpen(id,true);await inboxLoad();
 }
 async function inboxResume(id){
   const {error}=await sb.rpc('inbox_resume_ai',{p_id:id});
