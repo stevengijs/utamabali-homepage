@@ -224,6 +224,12 @@
   .ibx-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
   .ibx-chip.ibx-vw{color:#b45309;border-color:#fcd34d;background:#fffbeb}
   .ibx-chip.ibx-vw.on{background:#f59e0b;border-color:#f59e0b;color:#fff}
+  /* Onbeantwoord is dringender dan ongelezen, dus roder. Iemand wacht hier echt. */
+  .ibx-chip.ibx-wacht{color:#b91c1c;border-color:#fca5a5;background:#fef2f2}
+  .ibx-chip.ibx-wacht.on{background:#dc2626;border-color:#dc2626;color:#fff}
+  .ibx-chip-n{display:inline-block;margin-left:5px;min-width:15px;padding:0 4px;border-radius:999px;
+    background:#dc2626;color:#fff;font-size:10px;line-height:15px;text-align:center}
+  .ibx-chip.ibx-wacht.on .ibx-chip-n{background:rgba(255,255,255,.28)}
   .ibx-chsep{width:1px;height:16px;background:var(--line);margin:0 2px}
   .ibx-autobar{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:#f8fafc;color:#64748b;font-size:11.5px;padding:8px 14px;cursor:pointer}
   .ibx-autobar:hover{background:#f1f5f9;color:#475569}
@@ -1774,7 +1780,14 @@ function warmthBadge(score,opts){
   return `<span class="warmth-badge" title="Koopbereidheid ${score}/100 · ${t.label}. Op basis van bereikbaarheid, echte reacties, websitegedrag (tijd, pagina's, ROI-calculator, brochure), budget, koop-timeline en mijlpalen. Fake of onbereikbare gegevens tellen als koud." style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:${big?'13px':'11.5px'};padding:${big?'4px 11px':'2px 8px'};border-radius:999px;background:${t.bg};color:${t.color};border:1px solid ${t.bd};white-space:nowrap">${t.icon} ${score}${big?' · '+t.label:''}</span>`;
 }
 /* ================= INBOX (unified IG / WA / email) ================= */
-let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{},sendCh:'',channels:[],unreadOnly:false,showAuto:false};
+let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{},sendCh:'',channels:[],unreadOnly:false,onbeantwoord:false,showAuto:false};
+// Wachten leads op ons? Dat is precies: de lead sprak als laatste. Anders dan
+// "ongelezen" verdwijnt dit niet zodra iemand het gesprek even opent, en dat is
+// de reden dat het bestaat: op 24 augustus 2026 stonden er veertien gesprekken
+// onbeantwoord, tot 22 dagen lang, terwijl de ongelezen-teller op nul stond
+// omdat ze wél gelezen waren. Zelfde regel als inbox_wachtende_gesprekken() in
+// de database, die de dagelijkse melding naar Ashley voedt.
+const inboxWachtOpOns = c => c.last_direction === 'in' || !c.last_message_at;
 let INBOX_TIMER=null;
 /* Echte kanaal-iconen (inline SVG, 12px, kleuren mee via currentColor) i.p.v. emoji. */
 const CH_ICON={
@@ -1875,11 +1888,19 @@ async function renderInbox(){
   const sts=[['','Alle statussen'],['active','AI actief'],['needs_human','Overname'],['booked','Afspraak'],['opted_out','Afgemeld']];
   $('#ibx_chch').innerHTML=
     `<button class="ibx-chip ibx-vw ${INBOX.unreadOnly?'on':''}" data-vw="unread" title="Toon alleen ongelezen berichten, van alle kanalen door elkaar">● Ongelezen</button>`+
+    `<button class="ibx-chip ibx-wacht ${INBOX.onbeantwoord?'on':''}" data-vw="wacht" title="Gesprekken waarin de lead als laatste iets stuurde en wij nog niet reageerden. Blijft staan tot er een antwoord uit is, ook nadat je het gesprek hebt gelezen.">↩ Onbeantwoord<span id="ibx_wacht_n" class="ibx-chip-n"></span></button>`+
     `<span class="ibx-chsep"></span>`+
     chs.map(([k,l])=>`<button class="ibx-chip ${INBOX.channel===k?'on':''}" data-ch="${k}">${l}</button>`).join('')+
     `<span class="ibx-chsep"></span>`+
     sts.map(([k,l])=>`<button class="ibx-chip ib-st ${INBOX.status===k?'on':''}" data-st="${k}">${esc(l)}</button>`).join('');
-  $('#ibx_chch').querySelectorAll('[data-vw]').forEach(b=>b.onclick=()=>{INBOX.unreadOnly=!INBOX.unreadOnly;if(INBOX.unreadOnly)INBOX.channel='';renderInbox();});
+  // De twee weergaven sluiten elkaar uit: samen zouden ze bijna altijd leeg zijn,
+  // want een onbeantwoord gesprek dat je hebt gelezen telt niet meer als ongelezen.
+  $('#ibx_chch').querySelectorAll('[data-vw]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.vw==='unread'){INBOX.unreadOnly=!INBOX.unreadOnly;if(INBOX.unreadOnly)INBOX.onbeantwoord=false;}
+    else {INBOX.onbeantwoord=!INBOX.onbeantwoord;if(INBOX.onbeantwoord)INBOX.unreadOnly=false;}
+    if(INBOX.unreadOnly||INBOX.onbeantwoord)INBOX.channel='';
+    renderInbox();
+  });
   $('#ibx_chch').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{INBOX.channel=b.dataset.ch;renderInbox();});
   $('#ibx_chch').querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{INBOX.status=b.dataset.st;renderInbox();});
   const si=$('#ibx_search');let sTmr;si.oninput=()=>{clearTimeout(sTmr);sTmr=setTimeout(()=>{INBOX.search=si.value.trim();inboxLoad();},280);};
@@ -1907,12 +1928,21 @@ async function inboxLoad(){
   // verborgen zodat de échte gesprekken overzichtelijk blijven. Optioneel te tonen.
   const autoHidden=INBOX.convos.filter(c=>c.automated_only).length;
   let list=INBOX.convos;
-  if(!INBOX.showAuto)list=list.filter(c=>!c.automated_only);
+  // automated_only betekent: geen inkomend bericht én geen menselijk antwoord.
+  // Een gesprek dat binnenkwam zonder tekst valt daar ook onder, en dat is nou
+  // net het geval dat iemand moet zien. In de onbeantwoord-weergave slaan we
+  // die verberging dus over. Ruis levert dat niet op: zodra een lead iets
+  // stuurt is automated_only sowieso onwaar.
+  if(!INBOX.showAuto&&!INBOX.onbeantwoord)list=list.filter(c=>!c.automated_only);
   if(INBOX.unreadOnly)list=list.filter(c=>(c.unread_count||0)>0);
-  const bar=(!INBOX.showAuto&&autoHidden>0)
+  if(INBOX.onbeantwoord)list=list.filter(inboxWachtOpOns);
+  { const n=INBOX.convos.filter(inboxWachtOpOns).length;
+    const el=$('#ibx_wacht_n'); if(el){el.textContent=n||'';el.style.display=n?'':'none';} }
+  // In de onbeantwoord-weergave verbergen we niets, dus dan zou die balk liegen.
+  const bar=INBOX.onbeantwoord?'':(!INBOX.showAuto&&autoHidden>0)
     ? `<button class="ibx-autobar" data-showauto="1">🤖 ${autoHidden} automatische sequence-mail${autoHidden===1?'':'s'} verborgen · <u>tonen</u></button>`
     : (INBOX.showAuto?`<button class="ibx-autobar on" data-showauto="0">🤖 Automatische mails zichtbaar · <u>verbergen</u></button>`:'');
-  if(!list.length){box.innerHTML=bar+`<div class="empty" style="padding:20px 16px">${INBOX.unreadOnly?'Geen ongelezen berichten. 🎉':'Geen gesprekken in deze weergave.'}</div>`;
+  if(!list.length){box.innerHTML=bar+`<div class="empty" style="padding:20px 16px">${INBOX.unreadOnly?'Geen ongelezen berichten. 🎉':INBOX.onbeantwoord?'Iedereen heeft antwoord gehad. 🎉':'Geen gesprekken in deze weergave.'}</div>`;
     const ab0=box.querySelector('[data-showauto]');if(ab0)ab0.onclick=()=>{INBOX.showAuto=ab0.dataset.showauto==='1';renderInbox();};return;}
   box.innerHTML=bar+list.map(c=>{
     const ch=INBOX_CH[c.channel]||INBOX_CH.instagram;const nm=bestName(c.contact_name,c.display_name)||c.handle||'Onbekend';
