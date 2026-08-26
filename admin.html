@@ -339,6 +339,10 @@
   .ibx-ip-ai{padding:10px 16px 0}
   .ibx-ip-ai .btn{width:100%}
   .ibx-take{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+  /* "Geen lead" is een bijzaak naast de AI-knop: rustiger, en met wat lucht
+     ertussen zodat je hem niet per ongeluk raakt. */
+  .ibx-rel{margin-top:10px;background:#f4f5f7;border:1px solid #e3e5e9;color:#6b7280;font-weight:500}
+  .ibx-rel:hover{background:#eceef1;color:#4b5563}
   .ibx-ip-scroll{flex:1;overflow-y:auto;padding:14px 16px 18px}
   .ibx-ip-sec{padding:12px 0;border-top:1px solid var(--line)}
   .ibx-ip-sec:first-child{border-top:none;padding-top:4px}
@@ -2173,8 +2177,8 @@ function inboxDrawInfo(ctx){
   // knop is ook het vangnet als de bot dat zelf verkeerd inschat.
   const isRelatie=!!(ct&&ct.partner==='RELATIE');
   const relCtrl=edit?(isRelatie
-    ?`<button class="btn btn-ghost btn-sm" id="ibx_relatie_terug" title="Terug naar de gewone leadpijplijn">↩︎ Toch een lead</button>`
-    :`<button class="btn btn-ghost btn-sm" id="ibx_relatie" title="Verplaats dit contact naar de pipeline Relaties &amp; overig en haal het uit Discovery. Werkt niet als er een lead, reservering of aankoop op staat.">🤝 Geen lead</button>`):'';
+    ?`<button class="btn btn-sm ibx-rel" id="ibx_relatie_terug" title="Terug naar de gewone leadpijplijn">↩︎ Toch een lead</button>`
+    :`<button class="btn btn-sm ibx-rel" id="ibx_relatie" title="Verplaats dit contact naar de pipeline Relaties &amp; overig en haal het uit Discovery. Werkt niet als er een lead, reservering of aankoop op staat.">🤝 Geen lead</button>`):'';
   const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
   const leadRows=[['Interesse',cv.interest],['Timing',tlmap[cv.timeline]||cv.timeline],['Budget',cv.budget_band],
     ['Gekwalificeerd',cv.is_qualified==null?null:(cv.is_qualified?'Ja ✓':'Nee')],['Eigenaar',cv.assigned_name]].filter(r=>r[1]);
