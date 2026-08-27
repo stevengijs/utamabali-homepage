@@ -2451,8 +2451,10 @@ async function bcBewaar(){
     p_golf_grootte: BC.golf});
   if(error) return {fout:error.message};
   if(data&&data.ok===false){
-    // De server weigert een tweede campagne zolang er nog een loopt.
-    if(data.lopend_id) return {fout:data.reden+' (campagne '+String(data.lopend_id).slice(0,8)+')'};
+    // De server weigert een tweede campagne zolang een vorige niet af is. Dat
+    // is terecht, maar zonder uitweg sta je vast: geef de campagne mee zodat
+    // het scherm er een knop van kan maken.
+    if(data.lopend_id) return {fout:data.reden, lopend:data};
     return {fout:data.reden};
   }
   BC.camp=data.id;
@@ -2468,7 +2470,11 @@ async function bcVerstuur(test){
   if(!$('#bc_body').innerHTML.trim()){toast('Schrijf eerst een bericht','err');return;}
   st.textContent=test?'Proefmail versturen…':'Campagne versturen, dit kan even duren…';
   const bewaard=await bcBewaar();
-  if(bewaard.fout){st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;return;}
+  if(bewaard.fout){
+    if(bewaard.lopend) bcToonLopend(st, bewaard.lopend);
+    else st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;
+    return;
+  }
 
   if(!test){
     const n=bewaard.ontvangers;
@@ -2496,6 +2502,25 @@ async function bcVerstuur(test){
 /* WhatsApp verstuurt per golf, niet in één keer. Na elke golf staat de nieuwe
    kwaliteitsscore op het scherm: dat is het moment om te besluiten of je
    doorgaat, niet als de hele lijst er al doorheen is. */
+/* De weigering "je bent nog niet klaar met X" met twee uitwegen erbij: verder
+   met die campagne, of hem afsluiten als je de rest niet meer wilt sturen.
+   Zonder deze knoppen is de melding een doodlopende straat. */
+function bcToonLopend(st, lopend){
+  st.innerHTML=`<span class="err">${esc(lopend.reden)}</span>`+
+    `<div style="margin-top:8px;display:flex;gap:14px;flex-wrap:wrap">`+
+    `<button type="button" class="bc-zoekactie" id="bc_ganaar">Verder met "${esc(lopend.lopend_naam||'die campagne')}" (${lopend.lopend_resterend} te gaan)</button>`+
+    `<button type="button" class="bc-zoekactie" id="bc_rondaf" style="color:var(--muted)">Die is klaar, sluit hem af</button>`+
+    `</div>`;
+  $('#bc_ganaar').onclick=()=>bcCampagneHervatten(lopend.lopend_id);
+  $('#bc_rondaf').onclick=async()=>{
+    if(!confirm(`"${lopend.lopend_naam||'Die campagne'}" afsluiten? De resterende ${lopend.lopend_resterend} krijgen dan niets meer.`)) return;
+    const {error}=await sb.rpc('broadcast_campagne_afronden',{p_id:lopend.lopend_id});
+    if(error){toast('Afsluiten mislukt: '+error.message,'err');return;}
+    st.innerHTML='Afgesloten. Je kunt nu een nieuwe campagne beginnen.';
+    bcCampagnesLaden();
+  };
+}
+
 async function bcVerstuurWa(test){
   const st=$('#bc_status'); st.style.display='';
   if(!BC.waTpl){toast('Kies eerst een goedgekeurd template','err');return;}
@@ -2516,7 +2541,11 @@ async function bcVerstuurWa(test){
     bewaard={id:BC.camp, ontvangers:(r.data&&r.data.aantal_doel)||0};
   }else{
     bewaard=await bcBewaar();
-    if(bewaard.fout){st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;return;}
+    if(bewaard.fout){
+      if(bewaard.lopend) bcToonLopend(st, bewaard.lopend);
+      else st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;
+      return;
+    }
   }
 
   if(test){
