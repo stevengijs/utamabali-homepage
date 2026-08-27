@@ -2071,14 +2071,21 @@ async function bcWaLaden(){
     }
     BC.waTpls=data.templates||[];
   }
-  if(!BC.waTpls.length){
+  const klaar   = BC.waTpls.filter(t=>t.status==='APPROVED');
+  const wachtend= BC.waTpls.filter(t=>t.status==='PENDING');
+  const afgewezen=BC.waTpls.filter(t=>t.status==='REJECTED');
+  if(!klaar.length && !wachtend.length){
     vak.innerHTML='<div class="bc-let">Er is nog geen goedgekeurd MARKETING-template. Dien er een in bij Meta; zodra die is goedgekeurd verschijnt hij hier vanzelf.</div>';
     return;
   }
-  vak.innerHTML='<div class="bc-rij">'+BC.waTpls.map((t,i)=>
-    `<button type="button" class="bc-chip ${BC.waTpl&&BC.waTpl.naam===t.naam?'on':''}" data-watpl="${i}" title="${esc(t.body)}">${esc(t.naam)} <span class="bc-n">${t.variabelen}</span></button>`).join('')+'</div>';
+  vak.innerHTML='<div class="bc-rij">'+klaar.map(t=>
+    `<button type="button" class="bc-chip ${BC.waTpl&&BC.waTpl.naam===t.naam?'on':''}" data-watpl="${esc(t.naam)}" title="${esc(t.body)}">${esc(t.naam)} <span class="bc-n">${t.variabelen}</span></button>`).join('')+'</div>'
+    // Wachtende templates zichtbaar maar niet aanklikbaar: anders lijkt het of
+    // je indiening is verdwenen.
+    + (wachtend.length?`<div class="bc-hint" style="margin-top:8px">In review bij Meta: ${wachtend.map(t=>`<b>${esc(t.naam)}</b>`).join(', ')}. Zodra Meta ze goedkeurt staan ze hierboven. Meestal binnen een paar uur; ververs deze pagina.</div>`:'')
+    + (afgewezen.length?`<div class="bc-hint" style="margin-top:4px"><span class="err">Afgewezen door Meta: ${afgewezen.map(t=>esc(t.naam)).join(', ')}.</span></div>`:'');
   vak.querySelectorAll('[data-watpl]').forEach(b=>b.onclick=()=>{
-    BC.waTpl=BC.waTpls[Number(b.dataset.watpl)];
+    BC.waTpl=BC.waTpls.find(t=>t.naam===b.dataset.watpl);
     // Variabelen resetten: een ander template heeft andere posities.
     BC.waVars=Array.from({length:BC.waTpl.variabelen},(_x,i)=>
       i===0?{bron:'voornaam',waarde:''}:{bron:'tekst',waarde:''});
