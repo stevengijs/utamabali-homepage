@@ -1598,7 +1598,7 @@ async function renderBroadcast(){
     </div></div>
     <div id="bc_rest">
       <div class="bc-filters" id="bc_filters"></div>
-      <div class="muted" style="font-size:12px;padding:8px 18px 0">Het grijze getal achter een keuze is het totaal aantal contacten, het groene getal hoeveel daarvan bereikbaar zijn via het gekozen kanaal. Versturen kan alleen naar wie een e-mailadres heeft. <b>Ingelogd op invest</b> betekent dat iemand ooit een inloglink heeft aangevraagd, wat alleen voor de dataroom nodig is; iedereen in deze lijst staat sowieso in het portaal. <b>Klant</b> is wie een ITP tekende of aanbetaalde.</div>
+      <div class="muted" style="font-size:12px;padding:8px 18px 0">Het grijze getal achter een keuze is het totaal aantal contacten, het groene getal hoeveel daarvan bereikbaar zijn via het gekozen kanaal. Versturen kan alleen naar wie een e-mailadres heeft. <b>Ingelogd op invest</b> betekent dat iemand ooit een inloglink heeft aangevraagd, wat alleen voor de dataroom nodig is; iedereen in deze lijst staat sowieso in het portaal. <b>Klant</b> is wie een ITP tekende of aanbetaalde, plus iedereen die als klant in Moneybird staat. Zet dat filter op <b>Nog geen klant</b> om je bestaande kopers over te slaan.</div>
       <div class="bc-telling" id="bc_telling"></div>
       <div class="bc-acties">
         <button class="btn btn-primary btn-sm" id="bc_opstellen">✉ Nieuwsbrief opstellen</button>
@@ -1738,7 +1738,7 @@ function bcTabel(){
       <td>${esc(bronnen||'—')}</td>
       <td>${x.email?bcMarkeer(x.email,BC.zoek):'<span class="muted">geen e-mail</span>'}</td>
       <td>${x.telefoon?bcMarkeer(x.telefoon,BC.zoek):'<span class="muted">geen nummer</span>'}</td>
-      <td>${x.klant?'<span class="bc-klant">klant</span>':''}${x.heeft_account?'<span class="bc-ja">ingelogd</span>':''}${x.dataroom?'<span class="bc-ja">dataroom</span>':''}${!x.klant&&!x.heeft_account&&!x.dataroom?'<span class="muted">—</span>':''}</td>
+      <td>${x.klant?`<span class="bc-klant" title="${esc(x.klantnaam?'In Moneybird als: '+x.klantnaam:'Tekende een ITP of deed een aanbetaling')}">klant</span>`:''}${x.heeft_account?'<span class="bc-ja">ingelogd</span>':''}${x.dataroom?'<span class="bc-ja">dataroom</span>':''}${!x.klant&&!x.heeft_account&&!x.dataroom?'<span class="muted">—</span>':''}</td>
       <td>${esc((x.projecten||[]).join(', ')||'—')}</td>
       <td>${esc(x.budget||'—')}</td>
       <td>${esc(x.timing_key?bcLabel('timings',x.timing_key):'—')}</td>
@@ -1749,6 +1749,7 @@ function bcTabel(){
       (antw.length&&op?`<tr class="bc-detail"><td></td><td colspan="12"><div class="bc-antw">`+
         antw.map(a=>`<div class="bc-aw"><span class="bc-avraag">${esc(a.vraag||a.veld||'Vraag')}</span>`+
                     `<span class="bc-aant">${esc(a.antwoord==null||a.antwoord===''?'—':a.antwoord)}</span></div>`).join('')+
+        (x.klant?`<div class="bc-aw"><span class="bc-avraag">Al klant</span><span class="bc-aant">${esc(x.klantnaam||'Tekende een ITP of deed een aanbetaling')}</span></div>`:'')+
         (x.sales_stage?`<div class="bc-aw"><span class="bc-avraag">Verkoopfase</span><span class="bc-aant">${esc(x.sales_stage)}</span></div>`:'')+
         (x.status?`<div class="bc-aw"><span class="bc-avraag">Status</span><span class="bc-aant">${esc(bcLabel('statussen',x.status))}</span></div>`:'')+
         (x.temperatuur?`<div class="bc-aw"><span class="bc-avraag">Temperatuur</span><span class="bc-aant">${esc(bcLabel('temperaturen',x.temperatuur))}</span></div>`:'')+
@@ -1771,7 +1772,7 @@ async function bcExport(){
   if(!r.length){toast('Niets te exporteren','err');return;}
   // De ruwe antwoorden gaan als één kolom mee, zodat de export net zoveel
   // laat zien als het scherm en je hem in een blad kunt openen.
-  const kol=['naam','binnengekomen','bronnen','email','telefoon','klant','heeft_account','projecten',
+  const kol=['naam','binnengekomen','bronnen','email','telefoon','klant','klantnaam','heeft_account','projecten',
              'funnels','budget','band','timing','doel','eerder_vastgoed','status','sales_stage',
              'temperatuur','taal','antwoorden'];
   const plat=v=>Array.isArray(v)&&v.length&&typeof v[0]==='object'
