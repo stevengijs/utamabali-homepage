@@ -2082,7 +2082,14 @@ function bcOpstellen(hervatCamp){
       `<b>${hervatCamp.verzonden}</b> van ${hervatCamp.doel} verstuurd, nog <b>${hervatCamp.resterend}</b> te gaan. `+
       `Wie al een bericht kreeg wordt overgeslagen.`;
     const vs=$('#bc_verstuur');
-    if(vs){ vs.disabled=false; vs.title=''; vs.textContent=`🚀 Volgende golf (${Math.min(BC.golf,hervatCamp.resterend)} van ${hervatCamp.resterend})`; }
+    if(vs){
+      vs.disabled=false; vs.title='';
+      // E-mail kent geen golven: broadcast-send loopt de hele rest in één keer
+      // af en slaat over wie al iets kreeg. Alleen WhatsApp gaat per golf.
+      vs.textContent = hervatCamp.kanaal==='whatsapp'
+        ? `🚀 Volgende golf (${Math.min(BC.golf,hervatCamp.resterend)} van ${hervatCamp.resterend})`
+        : `🚀 Verder versturen naar ${hervatCamp.resterend}`;
+    }
   }
 
   bcSjablonenLaden();
