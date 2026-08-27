@@ -355,6 +355,51 @@
   #bc_tabel{padding:0 18px 18px}
   .bc-bereik{margin-left:4px;padding:0 5px;border-radius:999px;background:#0f6b4f;color:#fff;font-size:10.5px}
   .bc-chip.on .bc-bereik{background:rgba(255,255,255,.3)}
+
+  /* Filters als uitklapmenu's. Ze stonden eerst allemaal uitgeklapt als chips:
+     zeven rijen knoppen, waardoor de lijst zelf pas ver onder de vouw begon.
+     Een dropdown toont alleen wat je gekozen hebt en klapt de rest weg. */
+  .bc-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:14px 18px 0}
+  .bc-dd{position:relative}
+  .bc-ddknop{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;cursor:pointer;
+             border:1px solid var(--line);background:#fff;border-radius:9px;font-size:13px;color:var(--ink)}
+  .bc-ddknop:hover{border-color:#c8d2cc}
+  .bc-ddknop.actief{border-color:var(--brand);background:#f2f8f5}
+  .bc-dd.open .bc-ddknop{border-color:var(--brand);box-shadow:0 0 0 3px rgba(15,107,79,.12)}
+  .bc-ddlab{color:var(--muted);font-weight:600}
+  .bc-ddwaarde{font-weight:700;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bc-ddknop.actief .bc-ddwaarde{color:var(--brand)}
+  .bc-ddcar{color:var(--muted);font-size:9px;margin-left:1px}
+  .bc-ddmenu{display:none;position:absolute;z-index:70;top:calc(100% + 6px);left:0;
+             min-width:270px;max-width:380px;max-height:330px;overflow:auto;padding:6px;
+             background:#fff;border:1px solid var(--line);border-radius:11px;
+             box-shadow:0 14px 34px rgba(16,32,26,.16)}
+  .bc-dd.open .bc-ddmenu{display:block}
+  .bc-ddopt{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;
+            font-size:13px;cursor:pointer;white-space:normal}
+  .bc-ddopt:hover{background:#f4f7f5}
+  .bc-ddopt input{margin:0;flex:none}
+  .bc-ddtxt{flex:1;min-width:0}
+  .bc-ddn{flex:none;padding:1px 6px;border-radius:999px;background:#eef0ef;
+          color:var(--muted);font-size:10.5px;font-weight:700}
+  .bc-ddb{flex:none;padding:1px 6px;border-radius:999px;background:var(--brand);color:#fff;
+          font-size:10.5px;font-weight:700}
+  .bc-ddvoet{border-top:1px solid var(--line);margin-top:5px;padding:7px 9px 3px}
+  .bc-ddlink,.bc-wisalles{background:none;border:0;padding:0;cursor:pointer;
+                          color:var(--brand);font-size:12.5px;font-weight:700}
+  .bc-wisalles{margin-left:4px}
+  /* Antwoordregel onder een contact: alles wat iemand destijds in de funnel
+     invulde, zodat je niet de database in hoeft om dat te zien. */
+  .bc-meer{background:none;border:1px solid var(--line);border-radius:7px;cursor:pointer;
+           padding:3px 8px;font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+  .bc-meer:hover{border-color:var(--brand);color:var(--brand)}
+  .bc-detail>td{background:#fafbfa;padding:0 14px 12px;white-space:normal}
+  .bc-antw{display:flex;flex-wrap:wrap;gap:8px}
+  .bc-aw{flex:1 1 240px;min-width:0;padding:8px 10px;background:#fff;
+         border:1px solid var(--line);border-radius:9px}
+  .bc-avraag{display:block;font-size:11px;font-weight:700;letter-spacing:.03em;
+             text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .bc-aant{display:block;font-size:13.5px;font-weight:600;color:var(--ink)}
   /* Opstelscherm. Gebruikt de bestaande .field-stijl van de admin (zelfde rand,
      radius en focusring), zodat dit scherm niet zijn eigen invoervelden verzint. */
   .bc-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;padding:16px 18px 0}
@@ -1319,29 +1364,125 @@ function go(k){
    Verzenden gebeurt op een vastgelegde ontvangerslijst, niet op de filters.
    Wat je op het scherm afvinkt is precies wat er uitgaat. */
 let BC = {fac:null, sjablonen:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
-          budgetTot:null, kanaal:'email', sel:null, uit:new Set(), camp:null, stap:'kiezen'};
+          vastgoed:[], strategieen:[], budgetTot:null, kanaal:'email',
+          sel:null, uit:new Set(), open:new Set(), ddOpen:null, camp:null, stap:'kiezen'};
 
 const bcArg = a => a && a.length ? a : null;
 const bcFilters = () => ({funnels:bcArg(BC.funnels),
   projecten:bcArg(BC.projecten), banden:bcArg(BC.banden), timings:bcArg(BC.timings),
-  talen:bcArg(BC.talen), budget_tot:BC.budgetTot, kanaal:BC.kanaal});
+  talen:bcArg(BC.talen), vastgoed:bcArg(BC.vastgoed), strategieen:bcArg(BC.strategieen),
+  budget_tot:BC.budgetTot, kanaal:BC.kanaal});
 
-function bcChips(lijst, gekozen, groep){
-  // Het getal op een knop is ALTIJD het totaal aantal contacten. Eerder toonde
-  // hij het aantal dat via het gekozen kanaal bereikbaar is, en dan las
-  // "Utama Investment Funnel 67" als "er zijn maar 67 leads" terwijl het er 117
-  // zijn waarvan 67 met e-mailadres. Bereikbaarheid staat nu apart, in de
-  // tooltip en in de teller onder de filters.
-  return (lijst||[]).map(f=>{
-    const aan=gekozen.includes(f.waarde);
-    const uitleg=`${f.n} contact${f.n===1?'':'en'}: ${f.met_email} met e-mail, ${f.met_tel} met telefoonnummer`;
-    // Wie via het gekozen kanaal wegvalt, laten we zien in plaats van verzwijgen.
-    const bereik=BC.kanaal==='telefoon'?f.met_tel:(BC.kanaal==='email'?f.met_email:
-                 (BC.kanaal==='beide'?Math.min(f.met_email,f.met_tel):f.n));
-    const rest=(BC.kanaal!=='alles'&&bereik<f.n)?`<span class="bc-bereik">${bereik}</span>`:'';
-    return `<button class="bc-chip ${aan?'on':''}" data-groep="${groep}" data-w="${esc(f.waarde)}" title="${esc(uitleg)}">`+
-           `${esc(f.waarde)}<span class="bc-n">${f.n}</span>${rest}</button>`;
+/* De groepen die met aanvinkvakjes werken, in de volgorde waarin ze op het
+   scherm staan. Kanaal en budget staan er bewust niet bij: dat zijn enkele
+   keuzes en die hebben hun eigen stukje staat. */
+const BC_GROEPEN = ['funnels','projecten','banden','timings','vastgoed','strategieen','talen'];
+const bcActieveFilters = () =>
+  BC_GROEPEN.reduce((n,g)=>n+BC[g].length,0) + (BC.budgetTot?1:0);
+
+/* Een facet uit broadcast_facetten omzetten naar keuzes voor een dropdown.
+   Het getal achter een keuze is ALTIJD het totaal aantal contacten. Eerder
+   toonde hij het aantal dat via het gekozen kanaal bereikbaar is, en dan las
+   "Utama Investment Funnel 67" als "er zijn maar 67 leads" terwijl het er 117
+   zijn waarvan 67 met e-mailadres. Bereikbaarheid staat apart, in het groene
+   getal ernaast. */
+const bcFacet = (lijst, hernoem) => (lijst||[]).map(f=>({
+  waarde:String(f.waarde), label:(hernoem&&hernoem[f.waarde])||String(f.waarde),
+  n:f.n, met_email:f.met_email, met_tel:f.met_tel}));
+
+function bcDD(groep, label, opties, gekozen, enkel){
+  const gekozenOpties = opties.filter(o=>gekozen.includes(o.waarde));
+  const samenvatting = !gekozenOpties.length ? 'alles'
+    : gekozenOpties.length===1 ? gekozenOpties[0].label
+    : gekozenOpties.length+' gekozen';
+  const titel = gekozenOpties.length>1 ? gekozenOpties.map(o=>o.label).join(', ') : '';
+  const rijen = opties.map(o=>{
+    const aan = gekozen.includes(o.waarde);
+    let bereik = '';
+    if(o.n!=null && BC.kanaal!=='alles'){
+      const b = BC.kanaal==='telefoon' ? o.met_tel
+              : BC.kanaal==='email' ? o.met_email
+              : Math.min(o.met_email,o.met_tel);
+      if(b<o.n) bereik = `<span class="bc-ddb" title="hiervan bereikbaar via het gekozen kanaal">${b}</span>`;
+    }
+    return `<label class="bc-ddopt">`+
+      `<input type="${enkel?'radio':'checkbox'}" name="bcdd_${groep}" data-groep="${groep}" data-w="${esc(o.waarde)}" ${aan?'checked':''}>`+
+      `<span class="bc-ddtxt">${esc(o.label)}</span>`+
+      (o.n==null?'':`<span class="bc-ddn">${o.n}</span>${bereik}`)+`</label>`;
   }).join('');
+  return `<div class="bc-dd" data-dd="${groep}">
+    <button type="button" class="bc-ddknop ${gekozenOpties.length&&!enkel?'actief':''}"${titel?` title="${esc(titel)}"`:''}>
+      <span class="bc-ddlab">${esc(label)}</span>
+      <span class="bc-ddwaarde">${esc(samenvatting)}</span>
+      <span class="bc-ddcar">&#9660;</span></button>
+    <div class="bc-ddmenu">${rijen}${enkel?'':
+      `<div class="bc-ddvoet"><button type="button" class="bc-ddlink" data-wis="${groep}">Wis deze keuze</button></div>`}
+    </div></div>`;
+}
+
+function bcFilterHtml(){
+  const fac = BC.fac;
+  const kanalen = [['email','heeft e-mail'],['telefoon','heeft telefoonnummer'],
+                   ['beide','heeft allebei'],['alles','maakt niet uit']]
+                  .map(([w,l])=>({waarde:w,label:l}));
+  const budgetten = [['','maakt niet uit'],['100','\u20ac100K'],['250','\u20ac250K'],
+                     ['350','\u20ac350K'],['500','\u20ac500K'],['1000','\u20ac1000K']]
+                  .map(([w,l])=>({waarde:w,label:l}));
+  const n = bcActieveFilters();
+  return bcDD('kanaal','Bereikbaar via',kanalen,[BC.kanaal],true)
+       + bcDD('funnels','Funnel',bcFacet(fac.funnels),BC.funnels)
+       + bcDD('projecten','Project',bcFacet(fac.projecten),BC.projecten)
+       + bcDD('banden','Budget',bcFacet(fac.banden),BC.banden)
+       + bcDD('budgetTot','Budget reikt tot',budgetten,[BC.budgetTot==null?'':String(BC.budgetTot)],true)
+       + bcDD('timings','Koopmoment',bcFacet(fac.timings),BC.timings)
+       + bcDD('vastgoed','Eerder vastgoed',
+              bcFacet(fac.vastgoed,{ja:'Ja, kocht al eerder',nee:'Nee, eerste keer'}),BC.vastgoed)
+       + bcDD('strategieen','Plan met de woning',bcFacet(fac.strategieen),BC.strategieen)
+       + bcDD('talen','Taal',bcFacet(fac.talen),BC.talen)
+       + (n?`<button type="button" class="bc-wisalles" id="bc_wisalles">Wis alle filters (${n})</button>`:'');
+}
+
+/* Opnieuw tekenen na elke wijziging: de aantallen achter de keuzes veranderen
+   mee met het kanaal, dus een halve verversing zou verkeerde getallen tonen.
+   Het openstaande menu zetten we daarna terug, anders klapt hij dicht zodra je
+   het tweede vakje aanvinkt. */
+function bcTekenFilters(){
+  $('#bc_filters').innerHTML = bcFilterHtml();
+  bcBindFilters();
+  if(BC.ddOpen){
+    const d = document.querySelector(`#bc_filters .bc-dd[data-dd="${BC.ddOpen}"]`);
+    if(d) d.classList.add('open');
+  }
+}
+
+function bcBindFilters(){
+  const wrap = $('#bc_filters');
+  wrap.querySelectorAll('.bc-ddknop').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const dd = b.closest('.bc-dd'), was = dd.classList.contains('open');
+    wrap.querySelectorAll('.bc-dd').forEach(x=>x.classList.remove('open'));
+    dd.classList.toggle('open', !was);
+    BC.ddOpen = was ? null : dd.dataset.dd;
+  });
+  wrap.querySelectorAll('.bc-ddmenu').forEach(m=>m.onclick=e=>e.stopPropagation());
+  wrap.querySelectorAll('.bc-ddmenu input').forEach(i=>i.onchange=()=>{
+    const g = i.dataset.groep, w = i.dataset.w;
+    if(g==='kanaal'){ BC.kanaal=w; BC.ddOpen=null; }
+    else if(g==='budgetTot'){ BC.budgetTot = w?Number(w):null; BC.ddOpen=null; }
+    else {
+      const k = BC[g].indexOf(w);
+      if(i.checked && k<0) BC[g].push(w); else if(!i.checked && k>-1) BC[g].splice(k,1);
+    }
+    bcTekenFilters(); bcLaad();
+  });
+  wrap.querySelectorAll('[data-wis]').forEach(b=>b.onclick=()=>{
+    BC[b.dataset.wis]=[]; bcTekenFilters(); bcLaad();
+  });
+  const wis = $('#bc_wisalles');
+  if(wis) wis.onclick=()=>{
+    BC_GROEPEN.forEach(g=>BC[g]=[]); BC.budgetTot=null; BC.ddOpen=null;
+    bcTekenFilters(); bcLaad();
+  };
 }
 
 /* de contacten die daadwerkelijk meegaan: selectie min de afgevinkte */
@@ -1362,64 +1503,50 @@ async function renderBroadcast(){
       <div class="muted" style="font-size:13px;margin-top:2px">${fac.totaal} contacten uit Perspective: ${fac.totaal_email} met e-mail, ${fac.totaal_tel} met telefoonnummer. Deze lijst staat buiten het CRM en komt dus nooit in een pijplijn.</div>
     </div></div>
     <div id="bc_rest">
-      <div class="bc-vak"><div class="bc-lab">Kanaal</div><div class="bc-rij" id="bc_kanaal">
-        ${[['email','heeft e-mail'],['telefoon','heeft telefoonnummer'],['beide','heeft allebei'],['alles','maakt niet uit']]
-          .map(([k,l])=>`<button class="bc-chip bc-kan ${BC.kanaal===k?'on':''}" data-k="${k}">${l}</button>`).join('')}
-      </div><div class="muted" style="font-size:12px;margin-top:5px">Het grijze getal op een knop is het totaal aantal contacten. Staat er een groen getal achter, dan is dat hoeveel daarvan via het gekozen kanaal bereikbaar zijn. Versturen kan alleen naar wie een e-mailadres heeft.</div></div>
-      <div class="bc-vak"><div class="bc-lab">Funnel</div><div class="bc-rij" id="bc_funnels"></div></div>
-      <div class="bc-vak"><div class="bc-lab">Project</div><div class="bc-rij" id="bc_projecten">${bcChips(fac.projecten,BC.projecten,'projecten')}</div></div>
-      <div class="bc-vak"><div class="bc-lab">Budgetband</div><div class="bc-rij" id="bc_banden">${bcChips(fac.banden,BC.banden,'banden')}</div></div>
-      <div class="bc-vak"><div class="bc-lab">Budget reikt tot minstens</div><div class="bc-rij">
-        ${[null,100,250,350,500,1000].map(x=>`<button class="bc-chip bc-bud ${BC.budgetTot===x?'on':''}" data-bud="${x===null?'':x}">${x===null?'maakt niet uit':'€'+x+'K'}</button>`).join('')}
-      </div></div>
-      <div class="bc-vak"><div class="bc-lab">Koopmoment</div><div class="bc-rij" id="bc_timings">${bcChips(fac.timings,BC.timings,'timings')}</div></div>
-      <div class="bc-vak"><div class="bc-lab">Taal</div><div class="bc-rij" id="bc_talen">${bcChips(fac.talen,BC.talen,'talen')}</div></div>
+      <div class="bc-filters" id="bc_filters"></div>
+      <div class="muted" style="font-size:12px;padding:8px 18px 0">Het grijze getal achter een keuze is het totaal aantal contacten, het groene getal hoeveel daarvan bereikbaar zijn via het gekozen kanaal. Versturen kan alleen naar wie een e-mailadres heeft.</div>
       <div class="bc-telling" id="bc_telling"></div>
       <div class="bc-acties">
         <button class="btn btn-sm" id="bc_opstellen">✉ Nieuwsbrief opstellen</button>
         <button class="btn btn-ghost btn-sm" id="bc_csv">⬇ Exporteer als CSV</button>
         <button class="btn btn-ghost btn-sm" id="bc_allemaal">Alles aanvinken</button>
+        <button class="btn btn-ghost btn-sm" id="bc_antwoorden">Antwoorden tonen</button>
       </div>
       <div id="bc_tabel"></div>
     </div>
   </div>
   <div id="bc_opstel"></div>`;
 
-  const bind=sel=>document.querySelectorAll(sel+' [data-groep]').forEach(b=>b.onclick=()=>{
-    const g=b.dataset.groep,w=b.dataset.w,i=BC[g].indexOf(w);
-    if(i>-1)BC[g].splice(i,1); else BC[g].push(w);
-    b.classList.toggle('on');
-    bcLaad();
-  });
-  const herteken=()=>{
-    $('#bc_funnels').innerHTML=bcChips(BC.fac.funnels,BC.funnels,'funnels');
-    bind('#bc_funnels');
-    bcLaad();
-  };
-  ['#bc_projecten','#bc_banden','#bc_timings','#bc_talen'].forEach(bind);
-  document.querySelectorAll('.bc-kan').forEach(b=>b.onclick=()=>{
-    BC.kanaal=b.dataset.k;
-    document.querySelectorAll('.bc-kan').forEach(x=>x.classList.toggle('on',x===b));
-    herteken();
-  });
-  document.querySelectorAll('.bc-bud').forEach(b=>b.onclick=()=>{
-    BC.budgetTot=b.dataset.bud?Number(b.dataset.bud):null;
-    document.querySelectorAll('.bc-bud').forEach(x=>x.classList.toggle('on',x===b));
-    bcLaad();
-  });
+  // Buiten een menu klikken sluit het. Eén keer aanhangen, want deze weergave
+  // wordt opnieuw getekend bij elke filterwijziging.
+  if(!BC.sluiterAan){
+    document.addEventListener('click',()=>{
+      if(!BC.ddOpen) return;
+      BC.ddOpen=null;
+      document.querySelectorAll('#bc_filters .bc-dd.open').forEach(d=>d.classList.remove('open'));
+    });
+    BC.sluiterAan=true;
+  }
   $('#bc_csv').onclick=bcExport;
   $('#bc_allemaal').onclick=()=>{BC.uit.clear();bcTabel();bcTelling();};
   $('#bc_opstellen').onclick=bcOpstellen;
-  herteken();
+  $('#bc_antwoorden').onclick=()=>{
+    const r=(BC.sel&&BC.sel.rijen)||[];
+    if(BC.open.size) BC.open.clear(); else r.forEach(x=>BC.open.add(x.id));
+    bcTabel();
+  };
+  bcTekenFilters();
+  bcLaad();
 }
 
 async function bcLaad(){
   const f=bcFilters();
   const {data,error}=await sb.rpc('broadcast_selectie',{
     p_funnels:f.funnels,p_projecten:f.projecten,p_banden:f.banden,
-    p_timings:f.timings,p_talen:f.talen,p_budget_tot:f.budget_tot,p_kanaal:f.kanaal,p_limit:1000});
+    p_timings:f.timings,p_talen:f.talen,p_vastgoed:f.vastgoed,p_strategieen:f.strategieen,
+    p_budget_tot:f.budget_tot,p_kanaal:f.kanaal,p_limit:1000});
   if(error){$('#bc_telling').innerHTML=`<span class="err">${esc(error.message)}</span>`;return;}
-  BC.sel=data; BC.uit.clear();
+  BC.sel=data; BC.uit.clear(); BC.open.clear();
   bcTelling(); bcTabel();
 }
 
@@ -1435,27 +1562,56 @@ function bcTelling(){
 function bcTabel(){
   const r=(BC.sel&&BC.sel.rijen)||[];
   if(!r.length){$('#bc_tabel').innerHTML='<div class="empty" style="padding:16px">Niemand voldoet aan deze filters.</div>';return;}
+  const jaNee = v => v==null ? '<span class="muted">\u2014</span>' : (v?'Ja':'Nee');
   $('#bc_tabel').innerHTML=
-    `<div class="muted" style="font-size:12px;margin:10px 0 6px">Vink iemand uit om hem over te slaan, bijvoorbeeld een bestaande klant.</div>
-     <table class="tbl"><tr><th style="width:30px"></th><th>Naam</th><th>E-mail</th><th>Funnel</th><th>Budget</th><th>Koopmoment</th></tr>`+
-    r.map(x=>`<tr class="${BC.uit.has(x.id)?'bc-uit':''}">
-      <td><input type="checkbox" class="bc-vink" data-id="${x.id}" ${BC.uit.has(x.id)?'':'checked'}></td>
-      <td>${esc(x.naam||'—')}</td>
+    `<div class="muted" style="font-size:12px;margin:10px 0 6px">Vink iemand uit om hem over te slaan, bijvoorbeeld een bestaande klant. Klik op het aantal antwoorden om te zien wat iemand destijds invulde.</div>
+     <table><tr><th style="width:30px"></th><th>Naam</th><th>E-mail</th><th>Telefoon</th><th>Funnel</th>
+     <th>Budget</th><th>Koopmoment</th><th>Eerder vastgoed</th><th></th></tr>`+
+    r.map(x=>{
+      const antw = Array.isArray(x.antwoorden)?x.antwoorden:[];
+      const uit = BC.uit.has(x.id), op = BC.open.has(x.id);
+      return `<tr class="${uit?'bc-uit':''}">
+      <td><input type="checkbox" class="bc-vink" data-id="${x.id}" ${uit?'':'checked'}></td>
+      <td>${esc(x.naam||'\u2014')}</td>
       <td>${x.email?esc(x.email):'<span class="muted">geen e-mail</span>'}</td>
-      <td>${esc((x.funnels||[]).join(', ')||'—')}</td>
-      <td>${esc(x.budget||'—')}</td><td>${esc(x.timing||'—')}</td></tr>`).join('')+'</table>';
+      <td>${x.telefoon?esc(x.telefoon):'<span class="muted">geen nummer</span>'}</td>
+      <td>${esc((x.funnels||[]).join(', ')||'\u2014')}</td>
+      <td>${esc(x.budget||'\u2014')}</td>
+      <td>${esc(x.timing||'\u2014')}</td>
+      <td>${jaNee(x.eerder_vastgoed)}</td>
+      <td>${antw.length?`<button class="bc-meer" data-meer="${x.id}">${op?'verberg':antw.length+' antwoord'+(antw.length===1?'':'en')}</button>`:'<span class="muted">\u2014</span>'}</td>
+      </tr>`+
+      (antw.length&&op?`<tr class="bc-detail"><td></td><td colspan="8"><div class="bc-antw">`+
+        antw.map(a=>`<div class="bc-aw"><span class="bc-avraag">${esc(a.vraag||a.veld||'Vraag')}</span>`+
+                    `<span class="bc-aant">${esc(a.antwoord==null||a.antwoord===''?'\u2014':a.antwoord)}</span></div>`).join('')+
+        (x.strategie?`<div class="bc-aw"><span class="bc-avraag">Plan met de woning</span><span class="bc-aant">${esc(x.strategie)}</span></div>`:'')+
+        `</div></td></tr>`:'');
+    }).join('')+'</table>';
   document.querySelectorAll('.bc-vink').forEach(c=>c.onchange=()=>{
     if(c.checked)BC.uit.delete(c.dataset.id); else BC.uit.add(c.dataset.id);
     c.closest('tr').classList.toggle('bc-uit',!c.checked);
     bcTelling();
+  });
+  document.querySelectorAll('[data-meer]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.meer;
+    if(BC.open.has(id))BC.open.delete(id); else BC.open.add(id);
+    bcTabel();
   });
 }
 
 async function bcExport(){
   const r=bcGekozen();
   if(!r.length){toast('Niets te exporteren','err');return;}
-  const kol=['naam','email','telefoon','funnels','budget','band','timing','taal'];
-  const q=v=>`"${String(Array.isArray(v)?v.join(' | '):(v==null?'':v)).replace(/"/g,'""')}"`;
+  // De ruwe antwoorden gaan als één kolom mee, zodat de export net zoveel
+  // laat zien als het scherm en je hem in een blad kunt openen.
+  const kol=['naam','email','telefoon','funnels','projecten','budget','band','timing',
+             'eerder_vastgoed','strategie','taal','antwoorden'];
+  const plat=v=>Array.isArray(v)&&v.length&&typeof v[0]==='object'
+      ? v.map(a=>`${a.vraag||a.veld}: ${a.antwoord}`).join(' | ')
+      : Array.isArray(v) ? v.join(' | ')
+      : typeof v==='boolean' ? (v?'ja':'nee')
+      : (v==null?'':v);
+  const q=v=>`"${String(plat(v)).replace(/"/g,'""')}"`;
   const csv=[kol.join(',')].concat(r.map(x=>kol.map(k=>q(x[k])).join(','))).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
