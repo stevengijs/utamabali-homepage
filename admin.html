@@ -1372,7 +1372,7 @@ async function renderBroadcast(){
       <div class="bc-vak"><div class="bc-lab">Budget reikt tot minstens</div><div class="bc-rij">
         ${[null,100,250,350,500,1000].map(x=>`<button class="bc-chip bc-bud ${BC.budgetTot===x?'on':''}" data-bud="${x===null?'':x}">${x===null?'maakt niet uit':'€'+x+'K'}</button>`).join('')}
       </div></div>
-      <div class="bc-vak"><div class="bc-lab">Timing</div><div class="bc-rij" id="bc_timings">${bcChips(fac.timings,BC.timings,'timings')}</div></div>
+      <div class="bc-vak"><div class="bc-lab">Koopmoment</div><div class="bc-rij" id="bc_timings">${bcChips(fac.timings,BC.timings,'timings')}</div></div>
       <div class="bc-vak"><div class="bc-lab">Taal</div><div class="bc-rij" id="bc_talen">${bcChips(fac.talen,BC.talen,'talen')}</div></div>
       <div class="bc-telling" id="bc_telling"></div>
       <div class="bc-acties">
@@ -1437,7 +1437,7 @@ function bcTabel(){
   if(!r.length){$('#bc_tabel').innerHTML='<div class="empty" style="padding:16px">Niemand voldoet aan deze filters.</div>';return;}
   $('#bc_tabel').innerHTML=
     `<div class="muted" style="font-size:12px;margin:10px 0 6px">Vink iemand uit om hem over te slaan, bijvoorbeeld een bestaande klant.</div>
-     <table class="tbl"><tr><th style="width:30px"></th><th>Naam</th><th>E-mail</th><th>Funnel</th><th>Budget</th><th>Timing</th></tr>`+
+     <table class="tbl"><tr><th style="width:30px"></th><th>Naam</th><th>E-mail</th><th>Funnel</th><th>Budget</th><th>Koopmoment</th></tr>`+
     r.map(x=>`<tr class="${BC.uit.has(x.id)?'bc-uit':''}">
       <td><input type="checkbox" class="bc-vink" data-id="${x.id}" ${BC.uit.has(x.id)?'':'checked'}></td>
       <td>${esc(x.naam||'—')}</td>
