@@ -1788,6 +1788,17 @@ async function bcExport(){
   toast(`${r.length} contacten geexporteerd`,'ok');
 }
 
+/* Het naschrift over het referral-programma. Eén plek, zodat de knop in de
+   editor en de sjablonen in de database dezelfde tekst en dezelfde voorwaarde
+   gebruiken. Inline stijl omdat e-mailclients een <style>-blok vaak weggooien;
+   de kleuren komen uit _shared/email-layout.ts. */
+const bcPsReferral = () =>
+  '<p style="margin-top:26px;padding-top:16px;border-top:1px solid #e3e7e4;'+
+  'font-size:14.5px;color:#5f6f68;line-height:1.6">P.s. ken je iemand die ook naar Bali kijkt? '+
+  'Deel je <a href="https://invest.utamabali.com/referral/" '+
+  'style="color:#0f6b4f;font-weight:600;text-decoration:underline">persoonlijke referral-link</a> '+
+  'en je ontvangt \u20ac2.500 zodra diegene koopt en het contract getekend is.</p>';
+
 /* ---------------- nieuwsbrief opstellen en versturen ---------------- */
 function bcOpstellen(){
   const m=bcMailbaar();
@@ -1839,6 +1850,7 @@ function bcOpstellen(){
         <span style="flex:1"></span>
         <button data-var="{{voornaam}}" title="Voegt de voornaam van de ontvanger in">+ voornaam</button>
         <button data-var="{{project}}" title="Voegt het project in waar deze lead vandaan komt">+ project</button>
+        <button type="button" id="bc_ps" title="Voegt het naschrift over het referral-programma toe, onderaan het bericht">+ p.s. referral</button>
       </div>
       <div class="rte" id="bc_body" contenteditable="true"></div>
       <div class="bc-hint">Ontbreekt een voornaam, dan valt de aanhef netjes terug op "Hoi," zonder losse komma.</div>
@@ -1893,6 +1905,18 @@ function bcOpstellen(){
       if(c==='createLink'){const u=prompt('Link-URL:','https://');if(u)document.execCommand('createLink',false,u);}
       else document.execCommand(c,false,null);};
   });
+  // Hetzelfde naschrift als in de sjablonen, zodat een losse mail dezelfde
+  // tekst en voorwaarde gebruikt. Staat als constante in bcPsReferral().
+  const psKnop=$('#bc_ps');
+  if(psKnop) psKnop.onclick=()=>{
+    const body=$('#bc_body');
+    if(body.innerHTML.includes('invest.utamabali.com/referral')){
+      toast('Het naschrift staat er al in','err'); return;
+    }
+    // Onderaan plakken, niet op de cursor: een p.s. hoort na de ondertekening.
+    body.insertAdjacentHTML('beforeend', bcPsReferral());
+    toast('Naschrift toegevoegd','ok');
+  };
   document.querySelectorAll('#bc_tb [data-var]').forEach(b=>{
     b.addEventListener('mousedown',e=>e.preventDefault());
     b.onclick=()=>{$('#bc_body').focus();document.execCommand('insertText',false,b.dataset.var);};
