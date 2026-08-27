@@ -50,7 +50,9 @@ nav .links a:hover{color:var(--ink)}
    v1-kleurtaal (ink/cream/geen serif) in plaats van B's donkere merksysteem ---- */
 .hero{position:relative;min-height:78vh;display:flex;align-items:flex-end;background-size:cover;background-position:center;border-bottom:1px solid var(--line)}
 .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,20,15,.05) 0%,rgba(23,20,15,.28) 55%,rgba(23,20,15,.82) 100%)}
-.hero .inner{position:relative;z-index:1;padding:0 0 60px;max-width:52ch}
+.hero .inner{position:relative;z-index:1;padding:0 24px 60px;max-width:calc(52ch + 48px)}/* padding:0 0 60px wiste de 0 24px van .wrap, dus de herotekst plakte tegen de
+   schermrand op alles smaller dan 1208px. De max-width groeit met precies die
+   48px mee, zodat de tekstkolom op desktop even breed blijft en niets verschuift. */
 .eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);font-weight:700}
 .hero .eyebrow{color:rgba(255,255,255,.88)}
 .hero h1{font-size:clamp(34px,5.4vw,58px);letter-spacing:-.5px;margin:16px 0 16px;max-width:15ch;color:#fff}
@@ -58,6 +60,31 @@ nav .links a:hover{color:var(--ink)}
 .btns{display:flex;gap:12px;flex-wrap:wrap}
 .btn.ghost-light{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
 .btn.ghost-light:hover{background:#fff;color:var(--ink)}
+
+/* ---- mobiel ---- */
+@media(max-width:520px){
+  /* De knop in de balk brak over twee regels en werd zo 70px hoog in een rij van
+     64px: hij stak onder de balk uit. Niet laten afbreken en iets kleiner, dan
+     past merk + taalkeuze + knop samen binnen 375px. */
+  nav .row{height:60px}
+  .brand{font-size:17px;letter-spacing:.22em}
+  .nav-right{gap:8px}
+  .lang{padding:2px}
+  .lang button{min-width:34px;min-height:34px;padding:4px 9px;font-size:12px}
+  nav .btn{white-space:nowrap;font-size:13px;padding:9px 14px}
+
+  /* Het verloop over de foto liep pas laag donker. Bij een langere kop (de
+     Nederlandse is langer dan de Engelse) schuift de tekst omhoog naar de lucht,
+     en dan is wit op wit niet meer te lezen. */
+  .hero::after{background:linear-gradient(180deg,rgba(23,20,15,.18) 0%,rgba(23,20,15,.48) 42%,rgba(23,20,15,.88) 100%)}
+  .hero .inner{padding-bottom:44px}
+  .hero .eyebrow{font-size:11px;letter-spacing:.14em}
+  .hero p{font-size:16.5px;margin-bottom:24px}
+  /* Twee knoppen naast elkaar die de breedte vullen, in plaats van een rest
+     ruimte rechts. */
+  .hero .btns{gap:10px}
+  .hero .btns .btn{flex:1 1 0;justify-content:center;padding-left:14px;padding-right:14px}
+}
 
 /* ---- process (hoe het werkt) ---- */
 .process-sec{border-bottom:1px solid var(--line);background:var(--paper);padding:56px 0 60px}
