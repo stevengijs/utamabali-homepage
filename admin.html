@@ -397,6 +397,8 @@
   .bc-meer{background:none;border:1px solid var(--line);border-radius:7px;cursor:pointer;
            padding:3px 8px;font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap}
   .bc-meer:hover{border-color:var(--brand);color:var(--brand)}
+  .bc-dicht{margin:12px 0 2px;padding:14px 16px;border-radius:10px;background:#f7f9f8;
+            border:1px dashed var(--line);color:var(--muted);font-size:13px}
   .bc-detail>td{background:#fafbfa;padding:0 14px 12px;white-space:normal}
   .bc-antw{display:flex;flex-wrap:wrap;gap:8px}
   .bc-aw{flex:1 1 240px;min-width:0;padding:8px 10px;background:#fff;
@@ -1368,7 +1370,7 @@ function go(k){
    Verzenden gebeurt op een vastgelegde ontvangerslijst, niet op de filters.
    Wat je op het scherm afvinkt is precies wat er uitgaat. */
 let BC = {fac:null, sjablonen:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
-          vastgoed:[], strategieen:[], budgetTot:null, kanaal:'email',
+          vastgoed:[], strategieen:[], budgetTot:null, kanaal:'email', lijstOpen:false,
           sel:null, uit:new Set(), open:new Set(), ddOpen:null, camp:null, stap:'kiezen'};
 
 const bcArg = a => a && a.length ? a : null;
@@ -1513,6 +1515,7 @@ async function renderBroadcast(){
       <div class="bc-acties">
         <button class="btn btn-primary btn-sm" id="bc_opstellen">✉ Nieuwsbrief opstellen</button>
         <button class="btn btn-ghost btn-sm" id="bc_csv">⬇ Exporteer als CSV</button>
+        <button class="btn btn-ghost btn-sm" id="bc_lijst"></button>
         <button class="btn btn-ghost btn-sm" id="bc_allemaal">Alles aanvinken</button>
         <button class="btn btn-ghost btn-sm" id="bc_antwoorden">Antwoorden tonen</button>
       </div>
@@ -1534,6 +1537,7 @@ async function renderBroadcast(){
   $('#bc_csv').onclick=bcExport;
   $('#bc_allemaal').onclick=()=>{BC.uit.clear();bcTabel();bcTelling();};
   $('#bc_opstellen').onclick=bcOpstellen;
+  $('#bc_lijst').onclick=()=>{ BC.lijstOpen=!BC.lijstOpen; bcTabel(); bcTelling(); };
   $('#bc_antwoorden').onclick=()=>{
     const r=(BC.sel&&BC.sel.rijen)||[];
     if(BC.open.size) BC.open.clear(); else r.forEach(x=>BC.open.add(x.id));
@@ -1556,6 +1560,14 @@ async function bcLaad(){
 
 function bcTelling(){
   const g=bcGekozen(), m=bcMailbaar(), uit=BC.uit.size;
+  const knop=$('#bc_lijst');
+  if(knop){
+    knop.textContent = (BC.lijstOpen?'\u25b4 Lijst verbergen':'\u25be Leads tonen')+` (${g.length})`;
+    // Aanvinken en antwoorden slaan nergens op zolang je de lijst niet ziet.
+    ['#bc_allemaal','#bc_antwoorden'].forEach(sel=>{
+      const b=$(sel); if(b) b.style.display = BC.lijstOpen?'':'none';
+    });
+  }
   $('#bc_telling').innerHTML=
     `<b>${g.length}</b> geselecteerd`+
     (uit?` <span class="muted">(${uit} handmatig afgevinkt)</span>`:'')+
@@ -1566,6 +1578,13 @@ function bcTelling(){
 function bcTabel(){
   const r=(BC.sel&&BC.sel.rijen)||[];
   if(!r.length){$('#bc_tabel').innerHTML='<div class="empty" style="padding:16px">Niemand voldoet aan deze filters.</div>';return;}
+  // De lijst staat dicht tot je erom vraagt. Met honderden regels duwt hij
+  // anders de filters en de telling van het scherm, terwijl je meestal alleen
+  // wilt weten hoeveel mensen je selectie oplevert.
+  if(!BC.lijstOpen){
+    $('#bc_tabel').innerHTML=`<div class="bc-dicht">De lijst met ${r.length} contact${r.length===1?'':'en'} staat dicht. Klik op <b>Leads tonen</b> om hem open te klappen.</div>`;
+    return;
+  }
   const jaNee = v => v==null ? '<span class="muted">\u2014</span>' : (v?'Ja':'Nee');
   $('#bc_tabel').innerHTML=
     `<div class="muted" style="font-size:12px;margin:10px 0 6px">Vink iemand uit om hem over te slaan, bijvoorbeeld een bestaande klant. Klik op het aantal antwoorden om te zien wat iemand destijds invulde.</div>
