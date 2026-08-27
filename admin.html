@@ -352,7 +352,11 @@
   .bc-check{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
   .bc-telling{margin:14px 18px 0;padding:10px 12px;border-radius:8px;background:#f1f5f9;font-size:13.5px}
   .bc-acties{display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px}
-  #bc_tabel{padding:0 18px 18px}
+  /* De tabel is met negen kolommen breder dan het paneel. Zonder eigen
+     schuifbalk vallen de rechterkolommen (eerder vastgoed, de antwoorden)
+     op een laptopscherm buiten beeld zonder dat je erbij kunt. */
+  #bc_tabel{padding:0 18px 18px;overflow-x:auto}
+  #bc_tabel table{min-width:1080px}
   .bc-bereik{margin-left:4px;padding:0 5px;border-radius:999px;background:#0f6b4f;color:#fff;font-size:10.5px}
   .bc-chip.on .bc-bereik{background:rgba(255,255,255,.3)}
 
