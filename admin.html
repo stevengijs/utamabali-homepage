@@ -2305,7 +2305,10 @@ async function bcWaLaden(){
 }
 
 const BC_WA_BRONNEN=[['voornaam','Voornaam van de ontvanger'],['naam','Volledige naam'],
-                     ['project','Project van de lead'],['tekst','Vaste tekst']];
+                     ['project','Project van de lead'],['tekst','Vaste tekst'],
+                     // Meta rapporteert geen kliks. Kies je Link, dan gaat de
+                     // link via utamabali.com/r/<code> en tellen we hem wel.
+                     ['link','Link (klik meetbaar)']];
 
 function bcWaVarsTekenen(){
   const vak=$('#bc_wavars'), wrap=$('#bc_wavars_vak');
@@ -2316,8 +2319,9 @@ function bcWaVarsTekenen(){
        <span class="bc-wanr">{{${i+1}}}</span>
        <select data-varbron="${i}">${BC_WA_BRONNEN.map(([k,l])=>
          `<option value="${k}" ${v.bron===k?'selected':''}>${esc(l)}</option>`).join('')}</select>
-       <input data-varwaarde="${i}" placeholder="Vaste tekst" value="${esc(v.waarde||'')}"
-              style="${v.bron==='tekst'?'':'display:none'}">
+       <input data-varwaarde="${i}" value="${esc(v.waarde||'')}"
+              placeholder="${v.bron==='link'?'https://invest.utamabali.com/moka':'Vaste tekst'}"
+              style="${(v.bron==='tekst'||v.bron==='link')?'':'display:none'}">
      </div>`).join('');
   vak.querySelectorAll('[data-varbron]').forEach(sel=>sel.onchange=()=>{
     const i=Number(sel.dataset.varbron);
@@ -2350,7 +2354,7 @@ function bcWaVoorbeeld(){
     w=String(w).trim();
     if(w) return w;
     // Een lege vaste tekst is iets wat jij nog moet doen, geen noodwaarde.
-    if(v.bron==='tekst'){ onvolledig=true; return `[{{${i+1}}} nog invullen]`; }
+    if(v.bron==='tekst'||v.bron==='link'){ onvolledig=true; return `[{{${i+1}}} nog invullen]`; }
     return v.bron==='project' ? 'onze projecten' : 'daar';
   });
   const tekst=String(BC.waTpl.body||'').replace(/\{\{(\d+)\}\}/g,(_m,n)=>params[Number(n)-1]??`{{${n}}}`);
@@ -2494,14 +2498,41 @@ async function bcVerstuur(test){
   if(test){
     st.innerHTML=`Proefmail verstuurd naar <b>${esc(data.naar)}</b>. Controleer hem, dan kun je versturen.`;
     const b=$('#bc_verstuur'); b.disabled=false; b.title='';
-  }else{
-    st.innerHTML=`Verstuurd: <b>${data.verzonden}</b>`+
-      (data.mislukt?`, mislukt: <b>${data.mislukt}</b>`:'')+
-      (data.overgeslagen?`, overgeslagen: ${data.overgeslagen}`:'');
-    $('#bc_verstuur').disabled=true;
-    bcCampVergeten();
-    toast(`Nieuwsbrief verstuurd naar ${data.verzonden} mensen`,'ok');
+    return;
   }
+
+  // De verzendfunctie stopt uit zichzelf voor de looptijdlimiet van 150
+  // seconden en zegt hoeveel er nog te gaan is. Eerder deed hij dat niet: dan
+  // sloeg Supabase hem halverwege dood met een 504 en zag Ashley alleen
+  // "Edge Function returned a non-2xx status code", met een campagne die op 76
+  // van de 244 was blijven staan. Nu roepen we hem net zo vaak opnieuw aan tot
+  // de lijst leeg is; wie al een mail heeft wordt overgeslagen.
+  let totaal=data.verzonden||0, totMislukt=data.mislukt||0, rest=data.resterend||0;
+  const knop=$('#bc_verstuur');
+  while(rest>0){
+    knop.disabled=true;
+    st.innerHTML=`Bezig: <b>${totaal}</b> verstuurd, nog <b>${rest}</b> te gaan. Dit venster mag open blijven staan.`;
+    const vervolg=await sb.functions.invoke('broadcast-send',{body:{campagne_id:BC.camp}});
+    if(vervolg.error||!vervolg.data||vervolg.data.ok===false){
+      st.innerHTML=`<b>${totaal}</b> verstuurd, daarna liep het vast: `+
+        `<span class="err">${esc((vervolg.data&&vervolg.data.reden)||(vervolg.error&&vervolg.error.message)||'onbekend')}</span>`+
+        `<div class="bc-hint" style="margin-top:6px">Er is nog <b>${rest}</b> te gaan. Klik nogmaals om verder te gaan; wie al een mail kreeg wordt overgeslagen.</div>`;
+      knop.disabled=false; knop.textContent=`🚀 Verder versturen naar ${rest}`;
+      bcCampagnesLaden();
+      return;
+    }
+    totaal+=vervolg.data.verzonden||0;
+    totMislukt+=vervolg.data.mislukt||0;
+    rest=vervolg.data.resterend||0;
+  }
+
+  st.innerHTML=`Klaar. Verstuurd: <b>${totaal}</b>`+
+    (totMislukt?`, mislukt: <b>${totMislukt}</b>`:'')+
+    (data.overgeslagen?`, overgeslagen: ${data.overgeslagen}`:'');
+  knop.disabled=true; knop.textContent='Alles verstuurd';
+  bcCampVergeten();
+  bcCampagnesLaden();
+  toast(`Nieuwsbrief verstuurd naar ${totaal} mensen`,'ok');
 }
 
 /* WhatsApp verstuurt per golf, niet in één keer. Na elke golf staat de nieuwe
@@ -2529,8 +2560,12 @@ function bcToonLopend(st, lopend){
 async function bcVerstuurWa(test){
   const st=$('#bc_status'); st.style.display='';
   if(!BC.waTpl){toast('Kies eerst een goedgekeurd template','err');return;}
-  const leeg=BC.waVars.findIndex(v=>v.bron==='tekst' && !String(v.waarde||'').trim());
+  const leeg=BC.waVars.findIndex(v=>(v.bron==='tekst'||v.bron==='link') && !String(v.waarde||'').trim());
   if(leeg>-1){toast(`Variabele {{${leeg+1}}} is nog leeg`,'err');return;}
+  // De doorstuurlink werkt alleen naar onze eigen domeinen; een open redirect
+  // is een cadeau aan phishers, dus de functie weigert de rest.
+  const raar=BC.waVars.find(v=>v.bron==='link' && !/^https:\/\/([a-z0-9-]+\.)?utamabali\.com(\/|$)/i.test(String(v.waarde||'').trim()));
+  if(raar){toast('Een meetbare link moet naar utamabali.com wijzen','err');return;}
 
   st.textContent = test ? 'Proefbericht versturen…' : 'Golf versturen…';
 
