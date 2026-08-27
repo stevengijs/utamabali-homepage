@@ -2296,7 +2296,9 @@ async function bcVerstuurWa(test){
     if(!nummer){st.style.display='none';return;}
     try{ localStorage.setItem('bc_testnummer', nummer); }catch(e){}
     const {data,error}=await sb.functions.invoke('broadcast-wa',{
-      body:{actie:'test', campagne_id:BC.camp, naar:nummer}});
+      // De templatetekst gaat mee zodat het proefbericht ook in de inbox-thread
+      // belandt, net als een echte verzending.
+      body:{actie:'test', campagne_id:BC.camp, naar:nummer, template_body:BC.waTpl.body}});
     if(error){st.innerHTML=`<span class="err">Mislukt: ${esc(error.message)}</span>`;return;}
     if(!data||data.ok===false){st.innerHTML=`<span class="err">${esc((data&&(data.detail||data.reden))||'mislukt')}</span>`;return;}
     st.innerHTML=`Proefbericht verstuurd naar <b>${esc(data.naar)}</b>. Controleer het op je telefoon, dan kun je de eerste golf sturen.`;
