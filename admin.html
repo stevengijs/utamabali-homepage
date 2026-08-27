@@ -399,6 +399,9 @@
   .bc-meer:hover{border-color:var(--brand);color:var(--brand)}
   .bc-ja{display:inline-block;padding:2px 8px;border-radius:999px;background:#e8f3ee;
          color:var(--brand);font-size:11.5px;font-weight:700}
+  .bc-klant{display:inline-block;padding:2px 8px;border-radius:999px;background:#fef3c7;
+            color:#92400e;font-size:11.5px;font-weight:700;margin-right:4px}
+  .bc-let-inline{color:#92400e}
   .bc-dicht{margin:12px 0 2px;padding:14px 16px;border-radius:10px;background:#f7f9f8;
             border:1px dashed var(--line);color:var(--muted);font-size:13px}
   .bc-detail>td{background:#fafbfa;padding:0 14px 12px;white-space:normal}
@@ -1373,7 +1376,7 @@ function go(k){
    Wat je op het scherm afvinkt is precies wat er uitgaat. */
 let BC = {fac:null, sjablonen:[],
           bronnen:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
-          vastgoed:[], doelen:[], statussen:[], temperaturen:[], account:[],
+          vastgoed:[], doelen:[], statussen:[], temperaturen:[], account:[], klant:[],
           periode:'', kanaal:'email', lijstOpen:false,
           sel:null, uit:new Set(), open:new Set(), ddOpen:null, camp:null, stap:'kiezen'};
 
@@ -1382,13 +1385,13 @@ const bcFilters = () => ({
   bronnen:bcArg(BC.bronnen), funnels:bcArg(BC.funnels), projecten:bcArg(BC.projecten),
   banden:bcArg(BC.banden), timings:bcArg(BC.timings), talen:bcArg(BC.talen),
   vastgoed:bcArg(BC.vastgoed), doelen:bcArg(BC.doelen), statussen:bcArg(BC.statussen),
-  temperaturen:bcArg(BC.temperaturen), account:bcArg(BC.account),
+  temperaturen:bcArg(BC.temperaturen), account:bcArg(BC.account), klant:bcArg(BC.klant),
   periode:BC.periode||null, kanaal:BC.kanaal});
 
 /* De groepen met aanvinkvakjes, in schermvolgorde. Kanaal en periode staan er
    niet bij: dat zijn enkele keuzes met hun eigen stukje staat. */
 const BC_GROEPEN = ['bronnen','funnels','projecten','banden','timings','doelen',
-                    'vastgoed','statussen','temperaturen','account','talen'];
+                    'vastgoed','statussen','temperaturen','account','klant','talen'];
 const bcActieveFilters = () =>
   BC_GROEPEN.reduce((n,g)=>n+BC[g].length,0) + (BC.periode?1:0);
 
@@ -1405,7 +1408,11 @@ const BC_LABELS = {
   vastgoed:     {ja:'Ja, kocht al eerder', nee:'Nee, eerste keer'},
   statussen:    {open:'Open', won:'Gewonnen', lost:'Verloren', abandoned:'Doodgebloed'},
   temperaturen: {hot:'Hot', warm:'Warm', cold:'Cold'},
-  account:      {ja:'Heeft een account', nee:'Nog geen account'},
+  // "Portaalaccount" las als "staat in het portaal", en dat doen ze allemaal.
+  // Het gaat erom of iemand ooit een inloglink heeft aangevraagd; dat gebeurt
+  // alleen voor de dataroom.
+  account:      {ja:'Heeft ingelogd', nee:'Nog nooit ingelogd'},
+  klant:        {ja:'Is al klant', nee:'Nog geen klant'},
   talen:        {nl:'Nederlands', en:'Engels'},
 };
 const bcLabel = (groep, waarde) =>
@@ -1482,7 +1489,9 @@ function bcFilterHtml(){
        + bcDD('timings','Koopmoment',bcFacet(fac.timings,'timings'),BC.timings)
        + bcDD('doelen','Plan met de woning',bcFacet(fac.doelen,'doelen'),BC.doelen)
        + bcDD('vastgoed','Eerder vastgoed',bcFacet(fac.vastgoed,'vastgoed'),BC.vastgoed)
-       + bcDD('account','Portaalaccount',bcFacet(
+       + bcDD('klant','Klant',bcFacet(
+           [{waarde:'ja',n:fac.met_klant},{waarde:'nee',n:fac.totaal-fac.met_klant}],'klant'),BC.klant)
+       + bcDD('account','Ingelogd op invest',bcFacet(
            [{waarde:'ja',n:fac.met_account},{waarde:'nee',n:fac.totaal-fac.met_account}],'account'),BC.account)
        + bcDD('statussen','Verkoopstatus',bcFacet(fac.statussen,'statussen'),BC.statussen)
        + bcDD('temperaturen','Temperatuur',bcFacet(fac.temperaturen,'temperaturen'),BC.temperaturen)
@@ -1550,7 +1559,7 @@ async function renderBroadcast(){
     </div></div>
     <div id="bc_rest">
       <div class="bc-filters" id="bc_filters"></div>
-      <div class="muted" style="font-size:12px;padding:8px 18px 0">Het grijze getal achter een keuze is het totaal aantal contacten, het groene getal hoeveel daarvan bereikbaar zijn via het gekozen kanaal. Versturen kan alleen naar wie een e-mailadres heeft.</div>
+      <div class="muted" style="font-size:12px;padding:8px 18px 0">Het grijze getal achter een keuze is het totaal aantal contacten, het groene getal hoeveel daarvan bereikbaar zijn via het gekozen kanaal. Versturen kan alleen naar wie een e-mailadres heeft. <b>Ingelogd op invest</b> betekent dat iemand ooit een inloglink heeft aangevraagd, wat alleen voor de dataroom nodig is; iedereen in deze lijst staat sowieso in het portaal. <b>Klant</b> is wie een ITP tekende of aanbetaalde.</div>
       <div class="bc-telling" id="bc_telling"></div>
       <div class="bc-acties">
         <button class="btn btn-primary btn-sm" id="bc_opstellen">✉ Nieuwsbrief opstellen</button>
@@ -1593,7 +1602,7 @@ async function bcLaad(){
     p_bronnen:f.bronnen, p_funnels:f.funnels, p_projecten:f.projecten, p_banden:f.banden,
     p_timings:f.timings, p_talen:f.talen, p_vastgoed:f.vastgoed, p_doelen:f.doelen,
     p_statussen:f.statussen, p_temperaturen:f.temperaturen, p_account:f.account,
-    p_periode:f.periode, p_kanaal:f.kanaal, p_limit:2000});
+    p_klant:f.klant, p_periode:f.periode, p_kanaal:f.kanaal, p_limit:2000});
   if(error){$('#bc_telling').innerHTML=`<span class="err">${esc(error.message)}</span>`;return;}
   BC.sel=data; BC.uit.clear(); BC.open.clear();
   bcTelling(); bcTabel();
@@ -1610,12 +1619,14 @@ function bcTelling(){
     });
   }
   const account=g.filter(r=>r.heeft_account).length;
+  const klanten=g.filter(r=>r.klant).length;
   $('#bc_telling').innerHTML=
     `<b>${g.length}</b> geselecteerd`+
     (uit?` <span class="muted">(${uit} handmatig afgevinkt)</span>`:'')+
     `, waarvan <b>${m.length}</b> met e-mailadres`+
     (g.length-m.length?` <span class="muted">(${g.length-m.length} alleen telefonisch bereikbaar)</span>`:'')+
-    (account?` &middot; <b>${account}</b> heeft al een portaalaccount`:'');
+    (klanten?` &middot; <span class="bc-let-inline"><b>${klanten}</b> is al klant</span>`:'')+
+    (account?` &middot; <b>${account}</b> heeft ingelogd op invest`:'');
 }
 
 function bcTabel(){
@@ -1632,7 +1643,7 @@ function bcTabel(){
   $('#bc_tabel').innerHTML=
     `<div class="muted" style="font-size:12px;margin:10px 0 6px">Vink iemand uit om hem over te slaan, bijvoorbeeld een bestaande klant. Klik op het aantal antwoorden om te zien wat iemand destijds invulde.</div>
      <table><tr><th style="width:30px"></th><th>Naam</th><th>Binnengekomen</th><th>Bron</th>
-     <th>E-mail</th><th>Telefoon</th><th>Account</th><th>Project</th>
+     <th>E-mail</th><th>Telefoon</th><th>Portaal</th><th>Project</th>
      <th>Budget</th><th>Koopmoment</th><th>Plan</th><th>Eerder vastgoed</th><th></th></tr>`+
     r.map(x=>{
       const antw = Array.isArray(x.antwoorden)?x.antwoorden:[];
@@ -1645,7 +1656,7 @@ function bcTabel(){
       <td>${esc(bronnen||'—')}</td>
       <td>${x.email?esc(x.email):'<span class="muted">geen e-mail</span>'}</td>
       <td>${x.telefoon?esc(x.telefoon):'<span class="muted">geen nummer</span>'}</td>
-      <td>${x.heeft_account?'<span class="bc-ja">account</span>':(x.dataroom?'<span class="bc-ja">dataroom</span>':'<span class="muted">nee</span>')}</td>
+      <td>${x.klant?'<span class="bc-klant">klant</span>':''}${x.heeft_account?'<span class="bc-ja">ingelogd</span>':''}${x.dataroom?'<span class="bc-ja">dataroom</span>':''}${!x.klant&&!x.heeft_account&&!x.dataroom?'<span class="muted">—</span>':''}</td>
       <td>${esc((x.projecten||[]).join(', ')||'—')}</td>
       <td>${esc(x.budget||'—')}</td>
       <td>${esc(x.timing_key?bcLabel('timings',x.timing_key):'—')}</td>
@@ -1678,7 +1689,7 @@ async function bcExport(){
   if(!r.length){toast('Niets te exporteren','err');return;}
   // De ruwe antwoorden gaan als één kolom mee, zodat de export net zoveel
   // laat zien als het scherm en je hem in een blad kunt openen.
-  const kol=['naam','binnengekomen','bronnen','email','telefoon','heeft_account','projecten',
+  const kol=['naam','binnengekomen','bronnen','email','telefoon','klant','heeft_account','projecten',
              'funnels','budget','band','timing','doel','eerder_vastgoed','status','sales_stage',
              'temperatuur','taal','antwoorden'];
   const plat=v=>Array.isArray(v)&&v.length&&typeof v[0]==='object'
