@@ -336,6 +336,25 @@
   .ibx-ip-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ibx-ip-actions{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px 0}
   .ibx-ip-actions .btn{padding:6px 11px;font-size:12.5px}
+
+  /* Broadcast: campagnes naar de losse adressenlijst */
+  .bc-let{margin:0 16px 14px;padding:12px 14px;border-radius:10px;background:#fffbeb;
+          border:1px solid #fde68a;color:#78350f;font-size:13px;line-height:1.55}
+  .bc-vak{padding:0 16px 12px}
+  .bc-lab{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+          color:var(--muted);margin:0 0 6px}
+  .bc-verplicht{margin-left:6px;padding:1px 6px;border-radius:999px;background:#fee2e2;
+                border:1px solid #fecaca;color:#b91c1c;font-size:10px;letter-spacing:0}
+  .bc-rij{display:flex;flex-wrap:wrap;gap:6px}
+  .bc-chip{padding:5px 10px;border:1px solid var(--line);background:#fff;border-radius:999px;
+           font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer}
+  .bc-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .bc-n{margin-left:6px;padding:0 5px;border-radius:999px;background:rgba(0,0,0,.07);font-size:10.5px}
+  .bc-chip.on .bc-n{background:rgba(255,255,255,.25)}
+  .bc-check{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
+  .bc-telling{margin:4px 16px 0;padding:10px 12px;border-radius:8px;background:#f1f5f9;font-size:13.5px}
+  .bc-acties{padding:12px 16px 0}
+  #bc_tabel{padding:0 16px 16px}
   .ibx-ip-ai{padding:10px 16px 0}
   .ibx-ip-ai .btn{width:100%}
   .ibx-take{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
@@ -766,6 +785,7 @@ const PAGES = [
   {key:'revenue',  label:'Revenue',                icon:'💰'},
   {key:'leads',    label:'Leads / CRM',            icon:'📇'},
   {key:'sequences',label:'Bericht flows',          icon:'📤'},
+  {key:'broadcast',label:'Broadcast',              icon:'📣'},
   {key:'webinars', label:'Webinar',                icon:'🎥'},
   {key:'projects', label:'Projects',               icon:'🏗️'},
   {key:'portal',   label:'Portal & Investors',     icon:'🏝️'},
@@ -1249,7 +1269,7 @@ function gzInit(){
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
+  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
   $('#pageTitle').textContent=titles[k]||k;
   if(k==='dashboard')return renderDashboard();
   if(k==='analytics')return renderAnalytics();
@@ -1261,8 +1281,146 @@ function go(k){
   if(k==='pipeline')return renderPipeline();
   if(k==='agenda')return renderAgenda();
   if(k==='sequences')return renderSequences();
+  if(k==='broadcast')return renderBroadcast();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
+}
+
+/* ================= BROADCAST =================
+   Campagnes naar de geimporteerde adressenlijst (broadcast_contacten).
+
+   Waarom dit een aparte pagina en een aparte tabel is: dit zijn geen lopende
+   verkooptrajecten. Alles wat in contacts belandt wordt door
+   pipeline_sync_contact opgepikt en krijgt een kaart in Discovery. Deze 1930
+   regels uit Perspective zijn een archief, dus ze staan er fysiek buiten en
+   kunnen daardoor nooit per ongeluk in een pijplijn komen.
+
+   De herkomst staat bewust bovenaan en niet weggestopt in een filter. Van de
+   1930 komen er maar 320 uit Bali-funnels; de rest komt uit StevenExits, Yep en
+   TinnitusRescue. Iemand die zich ooit voor tinnitus-hulp inschreef hoort geen
+   villa-aanbieding te krijgen, en de pagina moet dat moeilijk maken in plaats
+   van er alleen voor te waarschuwen. */
+let BC = {facetten:null, bedrijven:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
+          budgetTot:null, alleenEmail:true, sel:null};
+
+function bcChips(lijst, gekozen, groep){
+  return (lijst||[]).map(f=>{
+    const w=f.waarde, aan=gekozen.includes(w);
+    return `<button class="bc-chip ${aan?'on':''}" data-groep="${groep}" data-w="${esc(w)}">`+
+           `${esc(w)}<span class="bc-n">${f.met_email!=null?f.met_email:f.n}</span></button>`;
+  }).join('');
+}
+
+async function renderBroadcast(){
+  const v=$('#view');
+  v.innerHTML=`<div class="panel"><div class="muted" style="padding:20px">Adressenlijst laden…</div></div>`;
+  const {data:fac,error}=await sb.rpc('broadcast_facetten');
+  if(error){v.innerHTML=`<div class="panel"><div class="empty" style="padding:20px">Kon de lijst niet laden: ${esc(error.message)}</div></div>`;return;}
+  BC.facetten=fac;
+  const tot=(fac.bedrijven||[]).reduce((a,x)=>a+x.n,0);
+  const totMail=(fac.bedrijven||[]).reduce((a,x)=>a+x.met_email,0);
+
+  v.innerHTML=`
+  <div class="panel">
+    <div class="p-head"><div>
+      <h2 style="margin:0">Broadcast</h2>
+      <div class="muted" style="font-size:13px">Losse adressenlijst uit Perspective, ${tot} contacten waarvan ${totMail} met e-mailadres. Deze mensen staan bewust buiten het CRM en komen dus nooit in een pijplijn terecht.</div>
+    </div></div>
+    <div class="bc-let">
+      <b>Let op de herkomst.</b> Deze lijst komt uit meerdere bedrijven. Alleen de UTAMA-regels zijn ooit binnengekomen op een Bali-funnel. Wie zich bij StevenExits, Yep of TinnitusRescue inschreef, meldde zich aan voor iets heel anders; een villa-aanbod daarheen sturen is ongevraagd. Kies daarom eerst een herkomst.
+    </div>
+    <div class="bc-vak">
+      <div class="bc-lab">Herkomst <span class="bc-verplicht">verplicht</span></div>
+      <div class="bc-rij" id="bc_bedrijven">${bcChips(fac.bedrijven,BC.bedrijven,'bedrijven')}</div>
+    </div>
+    <div id="bc_rest" style="display:none">
+      <div class="bc-vak"><div class="bc-lab">Funnel</div><div class="bc-rij" id="bc_funnels"></div></div>
+      <div class="bc-vak"><div class="bc-lab">Project</div><div class="bc-rij" id="bc_projecten">${bcChips(fac.projecten,BC.projecten,'projecten')}</div></div>
+      <div class="bc-vak"><div class="bc-lab">Budgetband</div><div class="bc-rij" id="bc_banden">${bcChips(fac.banden,BC.banden,'banden')}</div></div>
+      <div class="bc-vak"><div class="bc-lab">Budget reikt tot minstens</div><div class="bc-rij">
+        ${[null,100,250,350,500,1000].map(x=>`<button class="bc-chip bc-bud ${BC.budgetTot===x?'on':''}" data-bud="${x===null?'':x}">${x===null?'maakt niet uit':'€'+x+'K'}</button>`).join('')}
+      </div></div>
+      <div class="bc-vak"><div class="bc-lab">Timing</div><div class="bc-rij" id="bc_timings">${bcChips(fac.timings,BC.timings,'timings')}</div></div>
+      <div class="bc-vak"><div class="bc-lab">Taal</div><div class="bc-rij" id="bc_talen">${bcChips(fac.talen,BC.talen,'talen')}</div></div>
+      <div class="bc-vak"><label class="bc-check"><input type="checkbox" id="bc_mail" ${BC.alleenEmail?'checked':''}> Alleen contacten met een e-mailadres</label></div>
+      <div class="bc-telling" id="bc_telling"></div>
+      <div class="bc-acties">
+        <button class="btn btn-ghost btn-sm" id="bc_csv">⬇ Exporteer selectie als CSV</button>
+      </div>
+      <div id="bc_tabel"></div>
+    </div>
+  </div>`;
+
+  const herteken=()=>{
+    // Funnels tonen alleen die bij de gekozen herkomst horen, anders staan er
+    // dertig knoppen waarvan er maar een paar relevant zijn.
+    const f=(fac.funnels||[]).filter(x=>!BC.bedrijven.length||BC.bedrijven.includes(x.bedrijf));
+    $('#bc_funnels').innerHTML=bcChips(f,BC.funnels,'funnels');
+    bindGroep('#bc_funnels');
+    $('#bc_rest').style.display=BC.bedrijven.length?'':'none';
+    bcLaad();
+  };
+  const bindGroep=(sel)=>{
+    document.querySelectorAll(sel+' [data-groep]').forEach(b=>b.onclick=()=>{
+      const g=b.dataset.groep, w=b.dataset.w;
+      const i=BC[g].indexOf(w); if(i>-1)BC[g].splice(i,1); else BC[g].push(w);
+      b.classList.toggle('on');
+      if(g==='bedrijven'){BC.funnels=[];herteken();} else bcLaad();
+    });
+  };
+  ['#bc_bedrijven','#bc_projecten','#bc_banden','#bc_timings','#bc_talen'].forEach(bindGroep);
+  document.querySelectorAll('.bc-bud').forEach(b=>b.onclick=()=>{
+    BC.budgetTot=b.dataset.bud?Number(b.dataset.bud):null;
+    document.querySelectorAll('.bc-bud').forEach(x=>x.classList.toggle('on',x===b));
+    bcLaad();
+  });
+  $('#bc_mail').onchange=e=>{BC.alleenEmail=e.target.checked;bcLaad();};
+  $('#bc_csv').onclick=bcExport;
+  herteken();
+}
+
+const bcArg = a => a && a.length ? a : null;
+
+async function bcLaad(){
+  if(!BC.bedrijven.length){$('#bc_telling').innerHTML='';$('#bc_tabel').innerHTML='';return;}
+  const {data,error}=await sb.rpc('broadcast_selectie',{
+    p_bedrijven:bcArg(BC.bedrijven), p_funnels:bcArg(BC.funnels), p_projecten:bcArg(BC.projecten),
+    p_banden:bcArg(BC.banden), p_timings:bcArg(BC.timings), p_talen:bcArg(BC.talen),
+    p_budget_tot:BC.budgetTot, p_alleen_email:BC.alleenEmail, p_limit:50});
+  if(error){$('#bc_telling').innerHTML=`<span class="err">${esc(error.message)}</span>`;return;}
+  BC.sel=data;
+  const dubbel=data.met_email-data.unieke_adressen;
+  $('#bc_telling').innerHTML=
+    `<b>${data.aantal}</b> contact${data.aantal===1?'':'en'} in deze selectie`+
+    (BC.alleenEmail?`, <b>${data.unieke_adressen}</b> uniek${data.unieke_adressen===1?'':'e'} e-mailadres${data.unieke_adressen===1?'':'sen'}`:'')+
+    (dubbel>0?` <span class="muted">(${dubbel} dubbel adres${dubbel===1?'':'sen'}, tellen een keer mee)</span>`:'');
+  const r=data.rijen||[];
+  $('#bc_tabel').innerHTML=!r.length?'<div class="empty" style="padding:16px">Niemand voldoet aan deze filters.</div>':
+    `<div class="muted" style="font-size:12px;margin:10px 0 6px">Eerste ${r.length} van ${data.aantal}</div>
+     <table class="tbl"><tr><th>Naam</th><th>E-mail</th><th>Herkomst</th><th>Budget</th><th>Timing</th><th>Taal</th></tr>`+
+    r.map(x=>`<tr><td>${esc(x.naam||'—')}</td><td>${esc(x.email||'—')}</td>
+      <td>${esc(x.funnel||x.bedrijf||'—')}</td><td>${esc(x.budget||'—')}</td>
+      <td>${esc(x.timing||'—')}</td><td>${esc(x.taal||'—')}</td></tr>`).join('')+'</table>';
+}
+
+async function bcExport(){
+  // De preview toont er 50; voor de export halen we de hele selectie op.
+  const {data,error}=await sb.rpc('broadcast_selectie',{
+    p_bedrijven:bcArg(BC.bedrijven), p_funnels:bcArg(BC.funnels), p_projecten:bcArg(BC.projecten),
+    p_banden:bcArg(BC.banden), p_timings:bcArg(BC.timings), p_talen:bcArg(BC.talen),
+    p_budget_tot:BC.budgetTot, p_alleen_email:BC.alleenEmail, p_limit:500});
+  if(error){toast('Export mislukt: '+esc(error.message),'err');return;}
+  const r=data.rijen||[];
+  if(!r.length){toast('Niets te exporteren','err');return;}
+  const kol=['naam','email','telefoon','bedrijf','funnel','project','budget','band','timing','taal'];
+  const q=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
+  const csv=[kol.join(',')].concat(r.map(x=>kol.map(k=>q(x[k])).join(','))).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`broadcast-selectie-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  if(r.length<data.aantal)toast(`${r.length} van ${data.aantal} geexporteerd (maximum per keer)`,'');
+  else toast(`${r.length} contacten geexporteerd`,'ok');
 }
 
 /* ================= DASHBOARD ================= */
