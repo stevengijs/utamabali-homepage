@@ -355,6 +355,18 @@
   .bc-telling{margin:4px 16px 0;padding:10px 12px;border-radius:8px;background:#f1f5f9;font-size:13.5px}
   .bc-acties{padding:12px 16px 0}
   #bc_tabel{padding:0 16px 16px}
+  .bc-bereik{margin-left:4px;padding:0 5px;border-radius:999px;background:#0f6b4f;color:#fff;font-size:10.5px}
+  .bc-chip.on .bc-bereik{background:rgba(255,255,255,.3)}
+  /* Opstelscherm: zelfde ritme als de rest van de admin, tweekoloms waar het kan */
+  .bc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;padding:0 16px 14px}
+  .bc-veld label{display:block;font-size:11.5px;font-weight:700;letter-spacing:.04em;
+                 text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+  .bc-veld .in{width:100%;box-sizing:border-box}
+  .bc-breed{grid-column:1 / -1}
+  .bc-hint{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45}
+  .bc-prevbar{padding:8px 16px;background:#f1f5f9;font-size:12px;color:var(--muted);
+              border-bottom:1px solid var(--line)}
+  @media(max-width:820px){ .bc-grid{grid-template-columns:1fr} }
   .bc-uit{opacity:.42}
   .bc-uit td{text-decoration:line-through}
   .ibx-ip-ai{padding:10px 16px 0}
@@ -1316,11 +1328,20 @@ const bcFilters = () => ({bedrijven:bcArg(BC.bedrijven), funnels:bcArg(BC.funnel
   talen:bcArg(BC.talen), budget_tot:BC.budgetTot, kanaal:BC.kanaal});
 
 function bcChips(lijst, gekozen, groep){
+  // Het getal op een knop is ALTIJD het totaal aantal contacten. Eerder toonde
+  // hij het aantal dat via het gekozen kanaal bereikbaar is, en dan las
+  // "Utama Investment Funnel 67" als "er zijn maar 67 leads" terwijl het er 117
+  // zijn waarvan 67 met e-mailadres. Bereikbaarheid staat nu apart, in de
+  // tooltip en in de teller onder de filters.
   return (lijst||[]).map(f=>{
     const aan=gekozen.includes(f.waarde);
-    const n=BC.kanaal==='telefoon'?f.met_tel:(BC.kanaal==='email'?f.met_email:f.n);
-    return `<button class="bc-chip ${aan?'on':''}" data-groep="${groep}" data-w="${esc(f.waarde)}">`+
-           `${esc(f.waarde)}<span class="bc-n">${n}</span></button>`;
+    const uitleg=`${f.n} contact${f.n===1?'':'en'}: ${f.met_email} met e-mail, ${f.met_tel} met telefoonnummer`;
+    // Wie via het gekozen kanaal wegvalt, laten we zien in plaats van verzwijgen.
+    const bereik=BC.kanaal==='telefoon'?f.met_tel:(BC.kanaal==='email'?f.met_email:
+                 (BC.kanaal==='beide'?Math.min(f.met_email,f.met_tel):f.n));
+    const rest=(BC.kanaal!=='alles'&&bereik<f.n)?`<span class="bc-bereik">${bereik}</span>`:'';
+    return `<button class="bc-chip ${aan?'on':''}" data-groep="${groep}" data-w="${esc(f.waarde)}" title="${esc(uitleg)}">`+
+           `${esc(f.waarde)}<span class="bc-n">${f.n}</span>${rest}</button>`;
   }).join('');
 }
 
@@ -1349,7 +1370,7 @@ async function renderBroadcast(){
       <div class="bc-vak"><div class="bc-lab">Kanaal</div><div class="bc-rij" id="bc_kanaal">
         ${[['email','heeft e-mail'],['telefoon','heeft telefoonnummer'],['beide','heeft allebei'],['alles','maakt niet uit']]
           .map(([k,l])=>`<button class="bc-chip bc-kan ${BC.kanaal===k?'on':''}" data-k="${k}">${l}</button>`).join('')}
-      </div><div class="muted" style="font-size:12px;margin-top:5px">Versturen kan alleen naar wie een e-mailadres heeft.</div></div>
+      </div><div class="muted" style="font-size:12px;margin-top:5px">Het grijze getal op een knop is het totaal aantal contacten. Staat er een groen getal achter, dan is dat hoeveel daarvan via het gekozen kanaal bereikbaar zijn. Versturen kan alleen naar wie een e-mailadres heeft.</div></div>
       <div class="bc-vak"><div class="bc-lab">Funnel</div><div class="bc-rij" id="bc_funnels"></div></div>
       <div class="bc-vak"><div class="bc-lab">Project</div><div class="bc-rij" id="bc_projecten">${bcChips(fac.projecten,BC.projecten,'projecten')}</div></div>
       <div class="bc-vak"><div class="bc-lab">Budgetband</div><div class="bc-rij" id="bc_banden">${bcChips(fac.banden,BC.banden,'banden')}</div></div>
@@ -1453,33 +1474,108 @@ async function bcExport(){
 function bcOpstellen(){
   const m=bcMailbaar();
   if(!m.length){toast('Niemand in deze selectie heeft een e-mailadres','err');return;}
-  BC.camp=null;
+  BC.camp=null; BC.layout=BC.layout||'utama';
   $('#bc_opstel').innerHTML=`
   <div class="panel" id="bc_opstelpaneel">
     <div class="p-head"><div>
       <h3 style="margin:0">Nieuwsbrief opstellen</h3>
       <div class="muted" style="font-size:13px">Gaat naar <b>${m.length}</b> ontvanger${m.length===1?'':'s'}. Deze lijst ligt nu vast, ook als je hierna de filters aanpast.</div>
     </div></div>
-    <div class="bc-vak"><div class="bc-lab">Interne naam</div>
-      <input class="in" id="bc_naam" placeholder="bijv. Aanbod MOKA augustus"></div>
-    <div class="bc-vak"><div class="bc-lab">Onderwerp</div>
-      <input class="in" id="bc_onderwerp" placeholder="Wat zien mensen in hun inbox?"></div>
-    <div class="bc-vak"><div class="bc-lab">Voorbeeldregel</div>
-      <input class="in" id="bc_pre" placeholder="Optioneel. Leeg laten: dan pakt hij de eerste zin."></div>
-    <div class="bc-vak"><div class="bc-lab">Bericht</div>
+
+    <div class="bc-grid">
+      <div class="bc-veld"><label>Interne naam</label>
+        <input class="in" id="bc_naam" placeholder="bijv. Aanbod MOKA augustus">
+        <div class="bc-hint">Alleen voor jezelf, staat niet in de mail.</div></div>
+      <div class="bc-veld"><label>Onderwerp</label>
+        <input class="in" id="bc_onderwerp" placeholder="Wat zien mensen in hun inbox?"></div>
+      <div class="bc-veld bc-breed"><label>Voorbeeldregel</label>
+        <input class="in" id="bc_pre" placeholder="Optioneel. Leeg laten: dan pakt hij de eerste zin.">
+        <div class="bc-hint">De regel die naast het onderwerp staat in de inbox.</div></div>
+    </div>
+
+    <div class="bc-veld bc-breed" style="padding:0 16px 12px">
+      <label>Opmaak</label>
+      <div class="bc-rij">
+        <button class="seq-dbtn ${BC.layout==='utama'?'on':''}" data-layout="utama">UTAMA-opmaak</button>
+        <button class="seq-dbtn ${BC.layout==='plat'?'on':''}" data-layout="plat">Vlakke HTML</button>
+      </div>
+      <div class="bc-hint">UTAMA-opmaak heeft de zwarte kop en de voet, zoals de sequence-mails. Vlakke HTML leest als een persoonlijk bericht zonder omlijsting.</div>
+    </div>
+
+    <div class="bc-veld bc-breed" style="padding:0 16px 12px">
+      <label>Bericht</label>
+      <div class="rte-tb" id="bc_tb">
+        <button data-cmd="bold" title="Vet"><b>B</b></button>
+        <button data-cmd="italic" title="Cursief"><i>I</i></button>
+        <button data-cmd="insertUnorderedList" title="Lijst">• lijst</button>
+        <button data-cmd="createLink" title="Link">🔗 link</button>
+        <button data-cmd="removeFormat" title="Opmaak wissen">✕ opmaak</button>
+        <span style="flex:1"></span>
+        <button data-var="{{voornaam}}" title="Voegt de voornaam van de ontvanger in">+ voornaam</button>
+        <button data-var="{{project}}" title="Voegt het project in waar deze lead vandaan komt">+ project</button>
+      </div>
       <div class="rte" id="bc_body" contenteditable="true"></div>
-      <div class="muted" style="font-size:12px;margin-top:6px">Je kunt {{voornaam}} en {{project}} gebruiken. Ontbreekt een voornaam, dan valt de aanhef netjes terug.</div></div>
+      <div class="bc-hint">Ontbreekt een voornaam, dan valt de aanhef netjes terug op "Hoi," zonder losse komma.</div>
+    </div>
+
     <div class="bc-acties">
+      <button class="btn btn-ghost btn-sm" id="bc_preview">👁 Voorbeeld bekijken</button>
       <button class="btn btn-ghost btn-sm" id="bc_test">📨 Proefmail naar mezelf</button>
       <button class="btn btn-sm" id="bc_verstuur" disabled title="Stuur eerst een proefmail">🚀 Versturen naar ${m.length}</button>
       <button class="btn btn-ghost btn-sm" id="bc_annuleer">Annuleren</button>
     </div>
     <div class="bc-telling" id="bc_status" style="display:none"></div>
   </div>`;
+
+  document.querySelectorAll('#bc_tb [data-cmd]').forEach(b=>{
+    b.addEventListener('mousedown',e=>e.preventDefault());   // selectie behouden
+    b.onclick=()=>{const c=b.dataset.cmd;$('#bc_body').focus();
+      if(c==='createLink'){const u=prompt('Link-URL:','https://');if(u)document.execCommand('createLink',false,u);}
+      else document.execCommand(c,false,null);};
+  });
+  document.querySelectorAll('#bc_tb [data-var]').forEach(b=>{
+    b.addEventListener('mousedown',e=>e.preventDefault());
+    b.onclick=()=>{$('#bc_body').focus();document.execCommand('insertText',false,b.dataset.var);};
+  });
+  document.querySelectorAll('[data-layout]').forEach(b=>b.onclick=()=>{
+    BC.layout=b.dataset.layout;
+    document.querySelectorAll('[data-layout]').forEach(x=>x.classList.toggle('on',x===b));
+  });
   $('#bc_annuleer').onclick=()=>{$('#bc_opstel').innerHTML='';};
+  $('#bc_preview').onclick=bcPreview;
   $('#bc_test').onclick=()=>bcVerstuur(true);
   $('#bc_verstuur').onclick=()=>bcVerstuur(false);
-  $('#bc_opstelpaneel').scrollIntoView({behavior:'smooth'});
+  $('#bc_opstelpaneel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* De server rendert het voorbeeld, met dezelfde opmaakmodule als het echte
+   verzenden. Een eigen kopie in de admin liep achter zodra de mailopmaak
+   veranderde, en een preview die iets anders toont dan wat er uitgaat is erger
+   dan geen preview. */
+async function bcPreview(){
+  const body=$('#bc_body').innerHTML.trim();
+  if(!body){toast('Schrijf eerst een bericht','err');return;}
+  const knop=$('#bc_preview');knop.disabled=true;knop.textContent='Voorbeeld laden…';
+  try{
+    const {data,error}=await sb.functions.invoke('email-preview',{body:{
+      body_html:body, onderwerp:$('#bc_onderwerp').value, preheader:$('#bc_pre').value||null,
+      design:BC.layout==='plat'?'plat':'utama'}});
+    if(error||!data||!data.ok){toast('Voorbeeld mislukt: '+esc((error&&error.message)||'onbekend'),'err');return;}
+    const onderwerp=data.onderwerp||$('#bc_onderwerp').value||'(geen onderwerp)';
+    const root=document.createElement('div');root.id='bcprev_root';
+    // Zelfde aanpak als de sequence-preview: sandbox zonder allow-scripts, want
+    // mail-HTML hoort geen JS te draaien en mag niets in de CRM-sessie kunnen.
+    root.innerHTML=`<div class="chatpop-back open"></div><div class="chatpop open" style="width:min(720px,94vw);height:min(760px,90vh)">
+      <div class="chatpop-head"><div class="chatpop-title">Voorbeeld · ${esc(onderwerp)}</div>
+      <button id="bcprev_x" style="font-size:22px;background:none;border:none;cursor:pointer;color:var(--muted)">×</button></div>
+      <div class="bc-prevbar">Zo komt de mail aan. Sleep de rand smaller om te zien hoe hij op een telefoon oogt.</div>
+      <iframe sandbox="" style="flex:1;width:100%;border:0;background:#f4f6f5"></iframe></div>`;
+    document.body.appendChild(root);
+    root.querySelector('iframe').srcdoc=data.html;
+    const sluit=()=>root.remove();
+    root.querySelector('.chatpop-back').onclick=sluit;
+    root.querySelector('#bcprev_x').onclick=sluit;
+  } finally { knop.disabled=false; knop.textContent='👁 Voorbeeld bekijken'; }
 }
 
 async function bcBewaar(){
@@ -1487,7 +1583,8 @@ async function bcBewaar(){
   const {data,error}=await sb.rpc('broadcast_campagne_opslaan',{
     p_id:BC.camp, p_naam:$('#bc_naam').value.trim()||null,
     p_onderwerp:$('#bc_onderwerp').value.trim(), p_preheader:$('#bc_pre').value.trim()||null,
-    p_body_html:$('#bc_body').innerHTML, p_ontvangers:ids, p_filters:bcFilters()});
+    p_body_html:$('#bc_body').innerHTML, p_ontvangers:ids, p_filters:bcFilters(),
+    p_layout:BC.layout});
   if(error) return {fout:error.message};
   if(data&&data.ok===false) return {fout:data.reden};
   BC.camp=data.id;
@@ -1497,6 +1594,7 @@ async function bcBewaar(){
 async function bcVerstuur(test){
   const st=$('#bc_status'); st.style.display='';
   if(!$('#bc_onderwerp').value.trim()){toast('Vul een onderwerp in','err');return;}
+  if(!$('#bc_body').innerHTML.trim()){toast('Schrijf eerst een bericht','err');return;}
   st.textContent=test?'Proefmail versturen…':'Campagne versturen, dit kan even duren…';
   const bewaard=await bcBewaar();
   if(bewaard.fout){st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;return;}
