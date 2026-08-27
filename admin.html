@@ -397,6 +397,8 @@
   .bc-meer{background:none;border:1px solid var(--line);border-radius:7px;cursor:pointer;
            padding:3px 8px;font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap}
   .bc-meer:hover{border-color:var(--brand);color:var(--brand)}
+  .bc-ja{display:inline-block;padding:2px 8px;border-radius:999px;background:#e8f3ee;
+         color:var(--brand);font-size:11.5px;font-weight:700}
   .bc-dicht{margin:12px 0 2px;padding:14px 16px;border-radius:10px;background:#f7f9f8;
             border:1px dashed var(--line);color:var(--muted);font-size:13px}
   .bc-detail>td{background:#fafbfa;padding:0 14px 12px;white-space:normal}
@@ -1369,31 +1371,64 @@ function go(k){
 
    Verzenden gebeurt op een vastgelegde ontvangerslijst, niet op de filters.
    Wat je op het scherm afvinkt is precies wat er uitgaat. */
-let BC = {fac:null, sjablonen:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
-          vastgoed:[], strategieen:[], budgetTot:null, kanaal:'email', lijstOpen:false,
+let BC = {fac:null, sjablonen:[],
+          bronnen:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
+          vastgoed:[], doelen:[], statussen:[], temperaturen:[], account:[],
+          periode:'', kanaal:'email', lijstOpen:false,
           sel:null, uit:new Set(), open:new Set(), ddOpen:null, camp:null, stap:'kiezen'};
 
 const bcArg = a => a && a.length ? a : null;
-const bcFilters = () => ({funnels:bcArg(BC.funnels),
-  projecten:bcArg(BC.projecten), banden:bcArg(BC.banden), timings:bcArg(BC.timings),
-  talen:bcArg(BC.talen), vastgoed:bcArg(BC.vastgoed), strategieen:bcArg(BC.strategieen),
-  budget_tot:BC.budgetTot, kanaal:BC.kanaal});
+const bcFilters = () => ({
+  bronnen:bcArg(BC.bronnen), funnels:bcArg(BC.funnels), projecten:bcArg(BC.projecten),
+  banden:bcArg(BC.banden), timings:bcArg(BC.timings), talen:bcArg(BC.talen),
+  vastgoed:bcArg(BC.vastgoed), doelen:bcArg(BC.doelen), statussen:bcArg(BC.statussen),
+  temperaturen:bcArg(BC.temperaturen), account:bcArg(BC.account),
+  periode:BC.periode||null, kanaal:BC.kanaal});
 
-/* De groepen die met aanvinkvakjes werken, in de volgorde waarin ze op het
-   scherm staan. Kanaal en budget staan er bewust niet bij: dat zijn enkele
-   keuzes en die hebben hun eigen stukje staat. */
-const BC_GROEPEN = ['funnels','projecten','banden','timings','vastgoed','strategieen','talen'];
+/* De groepen met aanvinkvakjes, in schermvolgorde. Kanaal en periode staan er
+   niet bij: dat zijn enkele keuzes met hun eigen stukje staat. */
+const BC_GROEPEN = ['bronnen','funnels','projecten','banden','timings','doelen',
+                    'vastgoed','statussen','temperaturen','account','talen'];
 const bcActieveFilters = () =>
-  BC_GROEPEN.reduce((n,g)=>n+BC[g].length,0) + (BC.budgetTot?1:0);
+  BC_GROEPEN.reduce((n,g)=>n+BC[g].length,0) + (BC.periode?1:0);
 
-/* Een facet uit broadcast_facetten omzetten naar keuzes voor een dropdown.
+/* De drie bronnen gebruiken elk hun eigen woorden voor dezelfde dingen. In de
+   database staan ze vertaald naar één sleutel; hier staat hoe die sleutel op
+   het scherm heet. */
+const BC_LABELS = {
+  bronnen:      {perspective:'Perspective', facebook:'Facebook', portaal:'Portaal'},
+  timings:      {nu:'Direct', weken:'Binnen enkele weken', '3mnd':'Binnen 3 maanden',
+                 enkele_mnd:'Over enkele maanden', '6mnd':'Binnen 6 maanden',
+                 '12mnd':'Binnen 12 maanden', later:'Over een jaar of later',
+                 orienterend:'Oriënteert zich', onbekend:'Weet het nog niet'},
+  doelen:       {wonen:'Wonen', flippen:'Flippen', verhuur:'Verhuur', gemengd:'Gemengd'},
+  vastgoed:     {ja:'Ja, kocht al eerder', nee:'Nee, eerste keer'},
+  statussen:    {open:'Open', won:'Gewonnen', lost:'Verloren', abandoned:'Doodgebloed'},
+  temperaturen: {hot:'Hot', warm:'Warm', cold:'Cold'},
+  account:      {ja:'Heeft een account', nee:'Nog geen account'},
+  talen:        {nl:'Nederlands', en:'Engels'},
+};
+const bcLabel = (groep, waarde) =>
+  (BC_LABELS[groep] && BC_LABELS[groep][waarde]) || String(waarde);
+
+const bcDatum = d => !d ? '' : new Date(d).toLocaleDateString('nl-NL',
+  {day:'numeric', month:'short', year:'numeric'});
+
+/* de contacten die daadwerkelijk meegaan: selectie min de afgevinkte */
+const bcGekozen = () => ((BC.sel&&BC.sel.rijen)||[]).filter(r=>!BC.uit.has(r.id));
+const bcMailbaar = () => bcGekozen().filter(r=>r.email);
+
+/* Een facet uit broadcast_facetten omzetten naar keuzes voor een dropdown. De
+   volgorde die de database geeft blijft staan: koopmoment komt chronologisch
+   binnen, niet op aantal, en dat wil je zo houden.
+
    Het getal achter een keuze is ALTIJD het totaal aantal contacten. Eerder
    toonde hij het aantal dat via het gekozen kanaal bereikbaar is, en dan las
    "Utama Investment Funnel 67" als "er zijn maar 67 leads" terwijl het er 117
    zijn waarvan 67 met e-mailadres. Bereikbaarheid staat apart, in het groene
    getal ernaast. */
-const bcFacet = (lijst, hernoem) => (lijst||[]).map(f=>({
-  waarde:String(f.waarde), label:(hernoem&&hernoem[f.waarde])||String(f.waarde),
+const bcFacet = (lijst, groep) => (lijst||[]).map(f=>({
+  waarde:String(f.waarde), label:bcLabel(groep, f.waarde),
   n:f.n, met_email:f.met_email, met_tel:f.met_tel}));
 
 function bcDD(groep, label, opties, gekozen, enkel){
@@ -1416,6 +1451,7 @@ function bcDD(groep, label, opties, gekozen, enkel){
       `<span class="bc-ddtxt">${esc(o.label)}</span>`+
       (o.n==null?'':`<span class="bc-ddn">${o.n}</span>${bereik}`)+`</label>`;
   }).join('');
+  if(!rijen) return '';
   return `<div class="bc-dd" data-dd="${groep}">
     <button type="button" class="bc-ddknop ${gekozenOpties.length&&!enkel?'actief':''}"${titel?` title="${esc(titel)}"`:''}>
       <span class="bc-ddlab">${esc(label)}</span>
@@ -1431,20 +1467,27 @@ function bcFilterHtml(){
   const kanalen = [['email','heeft e-mail'],['telefoon','heeft telefoonnummer'],
                    ['beide','heeft allebei'],['alles','maakt niet uit']]
                   .map(([w,l])=>({waarde:w,label:l}));
-  const budgetten = [['','maakt niet uit'],['100','\u20ac100K'],['250','\u20ac250K'],
-                     ['350','\u20ac350K'],['500','\u20ac500K'],['1000','\u20ac1000K']]
-                  .map(([w,l])=>({waarde:w,label:l}));
+  // Terugblik vanaf vandaag, plus de kalenderjaren die in de data zitten.
+  const perioden = [{waarde:'',label:'maakt niet uit'},
+      {waarde:'30d',label:'laatste 30 dagen'}, {waarde:'3m',label:'laatste 3 maanden'},
+      {waarde:'6m',label:'laatste 6 maanden'}, {waarde:'12m',label:'laatste 12 maanden'}]
+    .concat((fac.jaren||[]).map(j=>({waarde:'jaar:'+j.waarde, label:'in '+j.waarde, n:j.n,
+                                     met_email:j.met_email, met_tel:j.met_tel})));
   const n = bcActieveFilters();
   return bcDD('kanaal','Bereikbaar via',kanalen,[BC.kanaal],true)
-       + bcDD('funnels','Funnel',bcFacet(fac.funnels),BC.funnels)
-       + bcDD('projecten','Project',bcFacet(fac.projecten),BC.projecten)
-       + bcDD('banden','Budget',bcFacet(fac.banden),BC.banden)
-       + bcDD('budgetTot','Budget reikt tot',budgetten,[BC.budgetTot==null?'':String(BC.budgetTot)],true)
-       + bcDD('timings','Koopmoment',bcFacet(fac.timings),BC.timings)
-       + bcDD('vastgoed','Eerder vastgoed',
-              bcFacet(fac.vastgoed,{ja:'Ja, kocht al eerder',nee:'Nee, eerste keer'}),BC.vastgoed)
-       + bcDD('strategieen','Plan met de woning',bcFacet(fac.strategieen),BC.strategieen)
-       + bcDD('talen','Taal',bcFacet(fac.talen),BC.talen)
+       + bcDD('periode','Binnengekomen',perioden,[BC.periode||''],true)
+       + bcDD('bronnen','Bron',bcFacet(fac.bronnen,'bronnen'),BC.bronnen)
+       + bcDD('projecten','Project',bcFacet(fac.projecten,'projecten'),BC.projecten)
+       + bcDD('banden','Budget',bcFacet(fac.banden,'banden'),BC.banden)
+       + bcDD('timings','Koopmoment',bcFacet(fac.timings,'timings'),BC.timings)
+       + bcDD('doelen','Plan met de woning',bcFacet(fac.doelen,'doelen'),BC.doelen)
+       + bcDD('vastgoed','Eerder vastgoed',bcFacet(fac.vastgoed,'vastgoed'),BC.vastgoed)
+       + bcDD('account','Portaalaccount',bcFacet(
+           [{waarde:'ja',n:fac.met_account},{waarde:'nee',n:fac.totaal-fac.met_account}],'account'),BC.account)
+       + bcDD('statussen','Verkoopstatus',bcFacet(fac.statussen,'statussen'),BC.statussen)
+       + bcDD('temperaturen','Temperatuur',bcFacet(fac.temperaturen,'temperaturen'),BC.temperaturen)
+       + bcDD('funnels','Funnel',bcFacet(fac.funnels,'funnels'),BC.funnels)
+       + bcDD('talen','Taal',bcFacet(fac.talen,'talen'),BC.talen)
        + (n?`<button type="button" class="bc-wisalles" id="bc_wisalles">Wis alle filters (${n})</button>`:'');
 }
 
@@ -1474,7 +1517,7 @@ function bcBindFilters(){
   wrap.querySelectorAll('.bc-ddmenu input').forEach(i=>i.onchange=()=>{
     const g = i.dataset.groep, w = i.dataset.w;
     if(g==='kanaal'){ BC.kanaal=w; BC.ddOpen=null; }
-    else if(g==='budgetTot'){ BC.budgetTot = w?Number(w):null; BC.ddOpen=null; }
+    else if(g==='periode'){ BC.periode=w; BC.ddOpen=null; }
     else {
       const k = BC[g].indexOf(w);
       if(i.checked && k<0) BC[g].push(w); else if(!i.checked && k>-1) BC[g].splice(k,1);
@@ -1486,14 +1529,10 @@ function bcBindFilters(){
   });
   const wis = $('#bc_wisalles');
   if(wis) wis.onclick=()=>{
-    BC_GROEPEN.forEach(g=>BC[g]=[]); BC.budgetTot=null; BC.ddOpen=null;
+    BC_GROEPEN.forEach(g=>BC[g]=[]); BC.periode=''; BC.ddOpen=null;
     bcTekenFilters(); bcLaad();
   };
 }
-
-/* de contacten die daadwerkelijk meegaan: selectie min de afgevinkte */
-const bcGekozen = () => ((BC.sel&&BC.sel.rijen)||[]).filter(r=>!BC.uit.has(r.id));
-const bcMailbaar = () => bcGekozen().filter(r=>r.email);
 
 async function renderBroadcast(){
   const v=$('#view');
@@ -1502,11 +1541,12 @@ async function renderBroadcast(){
   if(error){v.innerHTML=`<div class="panel"><div class="empty" style="padding:20px">Kon de lijst niet laden: ${esc(error.message)}</div></div>`;return;}
   BC.fac=fac;
 
+  const bronregel = (fac.bronnen||[]).map(b=>`${b.n} uit ${bcLabel('bronnen',b.waarde)}`).join(', ');
   v.innerHTML=`
   <div class="panel">
     <div class="panel-head"><div>
       <h3>Broadcast</h3>
-      <div class="muted" style="font-size:13px;margin-top:2px">${fac.totaal} contacten uit Perspective: ${fac.totaal_email} met e-mail, ${fac.totaal_tel} met telefoonnummer. Deze lijst staat buiten het CRM en komt dus nooit in een pijplijn.</div>
+      <div class="muted" style="font-size:13px;margin-top:2px">${fac.totaal} contacten (${esc(bronregel)}): ${fac.totaal_email} met e-mail, ${fac.totaal_tel} met telefoonnummer. Binnengekomen tussen ${bcDatum(fac.vroegste)} en ${bcDatum(fac.nieuwste)}. Deze lijst staat buiten het CRM en komt dus nooit in een pijplijn.${fac.uitgesloten?` <span title="Teamleden en testinvoer. Die tellen niet mee en krijgen nooit een mailing.">${fac.uitgesloten} team- en testrijen zijn overgeslagen.</span>`:''}</div>
     </div></div>
     <div id="bc_rest">
       <div class="bc-filters" id="bc_filters"></div>
@@ -1550,9 +1590,10 @@ async function renderBroadcast(){
 async function bcLaad(){
   const f=bcFilters();
   const {data,error}=await sb.rpc('broadcast_selectie',{
-    p_funnels:f.funnels,p_projecten:f.projecten,p_banden:f.banden,
-    p_timings:f.timings,p_talen:f.talen,p_vastgoed:f.vastgoed,p_strategieen:f.strategieen,
-    p_budget_tot:f.budget_tot,p_kanaal:f.kanaal,p_limit:1000});
+    p_bronnen:f.bronnen, p_funnels:f.funnels, p_projecten:f.projecten, p_banden:f.banden,
+    p_timings:f.timings, p_talen:f.talen, p_vastgoed:f.vastgoed, p_doelen:f.doelen,
+    p_statussen:f.statussen, p_temperaturen:f.temperaturen, p_account:f.account,
+    p_periode:f.periode, p_kanaal:f.kanaal, p_limit:2000});
   if(error){$('#bc_telling').innerHTML=`<span class="err">${esc(error.message)}</span>`;return;}
   BC.sel=data; BC.uit.clear(); BC.open.clear();
   bcTelling(); bcTabel();
@@ -1562,17 +1603,19 @@ function bcTelling(){
   const g=bcGekozen(), m=bcMailbaar(), uit=BC.uit.size;
   const knop=$('#bc_lijst');
   if(knop){
-    knop.textContent = (BC.lijstOpen?'\u25b4 Lijst verbergen':'\u25be Leads tonen')+` (${g.length})`;
+    knop.textContent = (BC.lijstOpen?'▴ Lijst verbergen':'▾ Leads tonen')+` (${g.length})`;
     // Aanvinken en antwoorden slaan nergens op zolang je de lijst niet ziet.
     ['#bc_allemaal','#bc_antwoorden'].forEach(sel=>{
       const b=$(sel); if(b) b.style.display = BC.lijstOpen?'':'none';
     });
   }
+  const account=g.filter(r=>r.heeft_account).length;
   $('#bc_telling').innerHTML=
     `<b>${g.length}</b> geselecteerd`+
     (uit?` <span class="muted">(${uit} handmatig afgevinkt)</span>`:'')+
     `, waarvan <b>${m.length}</b> met e-mailadres`+
-    (g.length-m.length?` <span class="muted">(${g.length-m.length} alleen telefonisch bereikbaar)</span>`:'');
+    (g.length-m.length?` <span class="muted">(${g.length-m.length} alleen telefonisch bereikbaar)</span>`:'')+
+    (account?` &middot; <b>${account}</b> heeft al een portaalaccount`:'');
 }
 
 function bcTabel(){
@@ -1585,29 +1628,37 @@ function bcTabel(){
     $('#bc_tabel').innerHTML=`<div class="bc-dicht">De lijst met ${r.length} contact${r.length===1?'':'en'} staat dicht. Klik op <b>Leads tonen</b> om hem open te klappen.</div>`;
     return;
   }
-  const jaNee = v => v==null ? '<span class="muted">\u2014</span>' : (v?'Ja':'Nee');
+  const jaNee = v => v==null ? '<span class="muted">—</span>' : (v?'Ja':'Nee');
   $('#bc_tabel').innerHTML=
     `<div class="muted" style="font-size:12px;margin:10px 0 6px">Vink iemand uit om hem over te slaan, bijvoorbeeld een bestaande klant. Klik op het aantal antwoorden om te zien wat iemand destijds invulde.</div>
-     <table><tr><th style="width:30px"></th><th>Naam</th><th>E-mail</th><th>Telefoon</th><th>Funnel</th>
-     <th>Budget</th><th>Koopmoment</th><th>Eerder vastgoed</th><th></th></tr>`+
+     <table><tr><th style="width:30px"></th><th>Naam</th><th>Binnengekomen</th><th>Bron</th>
+     <th>E-mail</th><th>Telefoon</th><th>Account</th><th>Project</th>
+     <th>Budget</th><th>Koopmoment</th><th>Plan</th><th>Eerder vastgoed</th><th></th></tr>`+
     r.map(x=>{
       const antw = Array.isArray(x.antwoorden)?x.antwoorden:[];
       const uit = BC.uit.has(x.id), op = BC.open.has(x.id);
+      const bronnen = (x.bronnen||[]).map(b=>bcLabel('bronnen',b)).join(', ');
       return `<tr class="${uit?'bc-uit':''}">
       <td><input type="checkbox" class="bc-vink" data-id="${x.id}" ${uit?'':'checked'}></td>
-      <td>${esc(x.naam||'\u2014')}</td>
+      <td>${esc(x.naam||'—')}</td>
+      <td>${esc(bcDatum(x.binnengekomen)||'—')}</td>
+      <td>${esc(bronnen||'—')}</td>
       <td>${x.email?esc(x.email):'<span class="muted">geen e-mail</span>'}</td>
       <td>${x.telefoon?esc(x.telefoon):'<span class="muted">geen nummer</span>'}</td>
-      <td>${esc((x.funnels||[]).join(', ')||'\u2014')}</td>
-      <td>${esc(x.budget||'\u2014')}</td>
-      <td>${esc(x.timing||'\u2014')}</td>
+      <td>${x.heeft_account?'<span class="bc-ja">account</span>':(x.dataroom?'<span class="bc-ja">dataroom</span>':'<span class="muted">nee</span>')}</td>
+      <td>${esc((x.projecten||[]).join(', ')||'—')}</td>
+      <td>${esc(x.budget||'—')}</td>
+      <td>${esc(x.timing_key?bcLabel('timings',x.timing_key):'—')}</td>
+      <td>${esc(x.doel?bcLabel('doelen',x.doel):'—')}</td>
       <td>${jaNee(x.eerder_vastgoed)}</td>
-      <td>${antw.length?`<button class="bc-meer" data-meer="${x.id}">${op?'verberg':antw.length+' antwoord'+(antw.length===1?'':'en')}</button>`:'<span class="muted">\u2014</span>'}</td>
+      <td>${antw.length?`<button class="bc-meer" data-meer="${x.id}">${op?'verberg':antw.length+' antwoord'+(antw.length===1?'':'en')}</button>`:'<span class="muted">—</span>'}</td>
       </tr>`+
-      (antw.length&&op?`<tr class="bc-detail"><td></td><td colspan="8"><div class="bc-antw">`+
+      (antw.length&&op?`<tr class="bc-detail"><td></td><td colspan="12"><div class="bc-antw">`+
         antw.map(a=>`<div class="bc-aw"><span class="bc-avraag">${esc(a.vraag||a.veld||'Vraag')}</span>`+
-                    `<span class="bc-aant">${esc(a.antwoord==null||a.antwoord===''?'\u2014':a.antwoord)}</span></div>`).join('')+
-        (x.strategie?`<div class="bc-aw"><span class="bc-avraag">Plan met de woning</span><span class="bc-aant">${esc(x.strategie)}</span></div>`:'')+
+                    `<span class="bc-aant">${esc(a.antwoord==null||a.antwoord===''?'—':a.antwoord)}</span></div>`).join('')+
+        (x.sales_stage?`<div class="bc-aw"><span class="bc-avraag">Verkoopfase</span><span class="bc-aant">${esc(x.sales_stage)}</span></div>`:'')+
+        (x.status?`<div class="bc-aw"><span class="bc-avraag">Status</span><span class="bc-aant">${esc(bcLabel('statussen',x.status))}</span></div>`:'')+
+        (x.temperatuur?`<div class="bc-aw"><span class="bc-avraag">Temperatuur</span><span class="bc-aant">${esc(bcLabel('temperaturen',x.temperatuur))}</span></div>`:'')+
         `</div></td></tr>`:'');
     }).join('')+'</table>';
   document.querySelectorAll('.bc-vink').forEach(c=>c.onchange=()=>{
@@ -1627,8 +1678,9 @@ async function bcExport(){
   if(!r.length){toast('Niets te exporteren','err');return;}
   // De ruwe antwoorden gaan als één kolom mee, zodat de export net zoveel
   // laat zien als het scherm en je hem in een blad kunt openen.
-  const kol=['naam','email','telefoon','funnels','projecten','budget','band','timing',
-             'eerder_vastgoed','strategie','taal','antwoorden'];
+  const kol=['naam','binnengekomen','bronnen','email','telefoon','heeft_account','projecten',
+             'funnels','budget','band','timing','doel','eerder_vastgoed','status','sales_stage',
+             'temperatuur','taal','antwoorden'];
   const plat=v=>Array.isArray(v)&&v.length&&typeof v[0]==='object'
       ? v.map(a=>`${a.vraag||a.veld}: ${a.antwoord}`).join(' | ')
       : Array.isArray(v) ? v.join(' | ')
@@ -1688,6 +1740,7 @@ function bcOpstellen(){
         <button data-cmd="italic" title="Cursief"><i>I</i></button>
         <button data-cmd="insertUnorderedList" title="Lijst">• lijst</button>
         <button data-cmd="createLink" title="Link">🔗 link</button>
+        <button type="button" id="bc_img" title="Afbeelding invoegen">🖼 afbeelding</button>
         <button data-cmd="removeFormat" title="Opmaak wissen">✕ opmaak</button>
         <span style="flex:1"></span>
         <button data-var="{{voornaam}}" title="Voegt de voornaam van de ontvanger in">+ voornaam</button>
@@ -1707,6 +1760,39 @@ function bcOpstellen(){
   </div>`;
 
   bcSjablonenLaden();
+  // Afbeelding toevoegen. Hij gaat naar dezelfde publieke opslag als de
+  // projectrenders, want een mail kan niets met een bestand op jouw laptop: de
+  // ontvanger moet de afbeelding van een openbare URL kunnen halen. Breedte
+  // vast op 560px met max-width:100%, anders schiet een foto van 2500px breed
+  // door de kolom heen in Outlook, dat geen CSS-schaling toepast.
+  const bcImgKnop=$('#bc_img');
+  if(bcImgKnop) bcImgKnop.onclick=()=>{
+    const kiezer=document.createElement('input');
+    kiezer.type='file'; kiezer.accept='image/*';
+    kiezer.onchange=async()=>{
+      const file=kiezer.files&&kiezer.files[0];
+      if(!file) return;
+      if(!/^image\//.test(file.type)){toast('Dat is geen afbeelding','err');return;}
+      toast('Afbeelding uploaden…');
+      try{
+        const {blob}=await pmCompress(file);
+        const ext=blob.type==='image/jpeg'?'jpg':((file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg');
+        const pad=`nieuwsbrief/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+        const up=await sb.storage.from(PM_BUCKET).upload(pad,blob,{contentType:blob.type||'image/jpeg',upsert:false});
+        if(up.error){toast('Upload mislukt: '+up.error.message,'err');return;}
+        const url=pmPublicUrl(pad);
+        if(!url){toast('Geen publieke URL gekregen','err');return;}
+        const body=$('#bc_body'); body.focus();
+        // Alt-tekst uit de bestandsnaam: veel mensen hebben afbeeldingen uit
+        // staan, en dan is dit het enige wat ze zien.
+        const alt=file.name.replace(/\.[a-z0-9]+$/i,'').replace(/[-_]+/g,' ');
+        document.execCommand('insertHTML',false,
+          `<p><img src="${url}" alt="${esc(alt)}" width="560" style="max-width:100%;height:auto;border-radius:8px;display:block"></p><p><br></p>`);
+        toast('Afbeelding toegevoegd','ok');
+      }catch(e){ toast('Upload mislukt: '+(e&&e.message||e),'err'); }
+    };
+    kiezer.click();
+  };
   document.querySelectorAll('#bc_tb [data-cmd]').forEach(b=>{
     b.addEventListener('mousedown',e=>e.preventDefault());   // selectie behouden
     b.onclick=()=>{const c=b.dataset.cmd;$('#bc_body').focus();
