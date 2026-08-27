@@ -399,6 +399,23 @@
   .bc-meer:hover{border-color:var(--brand);color:var(--brand)}
   .bc-ja{display:inline-block;padding:2px 8px;border-radius:999px;background:#e8f3ee;
          color:var(--brand);font-size:11.5px;font-weight:700}
+  /* WhatsApp-kanaal in het opstelscherm */
+  .bc-kn{margin-left:6px;padding:1px 7px;border-radius:999px;background:rgba(0,0,0,.08);font-size:11px}
+  .seq-dbtn.on .bc-kn{background:rgba(255,255,255,.25)}
+  .bc-wastatus{font-size:13px;line-height:1.5;padding:9px 12px;border:1px solid var(--line);
+               border-radius:9px;background:#fff}
+  .bc-wavar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .bc-wanr{flex:none;padding:4px 9px;border-radius:7px;background:#eef0ef;color:var(--muted);
+           font-size:12px;font-weight:700;font-family:ui-monospace,Menlo,monospace}
+  .bc-wavar select{flex:0 0 210px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;
+                   font:inherit;font-size:13px;background:#fff;color:var(--ink)}
+  .wa-leeg{background:#fee2e2;color:#991b1b;border-radius:3px;padding:0 3px;font-weight:600}
+  .bc-wavar input{flex:1 1 240px;min-width:0;padding:8px 10px;border:1px solid var(--line);
+                  border-radius:8px;font:inherit;font-size:13px}
+  /* Een bericht zoals het op een telefoon staat, inclusief het staartje. */
+  .wa-bubbel{position:relative;max-width:420px;padding:11px 14px;border-radius:10px 10px 10px 2px;
+             background:#e8f6ea;border:1px solid #cfe8d4;font-size:14px;line-height:1.5;
+             color:#12211c;white-space:pre-wrap;word-break:break-word}
   .bc-zoekrij{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:0 18px}
   .bc-zoek{flex:1 1 320px;min-width:0;padding:9px 12px;font:inherit;font-size:13.5px;
            color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px}
@@ -1386,6 +1403,7 @@ let BC = {fac:null, sjablonen:[],
           bronnen:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
           vastgoed:[], doelen:[], statussen:[], temperaturen:[], account:[], klant:[],
           periode:'', kanaal:'email', lijstOpen:false, zoek:'',
+          verzendKanaal:'email', waTpls:null, waStatus:null, waTpl:null, waVars:[], golf:40, waGolven:0,
           sel:null, uit:new Set(), open:new Set(), ddOpen:null, camp:null, stap:'kiezen'};
 
 const bcArg = a => a && a.length ? a : null;
@@ -1463,6 +1481,18 @@ function bcMarkeer(tekst, q){
 /* de contacten die daadwerkelijk meegaan: selectie min de afgevinkte */
 const bcGekozen = () => ((BC.sel&&BC.sel.rijen)||[]).filter(r=>!BC.uit.has(r.id));
 const bcMailbaar = () => bcGekozen().filter(r=>r.email);
+
+/* Dezelfde toets als broadcast_nep_nummer() in de database. Invulnummers als
+   +31 6 12345678 en 06-11111111 staan echt in de data; die kosten je
+   kwaliteitsscore bij Meta zonder ooit aan te komen. */
+function bcNepNummer(t){
+  const d=String(t||'').replace(/[^0-9]/g,'');
+  return !d || d.length<9 || /^\d{1,3}(\d)\1{6,}$/.test(d)
+      || d.includes('123456') || d.includes('000000')
+      || d.includes('111111') || d.includes('654321');
+}
+const bcAppbaar = () => bcGekozen().filter(r=>!bcNepNummer(r.telefoon));
+const bcOntvangers = () => BC.verzendKanaal==='whatsapp' ? bcAppbaar() : bcMailbaar();
 
 /* Een facet uit broadcast_facetten omzetten naar keuzes voor een dropdown. De
    volgorde die de database geeft blijft staan: koopmoment komt chronologisch
@@ -1801,35 +1831,73 @@ const bcPsReferral = () =>
 
 /* ---------------- nieuwsbrief opstellen en versturen ---------------- */
 function bcOpstellen(){
-  const m=bcMailbaar();
-  if(!m.length){toast('Niemand in deze selectie heeft een e-mailadres','err');return;}
+  const m=bcMailbaar(), w=bcAppbaar();
+  if(!m.length && !w.length){toast('Niemand in deze selectie is bereikbaar','err');return;}
+  // Begin bij het kanaal dat het meeste bereik heeft, maar laat de keuze los.
+  if(!m.length) BC.verzendKanaal='whatsapp';
+  else if(!w.length) BC.verzendKanaal='email';
   BC.camp=null; BC.layout=BC.layout||'utama';
+  BC.waTpl=null; BC.waVars=[]; BC.waGolven=0;
   $('#bc_opstel').innerHTML=`
   <div class="panel" id="bc_opstelpaneel">
     <div class="panel-head"><div>
-      <h3>Nieuwsbrief opstellen</h3>
-      <div class="muted" style="font-size:13px;margin-top:2px">Gaat naar <b>${m.length}</b> ontvanger${m.length===1?'':'s'}. Deze lijst ligt nu vast, ook als je hierna de filters aanpast.</div>
+      <h3>Bericht opstellen</h3>
+      <div class="muted" style="font-size:13px;margin-top:2px" id="bc_kop"></div>
     </div></div>
 
-    <div class="bc-buiten" style="padding-top:16px">
+    <div class="field bc-buiten" style="padding-top:16px">
+      <label>Kanaal</label>
+      <div class="bc-rij">
+        <button class="seq-dbtn" data-kanaal="email">&#9993; E-mail <span class="bc-kn">${m.length}</span></button>
+        <button class="seq-dbtn" data-kanaal="whatsapp">&#128172; WhatsApp <span class="bc-kn">${w.length}</span></button>
+      </div>
+      <div class="bc-hint" id="bc_kanaalhint"></div>
+    </div>
+
+    <div id="bc_wa" style="display:none">
+      <div class="field bc-buiten">
+        <label>Goedgekeurd template</label>
+        <div id="bc_watpls"><span class="muted" style="font-size:12.5px">Templates laden&hellip;</span></div>
+        <div class="bc-hint">Buiten het 24-uursvenster staat WhatsApp alleen door Meta goedgekeurde templates toe. Vrije tekst kan niet, en een broadcast naar een oude lijst valt altijd buiten dat venster. Alleen templates in de categorie MARKETING mogen voor een nieuwsbrief.</div>
+      </div>
+      <div class="field bc-buiten" id="bc_wavars_vak" style="display:none">
+        <label>Variabelen invullen</label>
+        <div id="bc_wavars"></div>
+        <div class="bc-hint">Per ontvanger ingevuld. Kies een veld uit de lijst, of typ een vaste tekst.</div>
+      </div>
+      <div class="field bc-buiten" id="bc_wavoorbeeld_vak" style="display:none">
+        <label>Zo komt het aan</label>
+        <div class="wa-bubbel" id="bc_wavoorbeeld"></div>
+      </div>
+      <div class="bc-grid">
+        <div class="field"><label>Berichten per golf</label>
+          <input id="bc_golf" type="number" min="1" max="200" value="${BC.golf}">
+          <div class="bc-hint">Meta meet per nummer hoe mensen reageren. Honderden berichten ineens leest als spam en zet je score van groen naar rood; dan ligt ook de gewone opvolging van Ashley stil. Begin klein, kijk na elke golf.</div></div>
+        <div class="field"><label>Status van het nummer</label>
+          <div id="bc_wastatus" class="bc-wastatus muted">Status ophalen&hellip;</div>
+          <div class="bc-hint">Verzenden kan alleen bij een groene score.</div></div>
+      </div>
+    </div>
+
+    <div class="bc-buiten bc-emailonly" style="padding-top:16px">
       <div class="bc-lab">Beginnen met een sjabloon</div>
       <div class="bc-rij" id="bc_sjablonen"><span class="muted" style="font-size:12.5px">Sjablonen laden…</span></div>
       <div class="bc-hint">Kies er een als startpunt. De tekst blijft daarna gewoon aanpasbaar; de stukken tussen [rechte haken] moet je zelf invullen.</div>
     </div>
 
-    <div class="bc-grid">
+    <div class="bc-grid bc-altijd">
       <div class="field"><label>Interne naam</label>
         <input id="bc_naam" placeholder="bijv. Aanbod MOKA augustus">
         <div class="bc-hint">Alleen voor jezelf, staat niet in de mail.</div></div>
-      <div class="field"><label>Onderwerp</label>
+      <div class="field bc-emailonly"><label>Onderwerp</label>
         <input id="bc_onderwerp" placeholder="Wat zien mensen in hun inbox?">
         <div class="bc-hint">De regel waarop mensen besluiten of ze openen.</div></div>
-      <div class="field bc-breed"><label>Voorbeeldregel</label>
+      <div class="field bc-breed bc-emailonly"><label>Voorbeeldregel</label>
         <input id="bc_pre" placeholder="Optioneel. Leeg laten: dan pakt hij de eerste zin.">
         <div class="bc-hint">Staat in de inbox naast het onderwerp.</div></div>
     </div>
 
-    <div class="field bc-buiten">
+    <div class="field bc-buiten bc-emailonly">
       <label>Opmaak</label>
       <div class="bc-rij">
         <button class="seq-dbtn ${BC.layout==='utama'?'on':''}" data-layout="utama">UTAMA-opmaak</button>
@@ -1838,7 +1906,7 @@ function bcOpstellen(){
       <div class="bc-hint">UTAMA-opmaak heeft de zwarte kop en de voet, zoals de sequence-mails. Vlakke HTML leest als een persoonlijk bericht zonder omlijsting.</div>
     </div>
 
-    <div class="field bc-buiten">
+    <div class="field bc-buiten bc-emailonly">
       <label>Bericht</label>
       <div class="rte-tb" id="bc_tb">
         <button data-cmd="bold" title="Vet"><b>B</b></button>
@@ -1857,9 +1925,9 @@ function bcOpstellen(){
     </div>
 
     <div class="bc-acties">
-      <button class="btn btn-ghost btn-sm" id="bc_preview">👁 Voorbeeld bekijken</button>
-      <button class="btn btn-ghost btn-sm" id="bc_test">📨 Proefmail naar mezelf</button>
-      <button class="btn btn-sm" id="bc_verstuur" disabled title="Stuur eerst een proefmail">🚀 Versturen naar ${m.length}</button>
+      <button class="btn btn-ghost btn-sm bc-emailonly" id="bc_preview">👁 Voorbeeld bekijken</button>
+      <button class="btn btn-ghost btn-sm" id="bc_test"></button>
+      <button class="btn btn-primary btn-sm" id="bc_verstuur" disabled title="Stuur eerst een proefbericht"></button>
       <button class="btn btn-ghost btn-sm" id="bc_annuleer">Annuleren</button>
     </div>
     <div class="bc-telling" id="bc_status" style="display:none"></div>
@@ -1925,11 +1993,155 @@ function bcOpstellen(){
     BC.layout=b.dataset.layout;
     document.querySelectorAll('[data-layout]').forEach(x=>x.classList.toggle('on',x===b));
   });
+  document.querySelectorAll('[data-kanaal]').forEach(b=>b.onclick=()=>{
+    BC.verzendKanaal=b.dataset.kanaal;
+    BC.camp=null;                       // ander kanaal is een andere campagne
+    bcKanaalTekenen();
+  });
+  $('#bc_golf').oninput=e=>{ BC.golf=Math.max(1,Math.min(200,Number(e.target.value)||40)); };
   $('#bc_annuleer').onclick=()=>{$('#bc_opstel').innerHTML='';};
   $('#bc_preview').onclick=bcPreview;
   $('#bc_test').onclick=()=>bcVerstuur(true);
   $('#bc_verstuur').onclick=()=>bcVerstuur(false);
+  bcKanaalTekenen();
   $('#bc_opstelpaneel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------------- kanaalkeuze: e-mail of WhatsApp ---------------- */
+
+/* Het opstelscherm bedient twee kanalen die weinig gemeen hebben. Bij e-mail
+   schrijf je zelf een bericht; bij WhatsApp kies je een door Meta goedgekeurd
+   template en vul je alleen de variabelen. Alles wat niet bij het gekozen
+   kanaal hoort gaat uit beeld, want half ingevulde velden die nergens heen gaan
+   zijn erger dan een scherm dat verandert. */
+function bcKanaalTekenen(){
+  const wa = BC.verzendKanaal==='whatsapp';
+  const n  = bcOntvangers().length;
+  document.querySelectorAll('[data-kanaal]').forEach(b=>
+    b.classList.toggle('on', b.dataset.kanaal===BC.verzendKanaal));
+  document.querySelectorAll('.bc-emailonly').forEach(e=>e.style.display = wa?'none':'');
+  const waVak=$('#bc_wa'); if(waVak) waVak.style.display = wa?'':'none';
+
+  $('#bc_kop').innerHTML = n
+    ? `Gaat naar <b>${n}</b> ${wa?'telefoonnummer':'ontvanger'}${n===1?'':'s'}. Deze lijst ligt nu vast, ook als je hierna de filters aanpast.`
+    : `<span class="err">Niemand in deze selectie is via dit kanaal bereikbaar.</span>`;
+  // Let op de wisselwerking met het filter "Bereikbaar via" bovenaan: staat dat
+  // op "heeft e-mail", dan blijven mensen zonder e-mailadres ook hier buiten de
+  // selectie, hoe goed hun telefoonnummer ook is.
+  const kanaalfilterKnelt = wa && BC.kanaal==='email';
+  $('#bc_kanaalhint').innerHTML = wa
+    ? 'Mag alleen met een door Meta goedgekeurd template en in golven. Antwoordt iemand met STOP, dan is hij meteen ook uit de e-maillijst.'
+      + (kanaalfilterKnelt
+         ? ' <b>Let op:</b> het filter <b>Bereikbaar via</b> staat op "heeft e-mail", dus mensen met alleen een nummer zitten er nu niet bij. Zet het op "heeft telefoonnummer" voor je volledige WhatsApp-bereik.'
+         : '')
+    : 'E-mail is vrije tekst en kan in één keer naar iedereen.';
+
+  const test=$('#bc_test'), verstuur=$('#bc_verstuur');
+  test.textContent = wa ? '📲 Proefbericht naar mijn nummer' : '📨 Proefmail naar mezelf';
+  verstuur.textContent = wa
+    ? `🚀 Golf versturen (${Math.min(BC.golf, n)} van ${n})`
+    : `🚀 Versturen naar ${n}`;
+  verstuur.disabled = true;
+  verstuur.title = wa ? 'Stuur eerst een proefbericht' : 'Stuur eerst een proefmail';
+
+  if(wa) bcWaLaden();
+}
+
+async function bcWaLaden(){
+  // Status en templates komen van hetzelfde eindpunt; één keer ophalen per
+  // sessie is genoeg, behalve de status want die verandert.
+  const st=$('#bc_wastatus');
+  try{
+    const {data,error}=await sb.functions.invoke('broadcast-wa',{body:{actie:'status'}});
+    if(error||!data||!data.ok){ st.innerHTML=`<span class="err">${esc((data&&data.reden)||(error&&error.message)||'onbekend')}</span>`; }
+    else{
+      BC.waStatus=data;
+      const kleur = data.kwaliteit==='GREEN'?'ok':(data.kwaliteit==='UNKNOWN'?'muted':'err');
+      st.innerHTML=`<b>${esc(data.naam||'')}</b> ${esc(data.nummer||'')}<br>`+
+        `<span class="${kleur}">Kwaliteit: ${esc(data.kwaliteit)}</span> · doorvoer ${esc(data.doorvoer||'?')}`;
+    }
+  }catch(e){ st.innerHTML=`<span class="err">${esc(e.message||e)}</span>`; }
+
+  const vak=$('#bc_watpls');
+  if(!BC.waTpls){
+    const {data,error}=await sb.functions.invoke('broadcast-wa',{body:{actie:'templates'}});
+    if(error||!data||!data.ok){
+      vak.innerHTML=`<span class="err">Kon de templates niet laden: ${esc((data&&data.reden)||(error&&error.message)||'onbekend')}</span>`;
+      return;
+    }
+    BC.waTpls=data.templates||[];
+  }
+  if(!BC.waTpls.length){
+    vak.innerHTML='<div class="bc-let">Er is nog geen goedgekeurd MARKETING-template. Dien er een in bij Meta; zodra die is goedgekeurd verschijnt hij hier vanzelf.</div>';
+    return;
+  }
+  vak.innerHTML='<div class="bc-rij">'+BC.waTpls.map((t,i)=>
+    `<button type="button" class="bc-chip ${BC.waTpl&&BC.waTpl.naam===t.naam?'on':''}" data-watpl="${i}" title="${esc(t.body)}">${esc(t.naam)} <span class="bc-n">${t.variabelen}</span></button>`).join('')+'</div>';
+  vak.querySelectorAll('[data-watpl]').forEach(b=>b.onclick=()=>{
+    BC.waTpl=BC.waTpls[Number(b.dataset.watpl)];
+    // Variabelen resetten: een ander template heeft andere posities.
+    BC.waVars=Array.from({length:BC.waTpl.variabelen},(_x,i)=>
+      i===0?{bron:'voornaam',waarde:''}:{bron:'tekst',waarde:''});
+    BC.camp=null;
+    vak.querySelectorAll('[data-watpl]').forEach(x=>x.classList.toggle('on',x===b));
+    bcWaVarsTekenen();
+  });
+  if(BC.waTpl) bcWaVarsTekenen();
+}
+
+const BC_WA_BRONNEN=[['voornaam','Voornaam van de ontvanger'],['naam','Volledige naam'],
+                     ['project','Project van de lead'],['tekst','Vaste tekst']];
+
+function bcWaVarsTekenen(){
+  const vak=$('#bc_wavars'), wrap=$('#bc_wavars_vak');
+  if(!BC.waTpl){ wrap.style.display='none'; return; }
+  wrap.style.display = BC.waTpl.variabelen ? '' : 'none';
+  vak.innerHTML=BC.waVars.map((v,i)=>
+    `<div class="bc-wavar">
+       <span class="bc-wanr">{{${i+1}}}</span>
+       <select data-varbron="${i}">${BC_WA_BRONNEN.map(([k,l])=>
+         `<option value="${k}" ${v.bron===k?'selected':''}>${esc(l)}</option>`).join('')}</select>
+       <input data-varwaarde="${i}" placeholder="Vaste tekst" value="${esc(v.waarde||'')}"
+              style="${v.bron==='tekst'?'':'display:none'}">
+     </div>`).join('');
+  vak.querySelectorAll('[data-varbron]').forEach(sel=>sel.onchange=()=>{
+    const i=Number(sel.dataset.varbron);
+    BC.waVars[i].bron=sel.value; BC.camp=null; bcWaVarsTekenen();
+  });
+  vak.querySelectorAll('[data-varwaarde]').forEach(inp=>inp.oninput=()=>{
+    BC.waVars[Number(inp.dataset.varwaarde)].waarde=inp.value; BC.camp=null; bcWaVoorbeeld();
+  });
+  bcWaVoorbeeld();
+}
+
+/* Het template met de variabelen van een echte ontvanger uit de selectie, zodat
+   je ziet wat er straks op iemands telefoon staat en niet alleen {{1}}. */
+function bcWaVoorbeeld(){
+  const wrap=$('#bc_wavoorbeeld_vak'), vak=$('#bc_wavoorbeeld');
+  if(!BC.waTpl){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+  // Een ontvanger met een volledige naam leest prettiger als voorbeeld dan de
+  // eerste op alfabet, die vaak maar één letter heeft.
+  const kandidaten=bcAppbaar();
+  const voorbeeld = kandidaten.find(x=>/\s/.test(String(x.naam||'')))
+                 || kandidaten[0] || {naam:'Steven Gijsman',voornaam:'Steven',projecten:['MOKA']};
+  let onvolledig=false;
+  const params=BC.waVars.map((v,i)=>{
+    const voornaam=(voorbeeld.voornaam||String(voorbeeld.naam||'').split(/\s+/)[0]||'').trim();
+    let w = v.bron==='voornaam' ? voornaam
+          : v.bron==='naam' ? (voorbeeld.naam||voornaam)
+          : v.bron==='project' ? ((voorbeeld.projecten||[])[0]||'')
+          : (v.waarde||'');
+    w=String(w).trim();
+    if(w) return w;
+    // Een lege vaste tekst is iets wat jij nog moet doen, geen noodwaarde.
+    if(v.bron==='tekst'){ onvolledig=true; return `[{{${i+1}}} nog invullen]`; }
+    return v.bron==='project' ? 'onze projecten' : 'daar';
+  });
+  const tekst=String(BC.waTpl.body||'').replace(/\{\{(\d+)\}\}/g,(_m,n)=>params[Number(n)-1]??`{{${n}}}`);
+  vak.innerHTML=esc(tekst).replace(/\n/g,'<br>').replace(/\[\{\{\d+\}\} nog invullen\]/g,m=>`<span class="wa-leeg">${m}</span>`)+
+    `<div class="bc-hint" style="margin-top:8px">Voorbeeld met de gegevens van ${esc(voorbeeld.naam||'een ontvanger')}.`+
+    (onvolledig?' <span class="err">Vul de rode stukken nog in.</span>':'')+`</div>`;
 }
 
 async function bcSjablonenLaden(){
@@ -1990,12 +2202,22 @@ async function bcPreview(){
 }
 
 async function bcBewaar(){
-  const ids=bcMailbaar().map(x=>x.id);
+  const wa = BC.verzendKanaal==='whatsapp';
+  const ids=bcOntvangers().map(x=>x.id);
   const {data,error}=await sb.rpc('broadcast_campagne_opslaan',{
     p_id:BC.camp, p_naam:$('#bc_naam').value.trim()||null,
-    p_onderwerp:$('#bc_onderwerp').value.trim(), p_preheader:$('#bc_pre').value.trim()||null,
-    p_body_html:$('#bc_body').innerHTML, p_ontvangers:ids, p_filters:bcFilters(),
-    p_layout:BC.layout});
+    // Bij WhatsApp bestaat er geen onderwerp. De interne naam of de
+    // templatenaam vult dat gat, puur zodat de campagne herkenbaar is in de lijst.
+    p_onderwerp: wa ? ($('#bc_naam').value.trim() || (BC.waTpl&&BC.waTpl.naam) || 'WhatsApp-bericht')
+                    : $('#bc_onderwerp').value.trim(),
+    p_preheader: wa ? null : ($('#bc_pre').value.trim()||null),
+    p_body_html: wa ? null : $('#bc_body').innerHTML,
+    p_ontvangers:ids, p_filters:bcFilters(), p_layout:BC.layout,
+    p_kanaal: wa?'whatsapp':'email',
+    p_wa_template: wa&&BC.waTpl ? BC.waTpl.naam : null,
+    p_wa_template_taal: wa&&BC.waTpl ? BC.waTpl.taal : null,
+    p_wa_variabelen: wa ? BC.waVars : null,
+    p_golf_grootte: BC.golf});
   if(error) return {fout:error.message};
   if(data&&data.ok===false) return {fout:data.reden};
   BC.camp=data.id;
@@ -2003,6 +2225,7 @@ async function bcBewaar(){
 }
 
 async function bcVerstuur(test){
+  if(BC.verzendKanaal==='whatsapp') return bcVerstuurWa(test);
   const st=$('#bc_status'); st.style.display='';
   if(!$('#bc_onderwerp').value.trim()){toast('Vul een onderwerp in','err');return;}
   if(!$('#bc_body').innerHTML.trim()){toast('Schrijf eerst een bericht','err');return;}
@@ -2029,6 +2252,79 @@ async function bcVerstuur(test){
       (data.overgeslagen?`, overgeslagen: ${data.overgeslagen}`:'');
     $('#bc_verstuur').disabled=true;
     toast(`Nieuwsbrief verstuurd naar ${data.verzonden} mensen`,'ok');
+  }
+}
+
+/* WhatsApp verstuurt per golf, niet in één keer. Na elke golf staat de nieuwe
+   kwaliteitsscore op het scherm: dat is het moment om te besluiten of je
+   doorgaat, niet als de hele lijst er al doorheen is. */
+async function bcVerstuurWa(test){
+  const st=$('#bc_status'); st.style.display='';
+  if(!BC.waTpl){toast('Kies eerst een goedgekeurd template','err');return;}
+  const leeg=BC.waVars.findIndex(v=>v.bron==='tekst' && !String(v.waarde||'').trim());
+  if(leeg>-1){toast(`Variabele {{${leeg+1}}} is nog leeg`,'err');return;}
+
+  st.textContent = test ? 'Proefbericht versturen…' : 'Golf versturen…';
+
+  // Opslaan legt de ontvangerslijst vast. Dat mag maar één keer: bij elke golf
+  // opnieuw opslaan zou de lijst herberekenen uit de huidige filters, en dan
+  // verschuift halverwege de campagne wie er nog aan de beurt is. De kop belooft
+  // dat de lijst vastligt; dit maakt dat waar. Verander je het template of een
+  // variabele, dan zet die code BC.camp op null en begin je met een nieuwe
+  // campagne, dus dan klopt het opnieuw vastleggen wel.
+  let bewaard;
+  if(BC.waGolven > 0 && BC.camp){
+    const r=await sb.from('broadcast_campagnes').select('aantal_doel').eq('id',BC.camp).maybeSingle();
+    bewaard={id:BC.camp, ontvangers:(r.data&&r.data.aantal_doel)||0};
+  }else{
+    bewaard=await bcBewaar();
+    if(bewaard.fout){st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;return;}
+  }
+
+  if(test){
+    // Het testnummer onthouden: je stuurt tijdens het samenstellen meestal een
+    // paar proefberichten achter elkaar naar hetzelfde toestel.
+    let vorig='+31'; try{ vorig=localStorage.getItem('bc_testnummer')||'+31'; }catch(e){}
+    const nummer=prompt('Naar welk nummer sturen we het proefbericht?', vorig);
+    if(!nummer){st.style.display='none';return;}
+    try{ localStorage.setItem('bc_testnummer', nummer); }catch(e){}
+    const {data,error}=await sb.functions.invoke('broadcast-wa',{
+      body:{actie:'test', campagne_id:BC.camp, naar:nummer}});
+    if(error){st.innerHTML=`<span class="err">Mislukt: ${esc(error.message)}</span>`;return;}
+    if(!data||data.ok===false){st.innerHTML=`<span class="err">${esc((data&&(data.detail||data.reden))||'mislukt')}</span>`;return;}
+    st.innerHTML=`Proefbericht verstuurd naar <b>${esc(data.naar)}</b>. Controleer het op je telefoon, dan kun je de eerste golf sturen.`;
+    const b=$('#bc_verstuur'); b.disabled=false; b.title='';
+    return;
+  }
+
+  const n=bewaard.ontvangers, golf=Math.min(BC.golf,n);
+  if(!confirm(`Je stuurt nu een golf van ${golf} WhatsApp-berichten (van in totaal ${n}).\n\nDit kun je niet terugdraaien. Doorgaan?`)){
+    st.style.display='none';return;
+  }
+  const knop=$('#bc_verstuur'); knop.disabled=true;
+  const {data,error}=await sb.functions.invoke('broadcast-wa',{
+    body:{actie:'golf', campagne_id:BC.camp, template_body:BC.waTpl.body}});
+  knop.disabled=false;
+  if(error){st.innerHTML=`<span class="err">Mislukt: ${esc(error.message)}</span>`;return;}
+  if(!data||data.ok===false){
+    st.innerHTML=`<span class="err">${esc(data&&data.reden||'mislukt')}</span>`;
+    if(data&&data.status) st.innerHTML+=` <span class="muted">(score staat op ${esc(data.status.kwaliteit)})</span>`;
+    return;
+  }
+  BC.waGolven++;
+  const kleur = data.kwaliteit_na==='GREEN' ? 'ok' : 'err';
+  st.innerHTML=`Golf klaar. Verstuurd: <b>${data.verzonden}</b>`+
+    (data.mislukt?`, mislukt: <b>${data.mislukt}</b>`:'')+
+    (data.overgeslagen?`, overgeslagen: ${data.overgeslagen}`:'')+
+    `.<br>Nog <b>${data.resterend}</b> te gaan van ${data.doel}.`+
+    (data.kwaliteit_na?` Kwaliteitsscore nu: <span class="${kleur}">${esc(data.kwaliteit_na)}</span>.`:'')+
+    (data.waarschuwing?`<div class="bc-let" style="margin:10px 0 0">${esc(data.waarschuwing)}</div>`:'');
+  if(data.resterend>0){
+    knop.textContent=`🚀 Volgende golf (${Math.min(BC.golf,data.resterend)} van ${data.resterend})`;
+    if(data.waarschuwing){ knop.disabled=true; knop.title='Kwaliteitsscore is niet groen'; }
+  }else{
+    knop.disabled=true; knop.textContent='Alles verstuurd';
+    toast(`WhatsApp-campagne klaar: ${data.doel} berichten`,'ok');
   }
 }
 
