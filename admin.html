@@ -3584,6 +3584,7 @@ function inboxDrawInfo(ctx){
     :`<button class="btn btn-sm ibx-rel" id="ibx_geen_antw" title="Haal dit gesprek uit Onbeantwoord. Schrijft de lead daarna opnieuw, dan komt het vanzelf terug.">✓ Geen antwoord nodig</button>`):'';
   const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
   const leadRows=[['Interesse',cv.interest],['Timing',tlmap[cv.timeline]||cv.timeline],['Budget',cv.budget_band],
+    ['Geld beschikbaar',cv.funds],
     ['Gekwalificeerd',cv.is_qualified==null?null:(cv.is_qualified?'Ja ✓':'Nee')],['Eigenaar',cv.assigned_name]].filter(r=>r[1]);
   const winRow=(cv.channel!=='email'&&cv.window_expires_at)?`<div class="ibx-ip-note">⏱ Antwoordvenster tot ${new Date(cv.window_expires_at).toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:'';
   let contactHtml;
@@ -5234,7 +5235,7 @@ async function openPerson(p){
   if(canView('inbox'))(async()=>{
     try{
       const [cvR,sumR]=await Promise.all([
-        sb.from('inbox_conversations').select('interest,timeline,budget_band,is_qualified').eq('contact_id',p.id),
+        sb.from('inbox_conversations').select('interest,timeline,budget_band,funds,is_qualified').eq('contact_id',p.id),
         sb.from('inbox_summaries').select('summary,generated_at,message_count').eq('contact_id',p.id).maybeSingle()
       ]);
       const kw=$('#pd_kwal');
@@ -5243,7 +5244,7 @@ async function openPerson(p){
         const pak=k=>{const r=cvs.find(c=>c[k]!=null&&c[k]!=='');return r?r[k]:null;};
         const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
         const q=cvs.some(c=>c.is_qualified===true)?'Ja ✓':(cvs.some(c=>c.is_qualified===false)?'Nee':null);
-        const rows=[['Interesse',pak('interest')],['Timing',tlmap[pak('timeline')]||pak('timeline')],['Budget',pak('budget_band')],['Gekwalificeerd',q]].filter(r=>r[1]);
+        const rows=[['Interesse',pak('interest')],['Timing',tlmap[pak('timeline')]||pak('timeline')],['Budget',pak('budget_band')],['Geld beschikbaar',pak('funds')],['Gekwalificeerd',q]].filter(r=>r[1]);
         if(rows.length)kw.innerHTML=rows.map(([k,v])=>`<div class="pdr-fact"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');
         else{kw.classList.remove('pdr-facts');kw.innerHTML='<div class="muted" style="font-size:13px">Nog geen kwalificatie vastgelegd. Dit vult zich vanuit de inbox-gesprekken.</div>';}
       }
