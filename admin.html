@@ -416,6 +416,21 @@
   .wa-bubbel{position:relative;max-width:420px;padding:11px 14px;border-radius:10px 10px 10px 2px;
              background:#e8f6ea;border:1px solid #cfe8d4;font-size:14px;line-height:1.5;
              color:#12211c;white-space:pre-wrap;word-break:break-word}
+  /* Campagne-overzicht met cijfers */
+  .bc-camps{padding:0 18px 4px;display:flex;flex-direction:column;gap:8px}
+  .bc-camp{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 14px;
+           border:1px solid var(--line);border-radius:10px;background:#fff}
+  .bc-camp.loopt{border-color:var(--warn);background:#fffbeb}
+  .bc-camp-naam{font-weight:700;font-size:13.5px;flex:1 1 220px;min-width:0;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bc-camp-kan{flex:none;font-size:11px;font-weight:700;letter-spacing:.04em;padding:2px 8px;
+               border-radius:999px;background:#eef0ef;color:var(--muted)}
+  .bc-cijfers{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);
+              font-variant-numeric:tabular-nums}
+  .bc-cijfers b{color:var(--ink);font-weight:700}
+  .bc-cijfers .op{color:var(--brand)}
+  .bc-bar{flex:1 1 120px;min-width:90px;height:6px;border-radius:3px;background:#eef0ef;overflow:hidden}
+  .bc-bar i{display:block;height:100%;background:var(--brand)}
   .bc-zoekrij{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:0 18px}
   .bc-zoek{flex:1 1 320px;min-width:0;padding:9px 12px;font:inherit;font-size:13.5px;
            color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px}
@@ -1403,7 +1418,7 @@ let BC = {fac:null, sjablonen:[],
           bronnen:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
           vastgoed:[], doelen:[], statussen:[], temperaturen:[], account:[], klant:[],
           periode:'', kanaal:'email', lijstOpen:false, zoek:'',
-          verzendKanaal:'email', waTpls:null, waStatus:null, waTpl:null, waVars:[], golf:40, waGolven:0,
+          verzendKanaal:'email', waTpls:null, waStatus:null, waTpl:null, waTplNaam:null, waVars:[], golf:40, waGolven:0,
           sel:null, uit:new Set(), open:new Set(), ddOpen:null, camp:null, stap:'kiezen'};
 
 const bcArg = a => a && a.length ? a : null;
@@ -1627,6 +1642,7 @@ async function renderBroadcast(){
       <div class="muted" style="font-size:13px;margin-top:2px">${fac.totaal} contacten (${esc(bronregel)}): ${fac.totaal_email} met e-mail, ${fac.totaal_tel} met telefoonnummer. Binnengekomen tussen ${bcDatum(fac.vroegste)} en ${bcDatum(fac.nieuwste)}. Deze lijst staat buiten het CRM en komt dus nooit in een pijplijn.${fac.uitgesloten?` <span title="Teamleden en testinvoer. Die tellen niet mee en krijgen nooit een mailing.">${fac.uitgesloten} team- en testrijen zijn overgeslagen.</span>`:''}</div>
     </div></div>
     <div id="bc_rest">
+      <div class="bc-camps" id="bc_campagnes"></div>
       <div class="bc-filters" id="bc_filters"></div>
       <div class="muted" style="font-size:12px;padding:8px 18px 0">Het grijze getal achter een keuze is het totaal aantal contacten, het groene getal hoeveel daarvan bereikbaar zijn via het gekozen kanaal. Versturen kan alleen naar wie een e-mailadres heeft. <b>Ingelogd op invest</b> betekent dat iemand ooit een inloglink heeft aangevraagd, wat alleen voor de dataroom nodig is; iedereen in deze lijst staat sowieso in het portaal. <b>Klant</b> is wie een ITP tekende of aanbetaalde, plus iedereen die als klant in Moneybird staat. Zet dat filter op <b>Nog geen klant</b> om je bestaande kopers over te slaan.</div>
       <div class="bc-telling" id="bc_telling"></div>
@@ -1668,7 +1684,111 @@ async function renderBroadcast(){
     bcTabel();
   };
   bcTekenFilters();
+  bcCampagnesLaden();
   bcLaad();
+}
+
+/* Het overzicht van campagnes. Dit bestond niet: je kon versturen, maar daarna
+   nooit meer zien wat ermee gebeurd was, en een campagne die je halverwege had
+   verlaten was onvindbaar. Lopende campagnes staan bovenaan met een knop om
+   verder te gaan. */
+async function bcCampagnesLaden(){
+  const vak=$('#bc_campagnes'); if(!vak) return;
+  const {data,error}=await sb.rpc('broadcast_campagnes_lijst');
+  if(error||!Array.isArray(data)||!data.length){ vak.innerHTML=''; return; }
+
+  // Cijfers van e-mailcampagnes bijwerken uit de gebeurtenissen van Resend.
+  // Alleen voor wat recent is: ouder dan een maand verandert toch niet meer.
+  const vers=data.filter(c=>c.kanaal==='email' && c.verzonden>0 &&
+    (!c.klaar || Date.now()-new Date(c.klaar).getTime() < 31*864e5));
+  if(vers.length){
+    await Promise.all(vers.slice(0,10).map(c=>
+      sb.rpc('broadcast_email_stats_bijwerken',{p_campagne:c.id}).catch(()=>{})));
+    const her=await sb.rpc('broadcast_campagnes_lijst');
+    if(!her.error && Array.isArray(her.data)) data.length=0, data.push(...her.data);
+  }
+
+  const lopend=data.filter(c=>c.status==='bezig');
+  const rest=data.filter(c=>c.status!=='bezig').slice(0,6);
+  const pct=(a,b)=>b>0?Math.round(a/b*100):0;
+
+  const kaart=c=>{
+    const behandeld=c.verzonden+c.mislukt+c.overgeslagen;
+    const loopt=c.status==='bezig';
+    // Percentages op de basis die past bij het kanaal: opens en clicks reken je
+    // over wat is afgeleverd, niet over wat is verstuurd. Een bounce heeft nooit
+    // de kans gehad geopend te worden.
+    const basis=c.afgeleverd||c.verzonden||0;
+    return `<div class="bc-camp ${loopt?'loopt':''}">
+      <span class="bc-camp-naam" title="${esc(c.onderwerp||'')}">${esc(c.naam||'(zonder naam)')}</span>
+      <span class="bc-camp-kan">${c.kanaal==='whatsapp'?'WhatsApp':'E-mail'}</span>
+      <div class="bc-bar" title="${behandeld} van ${c.doel} behandeld"><i style="width:${pct(behandeld,c.doel)}%"></i></div>
+      <div class="bc-cijfers">
+        <span><b>${c.verzonden}</b> verstuurd</span>
+        ${c.afgeleverd?`<span><b>${c.afgeleverd}</b> aangekomen</span>`:''}
+        ${c.geopend?`<span class="op"><b>${c.geopend}</b> ${c.kanaal==='whatsapp'?'gelezen':'geopend'} (${pct(c.geopend,basis)}%)</span>`:''}
+        ${c.geklikt?`<span class="op"><b>${c.geklikt}</b> geklikt (${pct(c.geklikt,basis)}%)</span>`:''}
+        ${c.mislukt?`<span class="err"><b>${c.mislukt}</b> mislukt</span>`:''}
+        ${loopt?`<span><b>${c.wachtend}</b> te gaan</span>`:''}
+      </div>
+      ${loopt?`<button type="button" class="btn btn-primary btn-sm" data-verder="${c.id}">Verder met deze golf</button>`
+             :`<button type="button" class="bc-zoekactie" data-detail="${c.id}">Wie kreeg wat</button>`}
+    </div>`;
+  };
+
+  vak.innerHTML=(lopend.length?lopend.map(kaart).join(''):'')+
+    (rest.length?`<details><summary class="bc-zoekactie" style="cursor:pointer;padding:4px 0">Eerdere campagnes (${rest.length})</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rest.map(kaart).join('')}</div></details>`:'');
+
+  vak.querySelectorAll('[data-verder]').forEach(b=>b.onclick=()=>bcCampagneHervatten(b.dataset.verder));
+  vak.querySelectorAll('[data-detail]').forEach(b=>b.onclick=()=>bcCampagneDetail(b.dataset.detail));
+}
+
+/* Verder met een campagne die nog loopt. Alles komt uit de campagne zelf, niet
+   uit het geheugen van de pagina: template, variabelen, golfgrootte, tekst. Je
+   hoeft dus niets opnieuw in te vullen, en golf 3 luidt gegarandeerd hetzelfde
+   als golf 1. De ontvangerslijst ligt al vast en wie al een bericht kreeg wordt
+   overgeslagen. */
+async function bcCampagneHervatten(id){
+  const {data,error}=await sb.rpc('broadcast_campagne_laden',{p_id:id});
+  if(error||!data||data.ok===false){toast('Kon de campagne niet laden','err');return;}
+  BC.verzendKanaal=data.kanaal||'email';
+  BC.camp=data.id;
+  BC.waGolven=1;                     // er is al verstuurd, dus niet opnieuw vastleggen
+  BC.golf=data.golf_grootte||40;
+  BC.layout=data.layout||'utama';
+  if(data.kanaal==='whatsapp'){
+    BC.waVars=Array.isArray(data.wa_variabelen)?data.wa_variabelen:[];
+    BC.waTplNaam=data.wa_template;   // het template zelf komt uit de lijst van Meta
+  }
+  bcCampBewaren();
+  bcOpstellen(data);
+  toast(`Verder met "${data.naam||'campagne'}": nog ${data.resterend} te gaan`,'ok');
+}
+
+async function bcCampagneDetail(id){
+  const {data,error}=await sb.rpc('broadcast_campagne_detail',{p_id:id,p_limit:2000});
+  if(error||!data){toast('Kon de details niet laden','err');return;}
+  const r=data.rijen||[], c=data.campagne||{};
+  const wa=c.kanaal==='whatsapp';
+  const dt=v=>v?new Date(v).toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
+  const root=document.createElement('div');
+  root.innerHTML=`<div class="chatpop-back open"></div><div class="chatpop open" style="width:min(940px,96vw);height:min(80vh,780px)">
+    <div class="chatpop-head"><div class="chatpop-title">${esc(c.naam||'Campagne')} &middot; ${r.length} ontvangers</div>
+    <button class="bcx" style="font-size:22px;background:none;border:none;cursor:pointer;color:var(--muted)">&times;</button></div>
+    <div style="flex:1;overflow:auto;padding:0 18px 18px">
+      <table><tr><th>Naam</th><th>${wa?'Nummer':'E-mail'}</th><th>Status</th><th>Verstuurd</th>
+      <th>Aangekomen</th><th>${wa?'Gelezen':'Geopend'}</th><th>Geklikt</th></tr>
+      ${r.map(x=>`<tr><td>${esc(x.naam||'—')}</td><td>${esc((wa?x.telefoon:x.email)||'—')}</td>
+        <td>${esc(x.status||'—')}${x.fout?` <span class="muted" title="${esc(x.fout)}">&#9432;</span>`:''}</td>
+        <td>${dt(x.verzonden_at)}</td><td>${dt(x.afgeleverd_at)}</td>
+        <td>${dt(x.geopend_at)}</td><td>${x.clicks?`${dt(x.geklikt_at)} (${x.clicks}&times;)`:'—'}</td></tr>`).join('')}
+      </table>
+    </div></div>`;
+  document.body.appendChild(root);
+  const sluit=()=>root.remove();
+  root.querySelector('.chatpop-back').onclick=sluit;
+  root.querySelector('.bcx').onclick=sluit;
 }
 
 async function bcLaad(){
@@ -1833,15 +1953,22 @@ const bcPsReferral = () =>
   'en je ontvangt \u20ac2.500 zodra diegene koopt en het contract getekend is.</p>';
 
 /* ---------------- nieuwsbrief opstellen en versturen ---------------- */
-function bcOpstellen(){
+function bcOpstellen(hervatCamp){
   const m=bcMailbaar(), w=bcAppbaar();
-  if(!m.length && !w.length){toast('Niemand in deze selectie is bereikbaar','err');return;}
-  // Begin bij het kanaal dat het meeste bereik heeft, maar laat de keuze los.
-  if(!m.length) BC.verzendKanaal='whatsapp';
-  else if(!w.length) BC.verzendKanaal='email';
-  BC.camp=null; BC.layout=BC.layout||'utama';
-  BC.waTpl=null; BC.waVars=[]; BC.waGolven=0;
-  const hervat=bcCampHervatten();
+  // Bij een hervatte campagne ligt de ontvangerslijst al vast in de database,
+  // dus of de huidige filters nu iemand opleveren doet er niet toe.
+  if(!hervatCamp && !m.length && !w.length){toast('Niemand in deze selectie is bereikbaar','err');return;}
+  if(!hervatCamp){
+    // Begin bij het kanaal dat het meeste bereik heeft, maar laat de keuze los.
+    if(!m.length) BC.verzendKanaal='whatsapp';
+    else if(!w.length) BC.verzendKanaal='email';
+    BC.camp=null; BC.waTpl=null; BC.waTplNaam=null; BC.waVars=[]; BC.waGolven=0;
+  } else {
+    // Het template zelf komt uit de lijst van Meta; die kan al geladen zijn.
+    BC.waTpl=(BC.waTpls||[]).find(t=>t.naam===BC.waTplNaam)||null;
+  }
+  BC.layout=BC.layout||'utama';
+  const hervat=hervatCamp?null:bcCampHervatten();
   $('#bc_opstel').innerHTML=`
   <div class="panel" id="bc_opstelpaneel">
     <div class="panel-head"><div>
@@ -1938,6 +2065,25 @@ function bcOpstellen(){
     </div>
     <div class="bc-telling" id="bc_status" style="display:none"></div>
   </div>`;
+
+  // Een hervatte campagne vult zichzelf in: naam, onderwerp, tekst, golfgrootte.
+  // Zo hoef je bij golf 4 niets opnieuw te typen en luidt die gegarandeerd
+  // hetzelfde als golf 1.
+  if(hervatCamp){
+    if($('#bc_naam')) $('#bc_naam').value = hervatCamp.naam || '';
+    if($('#bc_golf')) $('#bc_golf').value = BC.golf;
+    if(hervatCamp.kanaal !== 'whatsapp'){
+      if($('#bc_onderwerp')) $('#bc_onderwerp').value = hervatCamp.onderwerp || '';
+      if($('#bc_pre'))       $('#bc_pre').value       = hervatCamp.preheader || '';
+      if($('#bc_body'))      $('#bc_body').innerHTML  = hervatCamp.body_html || '';
+    }
+    const kop=$('#bc_kop');
+    if(kop) kop.innerHTML=`Verder met <b>${esc(hervatCamp.naam||'deze campagne')}</b>. `+
+      `<b>${hervatCamp.verzonden}</b> van ${hervatCamp.doel} verstuurd, nog <b>${hervatCamp.resterend}</b> te gaan. `+
+      `Wie al een bericht kreeg wordt overgeslagen.`;
+    const vs=$('#bc_verstuur');
+    if(vs){ vs.disabled=false; vs.title=''; vs.textContent=`🚀 Volgende golf (${Math.min(BC.golf,hervatCamp.resterend)} van ${hervatCamp.resterend})`; }
+  }
 
   bcSjablonenLaden();
   // Afbeelding toevoegen. Hij gaat naar dezelfde publieke opslag als de
@@ -2071,8 +2217,11 @@ function bcKanaalTekenen(){
   verstuur.textContent = wa
     ? `🚀 Golf versturen (${Math.min(BC.golf, n)} van ${n})`
     : `🚀 Versturen naar ${n}`;
-  verstuur.disabled = true;
-  verstuur.title = wa ? 'Stuur eerst een proefbericht' : 'Stuur eerst een proefmail';
+  // Bij een campagne die al loopt is het proefbericht allang gestuurd; die knop
+  // opnieuw op slot zetten zou je dwingen je eigen lijst nog een testje te sturen.
+  const loopt = BC.camp && BC.waGolven > 0;
+  verstuur.disabled = !loopt;
+  verstuur.title = loopt ? '' : (wa ? 'Stuur eerst een proefbericht' : 'Stuur eerst een proefmail');
 
   if(wa) bcWaLaden();
 }
@@ -2115,7 +2264,12 @@ async function bcWaLaden(){
     + (wachtend.length?`<div class="bc-hint" style="margin-top:8px">In review bij Meta: ${wachtend.map(t=>`<b>${esc(t.naam)}</b>`).join(', ')}. Zodra Meta ze goedkeurt staan ze hierboven. Meestal binnen een paar uur; ververs deze pagina.</div>`:'')
     + (afgewezen.length?`<div class="bc-hint" style="margin-top:4px"><span class="err">Afgewezen door Meta: ${afgewezen.map(t=>esc(t.naam)).join(', ')}.</span></div>`:'');
   vak.querySelectorAll('[data-watpl]').forEach(b=>b.onclick=()=>{
+    if(BC.camp && BC.waGolven>0){
+      toast('Deze campagne loopt al. Een ander template zou golf 4 anders maken dan golf 1.','err');
+      return;
+    }
     BC.waTpl=BC.waTpls.find(t=>t.naam===b.dataset.watpl);
+    BC.waTplNaam=BC.waTpl?BC.waTpl.naam:null;
     // Variabelen resetten: een ander template heeft andere posities.
     BC.waVars=Array.from({length:BC.waTpl.variabelen},(_x,i)=>
       i===0?{bron:'voornaam',waarde:''}:{bron:'tekst',waarde:''});
@@ -2123,6 +2277,18 @@ async function bcWaLaden(){
     vak.querySelectorAll('[data-watpl]').forEach(x=>x.classList.toggle('on',x===b));
     bcWaVarsTekenen();
   });
+  // Hervat je een campagne, dan staat de templatenaam al vast maar was het
+  // template zelf nog niet geladen. Nu wel: aanvinken en de variabelen erbij.
+  if(!BC.waTpl && BC.waTplNaam){
+    BC.waTpl=BC.waTpls.find(t=>t.naam===BC.waTplNaam)||null;
+    if(BC.waTpl){
+      vak.querySelectorAll('[data-watpl]').forEach(x=>
+        x.classList.toggle('on', x.dataset.watpl===BC.waTpl.naam));
+      if(!BC.waVars.length)
+        BC.waVars=Array.from({length:BC.waTpl.variabelen},(_x,i)=>
+          i===0?{bron:'voornaam',waarde:''}:{bron:'tekst',waarde:''});
+    }
+  }
   if(BC.waTpl) bcWaVarsTekenen();
 }
 
@@ -2378,7 +2544,7 @@ async function bcVerstuurWa(test){
     if(data&&data.status) st.innerHTML+=` <span class="muted">(score staat op ${esc(data.status.kwaliteit)})</span>`;
     return;
   }
-  BC.waGolven++; bcCampBewaren();
+  BC.waGolven++; bcCampBewaren(); bcCampagnesLaden();
   const kleur = data.kwaliteit_na==='GREEN' ? 'ok' : 'err';
   st.innerHTML=`Golf klaar. Verstuurd: <b>${data.verzonden}</b>`+
     (data.mislukt?`, mislukt: <b>${data.mislukt}</b>`:'')+
