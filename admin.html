@@ -1635,6 +1635,9 @@ async function renderBroadcast(){
   BC.fac=fac;
 
   const bronregel = (fac.bronnen||[]).map(b=>`${b.n} uit ${bcLabel('bronnen',b.waarde)}`).join(', ');
+  // Versiestempel in de paginabron, zodat te controleren is of de browser de
+  // nieuwe versie heeft en niet een gecachte oude.
+  window.BC_VERSIE = '2026-08-28-campagneoverzicht';
   v.innerHTML=`
   <div class="panel">
     <div class="panel-head"><div>
@@ -1736,7 +1739,9 @@ async function bcCampagnesLaden(){
     </div>`;
   };
 
-  vak.innerHTML=(lopend.length?lopend.map(kaart).join(''):'')+
+  vak.innerHTML=(lopend.length
+      ? `<div class="bc-lab" style="margin:0">Nog niet afgeronde campagnes</div>`+lopend.map(kaart).join('')
+      : '')+
     (rest.length?`<details><summary class="bc-zoekactie" style="cursor:pointer;padding:4px 0">Eerdere campagnes (${rest.length})</summary>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rest.map(kaart).join('')}</div></details>`:'');
 
