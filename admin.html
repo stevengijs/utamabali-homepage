@@ -355,6 +355,8 @@
   .bc-telling{margin:4px 16px 0;padding:10px 12px;border-radius:8px;background:#f1f5f9;font-size:13.5px}
   .bc-acties{padding:12px 16px 0}
   #bc_tabel{padding:0 16px 16px}
+  .bc-uit{opacity:.42}
+  .bc-uit td{text-decoration:line-through}
   .ibx-ip-ai{padding:10px 16px 0}
   .ibx-ip-ai .btn{width:100%}
   .ibx-take{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
@@ -1289,51 +1291,65 @@ function go(k){
 /* ================= BROADCAST =================
    Campagnes naar de geimporteerde adressenlijst (broadcast_contacten).
 
-   Waarom dit een aparte pagina en een aparte tabel is: dit zijn geen lopende
-   verkooptrajecten. Alles wat in contacts belandt wordt door
-   pipeline_sync_contact opgepikt en krijgt een kaart in Discovery. Deze 1930
-   regels uit Perspective zijn een archief, dus ze staan er fysiek buiten en
-   kunnen daardoor nooit per ongeluk in een pijplijn komen.
+   Waarom een aparte tabel en pagina: dit zijn geen lopende verkooptrajecten.
+   Alles wat in contacts belandt wordt door pipeline_sync_contact opgepikt en
+   krijgt een kaart in Discovery. Deze lijst staat er fysiek buiten, dus dat kan
+   niet per ongeluk gebeuren.
 
-   De herkomst staat bewust bovenaan en niet weggestopt in een filter. Van de
-   1930 komen er maar 320 uit Bali-funnels; de rest komt uit StevenExits, Yep en
-   TinnitusRescue. Iemand die zich ooit voor tinnitus-hulp inschreef hoort geen
-   villa-aanbieding te krijgen, en de pagina moet dat moeilijk maken in plaats
-   van er alleen voor te waarschuwen. */
-let BC = {facetten:null, bedrijven:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
-          budgetTot:null, alleenEmail:true, sel:null};
+   Twee dingen die de vorm bepalen:
+   - De lijst kwam uit meerdere bedrijven, dus "Herkomst" is een verplichte
+     eerste keuze en geen filter onderin. Na het opschonen staat er alleen nog
+     UTAMA in, maar de drempel blijft: hij hoort er als er ooit weer iets anders
+     bij komt.
+   - Deze leads gaven vooral een telefoonnummer, geen e-mail (bij MOKA 3BR is dat
+     1 tegen 84). Standaard filteren op "heeft e-mail" verbergt tweederde, dus
+     het kanaal is een expliciete keuze.
+
+   Verzenden gebeurt op een vastgelegde ontvangerslijst, niet op de filters.
+   Wat je op het scherm afvinkt is precies wat er uitgaat. */
+let BC = {fac:null, bedrijven:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
+          budgetTot:null, kanaal:'email', sel:null, uit:new Set(), camp:null, stap:'kiezen'};
+
+const bcArg = a => a && a.length ? a : null;
+const bcFilters = () => ({bedrijven:bcArg(BC.bedrijven), funnels:bcArg(BC.funnels),
+  projecten:bcArg(BC.projecten), banden:bcArg(BC.banden), timings:bcArg(BC.timings),
+  talen:bcArg(BC.talen), budget_tot:BC.budgetTot, kanaal:BC.kanaal});
 
 function bcChips(lijst, gekozen, groep){
   return (lijst||[]).map(f=>{
-    const w=f.waarde, aan=gekozen.includes(w);
-    return `<button class="bc-chip ${aan?'on':''}" data-groep="${groep}" data-w="${esc(w)}">`+
-           `${esc(w)}<span class="bc-n">${f.met_email!=null?f.met_email:f.n}</span></button>`;
+    const aan=gekozen.includes(f.waarde);
+    const n=BC.kanaal==='telefoon'?f.met_tel:(BC.kanaal==='email'?f.met_email:f.n);
+    return `<button class="bc-chip ${aan?'on':''}" data-groep="${groep}" data-w="${esc(f.waarde)}">`+
+           `${esc(f.waarde)}<span class="bc-n">${n}</span></button>`;
   }).join('');
 }
+
+/* de contacten die daadwerkelijk meegaan: selectie min de afgevinkte */
+const bcGekozen = () => ((BC.sel&&BC.sel.rijen)||[]).filter(r=>!BC.uit.has(r.id));
+const bcMailbaar = () => bcGekozen().filter(r=>r.email);
 
 async function renderBroadcast(){
   const v=$('#view');
   v.innerHTML=`<div class="panel"><div class="muted" style="padding:20px">Adressenlijst laden…</div></div>`;
   const {data:fac,error}=await sb.rpc('broadcast_facetten');
   if(error){v.innerHTML=`<div class="panel"><div class="empty" style="padding:20px">Kon de lijst niet laden: ${esc(error.message)}</div></div>`;return;}
-  BC.facetten=fac;
-  const tot=(fac.bedrijven||[]).reduce((a,x)=>a+x.n,0);
-  const totMail=(fac.bedrijven||[]).reduce((a,x)=>a+x.met_email,0);
+  BC.fac=fac;
 
   v.innerHTML=`
   <div class="panel">
     <div class="p-head"><div>
       <h2 style="margin:0">Broadcast</h2>
-      <div class="muted" style="font-size:13px">Losse adressenlijst uit Perspective, ${tot} contacten waarvan ${totMail} met e-mailadres. Deze mensen staan bewust buiten het CRM en komen dus nooit in een pijplijn terecht.</div>
+      <div class="muted" style="font-size:13px">${fac.totaal} contacten uit Perspective: ${fac.totaal_email} met e-mail, ${fac.totaal_tel} met telefoonnummer. Deze lijst staat buiten het CRM en komt dus nooit in een pijplijn.</div>
     </div></div>
-    <div class="bc-let">
-      <b>Let op de herkomst.</b> Deze lijst komt uit meerdere bedrijven. Alleen de UTAMA-regels zijn ooit binnengekomen op een Bali-funnel. Wie zich bij StevenExits, Yep of TinnitusRescue inschreef, meldde zich aan voor iets heel anders; een villa-aanbod daarheen sturen is ongevraagd. Kies daarom eerst een herkomst.
-    </div>
     <div class="bc-vak">
       <div class="bc-lab">Herkomst <span class="bc-verplicht">verplicht</span></div>
       <div class="bc-rij" id="bc_bedrijven">${bcChips(fac.bedrijven,BC.bedrijven,'bedrijven')}</div>
     </div>
     <div id="bc_rest" style="display:none">
+      <div class="bc-vak"><div class="bc-lab">Kanaal</div><div class="bc-rij" id="bc_kanaal">
+        ${[['email','heeft e-mail'],['telefoon','heeft telefoonnummer'],['beide','heeft allebei'],['alles','maakt niet uit']]
+          .map(([k,l])=>`<button class="bc-chip bc-kan ${BC.kanaal===k?'on':''}" data-k="${k}">${l}</button>`).join('')}
+      </div><div class="muted" style="font-size:12px;margin-top:5px">Versturen kan alleen naar wie een e-mailadres heeft.</div></div>
       <div class="bc-vak"><div class="bc-lab">Funnel</div><div class="bc-rij" id="bc_funnels"></div></div>
       <div class="bc-vak"><div class="bc-lab">Project</div><div class="bc-rij" id="bc_projecten">${bcChips(fac.projecten,BC.projecten,'projecten')}</div></div>
       <div class="bc-vak"><div class="bc-lab">Budgetband</div><div class="bc-rij" id="bc_banden">${bcChips(fac.banden,BC.banden,'banden')}</div></div>
@@ -1342,85 +1358,169 @@ async function renderBroadcast(){
       </div></div>
       <div class="bc-vak"><div class="bc-lab">Timing</div><div class="bc-rij" id="bc_timings">${bcChips(fac.timings,BC.timings,'timings')}</div></div>
       <div class="bc-vak"><div class="bc-lab">Taal</div><div class="bc-rij" id="bc_talen">${bcChips(fac.talen,BC.talen,'talen')}</div></div>
-      <div class="bc-vak"><label class="bc-check"><input type="checkbox" id="bc_mail" ${BC.alleenEmail?'checked':''}> Alleen contacten met een e-mailadres</label></div>
       <div class="bc-telling" id="bc_telling"></div>
       <div class="bc-acties">
-        <button class="btn btn-ghost btn-sm" id="bc_csv">⬇ Exporteer selectie als CSV</button>
+        <button class="btn btn-sm" id="bc_opstellen">✉ Nieuwsbrief opstellen</button>
+        <button class="btn btn-ghost btn-sm" id="bc_csv">⬇ Exporteer als CSV</button>
+        <button class="btn btn-ghost btn-sm" id="bc_allemaal">Alles aanvinken</button>
       </div>
       <div id="bc_tabel"></div>
     </div>
-  </div>`;
+  </div>
+  <div id="bc_opstel"></div>`;
 
+  const bind=sel=>document.querySelectorAll(sel+' [data-groep]').forEach(b=>b.onclick=()=>{
+    const g=b.dataset.groep,w=b.dataset.w,i=BC[g].indexOf(w);
+    if(i>-1)BC[g].splice(i,1); else BC[g].push(w);
+    b.classList.toggle('on');
+    if(g==='bedrijven'){BC.funnels=[];herteken();} else bcLaad();
+  });
   const herteken=()=>{
-    // Funnels tonen alleen die bij de gekozen herkomst horen, anders staan er
-    // dertig knoppen waarvan er maar een paar relevant zijn.
-    const f=(fac.funnels||[]).filter(x=>!BC.bedrijven.length||BC.bedrijven.includes(x.bedrijf));
-    $('#bc_funnels').innerHTML=bcChips(f,BC.funnels,'funnels');
-    bindGroep('#bc_funnels');
+    $('#bc_funnels').innerHTML=bcChips(BC.fac.funnels,BC.funnels,'funnels');
+    bind('#bc_funnels');
     $('#bc_rest').style.display=BC.bedrijven.length?'':'none';
     bcLaad();
   };
-  const bindGroep=(sel)=>{
-    document.querySelectorAll(sel+' [data-groep]').forEach(b=>b.onclick=()=>{
-      const g=b.dataset.groep, w=b.dataset.w;
-      const i=BC[g].indexOf(w); if(i>-1)BC[g].splice(i,1); else BC[g].push(w);
-      b.classList.toggle('on');
-      if(g==='bedrijven'){BC.funnels=[];herteken();} else bcLaad();
-    });
-  };
-  ['#bc_bedrijven','#bc_projecten','#bc_banden','#bc_timings','#bc_talen'].forEach(bindGroep);
+  ['#bc_bedrijven','#bc_projecten','#bc_banden','#bc_timings','#bc_talen'].forEach(bind);
+  document.querySelectorAll('.bc-kan').forEach(b=>b.onclick=()=>{
+    BC.kanaal=b.dataset.k;
+    document.querySelectorAll('.bc-kan').forEach(x=>x.classList.toggle('on',x===b));
+    herteken();
+  });
   document.querySelectorAll('.bc-bud').forEach(b=>b.onclick=()=>{
     BC.budgetTot=b.dataset.bud?Number(b.dataset.bud):null;
     document.querySelectorAll('.bc-bud').forEach(x=>x.classList.toggle('on',x===b));
     bcLaad();
   });
-  $('#bc_mail').onchange=e=>{BC.alleenEmail=e.target.checked;bcLaad();};
   $('#bc_csv').onclick=bcExport;
+  $('#bc_allemaal').onclick=()=>{BC.uit.clear();bcTabel();bcTelling();};
+  $('#bc_opstellen').onclick=bcOpstellen;
   herteken();
 }
 
-const bcArg = a => a && a.length ? a : null;
-
 async function bcLaad(){
   if(!BC.bedrijven.length){$('#bc_telling').innerHTML='';$('#bc_tabel').innerHTML='';return;}
+  const f=bcFilters();
   const {data,error}=await sb.rpc('broadcast_selectie',{
-    p_bedrijven:bcArg(BC.bedrijven), p_funnels:bcArg(BC.funnels), p_projecten:bcArg(BC.projecten),
-    p_banden:bcArg(BC.banden), p_timings:bcArg(BC.timings), p_talen:bcArg(BC.talen),
-    p_budget_tot:BC.budgetTot, p_alleen_email:BC.alleenEmail, p_limit:50});
+    p_bedrijven:f.bedrijven,p_funnels:f.funnels,p_projecten:f.projecten,p_banden:f.banden,
+    p_timings:f.timings,p_talen:f.talen,p_budget_tot:f.budget_tot,p_kanaal:f.kanaal,p_limit:1000});
   if(error){$('#bc_telling').innerHTML=`<span class="err">${esc(error.message)}</span>`;return;}
-  BC.sel=data;
-  const dubbel=data.met_email-data.unieke_adressen;
+  BC.sel=data; BC.uit.clear();
+  bcTelling(); bcTabel();
+}
+
+function bcTelling(){
+  const g=bcGekozen(), m=bcMailbaar(), uit=BC.uit.size;
   $('#bc_telling').innerHTML=
-    `<b>${data.aantal}</b> contact${data.aantal===1?'':'en'} in deze selectie`+
-    (BC.alleenEmail?`, <b>${data.unieke_adressen}</b> uniek${data.unieke_adressen===1?'':'e'} e-mailadres${data.unieke_adressen===1?'':'sen'}`:'')+
-    (dubbel>0?` <span class="muted">(${dubbel} dubbel adres${dubbel===1?'':'sen'}, tellen een keer mee)</span>`:'');
-  const r=data.rijen||[];
-  $('#bc_tabel').innerHTML=!r.length?'<div class="empty" style="padding:16px">Niemand voldoet aan deze filters.</div>':
-    `<div class="muted" style="font-size:12px;margin:10px 0 6px">Eerste ${r.length} van ${data.aantal}</div>
-     <table class="tbl"><tr><th>Naam</th><th>E-mail</th><th>Herkomst</th><th>Budget</th><th>Timing</th><th>Taal</th></tr>`+
-    r.map(x=>`<tr><td>${esc(x.naam||'—')}</td><td>${esc(x.email||'—')}</td>
-      <td>${esc(x.funnel||x.bedrijf||'—')}</td><td>${esc(x.budget||'—')}</td>
-      <td>${esc(x.timing||'—')}</td><td>${esc(x.taal||'—')}</td></tr>`).join('')+'</table>';
+    `<b>${g.length}</b> geselecteerd`+
+    (uit?` <span class="muted">(${uit} handmatig afgevinkt)</span>`:'')+
+    `, waarvan <b>${m.length}</b> met e-mailadres`+
+    (g.length-m.length?` <span class="muted">(${g.length-m.length} alleen telefonisch bereikbaar)</span>`:'');
+}
+
+function bcTabel(){
+  const r=(BC.sel&&BC.sel.rijen)||[];
+  if(!r.length){$('#bc_tabel').innerHTML='<div class="empty" style="padding:16px">Niemand voldoet aan deze filters.</div>';return;}
+  $('#bc_tabel').innerHTML=
+    `<div class="muted" style="font-size:12px;margin:10px 0 6px">Vink iemand uit om hem over te slaan, bijvoorbeeld een bestaande klant.</div>
+     <table class="tbl"><tr><th style="width:30px"></th><th>Naam</th><th>E-mail</th><th>Funnel</th><th>Budget</th><th>Timing</th></tr>`+
+    r.map(x=>`<tr class="${BC.uit.has(x.id)?'bc-uit':''}">
+      <td><input type="checkbox" class="bc-vink" data-id="${x.id}" ${BC.uit.has(x.id)?'':'checked'}></td>
+      <td>${esc(x.naam||'—')}</td>
+      <td>${x.email?esc(x.email):'<span class="muted">geen e-mail</span>'}</td>
+      <td>${esc((x.funnels||[]).join(', ')||'—')}</td>
+      <td>${esc(x.budget||'—')}</td><td>${esc(x.timing||'—')}</td></tr>`).join('')+'</table>';
+  document.querySelectorAll('.bc-vink').forEach(c=>c.onchange=()=>{
+    if(c.checked)BC.uit.delete(c.dataset.id); else BC.uit.add(c.dataset.id);
+    c.closest('tr').classList.toggle('bc-uit',!c.checked);
+    bcTelling();
+  });
 }
 
 async function bcExport(){
-  // De preview toont er 50; voor de export halen we de hele selectie op.
-  const {data,error}=await sb.rpc('broadcast_selectie',{
-    p_bedrijven:bcArg(BC.bedrijven), p_funnels:bcArg(BC.funnels), p_projecten:bcArg(BC.projecten),
-    p_banden:bcArg(BC.banden), p_timings:bcArg(BC.timings), p_talen:bcArg(BC.talen),
-    p_budget_tot:BC.budgetTot, p_alleen_email:BC.alleenEmail, p_limit:500});
-  if(error){toast('Export mislukt: '+esc(error.message),'err');return;}
-  const r=data.rijen||[];
+  const r=bcGekozen();
   if(!r.length){toast('Niets te exporteren','err');return;}
-  const kol=['naam','email','telefoon','bedrijf','funnel','project','budget','band','timing','taal'];
-  const q=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
+  const kol=['naam','email','telefoon','funnels','budget','band','timing','taal'];
+  const q=v=>`"${String(Array.isArray(v)?v.join(' | '):(v==null?'':v)).replace(/"/g,'""')}"`;
   const csv=[kol.join(',')].concat(r.map(x=>kol.map(k=>q(x[k])).join(','))).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  a.download=`broadcast-selectie-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  if(r.length<data.aantal)toast(`${r.length} van ${data.aantal} geexporteerd (maximum per keer)`,'');
-  else toast(`${r.length} contacten geexporteerd`,'ok');
+  a.download=`broadcast-${new Date().toISOString().slice(0,10)}.csv`;a.click();
+  toast(`${r.length} contacten geexporteerd`,'ok');
+}
+
+/* ---------------- nieuwsbrief opstellen en versturen ---------------- */
+function bcOpstellen(){
+  const m=bcMailbaar();
+  if(!m.length){toast('Niemand in deze selectie heeft een e-mailadres','err');return;}
+  BC.camp=null;
+  $('#bc_opstel').innerHTML=`
+  <div class="panel" id="bc_opstelpaneel">
+    <div class="p-head"><div>
+      <h3 style="margin:0">Nieuwsbrief opstellen</h3>
+      <div class="muted" style="font-size:13px">Gaat naar <b>${m.length}</b> ontvanger${m.length===1?'':'s'}. Deze lijst ligt nu vast, ook als je hierna de filters aanpast.</div>
+    </div></div>
+    <div class="bc-vak"><div class="bc-lab">Interne naam</div>
+      <input class="in" id="bc_naam" placeholder="bijv. Aanbod MOKA augustus"></div>
+    <div class="bc-vak"><div class="bc-lab">Onderwerp</div>
+      <input class="in" id="bc_onderwerp" placeholder="Wat zien mensen in hun inbox?"></div>
+    <div class="bc-vak"><div class="bc-lab">Voorbeeldregel</div>
+      <input class="in" id="bc_pre" placeholder="Optioneel. Leeg laten: dan pakt hij de eerste zin."></div>
+    <div class="bc-vak"><div class="bc-lab">Bericht</div>
+      <div class="rte" id="bc_body" contenteditable="true"></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">Je kunt {{voornaam}} en {{project}} gebruiken. Ontbreekt een voornaam, dan valt de aanhef netjes terug.</div></div>
+    <div class="bc-acties">
+      <button class="btn btn-ghost btn-sm" id="bc_test">📨 Proefmail naar mezelf</button>
+      <button class="btn btn-sm" id="bc_verstuur" disabled title="Stuur eerst een proefmail">🚀 Versturen naar ${m.length}</button>
+      <button class="btn btn-ghost btn-sm" id="bc_annuleer">Annuleren</button>
+    </div>
+    <div class="bc-telling" id="bc_status" style="display:none"></div>
+  </div>`;
+  $('#bc_annuleer').onclick=()=>{$('#bc_opstel').innerHTML='';};
+  $('#bc_test').onclick=()=>bcVerstuur(true);
+  $('#bc_verstuur').onclick=()=>bcVerstuur(false);
+  $('#bc_opstelpaneel').scrollIntoView({behavior:'smooth'});
+}
+
+async function bcBewaar(){
+  const ids=bcMailbaar().map(x=>x.id);
+  const {data,error}=await sb.rpc('broadcast_campagne_opslaan',{
+    p_id:BC.camp, p_naam:$('#bc_naam').value.trim()||null,
+    p_onderwerp:$('#bc_onderwerp').value.trim(), p_preheader:$('#bc_pre').value.trim()||null,
+    p_body_html:$('#bc_body').innerHTML, p_ontvangers:ids, p_filters:bcFilters()});
+  if(error) return {fout:error.message};
+  if(data&&data.ok===false) return {fout:data.reden};
+  BC.camp=data.id;
+  return {id:data.id, ontvangers:data.ontvangers};
+}
+
+async function bcVerstuur(test){
+  const st=$('#bc_status'); st.style.display='';
+  if(!$('#bc_onderwerp').value.trim()){toast('Vul een onderwerp in','err');return;}
+  st.textContent=test?'Proefmail versturen…':'Campagne versturen, dit kan even duren…';
+  const bewaard=await bcBewaar();
+  if(bewaard.fout){st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;return;}
+
+  if(!test){
+    const n=bewaard.ontvangers;
+    if(!confirm(`Je staat op het punt deze nieuwsbrief te versturen naar ${n} mensen.\n\nDit kun je niet terugdraaien. Doorgaan?`)){
+      st.style.display='none';return;
+    }
+  }
+  const {data,error}=await sb.functions.invoke('broadcast-send',{
+    body: test ? {campagne_id:BC.camp, test_naar:(ME&&ME.email)||''} : {campagne_id:BC.camp}});
+  if(error){st.innerHTML=`<span class="err">Mislukt: ${esc(error.message)}</span>`;return;}
+  if(data&&data.ok===false){st.innerHTML=`<span class="err">${esc(data.reden||'mislukt')}</span>`;return;}
+  if(test){
+    st.innerHTML=`Proefmail verstuurd naar <b>${esc(data.naar)}</b>. Controleer hem, dan kun je versturen.`;
+    const b=$('#bc_verstuur'); b.disabled=false; b.title='';
+  }else{
+    st.innerHTML=`Verstuurd: <b>${data.verzonden}</b>`+
+      (data.mislukt?`, mislukt: <b>${data.mislukt}</b>`:'')+
+      (data.overgeslagen?`, overgeslagen: ${data.overgeslagen}`:'');
+    $('#bc_verstuur').disabled=true;
+    toast(`Nieuwsbrief verstuurd naar ${data.verzonden} mensen`,'ok');
+  }
 }
 
 /* ================= DASHBOARD ================= */
