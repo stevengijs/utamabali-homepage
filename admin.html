@@ -399,6 +399,14 @@
   .bc-meer:hover{border-color:var(--brand);color:var(--brand)}
   .bc-ja{display:inline-block;padding:2px 8px;border-radius:999px;background:#e8f3ee;
          color:var(--brand);font-size:11.5px;font-weight:700}
+  .bc-zoekrij{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:0 18px}
+  .bc-zoek{flex:1 1 320px;min-width:0;padding:9px 12px;font:inherit;font-size:13.5px;
+           color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px}
+  .bc-zoek:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(15,107,79,.12)}
+  .bc-zoekinfo{font-size:12.5px;color:var(--muted)}
+  .bc-zoekactie{background:none;border:0;padding:0;cursor:pointer;color:var(--brand);
+                font-size:12.5px;font-weight:700}
+  .bc-treffer{background:#fff3bf;border-radius:3px;padding:0 1px}
   .bc-klant{display:inline-block;padding:2px 8px;border-radius:999px;background:#fef3c7;
             color:#92400e;font-size:11.5px;font-weight:700;margin-right:4px}
   .bc-let-inline{color:#92400e}
@@ -1377,7 +1385,7 @@ function go(k){
 let BC = {fac:null, sjablonen:[],
           bronnen:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
           vastgoed:[], doelen:[], statussen:[], temperaturen:[], account:[], klant:[],
-          periode:'', kanaal:'email', lijstOpen:false,
+          periode:'', kanaal:'email', lijstOpen:false, zoek:'',
           sel:null, uit:new Set(), open:new Set(), ddOpen:null, camp:null, stap:'kiezen'};
 
 const bcArg = a => a && a.length ? a : null;
@@ -1420,6 +1428,37 @@ const bcLabel = (groep, waarde) =>
 
 const bcDatum = d => !d ? '' : new Date(d).toLocaleDateString('nl-NL',
   {day:'numeric', month:'short', year:'numeric'});
+
+/* Zoeken binnen de selectie die de filters al hebben opgeleverd. Bewust
+   alleen in de weergave: het verandert niet wie er meegaat, alleen wat je op
+   dit moment ziet. Anders zou je bij het opzoeken van één persoon je hele
+   verzendlijst inperken zonder het door te hebben. */
+function bcPastBijZoek(x, q){
+  if(!q) return true;
+  if(String(x.naam||'').toLowerCase().includes(q)) return true;
+  if(String(x.email||'').toLowerCase().includes(q)) return true;
+  const cijfers = q.replace(/[^0-9]/g,'');
+  if(cijfers.length >= 3){
+    const tel = String(x.telefoon||'').replace(/[^0-9]/g,'');
+    // Wie 06-12345678 intikt moet ook +31 6 12345678 vinden, en andersom.
+    const varianten = [cijfers];
+    if(cijfers.startsWith('0'))  varianten.push('31'+cijfers.slice(1));
+    if(cijfers.startsWith('31')) varianten.push('0'+cijfers.slice(2));
+    if(varianten.some(v=>tel.includes(v))) return true;
+  }
+  return false;
+}
+const bcZichtbaar = () => ((BC.sel&&BC.sel.rijen)||[]).filter(x=>bcPastBijZoek(x, BC.zoek));
+
+/* Het gezochte stukje oplichten in de tabel, zodat je meteen ziet waarom een
+   regel er staat. */
+function bcMarkeer(tekst, q){
+  const t = String(tekst==null?'':tekst);
+  if(!q) return esc(t);
+  const i = t.toLowerCase().indexOf(q);
+  if(i < 0) return esc(t);
+  return esc(t.slice(0,i))+'<span class="bc-treffer">'+esc(t.slice(i,i+q.length))+'</span>'+esc(t.slice(i+q.length));
+}
 
 /* de contacten die daadwerkelijk meegaan: selectie min de afgevinkte */
 const bcGekozen = () => ((BC.sel&&BC.sel.rijen)||[]).filter(r=>!BC.uit.has(r.id));
@@ -1568,6 +1607,11 @@ async function renderBroadcast(){
         <button class="btn btn-ghost btn-sm" id="bc_allemaal">Alles aanvinken</button>
         <button class="btn btn-ghost btn-sm" id="bc_antwoorden">Antwoorden tonen</button>
       </div>
+      <div class="bc-zoekrij">
+        <input id="bc_zoek" class="bc-zoek" type="search" autocomplete="off"
+               placeholder="Zoek iemand op naam, e-mailadres of telefoonnummer…">
+        <span class="bc-zoekinfo" id="bc_zoekinfo"></span>
+      </div>
       <div id="bc_tabel"></div>
     </div>
   </div>
@@ -1587,6 +1631,7 @@ async function renderBroadcast(){
   $('#bc_allemaal').onclick=()=>{BC.uit.clear();bcTabel();bcTelling();};
   $('#bc_opstellen').onclick=bcOpstellen;
   $('#bc_lijst').onclick=()=>{ BC.lijstOpen=!BC.lijstOpen; bcTabel(); bcTelling(); };
+  $('#bc_zoek').oninput=e=>{ BC.zoek=e.target.value.trim().toLowerCase(); bcTabel(); bcTelling(); };
   $('#bc_antwoorden').onclick=()=>{
     const r=(BC.sel&&BC.sel.rijen)||[];
     if(BC.open.size) BC.open.clear(); else r.forEach(x=>BC.open.add(x.id));
@@ -1620,6 +1665,7 @@ function bcTelling(){
   }
   const account=g.filter(r=>r.heeft_account).length;
   const klanten=g.filter(r=>r.klant).length;
+  bcZoekInfo();
   $('#bc_telling').innerHTML=
     `<b>${g.length}</b> geselecteerd`+
     (uit?` <span class="muted">(${uit} handmatig afgevinkt)</span>`:'')+
@@ -1629,13 +1675,49 @@ function bcTelling(){
     (account?` &middot; <b>${account}</b> heeft ingelogd op invest`:'');
 }
 
+/* De regel naast het zoekveld: hoeveel je ziet, en twee knoppen om precies de
+   gevonden regels in één keer over te slaan of terug te zetten. Dat is waar
+   zoeken tijdens het samenstellen voor bedoeld is. */
+function bcZoekInfo(){
+  const vak=$('#bc_zoekinfo'); if(!vak) return;
+  const totaal=((BC.sel&&BC.sel.rijen)||[]).length;
+  if(!BC.zoek){
+    vak.innerHTML = BC.uit.size
+      ? `<b>${BC.uit.size}</b> handmatig overgeslagen. <button type="button" class="bc-zoekactie" id="bc_herstel">Neem ze weer mee</button>`
+      : 'Zoeken verandert je selectie niet, alleen wat je hier ziet.';
+  } else {
+    const gevonden=bcZichtbaar();
+    const overgeslagen=gevonden.filter(x=>BC.uit.has(x.id)).length;
+    const mee=gevonden.length-overgeslagen;
+    vak.innerHTML = `<b>${gevonden.length}</b> van ${totaal} gevonden`+
+      (gevonden.length?` &middot; `+
+        (mee?`<button type="button" class="bc-zoekactie" id="bc_slaover">Sla deze ${mee} over</button>`:'')+
+        (mee&&overgeslagen?' &middot; ':'')+
+        (overgeslagen?`<button type="button" class="bc-zoekactie" id="bc_neemmee">Neem deze ${overgeslagen} weer mee</button>`:'')
+        :'');
+  }
+  const aan=(id,fn)=>{const b=$(id); if(b) b.onclick=fn;};
+  aan('#bc_herstel',()=>{ BC.uit.clear(); bcTabel(); bcTelling(); });
+  aan('#bc_slaover',()=>{ bcZichtbaar().forEach(x=>BC.uit.add(x.id)); bcTabel(); bcTelling(); });
+  aan('#bc_neemmee',()=>{ bcZichtbaar().forEach(x=>BC.uit.delete(x.id)); bcTabel(); bcTelling(); });
+}
+
 function bcTabel(){
-  const r=(BC.sel&&BC.sel.rijen)||[];
-  if(!r.length){$('#bc_tabel').innerHTML='<div class="empty" style="padding:16px">Niemand voldoet aan deze filters.</div>';return;}
+  const r=bcZichtbaar();
+  if(!r.length){
+    // Nul treffers kan twee dingen betekenen. Zonder die tweede zin denk je al
+    // gauw dat iemand niet in de database staat, terwijl hij gewoon buiten je
+    // filters valt (bijvoorbeeld iemand zonder e-mailadres terwijl het kanaal
+    // op "heeft e-mail" staat).
+    $('#bc_tabel').innerHTML=`<div class="empty" style="padding:16px">${BC.zoek
+      ? 'Niemand in deze selectie past bij <b>'+esc(BC.zoek)+'</b>.<div class="muted" style="font-size:13px;margin-top:6px">Hij kan wel in de lijst staan maar buiten je huidige filters vallen. Zet <b>Bereikbaar via</b> op \'maakt niet uit\' om breder te zoeken.</div>'
+      : 'Niemand voldoet aan deze filters.'}</div>`;
+    return;
+  }
   // De lijst staat dicht tot je erom vraagt. Met honderden regels duwt hij
   // anders de filters en de telling van het scherm, terwijl je meestal alleen
   // wilt weten hoeveel mensen je selectie oplevert.
-  if(!BC.lijstOpen){
+  if(!BC.lijstOpen && !BC.zoek){
     $('#bc_tabel').innerHTML=`<div class="bc-dicht">De lijst met ${r.length} contact${r.length===1?'':'en'} staat dicht. Klik op <b>Leads tonen</b> om hem open te klappen.</div>`;
     return;
   }
@@ -1651,11 +1733,11 @@ function bcTabel(){
       const bronnen = (x.bronnen||[]).map(b=>bcLabel('bronnen',b)).join(', ');
       return `<tr class="${uit?'bc-uit':''}">
       <td><input type="checkbox" class="bc-vink" data-id="${x.id}" ${uit?'':'checked'}></td>
-      <td>${esc(x.naam||'—')}</td>
+      <td>${x.naam?bcMarkeer(x.naam,BC.zoek):'—'}</td>
       <td>${esc(bcDatum(x.binnengekomen)||'—')}</td>
       <td>${esc(bronnen||'—')}</td>
-      <td>${x.email?esc(x.email):'<span class="muted">geen e-mail</span>'}</td>
-      <td>${x.telefoon?esc(x.telefoon):'<span class="muted">geen nummer</span>'}</td>
+      <td>${x.email?bcMarkeer(x.email,BC.zoek):'<span class="muted">geen e-mail</span>'}</td>
+      <td>${x.telefoon?bcMarkeer(x.telefoon,BC.zoek):'<span class="muted">geen nummer</span>'}</td>
       <td>${x.klant?'<span class="bc-klant">klant</span>':''}${x.heeft_account?'<span class="bc-ja">ingelogd</span>':''}${x.dataroom?'<span class="bc-ja">dataroom</span>':''}${!x.klant&&!x.heeft_account&&!x.dataroom?'<span class="muted">—</span>':''}</td>
       <td>${esc((x.projecten||[]).join(', ')||'—')}</td>
       <td>${esc(x.budget||'—')}</td>
