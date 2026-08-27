@@ -1702,7 +1702,10 @@ function bcTelling(){
     `, waarvan <b>${m.length}</b> met e-mailadres`+
     (g.length-m.length?` <span class="muted">(${g.length-m.length} alleen telefonisch bereikbaar)</span>`:'')+
     (klanten?` &middot; <span class="bc-let-inline"><b>${klanten}</b> is al klant</span>`:'')+
-    (account?` &middot; <b>${account}</b> heeft ingelogd op invest`:'');
+    (account?` &middot; <b>${account}</b> heeft ingelogd op invest`:'')+
+    // Boven de 2000 kapt de server de lijst af. Zonder deze regel stel je een
+    // campagne samen die stilzwijgend maar een deel van je selectie dekt.
+    ((BC.sel&&BC.sel.afgekapt)?`<div class="err" style="margin-top:6px">Deze selectie is groter dan 2000 en wordt afgekapt. Maak hem kleiner met de filters, anders gaat de campagne maar naar de eerste 2000 op naam.</div>`:'');
 }
 
 /* De regel naast het zoekveld: hoeveel je ziet, en twee knoppen om precies de
@@ -1838,12 +1841,15 @@ function bcOpstellen(){
   else if(!w.length) BC.verzendKanaal='email';
   BC.camp=null; BC.layout=BC.layout||'utama';
   BC.waTpl=null; BC.waVars=[]; BC.waGolven=0;
+  const hervat=bcCampHervatten();
   $('#bc_opstel').innerHTML=`
   <div class="panel" id="bc_opstelpaneel">
     <div class="panel-head"><div>
       <h3>Bericht opstellen</h3>
       <div class="muted" style="font-size:13px;margin-top:2px" id="bc_kop"></div>
     </div></div>
+    ${hervat?`<div class="bc-let" id="bc_hervat">Er staat nog een campagne open op dit apparaat (${esc(String(hervat.id).slice(0,8))}, ${esc(hervat.kanaal)}${hervat.golven?`, ${hervat.golven} golf${hervat.golven===1?'':'ven'} verstuurd`:''}). <button type="button" class="bc-zoekactie" id="bc_hervatja">Verder met die campagne</button> &middot; <button type="button" class="bc-zoekactie" id="bc_hervatnee">Nieuwe beginnen</button></div>`:''}
+    <div class="bc-let" id="bc_klantwaarschuwing" style="display:none"></div>
 
     <div class="field bc-buiten" style="padding-top:16px">
       <label>Kanaal</label>
@@ -1993,13 +1999,21 @@ function bcOpstellen(){
     BC.layout=b.dataset.layout;
     document.querySelectorAll('[data-layout]').forEach(x=>x.classList.toggle('on',x===b));
   });
+  const hervatJa=$('#bc_hervatja');
+  if(hervatJa) hervatJa.onclick=()=>{
+    BC.camp=hervat.id; BC.verzendKanaal=hervat.kanaal||'email'; BC.waGolven=hervat.golven||0;
+    $('#bc_hervat').innerHTML=`Je gaat verder met campagne <b>${esc(String(hervat.id).slice(0,8))}</b>. De ontvangerslijst ligt vast; wie al een bericht kreeg wordt overgeslagen.`;
+    bcKanaalTekenen();
+  };
+  const hervatNee=$('#bc_hervatnee');
+  if(hervatNee) hervatNee.onclick=()=>{ bcCampVergeten(); $('#bc_hervat').remove(); };
   document.querySelectorAll('[data-kanaal]').forEach(b=>b.onclick=()=>{
     BC.verzendKanaal=b.dataset.kanaal;
     BC.camp=null;                       // ander kanaal is een andere campagne
     bcKanaalTekenen();
   });
   $('#bc_golf').oninput=e=>{ BC.golf=Math.max(1,Math.min(200,Number(e.target.value)||40)); };
-  $('#bc_annuleer').onclick=()=>{$('#bc_opstel').innerHTML='';};
+  $('#bc_annuleer').onclick=()=>{ $('#bc_opstel').innerHTML=''; };
   $('#bc_preview').onclick=bcPreview;
   $('#bc_test').onclick=()=>bcVerstuur(true);
   $('#bc_verstuur').onclick=()=>bcVerstuur(false);
@@ -2035,6 +2049,22 @@ function bcKanaalTekenen(){
          ? ' <b>Let op:</b> het filter <b>Bereikbaar via</b> staat op "heeft e-mail", dus mensen met alleen een nummer zitten er nu niet bij. Zet het op "heeft telefoonnummer" voor je volledige WhatsApp-bereik.'
          : '')
     : 'E-mail is vrije tekst en kan in één keer naar iedereen.';
+
+  // Klanten uitsluiten is een keuze, geen automatisme: soms wil je ze juist
+  // wel iets sturen. Maar het mag geen keuze zijn die je per ongeluk maakt door
+  // een filter te vergeten, dus als er klanten in zitten staat het er groot bij.
+  const klanten=bcOntvangers().filter(r=>r.klant);
+  const kw=$('#bc_klantwaarschuwing');
+  if(kw){
+    if(klanten.length){
+      kw.style.display='';
+      kw.innerHTML=`Er ${klanten.length===1?'zit':'zitten'} <b>${klanten.length}</b> bestaande ${klanten.length===1?'klant':'klanten'} in deze selectie`+
+        ` (${klanten.slice(0,3).map(k=>esc(k.klantnaam||k.naam||'')).join(', ')}${klanten.length>3?' en meer':''}).`+
+        ` <button type="button" class="bc-zoekactie" id="bc_klantweg">Sla ${klanten.length===1?'hem':'ze'} over</button>`;
+      const weg=$('#bc_klantweg');
+      if(weg) weg.onclick=()=>{ klanten.forEach(k=>BC.uit.add(k.id)); bcTelling(); bcTabel(); bcKanaalTekenen(); };
+    } else kw.style.display='none';
+  }
 
   const test=$('#bc_test'), verstuur=$('#bc_verstuur');
   test.textContent = wa ? '📲 Proefbericht naar mijn nummer' : '📨 Proefmail naar mezelf';
@@ -2208,6 +2238,27 @@ async function bcPreview(){
   } finally { knop.disabled=false; knop.textContent='👁 Voorbeeld bekijken'; }
 }
 
+/* Het campagne-id stond alleen in het geheugen van de pagina. Verniste je het
+   tabblad halverwege een campagne, dan begon de volgende klik een nieuwe
+   campagne met dezelfde ontvangers, en dan is broadcast_verzendingen leeg voor
+   dat nieuwe id: de eerste veertig mensen kregen het bericht een tweede keer.
+   De server weigert dat inmiddels ook, maar dan sta je met een foutmelding en
+   een halve campagne. Daarom onthouden we hem hier. */
+const BC_ACTIEF='bc_actieve_campagne';
+function bcCampBewaren(){
+  try{ localStorage.setItem(BC_ACTIEF, JSON.stringify(
+    {id:BC.camp, kanaal:BC.verzendKanaal, golven:BC.waGolven, op:Date.now()})); }catch(e){}
+}
+function bcCampVergeten(){ try{ localStorage.removeItem(BC_ACTIEF); }catch(e){} }
+function bcCampHervatten(){
+  try{
+    const r=JSON.parse(localStorage.getItem(BC_ACTIEF)||'null');
+    // Ouder dan een dag is bijna zeker vergeten werk, geen lopende campagne.
+    if(!r||!r.id||Date.now()-r.op>864e5){ bcCampVergeten(); return null; }
+    return r;
+  }catch(e){ return null; }
+}
+
 async function bcBewaar(){
   const wa = BC.verzendKanaal==='whatsapp';
   const ids=bcOntvangers().map(x=>x.id);
@@ -2226,9 +2277,15 @@ async function bcBewaar(){
     p_wa_variabelen: wa ? BC.waVars : null,
     p_golf_grootte: BC.golf});
   if(error) return {fout:error.message};
-  if(data&&data.ok===false) return {fout:data.reden};
+  if(data&&data.ok===false){
+    // De server weigert een tweede campagne zolang er nog een loopt.
+    if(data.lopend_id) return {fout:data.reden+' (campagne '+String(data.lopend_id).slice(0,8)+')'};
+    return {fout:data.reden};
+  }
   BC.camp=data.id;
-  return {id:data.id, ontvangers:data.ontvangers};
+  bcCampBewaren();
+  // De lijst ligt vast zodra er iets verstuurd is; de server zegt dat dan zelf.
+  return {id:data.id, ontvangers:data.ontvangers, bevroren:!!data.bevroren};
 }
 
 async function bcVerstuur(test){
@@ -2258,6 +2315,7 @@ async function bcVerstuur(test){
       (data.mislukt?`, mislukt: <b>${data.mislukt}</b>`:'')+
       (data.overgeslagen?`, overgeslagen: ${data.overgeslagen}`:'');
     $('#bc_verstuur').disabled=true;
+    bcCampVergeten();
     toast(`Nieuwsbrief verstuurd naar ${data.verzonden} mensen`,'ok');
   }
 }
@@ -2320,7 +2378,7 @@ async function bcVerstuurWa(test){
     if(data&&data.status) st.innerHTML+=` <span class="muted">(score staat op ${esc(data.status.kwaliteit)})</span>`;
     return;
   }
-  BC.waGolven++;
+  BC.waGolven++; bcCampBewaren();
   const kleur = data.kwaliteit_na==='GREEN' ? 'ok' : 'err';
   st.innerHTML=`Golf klaar. Verstuurd: <b>${data.verzonden}</b>`+
     (data.mislukt?`, mislukt: <b>${data.mislukt}</b>`:'')+
@@ -2333,6 +2391,7 @@ async function bcVerstuurWa(test){
     if(data.waarschuwing){ knop.disabled=true; knop.title='Kwaliteitsscore is niet groen'; }
   }else{
     knop.disabled=true; knop.textContent='Alles verstuurd';
+    bcCampVergeten();
     toast(`WhatsApp-campagne klaar: ${data.doel} berichten`,'ok');
   }
 }
