@@ -1041,7 +1041,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-audio-vindbaar';
+const APP_VERSIE='2026-08-29-stille-klok';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -4357,6 +4357,16 @@ async function voRender(alleenMuziek){
       const gain=ac.createGain(); gain.gain.value=VO.muziekVol;
       ac.createMediaElementSource(muziek).connect(gain); gain.connect(bestem);
     }
+    // Zonder stem en zonder muziek moet er toch een levend (stil) audiosignaal
+    // naar de recorder: een audiospoor zonder aangesloten bron geeft de
+    // mp4-encoder geen klok en dan stort het bestand in tot een paar seconden
+    // zonder de getekende tekst (de bug waarbij een stille bak 1,7s werd).
+    let stilte=null;
+    if(!stem&&!muziek){
+      stilte=ac.createConstantSource(); stilte.offset.value=0;
+      const g0=ac.createGain(); g0.gain.value=0.0001;
+      stilte.connect(g0); g0.connect(bestem); stilte.start();
+    }
 
     const beeldStroom=canvas.captureStream(30);
     const mix=new MediaStream([...beeldStroom.getVideoTracks(),...bestem.stream.getAudioTracks()]);
@@ -4488,6 +4498,7 @@ async function voRender(alleenMuziek){
     if(isVideo) bron.pause();
     if(stem) stem.pause();
     if(muziek) muziek.pause();
+    if(stilte){ try{stilte.stop();}catch(e){} }
     opn.stop(); await klaarBelofte; try{ac.close();}catch(e){}
 
     const vblob=new Blob(uit,{type:VO.mime.split(';')[0]});
