@@ -1038,7 +1038,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-doeluitleg';
+const APP_VERSIE='2026-08-29-hashtags';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2870,6 +2870,12 @@ let CT_OPMAAK={achtergrond:'geen', accent:false, font:'klassiek'};
 
 const ctPubliek=pad=>{try{return sb.storage.from(CT_BUCKET).getPublicUrl(pad).data.publicUrl;}catch(e){return '';}};
 
+// Ook oudere pakketten waarin het model kale woorden leverde tonen en
+// kopieren als echte hashtags.
+function ctHashtags(t){
+  return String(t||'').split(/[\s,]+/).filter(Boolean)
+    .map(w=>w.startsWith('#')?w:'#'+w.replace(/^#+/,'')).join(' ');
+}
 function ctKopieer(tekst, knop){
   const klaar=()=>{ if(knop){const t=knop.textContent; knop.textContent='Gekopieerd'; setTimeout(()=>knop.textContent=t,1400);} };
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(tekst).then(klaar).catch(()=>{}); return; }
@@ -3155,7 +3161,7 @@ function ctPakketTekenen(){
 
     <div class="ct-vak">
       ${kop('Eerste reactie (hashtags)','hashtags','x')}
-      <div style="font-size:13px;line-height:1.6;color:var(--muted)" id="ct_hashtags">${esc(pk.eerste_reactie||'')}</div>
+      <div style="font-size:13px;line-height:1.6;color:var(--muted)" id="ct_hashtags">${esc(ctHashtags(pk.eerste_reactie))}</div>
       <div style="margin-top:10px">${kop('Comment-magneet')}
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px">
           <span class="ct-magneet">${esc(pk.comment_woord||'')}</span>
@@ -3206,7 +3212,7 @@ function ctPakketTekenen(){
   vak.querySelectorAll('[data-kopieer]').forEach(b=>b.onclick=()=>{
     const wat=b.dataset.kopieer;
     const tekst = wat==='caption' ? $('#ct_caption').value
-      : wat==='hashtags' ? (CT.pakket.eerste_reactie||'')
+      : wat==='hashtags' ? ctHashtags(CT.pakket.eerste_reactie)
       : wat==='overlays' ? (CT.pakket.overlays||[]).map(o=>`${o.tijd}  ${o.tekst}`).join('\n')
       : wat==='slides' ? (CT.pakket.slides||[]).map((sl,i)=>`${i+1}. ${sl.kop}${sl.sub?'\n   '+sl.sub:''}`).join('\n')
       : '';
