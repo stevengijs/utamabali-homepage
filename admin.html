@@ -1049,7 +1049,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-render-live';
+const APP_VERSIE='2026-08-29-punt-zinnen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -4386,7 +4386,15 @@ function voTekenen(){
       <div class="bc-hint" style="margin-top:6px">Hierboven kijk je live mee terwijl b-roll, tekst${VO.url?', je stem':''}${VO.muziekUrl?' en muziek':''} worden samengevoegd. Duurt ongeveer zo lang als de clip zelf; laat dit tabblad open en zichtbaar.</div>`;
   }else if(VO.stand==='video'){
     vak.innerHTML=`
-      <video class="vo-klaarvideo" controls src="${VO.video}"></video>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+        <video class="vo-klaarvideo" controls src="${VO.video}" style="flex:none"></video>
+        ${VO.woorden&&VO.woorden.length?`<div style="flex:1;min-width:260px;max-width:480px">
+          <div class="bc-lab" style="margin:0 0 6px">Ondertiteling (pas gerust aan)</div>
+          <textarea id="vo_transcript2" class="ct-caption" style="min-height:140px">${esc(VO.woorden.map(w=>w.w).join(' '))}</textarea>
+          <div class="bc-hint">Verkeerd verstaan woord? Verbeter het hier; de timing blijft staan. Typ een <b>punt</b> waar een zin eindigt: die wordt niet getoond, maar zorgt dat de ondertiteling daar afbreekt in plaats van midden in een zin.</div>
+          <button class="btn btn-primary btn-sm" id="vo_herbak" style="margin-top:6px">🔁 Opnieuw bakken met deze tekst</button>
+        </div>`:''}
+      </div>
       <div class="vo-knoppen">
         <button class="btn btn-primary btn-sm" id="vo_gebruik">✓ Gebruik als reel-video</button>
         <a class="btn btn-ghost btn-sm" href="${VO.video}" download="reel-voiceover">⬇ Download</a>
@@ -4404,6 +4412,10 @@ function voTekenen(){
        kortste route: video downloaden, caption en hashtags op het klembord,
        en in de app alleen nog het nummer kiezen. Deze knop doet dat in een
        keer. */
+    const tr2=$('#vo_transcript2');
+    if(tr2) tr2.addEventListener('input',()=>{ voHertijd(tr2.value); });
+    const herbak=$('#vo_herbak');
+    if(herbak) herbak.onclick=()=>{ voRender(false); };
     const voorApp=$('#vo_voor_app');
     if(voorApp) voorApp.onclick=()=>{
       const a=document.createElement('a'); a.href=VO.video; a.download='reel-'+Date.now(); a.click();
@@ -4647,10 +4659,14 @@ async function voRender(alleenMuziek){
 
     const brokken=[]; let brok=[];
     if(metStem){
+      // Een punt (of ? of !) aan het eind van een woord markeert het einde
+      // van een zin: daar breekt de ondertiteling altijd, zodat zinnen nooit
+      // halverwege afgekapt worden. Het leesteken zelf komt niet in beeld.
       VO.woorden.forEach(w=>{ brok.push(w);
-        if(brok.length>=4||/[.!?]$/.test(w.w)){brokken.push(brok);brok=[];} });
+        if(/[.!?]$/.test(w.w)||brok.length>=4){brokken.push(brok);brok=[];} });
       if(brok.length)brokken.push(brok);
     }
+    const kaalWoord=w=>String(w).replace(/[.!?]+$/,'');
     // Zonder stem maar met een overlay-script uit het pakket: elke regel op
     // zijn eigen tijdvak ("0-2s") in beeld, in de gekozen opmaak. Zo kan de
     // automaat een reel volledig af opleveren zonder opname.
@@ -4726,7 +4742,7 @@ async function voRender(alleenMuziek){
           const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
           ctx.font=ctFontStr(f,64);
           try{ ctx.letterSpacing=ctSpatiePx(f,64); }catch(e){}
-          const toon=w=>f.caps?w.toUpperCase():w;
+          const toon=w=>{const k=kaalWoord(w);return f.caps?k.toUpperCase():k;};
           const y=1490;
           const breed=woorden.reduce((a,w)=>a+ctx.measureText(toon(w.w)+' ').width,0);
           let x=540-breed/2;
