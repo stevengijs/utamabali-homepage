@@ -1038,7 +1038,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-vervang';
+const APP_VERSIE='2026-08-29-doeluitleg';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2933,10 +2933,11 @@ async function renderContent(){
           `<button class="bc-chip" data-ctproject="${pr}">${pr||'Geen, algemene value'}</button>`).join('')}</div></div>
       <div class="field"><label>Hoofddoel</label>
         <div class="bc-rij">
-          <button class="bc-chip" data-ctdoel="comments" title="Magneetwoord centraal, de DM-bot vangt de reacties">💬 Comments en leads</button>
-          <button class="bc-chip" data-ctdoel="saves" title="Lijstje of rekensom met een bewaar-CTA">🔖 Saves</button>
-          <button class="bc-chip" data-ctdoel="volgers" title="Serie en herkenbaarheid">➕ Volgers</button>
-        </div></div>
+          <button class="bc-chip" data-ctdoel="comments">💬 Comments en leads</button>
+          <button class="bc-chip" data-ctdoel="saves">🔖 Saves</button>
+          <button class="bc-chip" data-ctdoel="volgers">➕ Volgers</button>
+        </div>
+        <div class="bc-hint" id="ct_doelhint"></div></div>
     </div>
 
     <div class="bc-acties">
@@ -2975,10 +2976,19 @@ async function renderContent(){
     CT.project=b.dataset.ctproject;
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x===b));
   });
+  // Wat de doelkeuze concreet verandert aan het pakket; zichtbaar onder de
+  // chips zodat de keuze een echte keuze is en geen gok.
+  const DOEL_UITLEG={
+    comments:'De caption eindigt met een magneetwoord-CTA ("Reageer MOKA…"). Elke reactie triggert automatisch de DM-bot, die het gesprek aangaat en kwalificeert. Kies dit als je leads wilt; het algoritme beloont comments bovendien het zwaarst.',
+    saves:'Het pakket wordt een lijstje of rekensom met een bewaar-CTA ("bewaar deze voor als je gaat rekenen"). Saves vertellen het algoritme dat je content naslagwaarde heeft; goed voor bereik onder serieuze investeerders, maar levert minder directe DM-leads op.',
+    volgers:'Caption en hook zetten in op herkenbaarheid en serie ("deel 3 van de bouwserie") met een volg-reden. Kies dit voor groei van het account zelf; comments en leads zijn dan bijzaak.'};
+  const doelHint=()=>{const h=$('#ct_doelhint'); if(h) h.textContent=DOEL_UITLEG[CT.doel]||'';};
   document.querySelectorAll('[data-ctdoel]').forEach(b=>b.onclick=()=>{
     CT.doel=b.dataset.ctdoel;
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x===b));
+    doelHint();
   });
+  doelHint();
   $('#ct_genereer').onclick=ctGenereer;
   $('#ct_spreek').onclick=ctSpreek;
   $('#bib_upload').onclick=bibUpload;
