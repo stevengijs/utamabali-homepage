@@ -1038,7 +1038,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-caption-groei';
+const APP_VERSIE='2026-08-29-bib-dicht';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2947,11 +2947,18 @@ async function renderContent(){
     <div class="bc-buiten" id="ct_pakket" style="display:none"></div>
 
     <div class="bc-buiten">
-      <div class="bc-lab" style="margin-top:8px;display:flex;align-items:center;gap:12px">Mediabibliotheek
-        <button class="bc-zoekactie" id="bib_upload" style="text-transform:none">⬆ Foto's en video's toevoegen</button>
-        <span class="muted" id="bib_status" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
-      <div class="bc-hint" style="margin-top:2px">Open deze pagina op je iPhone en kies hier in een keer tientallen foto's uit je fotorol: dat is de directe brug naar iCloud Photos. Elk beeld wordt automatisch bekeken en getagd (wat staat erop, bij welke rubriek past het, hoe sterk is het), en de maker stelt daarna per post de beste beelden voor.</div>
-      <div class="bib-grid" id="bib_grid"></div>
+      <details id="bib_details">
+        <summary class="bc-lab" style="margin-top:8px;cursor:pointer;display:flex;align-items:center;gap:12px;list-style:none">
+          <span>📚 Mediabibliotheek <span id="bib_teller" style="font-weight:400"></span></span>
+          <span class="bc-zoekactie" style="text-transform:none">tonen / verbergen</span>
+          <span class="muted" id="bib_status" style="font-weight:400;text-transform:none;letter-spacing:0"></span>
+        </summary>
+        <div class="vo-knoppen" style="margin-top:8px">
+          <button class="bc-zoekactie" id="bib_upload" style="text-transform:none">⬆ Foto's en video's toevoegen</button>
+        </div>
+        <div class="bc-hint" style="margin-top:2px">Open deze pagina op je iPhone en kies hier in een keer tientallen foto's uit je fotorol: dat is de directe brug naar iCloud Photos. Elk beeld wordt automatisch bekeken en getagd, en de maker stelt per post de beste beelden voor via de bieb-knop.</div>
+        <div class="bib-grid" id="bib_grid"></div>
+      </details>
     </div>
 
     <div class="bc-buiten" style="padding-bottom:18px">
@@ -3459,6 +3466,17 @@ function bibThumb(r){ return ctPubliek(r.thumb_path||r.path); }
 async function bibTekenen(){
   const grid=$('#bib_grid'); if(!grid) return;
   await bibLaden();
+  const teller=$('#bib_teller');
+  if(teller) teller.textContent=BIB.rijen.length?`(${BIB.rijen.length} beelden)`:'';
+  const det=$('#bib_details');
+  if(det&&!det.dataset.koppel){det.dataset.koppel='1';det.addEventListener('toggle',()=>{if(det.open)bibTekenenStil();});}
+  // Het taggen loopt altijd door, ook met de bibliotheek dichtgeklapt; alleen
+  // het tekenen van de grid wacht tot hij open is.
+  if(det&&!det.open){
+    const onget0=BIB.rijen.filter(r=>!r.getagd_at&&(r.soort==='foto'||r.thumb_path));
+    if(onget0.length) bibTaggen(onget0);
+    return;
+  }
   if(!BIB.rijen.length){ grid.innerHTML='<span class="muted" style="font-size:13px;grid-column:1/-1">Nog leeg. Upload een eerste lading; vanaf je iPhone kies je zo vijftig beelden tegelijk.</span>'; return; }
   grid.innerHTML=BIB.rijen.slice(0,60).map(r=>`
     <div class="bib-item" data-bib="${r.id}" title="${esc(r.beschrijving||'nog niet getagd')}">
