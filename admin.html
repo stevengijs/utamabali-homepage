@@ -1049,7 +1049,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-mixkit';
+const APP_VERSIE='2026-08-29-masterketen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -4441,8 +4441,23 @@ function voTekenen(){
       <div class="vo-knoppen">
         <button class="btn btn-primary btn-sm" id="vo_render">🎬 Maak de video</button>
         <button class="btn btn-ghost btn-sm" id="vo_opnieuw">↻ Opnieuw opnemen</button>
-      </div>`;
+        <a class="btn btn-ghost btn-sm" href="${VO.url}" download="voiceover-ruw">⬇ Ruwe opname</a>
+        <button class="btn btn-ghost btn-sm" id="vo_enhanced" title="Haal de ruwe opname door podcast.adobe.com/enhance (gratis AI-ruisverwijdering en de-reverb) en zet het resultaat hier terug; de ondertiteling en timing blijven staan">⬆ Verbeterde opname terugzetten</button>
+      </div>
+      <div class="bc-hint" style="margin-top:4px">De masterketen (EQ, de-esser, compressie, loudness) zit er bij het bakken automatisch overheen. Voor studio-niveau ruis- en galmverwijdering: download de ruwe opname, haal hem door <a href="https://podcast.adobe.com/enhance" target="_blank" rel="noopener">Adobe Podcast Enhance</a> (gratis) en zet het resultaat terug.</div>`;
     muziekKoppelen();
+    const enh=$('#vo_enhanced');
+    if(enh) enh.onclick=()=>{
+      const k=document.createElement('input'); k.type='file'; k.accept='audio/*';
+      k.onchange=()=>{ const f=k.files&&k.files[0]; if(!f) return;
+        if(VO.url) URL.revokeObjectURL(VO.url);
+        VO.blob=f; VO.url=URL.createObjectURL(f);
+        // zelfde tekst en timing; alleen de audio is vervangen
+        toast('Verbeterde opname staat klaar; ondertiteling en timing blijven zoals ze waren','ok');
+        voTekenen();
+      };
+      k.click();
+    };
     const tr=$('#vo_transcript');
     if(tr) tr.addEventListener('input',()=>{ voHertijd(tr.value); });
     $('#vo_render').onclick=()=>voRender(false);
@@ -4686,21 +4701,51 @@ async function voRender(alleenMuziek){
     const ac=new (window.AudioContext||window.webkitAudioContext)();
     const bestem=ac.createMediaStreamDestination();
     if(stem){
-      // De stem-keten: rumble en gerommel eronder wegfilteren (hoogdoorlaat
-      // 90 Hz), sissen temperen (laagdoorlaat 12 kHz), een presence-boost
-      // rond 3 kHz zodat de stem naar voren komt, en een compressor die het
-      // volume egaal en vol maakt. Dezelfde keten als een podcast-nabewerking.
+      // De stem-masterketen, gemodelleerd naar een studio-nabewerking:
+      //  1. dubbele hoogdoorlaat op 80 Hz (steile flank): brom, rumble,
+      //     plofklanken en tafelgeschuif eruit
+      //  2. modder-cut rond 280 Hz: het doffe kamergeluid van laptopmics
+      //  3. warmte-shelf +1,5 dB rond 160 Hz: voller zonder dikker te maken
+      //  4. presence +2,5 dB rond 3,2 kHz: verstaanbaar en dichtbij
+      //  5. de-esser: statische cut -5 dB rond 7,2 kHz tegen scherpe S/T
+      //  6. lucht-shelf +1,5 dB boven 10,5 kHz: open zonder scherpte
+      //  7. compressor 3:1 zacht: egaal volume met behoud van dynamiek
+      //  8. loudness: de opname is vooraf gemeten (RMS) en wordt naar een
+      //     vast doelniveau getild, dus elke opname klinkt even luid
+      //  9. limiter: vangt uitschieters af zonder hoorbaar te pompen
+      // Bewust geen pitch-, timbre- of timingbewerking: de stem blijft de
+      // stem. Echte spectrale ruisverwijdering bestaat niet in de browser;
+      // daarvoor is de Adobe-Enhance-lus in het opnameblok.
+      let makeup=1.35;
+      try{
+        const rauw=await VO.blob.arrayBuffer();
+        const ab=await ac.decodeAudioData(rauw.slice(0));
+        const kan=ab.getChannelData(0); let som=0;
+        for(let i=0;i<kan.length;i+=4) som+=kan[i]*kan[i];
+        const rms=Math.sqrt(som/(kan.length/4))||0.0001;
+        const rmsDb=20*Math.log10(rms);
+        makeup=Math.min(Math.max(Math.pow(10,(-19-rmsDb)/20),0.5),8);
+      }catch(e){}
       const bronStem=ac.createMediaElementSource(stem);
-      const hoog=ac.createBiquadFilter(); hoog.type='highpass'; hoog.frequency.value=90;
-      const laag=ac.createBiquadFilter(); laag.type='lowpass'; laag.frequency.value=12000;
-      const presence=ac.createBiquadFilter(); presence.type='peaking';
-      presence.frequency.value=3000; presence.Q.value=1; presence.gain.value=3;
+      const hoog1=ac.createBiquadFilter(); hoog1.type='highpass'; hoog1.frequency.value=80; hoog1.Q.value=0.7;
+      const hoog2=ac.createBiquadFilter(); hoog2.type='highpass'; hoog2.frequency.value=80; hoog2.Q.value=0.7;
+      const modder=ac.createBiquadFilter(); modder.type='peaking'; modder.frequency.value=280; modder.Q.value=1; modder.gain.value=-2.5;
+      const warmte=ac.createBiquadFilter(); warmte.type='lowshelf'; warmte.frequency.value=160; warmte.gain.value=1.5;
+      const presence=ac.createBiquadFilter(); presence.type='peaking'; presence.frequency.value=3200; presence.Q.value=1; presence.gain.value=2.5;
+      const deess=ac.createBiquadFilter(); deess.type='peaking'; deess.frequency.value=7200; deess.Q.value=2.5; deess.gain.value=-5;
+      const lucht=ac.createBiquadFilter(); lucht.type='highshelf'; lucht.frequency.value=10500; lucht.gain.value=1.5;
       const comp=ac.createDynamicsCompressor();
-      comp.threshold.value=-26; comp.knee.value=12; comp.ratio.value=4;
-      comp.attack.value=0.003; comp.release.value=0.25;
-      const uitGain=ac.createGain(); uitGain.gain.value=1.35;
-      bronStem.connect(hoog); hoog.connect(laag); laag.connect(presence);
-      presence.connect(comp); comp.connect(uitGain); uitGain.connect(bestem);
+      comp.threshold.value=-24; comp.knee.value=10; comp.ratio.value=3;
+      comp.attack.value=0.004; comp.release.value=0.18;
+      const luid=ac.createGain(); luid.gain.value=makeup;
+      const limiter=ac.createDynamicsCompressor();
+      limiter.threshold.value=-6; limiter.knee.value=2; limiter.ratio.value=12;
+      limiter.attack.value=0.001; limiter.release.value=0.1;
+      const uitGain=ac.createGain(); uitGain.gain.value=0.98;
+      bronStem.connect(hoog1); hoog1.connect(hoog2); hoog2.connect(modder);
+      modder.connect(warmte); warmte.connect(presence); presence.connect(deess);
+      deess.connect(lucht); lucht.connect(comp); comp.connect(luid);
+      luid.connect(limiter); limiter.connect(uitGain); uitGain.connect(bestem);
     }
 
     // De muziek loopt in een lus onder het geheel, door een volumeknop. Onder
