@@ -1044,7 +1044,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-ig-fontset';
+const APP_VERSIE='2026-08-29-ig-maatvoering';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2867,27 +2867,42 @@ const CT_STIJLEN=[
    IG-fonts zijn gelicenseerd (Classic is bijv. Aveny-T) en mogen niet
    gekopieerd worden; deze families komen er visueel zo dicht mogelijk bij en
    laden via fonts.googleapis.com, met systeemfonts als vangnet. */
+/* Per font de maatvoering zoals Instagrams eigen editor hem zet:
+   schaal  = relatieve lettergrootte (scripts en didones tekent IG groter,
+             condensed juist iets kleiner)
+   regel   = regelafstand als factor van de lettergrootte (IG zet strak:
+             ~1.15 voor sans, ~0.95 voor Poster, ruimer voor script)
+   spatieEm= letterafstand in em (Modern is het wijdst)
+   schaduw = 'zacht' (subtiele legibility-schaduw zoals IG), 'gloed'
+             (Neon), of geen; rand = harde omlijning (Meme, Bubble). */
 const CT_FONTS=[
-  {key:'klassiek',  naam:'Klassiek',  css:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif", dik:'700'},
-  {key:'modern',    naam:'Modern',    css:"'Montserrat','Helvetica Neue',sans-serif", dik:'300', spatie:true, caps:true},
-  {key:'neon',      naam:'Neon',      css:"'Baloo 2','Arial Rounded MT Bold',sans-serif", dik:'600', gloed:true},
-  {key:'typewriter',naam:'Typewriter',css:"'Courier Prime','American Typewriter',monospace", dik:'700'},
-  {key:'sterk',     naam:'Sterk',     css:"'Oswald','Arial Narrow',sans-serif", dik:'600', caps:true, schuin:true},
-  {key:'literatuur',naam:'Literatuur',css:"'Lora',Georgia,serif", dik:'600'},
-  {key:'elegant',   naam:'Elegant',   css:"'Bodoni Moda','Didot','Playfair Display',serif", dik:'600'},
-  {key:'signature', naam:'Signature', css:"'Dancing Script','Snell Roundhand',cursive", dik:'600'},
-  {key:'meme',      naam:'Meme',      css:"'Anton','Impact','Arial Black',sans-serif", dik:'400', rand:true, caps:true},
-  {key:'poster',    naam:'Poster',    css:"'Bebas Neue','Avenir Next Condensed',sans-serif", dik:'400', caps:true},
-  {key:'bubble',    naam:'Bubble',    css:"'Fredoka','Arial Rounded MT Bold',sans-serif", dik:'600', rand:true},
-  {key:'comic',     naam:'Comic',     css:"'Comic Neue','Chalkboard SE','Comic Sans MS',sans-serif", dik:'700'},
+  {key:'klassiek',  naam:'Klassiek',  css:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif", dik:'700', schaal:1,    regel:1.18, schaduw:'zacht'},
+  {key:'modern',    naam:'Modern',    css:"'Montserrat','Helvetica Neue',sans-serif", dik:'300', caps:true, schaal:0.92, regel:1.35, spatieEm:0.12, schaduw:'zacht'},
+  {key:'neon',      naam:'Neon',      css:"'Baloo 2','Arial Rounded MT Bold',sans-serif", dik:'600', gloed:true, schaal:1, regel:1.2},
+  {key:'typewriter',naam:'Typewriter',css:"'Courier Prime','American Typewriter',monospace", dik:'700', schaal:0.94, regel:1.25, schaduw:'zacht'},
+  {key:'sterk',     naam:'Sterk',     css:"'Oswald','Arial Narrow',sans-serif", dik:'600', caps:true, schuin:true, schaal:1.02, regel:1.12, schaduw:'zacht'},
+  {key:'literatuur',naam:'Literatuur',css:"'Lora',Georgia,serif", dik:'600', schaal:0.97, regel:1.25, schaduw:'zacht'},
+  {key:'elegant',   naam:'Elegant',   css:"'Bodoni Moda','Didot','Playfair Display',serif", dik:'600', schaal:1.06, regel:1.2, spatieEm:0.02, schaduw:'zacht'},
+  {key:'signature', naam:'Signature', css:"'Dancing Script','Snell Roundhand',cursive", dik:'600', schaal:1.22, regel:1.25, schaduw:'zacht'},
+  {key:'meme',      naam:'Meme',      css:"'Anton','Impact','Arial Black',sans-serif", dik:'400', rand:true, caps:true, schaal:1.04, regel:1.08},
+  {key:'poster',    naam:'Poster',    css:"'Bebas Neue','Avenir Next Condensed',sans-serif", dik:'400', caps:true, schaal:1.05, regel:0.98, schaduw:'zacht'},
+  {key:'bubble',    naam:'Bubble',    css:"'Fredoka','Arial Rounded MT Bold',sans-serif", dik:'600', rand:true, schaal:1, regel:1.15},
+  {key:'comic',     naam:'Comic',     css:"'Comic Neue','Chalkboard SE','Comic Sans MS',sans-serif", dik:'700', schaal:0.98, regel:1.2, schaduw:'zacht'},
 ];
+// Schaduw zoals IG hem zet: subtiel voor leesbaarheid, geen zwaar uithangbord.
+function ctSchaduw(ctx,f){
+  if(f.gloed){ ctx.shadowColor='rgba(255,255,255,.9)'; ctx.shadowBlur=22; ctx.shadowOffsetY=0; }
+  else if(f.schaduw==='zacht'){ ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=6; ctx.shadowOffsetY=2; }
+  else { ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0; }
+}
 // Het canvas tekent pas met een webfont zodra die geladen is; voor elke bak
 // of render eerst alle families expliciet binnenhalen.
 async function ctFontsLaden(){
   try{ await Promise.all(CT_FONTS.map(f=>document.fonts.load(`${f.schuin?'italic ':''}${f.dik} 64px ${f.css.split(',')[0]}`))); }
   catch(e){}
 }
-const ctFontStr=(f,px)=>`${f.schuin?'italic ':''}${f.dik} ${px}px ${f.css}`;
+const ctFontStr=(f,px)=>`${f.schuin?'italic ':''}${f.dik} ${Math.round(px*(f.schaal||1))}px ${f.css}`;
+const ctSpatiePx=(f,px)=>((f.spatieEm||0)*px*(f.schaal||1)).toFixed(1)+'px';
 // De losse opmaakknoppen kunnen van een preset afwijken; dit is de werkelijke
 // stand die preview en render allebei gebruiken.
 let CT_OPMAAK={achtergrond:'geen', accent:false, font:'klassiek'};
@@ -3379,10 +3394,12 @@ function ctPreviewTekenen(){
   const hookHtml=(hook,om)=>{
     const f=CT_FONTS.find(x=>x.key===om.font)||CT_FONTS[0];
     const tekst=f.caps?hook.toUpperCase():hook;
-    const stijlen=[`font-family:${f.css}`,`font-weight:${f.dik}`];
+    const stijlen=[`font-family:${f.css}`,`font-weight:${f.dik}`,
+      `font-size:${(15*(f.schaal||1)).toFixed(1)}px`,`line-height:${(f.regel||1.2)}`];
     if(f.schuin) stijlen.push('font-style:italic');
-    if(f.spatie) stijlen.push('letter-spacing:.09em');
-    if(f.gloed&&om.achtergrond==='geen') stijlen.push('text-shadow:0 0 10px rgba(255,255,255,.85),0 1px 10px rgba(0,0,0,.6)');
+    if(f.spatieEm) stijlen.push(`letter-spacing:${f.spatieEm}em`);
+    if(f.gloed&&om.achtergrond==='geen') stijlen.push('text-shadow:0 0 8px rgba(255,255,255,.9),0 0 16px rgba(255,255,255,.5)');
+    else if(f.schaduw==='zacht'&&om.achtergrond==='geen') stijlen.push('text-shadow:0 1px 3px rgba(0,0,0,.45)');
     if(f.rand&&om.achtergrond==='geen') stijlen.push('-webkit-text-stroke:1px #000;paint-order:stroke fill');
     const inhoud = om.accent
       ? tekst.split(' ').map(w=>accentWoord(w)?`<b>${esc(w)}</b>`:esc(w)).join(' ')
@@ -4432,29 +4449,34 @@ async function voRender(alleenMuziek){
           const om=CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
           const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
           ctx.font=ctFontStr(f,58);
+          try{ ctx.letterSpacing=ctSpatiePx(f,58); }catch(e){}
+          const regelH=Math.round(58*(f.schaal||1)*(f.regel||1.2));
           const toonO=w=>f.caps?w.toUpperCase():w;
           // regelterugloop binnen 940px
           const woordenO=actief.tekst.split(/\s+/); const regelsO=[]; let rO='';
           for(const w of woordenO){const kand=rO?rO+' '+toonO(w):toonO(w);
             if(ctx.measureText(kand).width>940&&rO){regelsO.push(rO);rO=toonO(w);} else rO=kand;}
           if(rO)regelsO.push(rO);
-          let yO=960-(regelsO.length-1)*40;
+          let yO=960-Math.round((regelsO.length-1)*regelH/2);
           for(const regel of regelsO){
             const breedO=ctx.measureText(regel).width; const xO=540-breedO/2;
             if(om.achtergrond!=='geen'){
               const wit=om.achtergrond==='wit';
-              ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+              ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
               ctx.fillStyle=wit?'#ffffff':'#111111';
-              ctx.beginPath(); ctx.roundRect(xO-20,yO-58,breedO+40,82,13); ctx.fill();
+              // per regel zijn eigen afgeronde balk, strak om de tekst zoals
+              // de A-knop van Instagram
+              const pad=Math.round(regelH*0.28);
+              ctx.beginPath(); ctx.roundRect(xO-pad,yO-regelH*0.78,breedO+pad*2,regelH*1.05,Math.round(regelH*0.22)); ctx.fill();
               ctx.fillStyle=wit?'#111111':'#ffffff';
             }else{
-              ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=16; ctx.lineWidth=f.rand?11:7;
-              ctx.fillStyle='#ffffff'; ctx.strokeStyle=f.rand?'#000000':'rgba(0,0,0,.45)';
-              ctx.strokeText(regel,xO,yO);
+              ctSchaduw(ctx,f);
+              if(f.rand){ ctx.lineWidth=11; ctx.strokeStyle='#000000'; ctx.strokeText(regel,xO,yO); }
+              ctx.fillStyle='#ffffff';
             }
-            ctx.fillText(regel,xO,yO); yO+=80;
+            ctx.fillText(regel,xO,yO); yO+=regelH;
           }
-          ctx.shadowBlur=0;
+          ctx.shadowBlur=0; ctx.shadowOffsetY=0;
         }
       }
       const hit=brokVoor(t);
@@ -4467,7 +4489,7 @@ async function voRender(alleenMuziek){
           const om=CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
           const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
           ctx.font=ctFontStr(f,64);
-          try{ ctx.letterSpacing=f.spatie?'6px':'0px'; }catch(e){}
+          try{ ctx.letterSpacing=ctSpatiePx(f,64); }catch(e){}
           const toon=w=>f.caps?w.toUpperCase():w;
           const y=1490;
           const breed=woorden.reduce((a,w)=>a+ctx.measureText(toon(w.w)+' ').width,0);
@@ -4487,14 +4509,13 @@ async function voRender(alleenMuziek){
             }
           }else{
             const accent=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
-            if(f.gloed){ ctx.shadowColor='rgba(255,255,255,.85)'; ctx.shadowBlur=26; }
-            else { ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=18; }
-            ctx.lineWidth=f.rand?12:8;
+            ctSchaduw(ctx,f);
+            ctx.lineWidth=f.rand?12:0;
             for(const w of woorden){
               const gezegd=t>=(w.t||0);
               ctx.fillStyle = om.accent&&accent(w.w) ? '#FFE234' : '#ffffff';
               ctx.globalAlpha = gezegd?1:0.55;
-              if(!f.gloed){ ctx.strokeStyle=f.rand?'#000000':'rgba(0,0,0,.45)'; ctx.strokeText(toon(w.w),x,y); }
+              if(f.rand){ ctx.strokeStyle='#000000'; ctx.strokeText(toon(w.w),x,y); }
               ctx.fillText(toon(w.w),x,y);
               x+=ctx.measureText(toon(w.w)+' ').width;
             }
