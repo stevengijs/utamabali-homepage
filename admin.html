@@ -520,6 +520,22 @@
   .ig-hooktekst i{font-style:normal;padding:3px 8px;border-radius:6px;
                   -webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.75;text-shadow:none}
   .ig-hooktekst b{color:#FFE234}
+  /* Mediabibliotheek */
+  .bib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
+  .bib-item{position:relative;aspect-ratio:4/5;border-radius:9px;overflow:hidden;cursor:pointer;
+            border:2px solid transparent;background:#000}
+  .bib-item img{width:100%;height:100%;object-fit:cover;display:block}
+  .bib-item.on{border-color:var(--brand)}
+  .bib-item .sc{position:absolute;top:5px;left:5px;padding:1px 7px;border-radius:999px;font-size:10.5px;
+                font-weight:800;background:rgba(0,0,0,.6);color:#fff}
+  .bib-item .sc.top{background:var(--brand)}
+  .bib-item .vid{position:absolute;top:5px;right:5px;color:#fff;font-size:13px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+  .bib-item .om{position:absolute;bottom:0;left:0;right:0;padding:14px 7px 5px;font-size:10px;color:#fff;
+                background:linear-gradient(transparent,rgba(0,0,0,.75));overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .bib-item .kies{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+                  background:rgba(15,46,34,.55);color:#fff;font-weight:800;font-size:13px}
+  .bib-item:hover .kies{display:flex}
+
   /* Weekagenda: elke dag een post, vandaag uitgelicht */
   .wk-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:4px 0 10px}
   @media(max-width:900px){.wk-strip{grid-template-columns:repeat(2,1fr)}}
@@ -1022,7 +1038,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-spreek';
+const APP_VERSIE='2026-08-29-bibliotheek';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2930,6 +2946,14 @@ async function renderContent(){
 
     <div class="bc-buiten" id="ct_pakket" style="display:none"></div>
 
+    <div class="bc-buiten">
+      <div class="bc-lab" style="margin-top:8px;display:flex;align-items:center;gap:12px">Mediabibliotheek
+        <button class="bc-zoekactie" id="bib_upload" style="text-transform:none">⬆ Foto's en video's toevoegen</button>
+        <span class="muted" id="bib_status" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
+      <div class="bc-hint" style="margin-top:2px">Open deze pagina op je iPhone en kies hier in een keer tientallen foto's uit je fotorol: dat is de directe brug naar iCloud Photos. Elk beeld wordt automatisch bekeken en getagd (wat staat erop, bij welke rubriek past het, hoe sterk is het), en de maker stelt daarna per post de beste beelden voor.</div>
+      <div class="bib-grid" id="bib_grid"></div>
+    </div>
+
     <div class="bc-buiten" style="padding-bottom:18px">
       <div class="bc-lab" style="margin-top:8px">Eerdere posts</div>
       <div class="ct-lijst" id="ct_lijst"><span class="muted" style="font-size:13px">Laden…</span></div>
@@ -2950,6 +2974,8 @@ async function renderContent(){
   });
   $('#ct_genereer').onclick=ctGenereer;
   $('#ct_spreek').onclick=ctSpreek;
+  $('#bib_upload').onclick=bibUpload;
+  bibTekenen();
   $('#wk_plan').onclick=async()=>{
     const b=$('#wk_plan'); b.disabled=true; b.textContent='Plannen…';
     try{
@@ -2992,10 +3018,12 @@ function ctMediaTekenen(){
         <button data-schuif="${i}:1" ${i===CT.media.length-1?'disabled':''} title="Naar achteren">▶</button>
       </span>`:''}
     </div>`).join('')+
-    `<button class="ct-upload" id="ct_upload" title="Media toevoegen">+</button>`;
+    `<button class="ct-upload" id="ct_upload" title="Media toevoegen">+</button>
+     <button class="ct-upload" id="ct_bib_kies" title="Kies uit de bibliotheek" style="font-size:15px;line-height:1.3">📚<br>bieb</button>`;
   vak.querySelectorAll('[data-weg]').forEach(b=>b.onclick=()=>{CT.media.splice(Number(b.dataset.weg),1);ctMediaTekenen();ctPreviewTekenen();});
   // Volgorde schuiven: de nummers en de slide-teksten volgen de nieuwe
   // volgorde vanzelf, want die zijn positioneel (slide 1 = eerste afbeelding).
+  const bk=$('#ct_bib_kies'); if(bk) bk.onclick=()=>bibKiezer();
   vak.querySelectorAll('[data-schuif]').forEach(b=>b.onclick=()=>{
     const [i,r]=b.dataset.schuif.split(':').map(Number);
     const j=i+r; if(j<0||j>=CT.media.length) return;
@@ -3341,6 +3369,160 @@ function ctPreviewTekenen(){
     : 'Klik de variant die je wilt; de hook wordt regel 1 van je caption. De cijfers en de knoppen zijn decor, zodat je hem ziet zoals een volger hem in de app ziet.');
   const ta=$('#ct_caption');
   if(ta&&!ta.dataset.previewkoppeling){ta.dataset.previewkoppeling='1';let t;ta.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(ctPreviewTekenen,400);});}
+}
+
+/* ============== MEDIABIBLIOTHEEK ==============
+   Stevens foto's en video's, bulk geupload (vanaf de iPhone is dat de directe
+   brug naar iCloud Photos: de bestandskiezer opent daar de fotorol). Na de
+   upload bekijkt vision elk beeld en slaat op wat erop staat, bij welke
+   weekrubriek het past en hoe sterk het is. De kiezer in de maker sorteert
+   daarop: rubriek-match eerst, dan score, en wat onlangs gebruikt is zakt
+   weg zodat niet elke week hetzelfde beeld terugkomt. */
+let BIB={rijen:[],laden:false};
+
+async function bibLaden(){
+  const {data,error}=await sb.from('content_bibliotheek').select('*').order('aangemaakt_at',{ascending:false}).limit(400);
+  if(!error&&Array.isArray(data)) BIB.rijen=data;
+  return BIB.rijen;
+}
+
+function bibThumb(r){ return ctPubliek(r.thumb_path||r.path); }
+
+async function bibTekenen(){
+  const grid=$('#bib_grid'); if(!grid) return;
+  await bibLaden();
+  if(!BIB.rijen.length){ grid.innerHTML='<span class="muted" style="font-size:13px;grid-column:1/-1">Nog leeg. Upload een eerste lading; vanaf je iPhone kies je zo vijftig beelden tegelijk.</span>'; return; }
+  grid.innerHTML=BIB.rijen.slice(0,60).map(r=>`
+    <div class="bib-item" data-bib="${r.id}" title="${esc(r.beschrijving||'nog niet getagd')}">
+      <img src="${bibThumb(r)}" loading="lazy" alt="">
+      ${r.score?`<span class="sc ${r.score>=8?'top':''}">${r.score}</span>`:'<span class="sc">…</span>'}
+      ${r.soort==='video'?'<span class="vid">▶</span>':''}
+      <div class="om">${esc((r.tags||[]).slice(0,3).join(' · ')||'wordt bekeken…')}</div>
+    </div>`).join('');
+  const onget=BIB.rijen.filter(r=>!r.getagd_at&&r.soort==='foto'||(!r.getagd_at&&r.thumb_path));
+  if(onget.length) bibTaggen(onget);
+}
+
+async function bibUpload(){
+  const k=document.createElement('input'); k.type='file'; k.accept='image/*,video/*'; k.multiple=true;
+  k.onchange=async()=>{
+    const files=Array.from(k.files||[]); if(!files.length) return;
+    const st=$('#bib_status'); let n=0;
+    for(const f of files){
+      n++; st.textContent=`Uploaden ${n}/${files.length}…`;
+      const isVideo=/^video\//.test(f.type);
+      let blob=f;
+      if(/^image\//.test(f.type)){ try{ blob=(await pmCompress(f)).blob; }catch(e){} }
+      const ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';
+      const pad=`bibliotheek/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
+      const up=await sb.storage.from(CT_BUCKET).upload(pad,blob,{contentType:f.type||'application/octet-stream'});
+      if(up.error){ toast(`${f.name}: ${up.error.message}`,'err'); continue; }
+      let thumb=null;
+      if(isVideo){
+        // Een beeld uit de video vissen zodat vision er iets mee kan en de
+        // grid iets kan tonen.
+        try{ thumb=await bibVideoThumb(URL.createObjectURL(f)); }catch(e){}
+      }
+      await sb.from('content_bibliotheek').insert({path:pad, soort:isVideo?'video':'foto', thumb_path:thumb});
+    }
+    st.textContent='Klaar. De beelden worden nu bekeken en getagd…';
+    bibTekenen();
+    setTimeout(()=>{st.textContent='';},4000);
+  };
+  k.click();
+}
+
+async function bibVideoThumb(url){
+  const v=document.createElement('video'); v.src=url; v.muted=true; v.playsInline=true;
+  await new Promise((ok,nee)=>{v.onloadeddata=ok;v.onerror=nee;});
+  v.currentTime=Math.min(1,(v.duration||2)/2);
+  await new Promise(ok=>{v.onseeked=ok;setTimeout(ok,1500);});
+  const c=document.createElement('canvas'); c.width=540; c.height=Math.round(540*v.videoHeight/Math.max(v.videoWidth,1));
+  c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+  const blob=await new Promise(ok=>c.toBlob(ok,'image/jpeg',0.8));
+  const pad=`bibliotheek/thumb-${Date.now()}-${Math.random().toString(36).slice(2,7)}.jpg`;
+  const up=await sb.storage.from(CT_BUCKET).upload(pad,blob,{contentType:'image/jpeg'});
+  if(up.error) return null;
+  return pad;
+}
+
+let BIB_TAGT=false;
+async function bibTaggen(rijen){
+  if(BIB_TAGT) return; BIB_TAGT=true;
+  try{
+    const st=$('#bib_status');
+    const teDoen=rijen.filter(r=>r.thumb_path||r.soort==='foto');
+    for(let i=0;i<teDoen.length;i+=8){
+      const brok=teDoen.slice(i,i+8);
+      if(st) st.textContent=`Beelden bekijken: ${Math.min(i+8,teDoen.length)}/${teDoen.length}…`;
+      await sb.functions.invoke('content-maker',{body:{actie:'media_tag',
+        items:brok.map(r=>({id:r.id,url:bibThumb(r)}))}});
+    }
+    if(st) st.textContent='';
+    await bibLaden();
+    const grid=$('#bib_grid'); if(grid) bibTekenenStil();
+  } finally { BIB_TAGT=false; }
+}
+function bibTekenenStil(){
+  // hertekenen zonder opnieuw te gaan taggen (anders blijft hij rondzingen)
+  const grid=$('#bib_grid'); if(!grid) return;
+  grid.innerHTML=BIB.rijen.slice(0,60).map(r=>`
+    <div class="bib-item" data-bib="${r.id}" title="${esc(r.beschrijving||'')}">
+      <img src="${bibThumb(r)}" loading="lazy" alt="">
+      ${r.score?`<span class="sc ${r.score>=8?'top':''}">${r.score}</span>`:''}
+      ${r.soort==='video'?'<span class="vid">▶</span>':''}
+      <div class="om">${esc((r.tags||[]).slice(0,3).join(' · ')||'')}</div>
+    </div>`).join('');
+}
+
+/* De kiezer in de maker: gesorteerd op wat bij deze post past. */
+async function bibKiezer(){
+  await bibLaden();
+  if(!BIB.rijen.length){toast('De bibliotheek is nog leeg; upload eerst beelden onderaan de pagina','err');return;}
+  const onderwerp=($('#ct_onderwerp')&&$('#ct_onderwerp').value||'').toLowerCase();
+  const rubriek=(CT.lijst.find(x=>x.id===CT.postId)||{}).rubriek||'';
+  const woorden=onderwerp.split(/\W+/).filter(w=>w.length>3);
+  const wilVideo=CT.soort==='reel';
+  const past=r=>{
+    if(wilVideo&&r.soort!=='video') return -1;
+    if(!wilVideo&&r.soort!=='foto') return -1;
+    let sc=(r.score||4)/2;
+    if(rubriek&&(r.rubrieken||[]).includes(rubriek)) sc+=3;
+    const tekst=((r.tags||[]).join(' ')+' '+(r.beschrijving||'')).toLowerCase();
+    sc+=woorden.filter(w=>tekst.includes(w)).length*1.5;
+    if(r.laatst_gebruikt&&Date.now()-new Date(r.laatst_gebruikt).getTime()<21*864e5) sc-=4;
+    return sc;
+  };
+  const lijst=BIB.rijen.map(r=>({r,sc:past(r)})).filter(x=>x.sc>=0).sort((a,b)=>b.sc-a.sc).slice(0,24);
+  if(!lijst.length){toast(wilVideo?'Geen video\'s in de bibliotheek; upload eerst b-roll':'Geen foto\'s in de bibliotheek','err');return;}
+  const bestaand=document.querySelector('#bib_paneel'); if(bestaand) bestaand.remove();
+  document.body.insertAdjacentHTML('beforeend',`
+    <div id="bib_paneel" style="position:fixed;inset:0;z-index:9998;background:rgba(15,25,20,.5);display:flex;align-items:center;justify-content:center;padding:20px">
+      <div style="background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:82vh;overflow:auto;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <b>Voorstel uit je bibliotheek</b>
+          <span class="muted" style="font-size:12.5px">gesorteerd op wat bij deze post past</span>
+          <button class="bc-zoekactie" id="bib_sluit" style="margin-left:auto">✕ sluiten</button></div>
+        <div class="bib-grid">${lijst.map(x=>`
+          <div class="bib-item" data-bibpak="${x.r.id}" title="${esc(x.r.beschrijving||'')}">
+            <img src="${bibThumb(x.r)}" loading="lazy" alt="">
+            ${x.r.score?`<span class="sc ${x.r.score>=8?'top':''}">${x.r.score}</span>`:''}
+            ${x.r.soort==='video'?'<span class="vid">▶</span>':''}
+            <div class="kies">＋ gebruik</div>
+            <div class="om">${esc((x.r.tags||[]).slice(0,3).join(' · '))}</div>
+          </div>`).join('')}</div>
+      </div>
+    </div>`);
+  $('#bib_sluit').onclick=()=>$('#bib_paneel').remove();
+  document.querySelectorAll('[data-bibpak]').forEach(b=>b.onclick=async()=>{
+    const r=BIB.rijen.find(x=>x.id===b.dataset.bibpak); if(!r) return;
+    if(CT.soort!=='carousel') CT.media=[];
+    CT.media.push({path:r.path,type:r.soort==='video'?'video/mp4':'image/jpeg'});
+    sb.from('content_bibliotheek').update({laatst_gebruikt:new Date().toISOString()}).eq('id',r.id).then(()=>{});
+    ctMediaTekenen(); ctPreviewTekenen();
+    if(CT.soort!=='carousel') $('#bib_paneel').remove();
+    toast('Toegevoegd','ok');
+  });
 }
 
 /* ============== ONDERWERP INSPREKEN ==============
