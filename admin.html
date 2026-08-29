@@ -524,7 +524,10 @@
   .bib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
   .bib-item{position:relative;aspect-ratio:4/5;border-radius:9px;overflow:hidden;cursor:pointer;
             border:2px solid transparent;background:#000}
-  .bib-item img{width:100%;height:100%;object-fit:cover;display:block}
+  .bib-item img,.bib-item video{width:100%;height:100%;object-fit:cover;display:block}
+  .bib-item .vid{border:none;cursor:pointer;background:rgba(0,0,0,.45);border-radius:50%;
+                 width:26px;height:26px;line-height:1;padding:0}
+  .bib-item .vid:hover{background:var(--brand)}
   .bib-item.on{border-color:var(--brand)}
   .bib-item .sc{position:absolute;top:5px;left:5px;padding:1px 7px;border-radius:999px;font-size:10.5px;
                 font-weight:800;background:rgba(0,0,0,.6);color:#fff}
@@ -1038,7 +1041,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-feiten-fout';
+const APP_VERSIE='2026-08-29-verras-favoriet';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2911,9 +2914,9 @@ async function renderContent(){
     </div>
 
     <div class="bc-buiten" style="padding-top:4px">
-      <button class="btn btn-primary" id="ct_verras" style="font-size:15px;padding:12px 22px">🪄 Maak de post van vandaag voor me</button>
+      <button class="btn btn-primary" id="ct_verras" style="font-size:15px;padding:12px 22px">🪄 Verras me met een nieuwe post</button>
       <span class="muted" id="ct_verras_status" style="font-size:13px;margin-left:10px"></span>
-      <div class="bc-hint" style="margin-top:6px">Een klik: het onderwerp komt uit je weekplanning (en uit wat op je account werkt, zodra Instagram gekoppeld is), de beelden uit je bibliotheek, de teksten worden erop gebakken. Jij hoeft alleen te checken en te plaatsen. Reel-audio: je laatst gekozen muziek wordt gebruikt; een voice-over blijft jouw stem en spreek je zelf in.</div>
+      <div class="bc-hint" style="margin-top:6px">Een klik: de AI verzint een geheel nieuw idee (los van de weekplanning, en gestuurd door wat op je account werkt zodra Instagram gekoppeld is), kiest zelf de beelden uit je bibliotheek en bakt de teksten erop. Jij checkt en plaatst. De post van de dag maak je via de weekkaart hierboven; een geplande dag regenereer je daar met ↻.</div>
     </div>
 
     <div class="field bc-buiten">
@@ -3202,6 +3205,7 @@ function ctPakketTekenen(){
         <button class="btn btn-primary btn-sm" id="ct_klaar">✓ Klaar om te plaatsen</button>
         <button class="btn btn-ghost btn-sm" id="ct_gepost">Gepost</button>
         <button class="btn btn-ghost btn-sm" id="ct_opnieuw">↻ Nieuwe versie</button>
+        <button class="btn btn-ghost btn-sm" id="ct_ster">☆ Favoriet</button>
       </div>
     </div>
   </div>`;
@@ -3228,6 +3232,12 @@ function ctPakketTekenen(){
   $('#ct_klaar').onclick=()=>ctOpslaan('klaar');
   $('#ct_gepost').onclick=()=>ctOpslaan('gepost');
   $('#ct_opnieuw').onclick=ctGenereer;
+  $('#ct_ster').onclick=async()=>{
+    if(!CT.postId){await ctOpslaan(null);}
+    await sb.rpc('content_post_opslaan',{p_id:CT.postId,p_soort:null,p_onderwerp:null,p_project:null,
+      p_doel:null,p_media:null,p_pakket:null,p_caption:null,p_status:null,p_favoriet:true});
+    $('#ct_ster').textContent='⭐ Favoriet'; toast('Bewaard als favoriet','ok'); ctLijstLaden();
+  };
   $('#ct_verbeter').onclick=ctVerbeter;
   const bakKnop=$('#ct_slides_bakken');
   if(bakKnop) bakKnop.onclick=ctSlidesBakken;
@@ -3492,6 +3502,30 @@ async function bibLaden(){
 
 function bibThumb(r){ return ctPubliek(r.thumb_path||r.path); }
 
+// Tegelbeeld: foto's en video's met thumbnail als afbeelding; video's zonder
+// thumbnail als video-element zodat de browser zelf het eerste frame toont
+// (anders blijft de tegel zwart).
+function bibTegelMedia(r){
+  if(r.soort==='video'&&!r.thumb_path)
+    return `<video src="${ctPubliek(r.path)}#t=0.5" preload="metadata" muted playsinline></video>`;
+  return `<img src="${bibThumb(r)}" loading="lazy" alt="">`;
+}
+
+/* Afspeelknop: het filmpje bekijken zonder het te selecteren. */
+function bibSpeler(pad){
+  const oud=document.querySelector('#bib_speler'); if(oud) oud.remove();
+  document.body.insertAdjacentHTML('beforeend',`
+    <div id="bib_speler" style="position:fixed;inset:0;z-index:9999;background:rgba(10,15,12,.75);display:flex;align-items:center;justify-content:center;padding:24px">
+      <div style="position:relative;max-width:400px;width:100%">
+        <video src="${ctPubliek(pad)}" controls autoplay playsinline style="width:100%;border-radius:12px;background:#000;max-height:80vh"></video>
+        <button id="bib_speler_dicht" style="position:absolute;top:-14px;right:-14px;width:32px;height:32px;border-radius:50%;border:none;background:#fff;font-size:15px;cursor:pointer">✕</button>
+      </div>
+    </div>`);
+  const dicht=()=>{const el=document.querySelector('#bib_speler'); if(el){el.querySelector('video').pause();el.remove();}};
+  $('#bib_speler_dicht').onclick=dicht;
+  $('#bib_speler').onclick=e=>{if(e.target.id==='bib_speler')dicht();};
+}
+
 async function bibTekenen(){
   const grid=$('#bib_grid'); if(!grid) return;
   await bibLaden();
@@ -3584,12 +3618,13 @@ function bibTekenenStil(){
   const grid=$('#bib_grid'); if(!grid) return;
   grid.innerHTML=BIB.rijen.slice(0,120).map(r=>`
     <div class="bib-item" data-bib="${r.id}" title="${esc(r.beschrijving||'')}">
-      <img src="${bibThumb(r)}" loading="lazy" alt="">
+      ${bibTegelMedia(r)}
       ${r.score?`<span class="sc ${r.score>=8?'top':''}">${r.score}</span>`:''}
-      ${r.soort==='video'?'<span class="vid">▶</span>':''}
+      ${r.soort==='video'?`<button class="vid" data-speel="${esc(r.path)}" title="Afspelen">▶</button>`:''}
       <div class="kies">＋ in je post</div>
       <div class="om">${esc((r.tags||[]).slice(0,3).join(' · ')||'')}</div>
     </div>`).join('');
+  grid.querySelectorAll('[data-speel]').forEach(b=>b.onclick=e=>{e.stopPropagation();bibSpeler(b.dataset.speel);});
   grid.querySelectorAll('[data-bib]').forEach(b=>b.onclick=()=>{
     const r=BIB.rijen.find(x=>x.id===b.dataset.bib); if(r) bibGebruik(r);
   });
@@ -3640,9 +3675,9 @@ async function bibKiezer(){
     .sort((a,b)=>new Date(b.r.aangemaakt_at)-new Date(a.r.aangemaakt_at)).slice(0,200);
   const tegel=x=>`
     <div class="bib-item" data-bibpak="${x.r.id}" title="${esc(x.r.beschrijving||'')}">
-      <img src="${bibThumb(x.r)}" loading="lazy" alt="">
+      ${bibTegelMedia(x.r)}
       ${x.r.score?`<span class="sc ${x.r.score>=8?'top':''}">${x.r.score}</span>`:''}
-      ${x.r.soort==='video'?'<span class="vid">▶</span>':''}
+      ${x.r.soort==='video'?`<button class="vid" data-speel="${esc(x.r.path)}" title="Afspelen">▶</button>`:''}
       <div class="kies">＋ gebruik</div>
       <div class="om">${esc((x.r.tags||[]).slice(0,3).join(' · '))}</div>
     </div>`;
@@ -3660,6 +3695,7 @@ async function bibKiezer(){
       </div>
     </div>`);
   $('#bib_sluit').onclick=()=>$('#bib_paneel').remove();
+  document.querySelectorAll('#bib_paneel [data-speel]').forEach(b=>b.onclick=e=>{e.stopPropagation();bibSpeler(b.dataset.speel);});
   document.querySelectorAll('[data-bibpak]').forEach(b=>b.onclick=()=>{
     const r=BIB.rijen.find(x=>x.id===b.dataset.bibpak); if(!r) return;
     if(bibGebruik(r)&&CT.soort!=='carousel') $('#bib_paneel').remove();
@@ -3678,21 +3714,15 @@ async function ctVerrasMe(){
   knop.disabled=true;
   const zeg=t=>{if(st)st.textContent=t;};
   try{
-    // 1. het plan van vandaag (of de eerstvolgende ongeposte dag)
-    zeg('Plan van vandaag ophalen…');
-    const {data:posts}=await sb.rpc('content_posts_lijst');
-    const vandaag=new Date(); vandaag.setHours(0,0,0,0);
-    const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    let plan=(posts||[]).find(p=>p.gepland_voor===iso(vandaag)&&p.status!=='gepost');
-    if(!plan){
-      zeg('Geen planning; week plannen…');
-      await sb.functions.invoke('content-maker',{body:{actie:'weekplan'}});
-      const her=await sb.rpc('content_posts_lijst');
-      plan=(her.data||[]).find(p=>p.gepland_voor===iso(vandaag)&&p.status!=='gepost');
-      if(!plan){toast('Kon geen plan voor vandaag maken','err');return;}
+    // 1. een geheel nieuw idee, los van de weekplanning
+    zeg('Een nieuw idee bedenken…');
+    const ideeR=await sb.functions.invoke('content-maker',{body:{actie:'idee'}});
+    if(ideeR.error||!ideeR.data||ideeR.data.ok===false){
+      toast((ideeR.data&&ideeR.data.reden)||'Kon geen idee bedenken','err');return;
     }
-    CT.soort=plan.soort; CT.postId=plan.id; CT.project=plan.project||'';
-    CT.doel=plan.doel||'comments'; CT.pakket=null; CT.media=[];
+    const plan={...ideeR.data.idee, rubriek:null};
+    CT.soort=plan.soort||'reel'; CT.postId=null; CT.project=plan.project||'';
+    CT.doel='comments'; CT.pakket=null; CT.media=[];
     $('#ct_onderwerp').value=plan.onderwerp||'';
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
@@ -3937,11 +3967,29 @@ async function wkTekenen(){
         <div class="onderwerp">${esc(p0.onderwerp||'')}</div>
         ${p0.status==='gepost'?'<span class="st gepost">✓ gepost</span>':
           p0.status!=='gepland'?`<span class="st">${esc(p0.status)}</span>`:''}
-        ${isVandaag&&p0.status!=='gepost'?`<button class="btn btn-primary btn-sm" data-wkmaak="${p0.id}">➜ Maak deze (±10 min)</button>`
-          :(p0.status!=='gepost'?`<button class="bc-zoekactie" data-wkmaak="${p0.id}" style="text-align:left;padding:0">openen</button>`:'')}
+        ${p0.status!=='gepost'?`<div style="display:flex;gap:8px;align-items:center;margin-top:auto">
+            ${isVandaag?`<button class="btn btn-primary btn-sm" data-wkmaak="${p0.id}" style="flex:1">➜ Maak deze</button>`
+                       :`<button class="bc-zoekactie" data-wkmaak="${p0.id}" style="padding:0">openen</button>`}
+            <button class="bc-zoekactie" data-wkregen="${p0.id}" title="Nieuw onderwerp voor deze dag (zelfde rubriek)" style="padding:0">↻</button>
+          </div>`:''}
       `:`<div class="onderwerp">Niets gepland</div>`}
     </div>`;
   }).join('');
+  vak.querySelectorAll('[data-wkregen]').forEach(b=>b.onclick=async()=>{
+    const p0=data.find(x=>x.id===b.dataset.wkregen); if(!p0) return;
+    b.textContent='…'; b.disabled=true;
+    try{
+      const r=await sb.functions.invoke('content-maker',{body:{actie:'idee',rubriek:p0.rubriek||'',soort:p0.soort}});
+      if(r.error||!r.data||r.data.ok===false){toast((r.data&&r.data.reden)||'Regenereren mislukte','err');return;}
+      const idee=r.data.idee;
+      await sb.rpc('content_post_opslaan',{p_id:p0.id, p_soort:p0.soort, p_onderwerp:idee.onderwerp,
+        p_project:idee.project||null, p_doel:p0.doel||'comments', p_media:null,
+        p_pakket:{...(p0.pakket||{}), hookrichting:idee.hookrichting||'', aanlevering:idee.aanlevering||''},
+        p_status:null});
+      toast('Nieuw onderwerp voor deze dag','ok');
+      wkTekenen();
+    } finally { b.disabled=false; b.textContent='↻'; }
+  });
   vak.querySelectorAll('[data-wkmaak]').forEach(b=>b.onclick=()=>{
     const p0=data.find(x=>x.id===b.dataset.wkmaak); if(!p0) return;
     CT.soort=p0.soort; CT.postId=p0.id; CT.project=p0.project||''; CT.doel=p0.doel||'comments';
@@ -4426,13 +4474,26 @@ async function ctLijstLaden(){
   // gemaakt of gepost is, anders staat alles er dubbel.
   const gemaakt=data.filter(p=>p.status!=='gepland');
   if(!gemaakt.length){vak.innerHTML='<span class="muted" style="font-size:13px">Nog geen posts. Je eerste pakket verschijnt hier.</span>';return;}
-  vak.innerHTML=gemaakt.map(p=>`
+  const rij=p=>`
     <div class="ct-item" data-open="${p.id}">
+      <button class="bc-zoekactie" data-ster="${p.id}" title="${p.favoriet?'Favoriet, klik om te verwijderen':'Bewaar als favoriet'}" style="padding:0 4px;font-size:15px">${p.favoriet?'⭐':'☆'}</button>
       <span class="soort">${esc(p.soort)}</span>
       <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.onderwerp||'(zonder onderwerp)')}</span>
       ${p.project?`<span class="muted">${esc(p.project)}</span>`:''}
       <span class="${p.status==='gepost'?'st-gepost':'muted'}">${p.status==='gepost'?'gepost':p.status}</span>
-    </div>`).join('');
+    </div>`;
+  const favs=gemaakt.filter(p=>p.favoriet);
+  vak.innerHTML=(favs.length?`<div class="bc-lab" style="margin:0">⭐ Favorieten</div>${favs.map(rij).join('')}
+    <div class="bc-lab" style="margin:10px 0 0">Overige</div>`:'')+
+    gemaakt.filter(p=>!p.favoriet).map(rij).join('');
+  vak.querySelectorAll('[data-ster]').forEach(b=>b.onclick=async(e)=>{
+    e.stopPropagation();
+    const p=CT.lijst.find(x=>x.id===b.dataset.ster); if(!p) return;
+    await sb.rpc('content_post_opslaan',{p_id:p.id,p_soort:null,p_onderwerp:null,p_project:null,
+      p_doel:null,p_media:null,p_pakket:null,p_caption:null,p_status:null,p_favoriet:!p.favoriet});
+    toast(p.favoriet?'Uit favorieten':'Bewaard als favoriet ⭐','ok');
+    ctLijstLaden();
+  });
   vak.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
     const p=CT.lijst.find(x=>x.id===b.dataset.open); if(!p) return;
     CT.soort=p.soort; CT.postId=p.id; CT.media=Array.isArray(p.media)?p.media:[];
