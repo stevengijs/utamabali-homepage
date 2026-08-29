@@ -1044,7 +1044,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-plaats-onder';
+const APP_VERSIE='2026-08-29-voor-app';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -4232,12 +4232,26 @@ function voTekenen(){
         <a class="btn btn-ghost btn-sm" href="${VO.video}" download="reel-voiceover">⬇ Download</a>
         <button class="btn btn-ghost btn-sm" id="vo_opnieuw2">↻ Opnieuw</button>
         <button class="btn btn-ghost btn-sm" id="vo_alsnog_stem">🎙 Alsnog voice-over inspreken</button>
+        <button class="btn btn-ghost btn-sm" id="vo_voor_app" title="Video downloaden en caption plus hashtags op je klembord: in de app alleen nog IG-muziek kiezen en plakken">📲 Voor de app (met IG-muziek)</button>
       </div>
       <div class="bc-hint">${VO.mime.includes('mp4')?'MP4, klaar om direct via de plaatsknop te publiceren.':'Deze browser kan alleen webm opnemen en Instagram wil mp4: download hem en plaats via de app, of haal hem even door CapCut.'}</div>`;
     $('#vo_gebruik').onclick=voGebruik;
     $('#vo_opnieuw2').onclick=()=>{VO={...VO,stand:VO.url?'klaar':'leeg'};voTekenen();};
     const alsnog=$('#vo_alsnog_stem');
     if(alsnog) alsnog.onclick=()=>{VO={...VO,stand:'leeg',blob:null,url:null,woorden:[]};voTekenen();};
+    /* Instagrams muziekbibliotheek bestaat alleen in de app zelf; de API kan
+       er niet bij. Voor een reel met IG-muziek (of trending audio) is de
+       kortste route: video downloaden, caption en hashtags op het klembord,
+       en in de app alleen nog het nummer kiezen. Deze knop doet dat in een
+       keer. */
+    const voorApp=$('#vo_voor_app');
+    if(voorApp) voorApp.onclick=()=>{
+      const a=document.createElement('a'); a.href=VO.video; a.download='reel-'+Date.now(); a.click();
+      const cap=($('#ct_caption')&&$('#ct_caption').value)||(CT.pakket&&CT.pakket.caption)||'';
+      const tags=CT.pakket?ctHashtags(CT.pakket.eerste_reactie):'';
+      ctKopieer(cap+(tags?'\n\n'+tags:''));
+      toast('Video gedownload en caption plus hashtags staan op je klembord. In de app: nieuwe reel, deze video, muziek kiezen, caption plakken.','ok');
+    };
   }
 }
 
