@@ -1038,7 +1038,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-bib-dicht';
+const APP_VERSIE='2026-08-29-bib-klik';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3478,14 +3478,8 @@ async function bibTekenen(){
     return;
   }
   if(!BIB.rijen.length){ grid.innerHTML='<span class="muted" style="font-size:13px;grid-column:1/-1">Nog leeg. Upload een eerste lading; vanaf je iPhone kies je zo vijftig beelden tegelijk.</span>'; return; }
-  grid.innerHTML=BIB.rijen.slice(0,60).map(r=>`
-    <div class="bib-item" data-bib="${r.id}" title="${esc(r.beschrijving||'nog niet getagd')}">
-      <img src="${bibThumb(r)}" loading="lazy" alt="">
-      ${r.score?`<span class="sc ${r.score>=8?'top':''}">${r.score}</span>`:'<span class="sc">…</span>'}
-      ${r.soort==='video'?'<span class="vid">▶</span>':''}
-      <div class="om">${esc((r.tags||[]).slice(0,3).join(' · ')||'wordt bekeken…')}</div>
-    </div>`).join('');
-  const onget=BIB.rijen.filter(r=>!r.getagd_at&&r.soort==='foto'||(!r.getagd_at&&r.thumb_path));
+  bibTekenenStil();
+  const onget=BIB.rijen.filter(r=>!r.getagd_at&&(r.soort==='foto'||r.thumb_path));
   if(onget.length) bibTaggen(onget);
 }
 
@@ -3559,13 +3553,33 @@ async function bibTaggen(rijen){
 function bibTekenenStil(){
   // hertekenen zonder opnieuw te gaan taggen (anders blijft hij rondzingen)
   const grid=$('#bib_grid'); if(!grid) return;
-  grid.innerHTML=BIB.rijen.slice(0,60).map(r=>`
+  grid.innerHTML=BIB.rijen.slice(0,120).map(r=>`
     <div class="bib-item" data-bib="${r.id}" title="${esc(r.beschrijving||'')}">
       <img src="${bibThumb(r)}" loading="lazy" alt="">
       ${r.score?`<span class="sc ${r.score>=8?'top':''}">${r.score}</span>`:''}
       ${r.soort==='video'?'<span class="vid">▶</span>':''}
+      <div class="kies">＋ in je post</div>
       <div class="om">${esc((r.tags||[]).slice(0,3).join(' · ')||'')}</div>
     </div>`).join('');
+  grid.querySelectorAll('[data-bib]').forEach(b=>b.onclick=()=>{
+    const r=BIB.rijen.find(x=>x.id===b.dataset.bib); if(r) bibGebruik(r);
+  });
+}
+
+/* Een bibliotheekbeeld in de huidige post zetten. Gedeeld door de kiezer
+   (bieb-knop) en de grid onderaan: overal waar je een beeld aanklikt doet hij
+   hetzelfde. Soort-bewaking zit hier: een video kan alleen in een reel, een
+   foto niet als b-roll. */
+function bibGebruik(r){
+  if(CT.soort==='reel'&&r.soort!=='video'){toast('Een reel heeft video nodig; deze foto kan in een post of carousel','err');return false;}
+  if(CT.soort!=='reel'&&r.soort==='video'){toast('Video kan alleen in een reel; wissel eerst van soort','err');return false;}
+  if(CT.soort!=='carousel') CT.media=[];
+  CT.media.push({path:r.path,type:r.soort==='video'?'video/mp4':'image/jpeg'});
+  sb.from('content_bibliotheek').update({laatst_gebruikt:new Date().toISOString()}).eq('id',r.id).then(()=>{});
+  ctMediaTekenen(); ctPreviewTekenen();
+  toast(CT.soort==='carousel'?`Toegevoegd (${CT.media.length} beelden)`:'Staat in je post','ok');
+  $('#ct_media').scrollIntoView({behavior:'smooth',block:'center'});
+  return true;
 }
 
 /* De kiezer in de maker: gesorteerd op wat bij deze post past. */
@@ -3607,14 +3621,9 @@ async function bibKiezer(){
       </div>
     </div>`);
   $('#bib_sluit').onclick=()=>$('#bib_paneel').remove();
-  document.querySelectorAll('[data-bibpak]').forEach(b=>b.onclick=async()=>{
+  document.querySelectorAll('[data-bibpak]').forEach(b=>b.onclick=()=>{
     const r=BIB.rijen.find(x=>x.id===b.dataset.bibpak); if(!r) return;
-    if(CT.soort!=='carousel') CT.media=[];
-    CT.media.push({path:r.path,type:r.soort==='video'?'video/mp4':'image/jpeg'});
-    sb.from('content_bibliotheek').update({laatst_gebruikt:new Date().toISOString()}).eq('id',r.id).then(()=>{});
-    ctMediaTekenen(); ctPreviewTekenen();
-    if(CT.soort!=='carousel') $('#bib_paneel').remove();
-    toast('Toegevoegd','ok');
+    if(bibGebruik(r)&&CT.soort!=='carousel') $('#bib_paneel').remove();
   });
 }
 
