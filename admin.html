@@ -1041,7 +1041,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-mic-uitleg';
+const APP_VERSIE='2026-08-29-onderwerp-leidend';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2840,7 +2840,7 @@ async function bcVerstuurWa(test){
    Een post is daarmee geen bereik maar een leadmachine, en comments zijn
    precies wat het algoritme het zwaarst beloont. */
 const CT_BUCKET='content-media';
-let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:null, project:'', doel:'comments', lijst:[], capOpen:false};
+let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:null, project:'', doel:'comments', lijst:[], capOpen:false, gesproken:false};
 
 /* De drie tekst-designs voor reels. De preview toont ze en de gekozen stijl
    wordt door de voice-over-render echt zo in de video gebakken. De namen en
@@ -3010,6 +3010,8 @@ async function renderContent(){
   $('#ct_genereer').onclick=ctGenereer;
   $('#ct_verras').onclick=ctVerrasMe;
   $('#ct_spreek').onclick=ctSpreek;
+  // handmatig typen heft de transcript-markering weer op
+  $('#ct_onderwerp').addEventListener('input',()=>{CT.gesproken=false;});
   $('#bib_upload').onclick=bibUpload;
   bibTekenen();
   $('#wk_plan').onclick=async()=>{
@@ -3121,7 +3123,7 @@ async function ctGenereer(){
     }
     const {data,error}=await sb.functions.invoke('content-maker',{body:{
       soort:CT.soort, onderwerp, project:CT.project||null, doel:CT.doel,
-      broll, aantal_media:CT.media.length}});
+      broll, gesproken:CT.gesproken||false, aantal_media:CT.media.length}});
     if(error||!data||data.ok===false){
       $('#ct_status').innerHTML=`<span class="err">${esc((data&&data.reden)||(error&&error.message)||'mislukt')}</span>`;return;
     }
@@ -3825,7 +3827,7 @@ function ctSpreek(){
     if(e.error!=='no-speech'&&e.error!=='aborted') toast(uitleg[e.error]||('Opname-fout: '+e.error),'err');
   };
   sr.onend=()=>{
-    clearInterval(klok); CT_SPREEK=null;
+    clearInterval(klok); CT_SPREEK=null; CT.gesproken=true;
     knop.textContent='🎙 Spreek in'; tijd.style.display='none';
     if(ta.value.trim().length>=10){
       $('#ct_spreekhint').textContent='Opgenomen. Het pakket wordt gemaakt…';
