@@ -512,6 +512,10 @@
   .ig-reelhud .zij svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block;margin:0 auto 3px}
   .ig-hooktekst{position:absolute;top:16%;left:14px;right:14px;text-align:center;color:#fff;
                 font-weight:800;font-size:15px;line-height:1.35;text-shadow:0 1px 10px rgba(0,0,0,.75)}
+  .ig-hooktekst.blok{text-shadow:none}
+  .ig-hooktekst.blok i{font-style:normal;background:#fff;color:#111;padding:3px 8px;border-radius:6px;
+                       -webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.75}
+  .ig-hooktekst.accent b{color:#FFE234;font-weight:800}
   /* Weekagenda: elke dag een post, vandaag uitgelicht */
   .wk-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:4px 0 10px}
   @media(max-width:900px){.wk-strip{grid-template-columns:repeat(2,1fr)}}
@@ -1014,7 +1018,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-weekplan';
+const APP_VERSIE='2026-08-29-stijlen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2802,7 +2806,18 @@ async function bcVerstuurWa(test){
    Een post is daarmee geen bereik maar een leadmachine, en comments zijn
    precies wat het algoritme het zwaarst beloont. */
 const CT_BUCKET='content-media';
-let CT={soort:'reel', media:[], pakket:null, hookKeus:0, postId:null, project:'', doel:'comments', lijst:[]};
+let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:null, project:'', doel:'comments', lijst:[]};
+
+/* De drie tekst-designs voor reels. De preview toont ze en de gekozen stijl
+   wordt door de voice-over-render echt zo in de video gebakken. De namen en
+   vormen komen uit wat op Instagram zelf gangbaar is: de strakke witte
+   overlay, het witte tekstblok van de Instagram-teksttool, en de
+   accentstijl met opgelichte woorden die finance-reels domineren. */
+const CT_STIJLEN=[
+  {key:'wit',    naam:'Strak wit',  uitleg:'Witte bold tekst met schaduw, gecentreerd'},
+  {key:'blok',   naam:'Tekstblok',  uitleg:'Witte blokken achter de tekst, zoals de Instagram-teksttool'},
+  {key:'accent', naam:'Accent',     uitleg:'Wit met geel opgelichte kernwoorden, de finance-reelstijl'},
+];
 
 const ctPubliek=pad=>{try{return sb.storage.from(CT_BUCKET).getPublicUrl(pad).data.publicUrl;}catch(e){return '';}};
 
@@ -3098,7 +3113,7 @@ async function ctVerbeter(){
   if(!CT.pakket){toast('Maak eerst een pakket','err');return;}
   const knop=$('#ct_verbeter'); knop.disabled=true; knop.textContent='Bezig…';
   try{
-    const huidig={...CT.pakket, caption:($('#ct_caption')&&$('#ct_caption').value)||CT.pakket.caption};
+    const huidig={...CT.pakket, stijl:CT.stijl, caption:($('#ct_caption')&&$('#ct_caption').value)||CT.pakket.caption};
     const {data,error}=await sb.functions.invoke('content-maker',{body:{
       soort:CT.soort, onderwerp:$('#ct_onderwerp').value.trim(), project:CT.project||null,
       doel:CT.doel, aantal_media:CT.media.length, feedback, huidig}});
@@ -3139,17 +3154,27 @@ function ctPreviewTekenen(){
   const icDeel='<svg viewBox="0 0 24 24"><path d="M21 3 9.4 13.3M21 3l-6.9 18-4.7-7.7L2 9.9 21 3z"/></svg>';
   const icBewaar='<svg viewBox="0 0 24 24"><path d="M19 21 12 16.5 5 21V4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5V21z"/></svg>';
 
-  const kaart=(hook,i)=>{
+  // Bij een reel: de gekozen hook in drie tekst-designs; de gekozen stijl
+  // wordt bij de voice-over echt zo in de video gebakken. Accentstijl: de
+  // woorden met cijfers of kernbegrippen lichten op.
+  const accentWoord=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
+  const hookOpmaak=(hook,stijl)=>{
+    if(stijl==='blok') return `<i>${esc(hook)}</i>`;
+    if(stijl==='accent') return hook.split(' ').map(w=>accentWoord(w)?`<b>${esc(w)}</b>`:esc(w)).join(' ');
+    return esc(hook);
+  };
+  const kaart=(hook,i,stijl)=>{
     // Elke variant: de hook als regel 1, de rest van de caption blijft gelijk
     const regels=basisCap.split('\n'); regels[0]=hook; const cap=regels.join('\n');
     const kort=cap.length>110?cap.slice(0,110).replace(/\s+\S*$/,''):cap;
 
     if(CT.soort==='reel'){
-      return `<div class="ig-kaart ${i===CT.hookKeus?'on':''}" data-igkeuze="${i}">
-        <div class="keuze"><span>Optie ${i+1}</span><span>${i===CT.hookKeus?'✓ gekozen':'klik om te kiezen'}</span></div>
+      const st=CT_STIJLEN[i];
+      return `<div class="ig-kaart ${st.key===CT.stijl?'on':''}" data-igstijl="${st.key}">
+        <div class="keuze"><span>${esc(st.naam)}</span><span>${st.key===CT.stijl?'✓ gekozen':'klik om te kiezen'}</span></div>
         <div class="ig-frame reel"><div class="ig-media">
           ${beeld}
-          <div class="ig-hooktekst">${esc(hook)}</div>
+          <div class="ig-hooktekst ${st.key}">${hookOpmaak(hook,st.key)}</div>
           <div class="ig-reelhud">
             <div class="onder">
               <div class="wie"><span class="ig-avatar"><i>S</i></span> stevenbalivillas <span class="volg">Volgen</span></div>
@@ -3180,7 +3205,15 @@ function ctPreviewTekenen(){
     </div>`;
   };
 
-  vak.innerHTML=`<div class="ig-rij">${hooks.map(kaart).join('')}</div>`;
+  const gekozenHook=hooks[Math.min(CT.hookKeus,hooks.length-1)]||hooks[0];
+  vak.innerHTML=`<div class="ig-rij">${CT.soort==='reel'
+    ? CT_STIJLEN.map((st,i)=>kaart(gekozenHook,i)).join('')
+    : hooks.map((h,i)=>kaart(h,i)).join('')}</div>`;
+  vak.querySelectorAll('[data-igstijl]').forEach(k=>k.onclick=()=>{
+    CT.stijl=k.dataset.igstijl;
+    if(CT.pakket) CT.pakket.stijl=CT.stijl;
+    ctPreviewTekenen();
+  });
   vak.querySelectorAll('[data-igkeuze]').forEach(k=>k.onclick=()=>{
     CT.hookKeus=Number(k.dataset.igkeuze);
     const ta=$('#ct_caption');
@@ -3190,7 +3223,7 @@ function ctPreviewTekenen(){
   });
 
   $('#ct_previewhint').innerHTML = (CT.soort==='reel'
-    ? 'Klik de variant die je wilt; de hook wordt regel 1 van je caption en de overlay. De cijfers en de knoppen zijn decor, zodat je hem ziet zoals een volger. Let op: de API plaatst je video zoals geupload, dus zet de overlay-tekst er eerst op in CapCut of de Instagram-editor.'
+    ? 'Drie tekst-designs met je gekozen hook (wissel de hook met de knoppen hierboven). Kies een stijl en de voice-over-video wordt precies zo gebakken; zet je de tekst zelf in CapCut, gebruik hem dan als voorbeeld. De cijfers en knoppen zijn decor.'
     : 'Klik de variant die je wilt; de hook wordt regel 1 van je caption. De cijfers en de knoppen zijn decor, zodat je hem ziet zoals een volger hem in de app ziet.');
   const ta=$('#ct_caption');
   if(ta&&!ta.dataset.previewkoppeling){ta.dataset.previewkoppeling='1';let t;ta.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(ctPreviewTekenen,400);});}
@@ -3454,17 +3487,36 @@ async function voRender(){
         const woorden=hit.b, van=woorden[0].t||0;
         const tot=(woorden[woorden.length-1].t??duur)+0.35;
         if(t<=tot){
-          ctx.textAlign='center'; ctx.font='700 64px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
-          ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=18; ctx.lineWidth=8;
+          // in de stijl die in de preview gekozen is
+          const stijl=CT.stijl||'wit';
+          ctx.font='700 64px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
           const y=1490;
-          // het woord dat NU klinkt licht op, de rest van de brok staat er wit
-          let x=540-woorden.reduce((a,w)=>a+ctx.measureText(w.w+' ').width,0)/2;
-          ctx.textAlign='left';
-          for(const w of woorden){
-            ctx.fillStyle=(t>=(w.t||0))?'#7ef0b2':'#ffffff';
-            ctx.strokeStyle='rgba(0,0,0,.45)';
-            ctx.strokeText(w.w,x,y); ctx.fillText(w.w,x,y);
-            x+=ctx.measureText(w.w+' ').width;
+          const breed=woorden.reduce((a,w)=>a+ctx.measureText(w.w+' ').width,0);
+          let x=540-breed/2;
+          if(stijl==='blok'){
+            ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+            const pad=22, hgt=92;
+            ctx.fillStyle='#ffffff';
+            const r=14, bx=x-pad, bw=breed+pad*2;
+            ctx.beginPath(); ctx.roundRect(bx,y-66,bw,hgt,r); ctx.fill();
+            for(const w of woorden){
+              ctx.fillStyle=(t>=(w.t||0))?'#111111':'#8a8a8a';
+              ctx.fillText(w.w,x,y); x+=ctx.measureText(w.w+' ').width;
+            }
+          }else{
+            ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=18; ctx.lineWidth=8;
+            const accent=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
+            for(const w of woorden){
+              const gezegd=t>=(w.t||0);
+              ctx.fillStyle = stijl==='accent'
+                ? (accent(w.w)?'#FFE234':'#ffffff')
+                : '#ffffff';
+              ctx.globalAlpha = gezegd?1:0.55;
+              ctx.strokeStyle='rgba(0,0,0,.45)';
+              ctx.strokeText(w.w,x,y); ctx.fillText(w.w,x,y);
+              x+=ctx.measureText(w.w+' ').width;
+            }
+            ctx.globalAlpha=1;
           }
         }
       }
@@ -3546,7 +3598,7 @@ async function ctOpslaan(status){
   const {data,error}=await sb.rpc('content_post_opslaan',{
     p_id:CT.postId, p_soort:CT.soort, p_onderwerp:$('#ct_onderwerp').value.trim()||null,
     p_project:CT.project||null, p_doel:CT.doel, p_media:CT.media,
-    p_pakket:CT.pakket, p_caption:($('#ct_caption')&&$('#ct_caption').value)||null,
+    p_pakket:CT.pakket?{...CT.pakket,stijl:CT.stijl}:null, p_caption:($('#ct_caption')&&$('#ct_caption').value)||null,
     p_status:status||null});
   if(error){toast('Opslaan mislukt: '+error.message,'err');return;}
   CT.postId=data.id;
@@ -3572,6 +3624,7 @@ async function ctLijstLaden(){
     const p=CT.lijst.find(x=>x.id===b.dataset.open); if(!p) return;
     CT.soort=p.soort; CT.postId=p.id; CT.media=Array.isArray(p.media)?p.media:[];
     CT.project=p.project||''; CT.doel=p.doel||'comments'; CT.pakket=p.pakket||null;
+    CT.stijl=(p.pakket&&p.pakket.stijl)||'wit';
     $('#ct_onderwerp').value=p.onderwerp||'';
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
