@@ -1041,7 +1041,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-bak-origineel';
+const APP_VERSIE='2026-08-29-cleaner';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2926,10 +2926,11 @@ async function renderContent(){
 
     <div class="field bc-buiten">
       <label>Wat maak je?</label>
-      <div class="bc-rij">
-        <button class="seq-dbtn" data-ctsoort="reel">🎬 Reel (B-roll)</button>
-        <button class="seq-dbtn" data-ctsoort="carousel">🖼 Carousel</button>
-        <button class="seq-dbtn" data-ctsoort="post">📷 Post</button>
+      <div class="bc-rij" id="ct_soortrij">
+        <button class="seq-dbtn" data-ctsoort="reel">🎬 Reel</button>
+        <button class="seq-dbtn ct-extra" data-ctsoort="carousel" style="display:none">🖼 Carousel</button>
+        <button class="seq-dbtn ct-extra" data-ctsoort="post" style="display:none">📷 Post</button>
+        <button class="bc-chip" id="ct_meersoorten" title="Ook een carousel of losse post maken">＋</button>
       </div>
     </div>
 
@@ -2959,7 +2960,7 @@ async function renderContent(){
     </div>
 
     <div class="bc-acties">
-      <button class="btn btn-primary btn-sm" id="ct_genereer">✨ Maak het pakket</button>
+      <button class="btn btn-primary btn-sm" id="ct_genereer">✨ Genereer preview</button>
       <span class="muted" id="ct_status" style="font-size:13px;align-self:center"></span>
     </div>
 
@@ -2981,15 +2982,27 @@ async function renderContent(){
     </div>
 
     <div class="bc-buiten" style="padding-bottom:18px">
-      <div class="bc-lab" style="margin-top:8px">Eerdere posts</div>
-      <div class="ct-lijst" id="ct_lijst"><span class="muted" style="font-size:13px">Laden…</span></div>
+      <details id="ct_lijst_details">
+        <summary class="bc-lab" style="margin-top:8px;cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none">
+          <span>Concepten en eerdere posts <span id="ct_lijst_teller" style="font-weight:400"></span></span>
+          <span class="bc-zoekactie" style="text-transform:none">bekijken</span>
+        </summary>
+        <div class="ct-lijst" id="ct_lijst"><span class="muted" style="font-size:13px">Laden…</span></div>
+      </details>
     </div>
   </div>`;
 
   document.querySelectorAll('[data-ctsoort]').forEach(b=>b.onclick=()=>{
-    CT.soort=b.dataset.ctsoort; CT.pakket=null; CT.postId=null; $('#ct_pakket').style.display='none';
+    CT.soort=b.dataset.ctsoort; CT.pakket=null; CT.postId=null; CT.mediaOrigineel=null; $('#ct_pakket').style.display='none';
     ctTeken();
   });
+  // Reels zijn de standaard; carousel en post zitten achter het plusje zodat
+  // het startscherm schoon blijft.
+  $('#ct_meersoorten').onclick=()=>{
+    const uit=document.querySelector('.ct-extra').style.display==='none';
+    document.querySelectorAll('.ct-extra').forEach(x=>x.style.display=uit?'':'none');
+    $('#ct_meersoorten').textContent=uit?'−':'＋';
+  };
   document.querySelectorAll('[data-ctproject]').forEach(b=>b.onclick=()=>{
     CT.project=b.dataset.ctproject;
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x===b));
@@ -3031,6 +3044,8 @@ async function renderContent(){
 
 function ctTeken(){
   document.querySelectorAll('[data-ctsoort]').forEach(x=>x.classList.toggle('on',x.dataset.ctsoort===CT.soort));
+  if(CT.soort!=='reel'){ document.querySelectorAll('.ct-extra').forEach(x=>x.style.display='');
+    const pm=$('#ct_meersoorten'); if(pm) pm.textContent='−'; }
   const wa=CT.soort;
   $('#ct_medialabel').textContent = wa==='reel'?'Je B-roll (video)':wa==='carousel'?'Je afbeeldingen, in volgorde':'Je foto';
   $('#ct_onderwerplabel').textContent = wa==='reel'?'Waar gaat de reel over?':'Waar gaat de post over?';
@@ -3173,9 +3188,13 @@ function ctPakketTekenen(){
 
 
     ${(pk.overlays&&pk.overlays.length)?`<div class="ct-vak">
-      ${kop('Overlay-script voor op de b-roll','overlays','x')}
+      ${kop('Tekst in beeld tijdens de reel','overlays','x')}
       ${pk.overlays.map(o=>`<div class="ct-regel"><span class="t">${esc(o.tijd||'')}</span><span>${esc(o.tekst||'')}</span></div>`).join('')}
-      <div class="bc-hint">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>
+      <div class="bc-hint">Dit ziet de kijker in beeld terwijl de reel speelt, regel voor regel op het aangegeven moment. Je hoeft hier niets voor in te spreken: de knop hieronder bakt deze tekst automatisch in je b-roll, met je muziek eronder als die klaarstaat. Spreek je in het audio-vak wel een voice-over in, dan vervalt dit script en loopt je eigen gesproken tekst als ondertiteling mee. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
+      <div class="vo-knoppen" style="margin-top:6px">
+        <button class="btn btn-primary btn-sm" id="ct_overlaybak">🎬 Bak deze tekst in de video</button>
+      </div>
+      <div class="bc-hint" style="margin-top:4px">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>
     </div>`:''}
 
     ${(pk.slides&&pk.slides.length)?`<div class="ct-vak">
@@ -3248,6 +3267,13 @@ function ctPakketTekenen(){
       : '';
     ctKopieer(tekst, b);
   });
+  const ob=$('#ct_overlaybak');
+  if(ob) ob.onclick=async()=>{
+    if(!CT.media.length){toast('Kies eerst je b-roll','err');return;}
+    ob.disabled=true;
+    try{ await voRender(true); if(VO.stand==='video'){ await voGebruik(); } }
+    finally{ ob.disabled=false; }
+  };
   $('#ct_klaar').onclick=()=>ctOpslaan('klaar');
   $('#ct_gepost').onclick=()=>ctOpslaan('gepost');
   $('#ct_opnieuw').onclick=ctGenereer;
@@ -4525,6 +4551,9 @@ async function ctLijstLaden(){
   // De geplande dagen staan al in de weekstrip bovenaan; hier alleen wat echt
   // gemaakt of gepost is, anders staat alles er dubbel.
   const gemaakt=data.filter(p=>p.status!=='gepland');
+  const teller=$('#ct_lijst_teller');
+  if(teller){ const fv=gemaakt.filter(p=>p.favoriet).length;
+    teller.textContent=`(${gemaakt.length}${fv?`, ⭐ ${fv}`:''})`; }
   if(!gemaakt.length){vak.innerHTML='<span class="muted" style="font-size:13px">Nog geen posts. Je eerste pakket verschijnt hier.</span>';return;}
   const rij=p=>`
     <div class="ct-item" data-open="${p.id}">
