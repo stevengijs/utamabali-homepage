@@ -1069,7 +1069,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-cta-exact';
+const APP_VERSIE='2026-08-29-cta-stijl';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2868,7 +2868,7 @@ async function bcVerstuurWa(test){
    Een post is daarmee geen bereik maar een leadmachine, en comments zijn
    precies wat het algoritme het zwaarst beloont. */
 const CT_BUCKET='content-media';
-let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:null, project:'', doel:'comments', lijst:[], capOpen:false, gesproken:false, trim:null, ctaOverlay:{tekst:'',na:3.5}};
+let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:null, project:'', doel:'comments', lijst:[], capOpen:false, gesproken:false, trim:null, ctaOverlay:{tekst:'',na:3.5,stijl:'zwartblok',vet:true}};
 
 /* De drie tekst-designs voor reels. De preview toont ze en de gekozen stijl
    wordt door de voice-over-render echt zo in de video gebakken. De namen en
@@ -3256,6 +3256,10 @@ function ctPakketTekenen(){
         <label class="muted" style="font-size:12.5px;display:flex;align-items:center;gap:6px">na
           <input id="ct_cta_na" type="number" min="0" max="60" step="0.5" value="${(CT.ctaOverlay&&CT.ctaOverlay.na)??3.5}" style="width:64px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">s</label>
       </div>
+      <div class="bc-rij" style="margin-top:6px">
+        ${[['zwartblok','Wit op zwart'],['witblok','Zwart op wit'],['wit','Wit los'],['zwart','Zwart los']].map(([k,n])=>`<button class="bc-chip ${(CT.ctaOverlay&&CT.ctaOverlay.stijl)===k?'on':''}" data-ctastijl="${k}">${n}</button>`).join('')}
+        <button class="bc-chip ${CT.ctaOverlay&&CT.ctaOverlay.vet?'on':''}" data-ctavet="1" style="font-weight:800">B vet</button>
+      </div>
       <div class="bc-hint">Komt in de gebakken reel onder de hook in beeld vanaf het gekozen moment (3 a 4 seconden werkt het best: eerst leest de kijker de hook) en blijft tot het einde staan.</div>`:''}
     </div>
 
@@ -3415,12 +3419,23 @@ function ctPakketTekenen(){
   $('#ct_verbeter').onclick=ctVerbeter;
   const ctaT=$('#ct_cta_tekst'), ctaN=$('#ct_cta_na');
   if(ctaT){ let tt;
-    const ctaBewaar=()=>{ CT.ctaOverlay={tekst:ctaT.value.trim(), na:Math.max(0,parseFloat(ctaN.value)||0)};
+    const ctaBewaar=()=>{ CT.ctaOverlay={...CT.ctaOverlay, tekst:ctaT.value.trim(), na:Math.max(0,parseFloat(ctaN.value)||0)};
       if(CT.pakket) CT.pakket.cta_overlay=CT.ctaOverlay;
       ctPreviewTekenen();
       clearTimeout(tt); tt=setTimeout(()=>{if(CT.postId)ctOpslaan(null);},800); };
     ctaT.addEventListener('input',ctaBewaar);
     ctaN.addEventListener('input',ctaBewaar);
+    document.querySelectorAll('[data-ctastijl]').forEach(b=>b.onclick=()=>{
+      CT.ctaOverlay.stijl=b.dataset.ctastijl;
+      document.querySelectorAll('[data-ctastijl]').forEach(x=>x.classList.toggle('on',x===b));
+      ctaBewaar();
+    });
+    const vetKnop=document.querySelector('[data-ctavet]');
+    if(vetKnop) vetKnop.onclick=()=>{
+      CT.ctaOverlay.vet=!CT.ctaOverlay.vet;
+      vetKnop.classList.toggle('on',CT.ctaOverlay.vet);
+      ctaBewaar();
+    };
   }
   const bakKnop=$('#ct_slides_bakken');
   if(bakKnop) bakKnop.onclick=ctSlidesBakken;
@@ -3535,7 +3550,11 @@ function ctPreviewTekenen(){
         <div class="ig-frame reel"><div class="ig-media">
           ${beeld}
           <div class="ig-hooktekst ${st.key}">${hookOpmaak(hook,st.key)}
-            ${CT.ctaOverlay&&CT.ctaOverlay.tekst?`<div style="font-size:10.5px;font-weight:600;margin-top:7px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.65);letter-spacing:0;opacity:0;animation:ctaIn .4s ease ${(CT.ctaOverlay.na||0)}s forwards">${esc(CT.ctaOverlay.tekst)}</div>`:''}
+            ${CT.ctaOverlay&&CT.ctaOverlay.tekst?(()=>{const cs=CT.ctaOverlay.stijl||'zwartblok';
+              const basis=`font-size:10.5px;font-weight:${CT.ctaOverlay.vet?700:400};margin-top:7px;letter-spacing:0;opacity:0;animation:ctaIn .4s ease ${(CT.ctaOverlay.na||0)}s forwards;`;
+              const per={zwartblok:'color:#fff;text-shadow:none;',witblok:'color:#111;text-shadow:none;',wit:'color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.65);',zwart:'color:#111;text-shadow:0 1px 3px rgba(255,255,255,.55);'}[cs];
+              const pill=cs==='zwartblok'?'<span style="background:rgba(0,0,0,.85);padding:3px 10px;border-radius:7px;display:inline-block">':cs==='witblok'?'<span style="background:#fff;padding:3px 10px;border-radius:7px;display:inline-block">':'<span>';
+              return `<div style="${basis}${per}">${pill}${esc(CT.ctaOverlay.tekst)}</span></div>`;})():''}
           </div>
           <div class="ig-reelhud">
             <div class="onder">
@@ -4970,12 +4989,22 @@ async function voRender(alleenMuziek){
       // De CTA in beeld: onder de hookzone, vanaf het gekozen moment tot het
       // einde, zodat de kijker eerst de hook leest en dan de vervolgstap ziet.
       if(CT.ctaOverlay&&CT.ctaOverlay.tekst&&t>=(CT.ctaOverlay.na||0)){
-        ctx.font='600 42px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        const cs=CT.ctaOverlay.stijl||'zwartblok';
+        ctx.font=`${CT.ctaOverlay.vet?700:400} 42px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif`;
         ctx.textAlign='left';
-        ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=8; ctx.shadowOffsetY=2;
         const ctaB=ctx.measureText(CT.ctaOverlay.tekst).width;
-        ctx.fillStyle='#ffffff';
-        ctx.fillText(CT.ctaOverlay.tekst,540-ctaB/2,510);
+        const cx=540-ctaB/2, cy=510;
+        if(cs==='zwartblok'||cs==='witblok'){
+          ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+          ctx.fillStyle=cs==='zwartblok'?'rgba(0,0,0,.85)':'#ffffff';
+          ctx.beginPath(); ctx.roundRect(cx-18,cy-40,ctaB+36,58,12); ctx.fill();
+          ctx.fillStyle=cs==='zwartblok'?'#ffffff':'#111111';
+        }else{
+          if(cs==='wit'){ ctx.shadowColor='rgba(0,0,0,.6)'; ctx.fillStyle='#ffffff'; }
+          else { ctx.shadowColor='rgba(255,255,255,.55)'; ctx.fillStyle='#111111'; }
+          ctx.shadowBlur=8; ctx.shadowOffsetY=2;
+        }
+        ctx.fillText(CT.ctaOverlay.tekst,cx,cy);
         ctx.shadowBlur=0; ctx.shadowOffsetY=0;
       }
       const hit=brokVoor(t);
@@ -5192,7 +5221,9 @@ async function ctLijstLaden(){
     CT.stijl=(p.pakket&&p.pakket.stijl)||'wit';
     CT.mediaOrigineel=(p.pakket&&p.pakket.media_origineel)||null;
     CT.trim=(p.pakket&&p.pakket.trim)||null;
-    CT.ctaOverlay=(p.pakket&&p.pakket.cta_overlay)||{tekst:'',na:3.5};
+    CT.ctaOverlay=(p.pakket&&p.pakket.cta_overlay)||{tekst:'',na:3.5,stijl:'zwartblok',vet:true};
+    if(!CT.ctaOverlay.stijl) CT.ctaOverlay.stijl='zwartblok';
+    if(CT.ctaOverlay.vet===undefined) CT.ctaOverlay.vet=true;
     CT_OPMAAK=(p.pakket&&p.pakket.opmaak)||{...(CT_STIJLEN.find(x=>x.key===CT.stijl)||CT_STIJLEN[0]).opmaak,font:'klassiek'};
     $('#ct_onderwerp').value=p.onderwerp||'';
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
