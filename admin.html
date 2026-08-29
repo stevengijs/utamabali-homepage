@@ -1041,7 +1041,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-cleaner';
+const APP_VERSIE='2026-08-29-audio-vindbaar';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3075,13 +3075,25 @@ function ctMediaTekenen(){
       // al iets, dan is de actie vervangen, geen toevoegen. Alleen een
       // carousel stapelt echt.
       const vol=CT.soort!=='carousel'&&CT.media.length>0;
+      // Is er gebakken (tekst in het beeld) en wijkt de actieve media af van
+      // het origineel, dan kan dat met een klik ongedaan: de originelen staan
+      // bewaard, dus bakken is nooit een reden om opnieuw te beginnen.
+      const gebakken=CT.mediaOrigineel&&CT.mediaOrigineel.length&&
+        JSON.stringify(CT.media.map(m=>m.path))!==JSON.stringify(CT.mediaOrigineel.map(m=>m.path));
       return `<button class="ct-upload" id="ct_upload" title="${vol?'Vervangt de huidige':'Media toevoegen'}" style="font-size:${vol?'13px':'26px'}">${vol?'↺<br>vervang':'+'}</button>
-     <button class="ct-upload" id="ct_bib_kies" title="${vol?'Vervangen uit de bibliotheek':'Kies uit de bibliotheek'}" style="font-size:13px;line-height:1.4">📚<br>${vol?'vervang<br>uit bieb':'bieb'}</button>`;
+     <button class="ct-upload" id="ct_bib_kies" title="${vol?'Vervangen uit de bibliotheek':'Kies uit de bibliotheek'}" style="font-size:13px;line-height:1.4">📚<br>${vol?'vervang<br>uit bieb':'bieb'}</button>
+     ${gebakken?`<button class="ct-upload" id="ct_terug_origineel" title="De gebakken tekst eraf: terug naar je schone beeld" style="font-size:13px;line-height:1.4">🧽<br>tekst eraf</button>`:''}`;
     })();
   vak.querySelectorAll('[data-weg]').forEach(b=>b.onclick=()=>{CT.media.splice(Number(b.dataset.weg),1);ctMediaTekenen();ctPreviewTekenen();});
   // Volgorde schuiven: de nummers en de slide-teksten volgen de nieuwe
   // volgorde vanzelf, want die zijn positioneel (slide 1 = eerste afbeelding).
   const bk=$('#ct_bib_kies'); if(bk) bk.onclick=()=>bibKiezer();
+  const tr=$('#ct_terug_origineel'); if(tr) tr.onclick=async()=>{
+    CT.media=[...CT.mediaOrigineel];
+    await ctOpslaan(null);
+    ctMediaTekenen(); ctPreviewTekenen();
+    toast('De schone originelen staan terug; de gebakken versie is losgekoppeld','ok');
+  };
   vak.querySelectorAll('[data-schuif]').forEach(b=>b.onclick=()=>{
     const [i,r]=b.dataset.schuif.split(':').map(Number);
     const j=i+r; if(j<0||j>=CT.media.length) return;
@@ -3190,7 +3202,7 @@ function ctPakketTekenen(){
     ${(pk.overlays&&pk.overlays.length)?`<div class="ct-vak">
       ${kop('Tekst in beeld tijdens de reel','overlays','x')}
       ${pk.overlays.map(o=>`<div class="ct-regel"><span class="t">${esc(o.tijd||'')}</span><span>${esc(o.tekst||'')}</span></div>`).join('')}
-      <div class="bc-hint">Dit ziet de kijker in beeld terwijl de reel speelt, regel voor regel op het aangegeven moment. Je hoeft hier niets voor in te spreken: de knop hieronder bakt deze tekst automatisch in je b-roll, met je muziek eronder als die klaarstaat. Spreek je in het audio-vak wel een voice-over in, dan vervalt dit script en loopt je eigen gesproken tekst als ondertiteling mee. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
+      <div class="bc-hint">Dit ziet de kijker in beeld terwijl de reel speelt, regel voor regel op het aangegeven moment. Je hoeft hier niets voor in te spreken: de knop hieronder bakt deze tekst automatisch in je b-roll, met je muziek eronder als die klaarstaat. Wil je liever je eigen stem eronder: scrol naar het vak <b>Audio: voice-over en muziek</b> hieronder en klik <b>🎙 Neem voice-over op</b>; je leest gewoon de caption voor, en dan vervalt dit script en loopt je gesproken tekst als ondertiteling mee, exact op je stem. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
       <div class="vo-knoppen" style="margin-top:6px">
         <button class="btn btn-primary btn-sm" id="ct_overlaybak">🎬 Bak deze tekst in de video</button>
       </div>
@@ -4183,10 +4195,13 @@ function voTekenen(){
         <button class="btn btn-primary btn-sm" id="vo_gebruik">✓ Gebruik als reel-video</button>
         <a class="btn btn-ghost btn-sm" href="${VO.video}" download="reel-voiceover">⬇ Download</a>
         <button class="btn btn-ghost btn-sm" id="vo_opnieuw2">↻ Opnieuw</button>
+        <button class="btn btn-ghost btn-sm" id="vo_alsnog_stem">🎙 Alsnog voice-over inspreken</button>
       </div>
       <div class="bc-hint">${VO.mime.includes('mp4')?'MP4, klaar om direct via de plaatsknop te publiceren.':'Deze browser kan alleen webm opnemen en Instagram wil mp4: download hem en plaats via de app, of haal hem even door CapCut.'}</div>`;
     $('#vo_gebruik').onclick=voGebruik;
-    $('#vo_opnieuw2').onclick=()=>{VO={...VO,stand:'klaar'};voTekenen();};
+    $('#vo_opnieuw2').onclick=()=>{VO={...VO,stand:VO.url?'klaar':'leeg'};voTekenen();};
+    const alsnog=$('#vo_alsnog_stem');
+    if(alsnog) alsnog.onclick=()=>{VO={...VO,stand:'leeg',blob:null,url:null,woorden:[]};voTekenen();};
   }
 }
 
@@ -4293,7 +4308,9 @@ function voTijdenAanvullen(){
    browser dat kan; anders webm, en dan zegt de UI eerlijk dat Instagram mp4
    wil. */
 async function voRender(alleenMuziek){
-  const m0=CT.media[0];
+  // Altijd vanaf het schone origineel bakken: na een eerdere bak staat de
+  // gebakken video in CT.media en zou een nieuwe ronde tekst over tekst zetten.
+  const m0=(CT.mediaOrigineel&&CT.mediaOrigineel[0])||CT.media[0];
   const isVideo=/\.(mp4|mov|webm|m4v)$/i.test(m0.path)||String(m0.type||'').startsWith('video');
   const metStem=!alleenMuziek&&!!VO.url;
   const heeftOverlays=CT.pakket&&Array.isArray(CT.pakket.overlays)&&CT.pakket.overlays.length>0;
@@ -4316,10 +4333,12 @@ async function voRender(alleenMuziek){
       duur=isFinite(stem.duration)&&stem.duration>0?stem.duration:VO.duur;
     }else{
       duur=isVideo?Math.min(bron.duration||15,60):15;
-      if(!isVideo&&heeftOverlays){
+      if(heeftOverlays){
+        // De video moet het hele script dragen; is de b-roll korter, dan
+        // loopt hij door (loop staat aan) tot de laatste regel is geweest.
         const eind=Math.max(...CT.pakket.overlays.map(o=>{
           const m=String(o.tijd||'').match(/-\s*([\d.]+)/); return m?parseFloat(m[1]):0; }));
-        if(eind>3) duur=Math.min(eind+0.6,60);
+        if(eind>3) duur=Math.min(Math.max(duur,eind+0.6),60);
       }
     }
 
@@ -4366,11 +4385,14 @@ async function voRender(alleenMuziek){
     const brokVoor=t=>{ for(let i=brokken.length-1;i>=0;i--){ const b=brokken[i];
         if(t>=(b[0].t||0)) return {b,i}; } return null; };
 
-    // De klok is leidend, niet stem.currentTime: dan werkt dezelfde tekenlus
-    // ook zonder stem (alleen muziek).
-    const start=performance.now();
+    // De klok start pas als video, audio en recorder echt lopen; eerder
+    // startte hij voor het bufferen van de video en dan waren de eerste
+    // seconden van het script al 'voorbij' voordat er een frame getekend was
+    // (de bug waardoor alleen de laatste regel in beeld kwam). Met een stem
+    // volgt hij bovendien de stemklok, die is exact.
+    let start=performance.now();
     const teken=()=>{
-      const t=(performance.now()-start)/1000;
+      const t=(metStem&&stem)?stem.currentTime:(performance.now()-start)/1000;
       const bw=isVideo?bron.videoWidth:bron.naturalWidth, bh=isVideo?bron.videoHeight:bron.naturalHeight;
       const sch=Math.max(1080/bw,1920/bh);
       ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1920);
@@ -4460,6 +4482,7 @@ async function voRender(alleenMuziek){
     await ac.resume(); opn.start(500);
     if(stem) await stem.play();
     if(muziek) await muziek.play();
+    start=performance.now();
     requestAnimationFrame(teken);
     await new Promise(ok=>setTimeout(ok,(duur+0.4)*1000));
     if(isVideo) bron.pause();
@@ -4477,6 +4500,10 @@ async function voRender(alleenMuziek){
 }
 
 async function voGebruik(){
+  if(!CT.mediaOrigineel||!CT.mediaOrigineel.length){
+    CT.mediaOrigineel=[...CT.media];
+    if(CT.pakket) CT.pakket.media_origineel=CT.mediaOrigineel;
+  }
   const ext=VO.mime.includes('mp4')?'mp4':'webm';
   const pad=`reel/voiceover-${Date.now()}.${ext}`;
   toast('Video uploaden…','ok');
