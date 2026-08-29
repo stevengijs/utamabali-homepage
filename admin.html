@@ -1018,7 +1018,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-stijlen';
+const APP_VERSIE='2026-08-29-muziek';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3060,7 +3060,7 @@ function ctPakketTekenen(){
     </div>
 
     ${CT.soort==='reel'?`<div class="ct-vak" style="grid-column:1/-1">
-      ${kop('Voice-over (spreek je caption in, de tekst loopt mee in beeld)')}
+      ${kop('Audio: voice-over en muziek')}
       <div id="ct_voice"></div>
     </div>`:''}
 
@@ -3288,7 +3288,8 @@ async function wkTekenen(){
    slecht), dan verdelen we de woorden naar rato van hun lengte over de duur
    van de opname; bij normaal voorleestempo zit dat er dicht op. */
 let VO={stand:'leeg', blob:null, url:null, woorden:[], duur:0, rec:null, spraak:null,
-        t0:0, wijzer:0, video:null, videoPad:null, mime:''};
+        t0:0, wijzer:0, video:null, videoPad:null, mime:'',
+        muziek:null, muziekUrl:null, muziekVol:0.25};
 
 function voWoorden(){
   const cap=(($('#ct_caption')&&$('#ct_caption').value)||'').trim();
@@ -3298,11 +3299,58 @@ const voKaal=w=>w.toLowerCase().replace(/[^a-z0-9à-ÿ]/g,'');
 
 function voTekenen(){
   const vak=$('#ct_voice'); if(!vak) return;
+
+  /* De muziekrij staat los van de opname-toestand: muziek kan onder een
+     voice-over (gedempt, jouw stem blijft verstaanbaar) of als enige audio
+     onder de b-roll. Instagram voegt zelf geen audio toe aan wat de API
+     plaatst, dus wat je hier mixt is wat de kijker hoort. */
+  const muziekRij=`
+    <div class="vo-knoppen" style="margin:0 0 10px;padding-bottom:10px;border-bottom:1px solid var(--line)">
+      ${VO.muziek
+        ? `<span style="font-size:13px">🎵 <b>${esc(VO.muziek.name)}</b></span>
+           <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)">volume
+             <input type="range" id="vo_mvol" min="0" max="100" value="${Math.round(VO.muziekVol*100)}" style="width:130px">
+             <span id="vo_mvolpct" style="min-width:34px">${Math.round(VO.muziekVol*100)}%</span></label>
+           <button class="bc-zoekactie" id="vo_mtest">▶ test</button>
+           <button class="bc-zoekactie" id="vo_mweg">✕ weg</button>`
+        : `<button class="btn btn-ghost btn-sm" id="vo_muziek">🎵 Muziek toevoegen</button>
+           <span class="muted" style="font-size:12.5px">mp3 of m4a; onder een voice-over zet hem rond de 20-30%</span>`}
+    </div>`;
+  const muziekKoppelen=()=>{
+    const kies=$('#vo_muziek');
+    if(kies) kies.onclick=()=>{
+      const k=document.createElement('input'); k.type='file'; k.accept='audio/*';
+      k.onchange=()=>{ const f=k.files&&k.files[0]; if(!f) return;
+        if(VO.muziekUrl) URL.revokeObjectURL(VO.muziekUrl);
+        VO.muziek=f; VO.muziekUrl=URL.createObjectURL(f); voTekenen(); };
+      k.click();
+    };
+    const vol=$('#vo_mvol');
+    if(vol) vol.oninput=()=>{ VO.muziekVol=Number(vol.value)/100; $('#vo_mvolpct').textContent=vol.value+'%';
+      if(VO._mtest) VO._mtest.volume=VO.muziekVol; };
+    const test=$('#vo_mtest');
+    if(test) test.onclick=()=>{
+      if(VO._mtest){ VO._mtest.pause(); VO._mtest=null; test.textContent='▶ test'; return; }
+      VO._mtest=new Audio(VO.muziekUrl); VO._mtest.volume=VO.muziekVol; VO._mtest.play();
+      test.textContent='◼ stop';
+      VO._mtest.onended=()=>{VO._mtest=null; if($('#vo_mtest'))$('#vo_mtest').textContent='▶ test';};
+    };
+    const weg=$('#vo_mweg');
+    if(weg) weg.onclick=()=>{ if(VO._mtest){VO._mtest.pause();VO._mtest=null;}
+      if(VO.muziekUrl) URL.revokeObjectURL(VO.muziekUrl); VO.muziek=null; VO.muziekUrl=null; voTekenen(); };
+  };
+
   if(VO.stand==='leeg'){
-    vak.innerHTML=`
-      <div class="bc-hint" style="margin:0 0 8px">Spreek de caption in als voice-over. Terwijl je leest loopt de tekst mee; daarna bakken we stem, meelopende tekst en je b-roll tot een reel. Werkt het best in Chrome, met toestemming voor de microfoon.</div>
-      <div class="vo-knoppen"><button class="btn btn-primary btn-sm" id="vo_start">🎙 Neem voice-over op</button></div>`;
+    vak.innerHTML=muziekRij+`
+      <div class="bc-hint" style="margin:0 0 8px">Spreek de caption in als voice-over. Terwijl je leest loopt de tekst mee; daarna bakken we stem, tekst${VO.muziek?', muziek':''} en je b-roll tot een reel. Werkt het best in Chrome, met toestemming voor de microfoon.</div>
+      <div class="vo-knoppen">
+        <button class="btn btn-primary btn-sm" id="vo_start">🎙 Neem voice-over op</button>
+        ${VO.muziek?`<button class="btn btn-ghost btn-sm" id="vo_alleenmuziek">🎬 Video met alleen muziek</button>`:''}
+      </div>`;
+    muziekKoppelen();
     $('#vo_start').onclick=voStart;
+    const am=$('#vo_alleenmuziek');
+    if(am) am.onclick=()=>{ if(!CT.media.length){toast('Upload eerst je b-roll','err');return;} voRender(true); };
   }else if(VO.stand==='opnemen'){
     vak.innerHTML=`
       <div class="vo-tele" id="vo_tele">${voWoorden().map((w,i)=>`<span data-w="${i}">${esc(w)} </span>`).join('')}</div>
@@ -3315,7 +3363,7 @@ function voTekenen(){
     $('#vo_weg').onclick=()=>voStop(true);
   }else if(VO.stand==='klaar'){
     const dekking=VO.woorden.filter(w=>w.gehoord).length/Math.max(VO.woorden.length,1);
-    vak.innerHTML=`
+    vak.innerHTML=muziekRij+`
       <div class="bc-hint" style="margin:0 0 8px">Opname van ${VO.duur.toFixed(1)}s.
         ${dekking>=0.6?`De tekst is per woord meegeluisterd, de ondertiteling loopt strak mee.`
                       :`De spraakherkenning ving te weinig op; de tekst wordt gelijkmatig over de opname verdeeld, dat oogt bij rustig voorlezen prima.`}</div>
@@ -3324,7 +3372,8 @@ function voTekenen(){
         <button class="btn btn-primary btn-sm" id="vo_render">🎬 Maak de video</button>
         <button class="btn btn-ghost btn-sm" id="vo_opnieuw">↻ Opnieuw opnemen</button>
       </div>`;
-    $('#vo_render').onclick=voRender;
+    muziekKoppelen();
+    $('#vo_render').onclick=()=>voRender(false);
     $('#vo_opnieuw').onclick=()=>{VO={...VO,stand:'leeg',blob:null,woorden:[]};voTekenen();};
   }else if(VO.stand==='renderen'){
     vak.innerHTML=`<div class="bc-hint" style="margin:0">🎬 Video maken: b-roll, je stem en de meelopende tekst worden samengevoegd. Dit duurt ongeveer zo lang als de opname zelf (<span id="vo_rprog">0</span>%). Laat dit tabblad open en zichtbaar.</div>`;
@@ -3437,9 +3486,12 @@ function voTijdenAanvullen(){
    en de opgenomen stem als audiospoor. MediaRecorder maakt er mp4 van waar de
    browser dat kan; anders webm, en dan zegt de UI eerlijk dat Instagram mp4
    wil. */
-async function voRender(){
+async function voRender(alleenMuziek){
   const m0=CT.media[0];
   const isVideo=/\.(mp4|mov|webm|m4v)$/i.test(m0.path)||String(m0.type||'').startsWith('video');
+  const metStem=!alleenMuziek&&!!VO.url;
+  if(!metStem&&!VO.muziekUrl){toast('Geen audio: neem een voice-over op of voeg muziek toe','err');return;}
+  if(VO._mtest){VO._mtest.pause();VO._mtest=null;}
   VO.stand='renderen'; voTekenen();
   try{
     const bron=document.createElement(isVideo?'video':'img');
@@ -3448,16 +3500,32 @@ async function voRender(){
     await new Promise((ok,nee)=>{ bron.onerror=()=>nee(new Error('b-roll laden mislukt'));
       if(isVideo){bron.onloadeddata=ok;} else {bron.onload=ok;} });
 
-    const stem=new Audio(VO.url); stem.crossOrigin='anonymous';
-    await new Promise(ok=>{stem.onloadedmetadata=ok; stem.load();});
-    const duur=isFinite(stem.duration)&&stem.duration>0?stem.duration:VO.duur;
+    // Het leidende spoor bepaalt de lengte: de stem als die er is, anders de
+    // b-roll-video, anders (foto plus muziek) een vast kort formaat.
+    let stem=null, duur;
+    if(metStem){
+      stem=new Audio(VO.url);
+      await new Promise(ok=>{stem.onloadedmetadata=ok; stem.load();});
+      duur=isFinite(stem.duration)&&stem.duration>0?stem.duration:VO.duur;
+    }else{
+      duur=isVideo?Math.min(bron.duration||15,60):15;
+    }
 
     const canvas=document.createElement('canvas'); canvas.width=1080; canvas.height=1920;
     const ctx=canvas.getContext('2d');
 
     const ac=new (window.AudioContext||window.webkitAudioContext)();
     const bestem=ac.createMediaStreamDestination();
-    ac.createMediaElementSource(stem).connect(bestem);
+    if(stem) ac.createMediaElementSource(stem).connect(bestem);
+
+    // De muziek loopt in een lus onder het geheel, door een volumeknop. Onder
+    // een voice-over hoort die laag te staan; de slider is wat de kijker hoort.
+    let muziek=null;
+    if(VO.muziekUrl){
+      muziek=new Audio(VO.muziekUrl); muziek.loop=true;
+      const gain=ac.createGain(); gain.gain.value=VO.muziekVol;
+      ac.createMediaElementSource(muziek).connect(gain); gain.connect(bestem);
+    }
 
     const beeldStroom=canvas.captureStream(30);
     const mix=new MediaStream([...beeldStroom.getVideoTracks(),...bestem.stream.getAudioTracks()]);
@@ -3467,17 +3535,20 @@ async function voRender(){
     opn.ondataavailable=e=>{if(e.data.size)uit.push(e.data);};
     const klaarBelofte=new Promise(ok=>{opn.onstop=ok;});
 
-    // brokken van maximaal 4 woorden, elk zichtbaar van het eerste tot het
-    // laatste woord van de brok (plus een kleine staart)
     const brokken=[]; let brok=[];
-    VO.woorden.forEach(w=>{ brok.push(w);
-      if(brok.length>=4||/[.!?]$/.test(w.w)){brokken.push(brok);brok=[];} });
-    if(brok.length)brokken.push(brok);
+    if(metStem){
+      VO.woorden.forEach(w=>{ brok.push(w);
+        if(brok.length>=4||/[.!?]$/.test(w.w)){brokken.push(brok);brok=[];} });
+      if(brok.length)brokken.push(brok);
+    }
     const brokVoor=t=>{ for(let i=brokken.length-1;i>=0;i--){ const b=brokken[i];
         if(t>=(b[0].t||0)) return {b,i}; } return null; };
 
+    // De klok is leidend, niet stem.currentTime: dan werkt dezelfde tekenlus
+    // ook zonder stem (alleen muziek).
+    const start=performance.now();
     const teken=()=>{
-      const t=stem.currentTime;
+      const t=(performance.now()-start)/1000;
       const bw=isVideo?bron.videoWidth:bron.naturalWidth, bh=isVideo?bron.videoHeight:bron.naturalHeight;
       const sch=Math.max(1080/bw,1920/bh);
       ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1920);
@@ -3497,8 +3568,8 @@ async function voRender(){
             ctx.shadowColor='transparent'; ctx.shadowBlur=0;
             const pad=22, hgt=92;
             ctx.fillStyle='#ffffff';
-            const r=14, bx=x-pad, bw=breed+pad*2;
-            ctx.beginPath(); ctx.roundRect(bx,y-66,bw,hgt,r); ctx.fill();
+            const r=14, bx=x-pad, bw2=breed+pad*2;
+            ctx.beginPath(); ctx.roundRect(bx,y-66,bw2,hgt,r); ctx.fill();
             for(const w of woorden){
               ctx.fillStyle=(t>=(w.t||0))?'#111111':'#8a8a8a';
               ctx.fillText(w.w,x,y); x+=ctx.measureText(w.w+' ').width;
@@ -3521,21 +3592,25 @@ async function voRender(){
         }
       }
       const prog=$('#vo_rprog'); if(prog) prog.textContent=Math.min(Math.round(t/duur*100),99);
-      if(!stem.ended&&t<duur) requestAnimationFrame(teken);
+      if(t<duur+0.1) requestAnimationFrame(teken);
     };
 
     if(isVideo){ bron.currentTime=0; await bron.play(); }
-    await ac.resume(); opn.start(500); await stem.play();
+    await ac.resume(); opn.start(500);
+    if(stem) await stem.play();
+    if(muziek) await muziek.play();
     requestAnimationFrame(teken);
-    await new Promise(ok=>{stem.onended=ok; setTimeout(ok,(duur+2)*1000);});
+    await new Promise(ok=>setTimeout(ok,(duur+0.4)*1000));
     if(isVideo) bron.pause();
+    if(stem) stem.pause();
+    if(muziek) muziek.pause();
     opn.stop(); await klaarBelofte; try{ac.close();}catch(e){}
 
     const vblob=new Blob(uit,{type:VO.mime.split(';')[0]});
     VO.videoBlob=vblob; VO.video=URL.createObjectURL(vblob);
     VO.stand='video'; voTekenen();
   }catch(e){
-    VO.stand='klaar'; voTekenen();
+    VO.stand=VO.url?'klaar':'leeg'; voTekenen();
     toast('Video maken mislukte: '+(e&&e.message||e),'err');
   }
 }
@@ -3612,8 +3687,11 @@ async function ctLijstLaden(){
   const {data,error}=await sb.rpc('content_posts_lijst');
   if(error||!Array.isArray(data)){vak.innerHTML='<span class="muted" style="font-size:13px">Kon de lijst niet laden.</span>';return;}
   CT.lijst=data;
-  if(!data.length){vak.innerHTML='<span class="muted" style="font-size:13px">Nog geen posts. Je eerste pakket verschijnt hier.</span>';return;}
-  vak.innerHTML=data.map(p=>`
+  // De geplande dagen staan al in de weekstrip bovenaan; hier alleen wat echt
+  // gemaakt of gepost is, anders staat alles er dubbel.
+  const gemaakt=data.filter(p=>p.status!=='gepland');
+  if(!gemaakt.length){vak.innerHTML='<span class="muted" style="font-size:13px">Nog geen posts. Je eerste pakket verschijnt hier.</span>';return;}
+  vak.innerHTML=gemaakt.map(p=>`
     <div class="ct-item" data-open="${p.id}">
       <span class="soort">${esc(p.soort)}</span>
       <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.onderwerp||'(zonder onderwerp)')}</span>
