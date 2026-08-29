@@ -1041,7 +1041,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-verras-favoriet';
+const APP_VERSIE='2026-08-29-spreek-fix';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2935,14 +2935,12 @@ async function renderContent(){
     </div>
 
     <div class="bc-grid">
-      <div class="field bc-breed"><label id="ct_onderwerplabel" style="display:flex;align-items:center;gap:10px">Waar gaat het over?
+      <div class="field bc-breed"><label style="display:flex;align-items:center;gap:10px"><span id="ct_onderwerplabel">Waar gaat het over?</span>
           <button class="bc-zoekactie" id="ct_spreek" type="button" style="text-transform:none">🎙 Spreek in</button>
           <span class="vo-tijd" id="ct_spreektijd" style="display:none">0:00</span></label>
         <textarea id="ct_onderwerp" class="ct-caption" style="min-height:76px" placeholder="De boodschap. Typ hem, of klik op Spreek in en vertel gewoon waar de post over moet gaan."></textarea>
         <div class="bc-hint" id="ct_spreekhint">Twee zinnen is genoeg. Dit is de boodschap; de hook en de caption doen het werk. Inspreken mag ook: zodra je stopt wordt het pakket vanzelf gemaakt.</div></div>
-      <div class="field bc-breed" id="ct_brollveld" style="display:none"><label>Wat is er op de b-roll te zien? (optioneel)</label>
-        <textarea id="ct_broll" class="ct-caption" style="min-height:52px" placeholder="Mag leeg. De b-roll is meestal decor: jij kijkend naar het strand werkt prima onder een verhaal over passief inkomen."></textarea>
-        <div class="bc-hint">Alleen invullen als het script naar de beelden moet verwijzen (bijv. een bouwupdate). Anders staat de tekst op zichzelf.</div></div>
+
       <div class="field"><label>Project</label>
         <div class="bc-rij">${['','MOKA','The Maison','The Reload'].map(pr=>
           `<button class="bc-chip" data-ctproject="${pr}">${pr||'Geen, algemene value'}</button>`).join('')}</div></div>
@@ -3029,7 +3027,6 @@ function ctTeken(){
   const wa=CT.soort;
   $('#ct_medialabel').textContent = wa==='reel'?'Je B-roll (video)':wa==='carousel'?'Je afbeeldingen, in volgorde':'Je foto';
   $('#ct_onderwerplabel').textContent = wa==='reel'?'Waar gaat de reel over?':'Waar gaat de post over?';
-  const bv=$('#ct_brollveld'); if(bv) bv.style.display = wa==='reel'?'':'none';
   $('#ct_mediahint').textContent = wa==='reel'
     ? 'Grote clips mogen: boven de 200 MB wordt hij eerst in de browser verkleind naar 1080p (visueel verliesvrij, duurt zo lang als de clip). Het pakket levert het overlay-script; de tekst zet je er in de Instagram-editor of CapCut overheen.'
     : wa==='carousel' ? 'Upload 4 tot 10 beelden. Elke afbeelding krijgt zijn eigen slide-tekst; de eerste wordt de cover.'
@@ -3108,10 +3105,18 @@ async function ctGenereer(){
   const knop=$('#ct_genereer'); knop.disabled=true;
   $('#ct_status').textContent='Pakket maken, dit duurt zo’n 20 seconden…';
   try{
+    // Wat er op de b-roll staat weet de bibliotheek al (beschrijving en tags
+    // van het gekozen beeld); dat gaat automatisch mee zodat het script er
+    // losjes naar kan verwijzen. Handmatig geuploade media heeft geen
+    // beschrijving en dan staat het script gewoon op zichzelf.
+    let broll=null;
+    if(CT.soort==='reel'&&CT.media[0]){
+      const bib=(BIB.rijen||[]).find(r=>r.path===CT.media[0].path);
+      if(bib&&bib.beschrijving) broll=bib.beschrijving+(bib.tags&&bib.tags.length?` (${bib.tags.join(', ')})`:'');
+    }
     const {data,error}=await sb.functions.invoke('content-maker',{body:{
       soort:CT.soort, onderwerp, project:CT.project||null, doel:CT.doel,
-      broll:($('#ct_broll')&&$('#ct_broll').value.trim())||null,
-      aantal_media:CT.media.length}});
+      broll, aantal_media:CT.media.length}});
     if(error||!data||data.ok===false){
       $('#ct_status').innerHTML=`<span class="err">${esc((data&&data.reden)||(error&&error.message)||'mislukt')}</span>`;return;
     }
