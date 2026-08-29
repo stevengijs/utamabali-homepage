@@ -1049,7 +1049,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-muziekbieb';
+const APP_VERSIE='2026-08-29-mixkit';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3603,7 +3603,8 @@ async function voMuziekPaneel(vak){
         <button class="bc-zoekactie" data-mzkies="${esc('muziek/'+t.name)}" data-mznaam="${esc(t.name)}" style="flex:none">gebruik</button>
       </div>`).join('')
     :`<div class="muted" style="font-size:12.5px;line-height:1.5">Nog leeg. Download gratis tracks (ook voor commercieel gebruik) bij
-      <a href="https://pixabay.com/music/" target="_blank" rel="noopener">Pixabay Music</a> of de
+      <a href="https://pixabay.com/music/" target="_blank" rel="noopener">Pixabay Music</a>,
+      <a href="https://mixkit.co/free-stock-music/" target="_blank" rel="noopener">Mixkit</a> of de
       <a href="https://studio.youtube.com/channel/UC/music" target="_blank" rel="noopener">YouTube Audio Library</a>
       en zet ze hieronder in je bibliotheek; daarna is het altijd een klik.</div>`}
     <div class="vo-knoppen" style="margin-top:8px">
