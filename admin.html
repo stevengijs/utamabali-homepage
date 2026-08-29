@@ -924,6 +924,29 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 /* Permission pages (match adm_permissions.page keys) */
+/* De admin is een app die dagenlang open blijft staan en zichzelf nooit
+   opnieuw ophaalt. Na een deploy draait zo'n tabblad dus stilzwijgend de oude
+   versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
+   het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
+   een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
+const APP_VERSIE='2026-08-29-contentstudio';
+let _versieLaatst=0;
+async function versieCheck(){
+  if(Date.now()-_versieLaatst < 10*60*1000) return;
+  _versieLaatst=Date.now();
+  try{
+    const r=await fetch(location.pathname+'?vc='+Date.now(),{cache:'no-store'});
+    const m=(await r.text()).match(/APP_VERSIE='([^']+)'/);
+    if(m&&m[1]!==APP_VERSIE&&!$('#versie_banner')){
+      document.body.insertAdjacentHTML('afterbegin',
+        `<div id="versie_banner" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#0f2e22;color:#fff;padding:9px 16px;text-align:center;font-size:13.5px">
+          Er staat een nieuwere versie van dit dashboard klaar.
+          <button onclick="location.reload()" style="margin-left:10px;padding:4px 14px;border:none;border-radius:7px;background:#fff;color:#0f2e22;font-weight:700;cursor:pointer">Ververs de pagina</button>
+        </div>`);
+    }
+  }catch(e){}
+}
+
 const PAGES = [
   {key:'inbox',    label:'Inbox',                  icon:'💬'},
   {key:'pipeline', label:'Pipeline',               icon:'🧭'},
@@ -1419,6 +1442,7 @@ function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
   const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
   $('#pageTitle').textContent=titles[k]||k;
+  versieCheck();
   if(k==='dashboard')return renderDashboard();
   if(k==='analytics')return renderAnalytics();
   if(k==='revenue')return renderRevenue();
@@ -1678,7 +1702,7 @@ async function renderBroadcast(){
   const bronregel = (fac.bronnen||[]).map(b=>`${b.n} uit ${bcLabel('bronnen',b.waarde)}`).join(', ');
   // Versiestempel in de paginabron, zodat te controleren is of de browser de
   // nieuwe versie heeft en niet een gecachte oude.
-  window.BC_VERSIE = '2026-08-28-campagneoverzicht';
+  window.BC_VERSIE = APP_VERSIE;
   v.innerHTML=`
   <div class="panel">
     <div class="panel-head"><div>
@@ -1739,7 +1763,8 @@ async function renderBroadcast(){
 async function bcCampagnesLaden(){
   const vak=$('#bc_campagnes'); if(!vak) return;
   const {data,error}=await sb.rpc('broadcast_campagnes_lijst');
-  if(error||!Array.isArray(data)||!data.length){ vak.innerHTML=''; return; }
+  if(error){ vak.innerHTML=`<div class="bc-hint err">Campagne-overzicht kon niet laden: ${esc(error.message||'onbekend')}</div>`; return; }
+  if(!Array.isArray(data)||!data.length){ vak.innerHTML=''; return; }
 
   // Cijfers van e-mailcampagnes bijwerken uit de gebeurtenissen van Resend.
   // Alleen voor wat recent is: ouder dan een maand verandert toch niet meer.
