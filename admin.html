@@ -1038,7 +1038,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-bib-klik';
+const APP_VERSIE='2026-08-29-bib-secties';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3600,24 +3600,34 @@ async function bibKiezer(){
     if(r.laatst_gebruikt&&Date.now()-new Date(r.laatst_gebruikt).getTime()<21*864e5) sc-=4;
     return sc;
   };
-  const lijst=BIB.rijen.map(r=>({r,sc:past(r)})).filter(x=>x.sc>=0).sort((a,b)=>b.sc-a.sc).slice(0,24);
-  if(!lijst.length){toast(wilVideo?'Geen video\'s in de bibliotheek; upload eerst b-roll':'Geen foto\'s in de bibliotheek','err');return;}
+  const passend=BIB.rijen.map(r=>({r,sc:past(r)})).filter(x=>x.sc>=0);
+  if(!passend.length){toast(wilVideo?'Geen video\'s in de bibliotheek; upload eerst b-roll':'Geen foto\'s in de bibliotheek','err');return;}
+  // Twee secties: de beste matches voor deze post bovenaan, en daaronder
+  // gewoon de rest op datum, want soms weet Steven zelf al welk beeld hij
+  // zoekt en dan moet hij niet door een voorselectie gehinderd worden.
+  const voorgesteld=[...passend].sort((a,b)=>b.sc-a.sc).slice(0,12);
+  const voorIds=new Set(voorgesteld.map(x=>x.r.id));
+  const andere=passend.filter(x=>!voorIds.has(x.r.id))
+    .sort((a,b)=>new Date(b.r.aangemaakt_at)-new Date(a.r.aangemaakt_at)).slice(0,200);
+  const tegel=x=>`
+    <div class="bib-item" data-bibpak="${x.r.id}" title="${esc(x.r.beschrijving||'')}">
+      <img src="${bibThumb(x.r)}" loading="lazy" alt="">
+      ${x.r.score?`<span class="sc ${x.r.score>=8?'top':''}">${x.r.score}</span>`:''}
+      ${x.r.soort==='video'?'<span class="vid">▶</span>':''}
+      <div class="kies">＋ gebruik</div>
+      <div class="om">${esc((x.r.tags||[]).slice(0,3).join(' · '))}</div>
+    </div>`;
   const bestaand=document.querySelector('#bib_paneel'); if(bestaand) bestaand.remove();
   document.body.insertAdjacentHTML('beforeend',`
     <div id="bib_paneel" style="position:fixed;inset:0;z-index:9998;background:rgba(15,25,20,.5);display:flex;align-items:center;justify-content:center;padding:20px">
-      <div style="background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:82vh;overflow:auto;padding:18px 20px">
+      <div style="background:#fff;border-radius:14px;max-width:860px;width:100%;max-height:86vh;overflow:auto;padding:18px 20px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-          <b>Voorstel uit je bibliotheek</b>
-          <span class="muted" style="font-size:12.5px">gesorteerd op wat bij deze post past</span>
+          <b>Kies uit je bibliotheek</b>
           <button class="bc-zoekactie" id="bib_sluit" style="margin-left:auto">✕ sluiten</button></div>
-        <div class="bib-grid">${lijst.map(x=>`
-          <div class="bib-item" data-bibpak="${x.r.id}" title="${esc(x.r.beschrijving||'')}">
-            <img src="${bibThumb(x.r)}" loading="lazy" alt="">
-            ${x.r.score?`<span class="sc ${x.r.score>=8?'top':''}">${x.r.score}</span>`:''}
-            ${x.r.soort==='video'?'<span class="vid">▶</span>':''}
-            <div class="kies">＋ gebruik</div>
-            <div class="om">${esc((x.r.tags||[]).slice(0,3).join(' · '))}</div>
-          </div>`).join('')}</div>
+        <div class="bc-lab" style="margin:6px 0 0">Voorgesteld voor deze post</div>
+        <div class="bib-grid">${voorgesteld.map(tegel).join('')}</div>
+        ${andere.length?`<div class="bc-lab" style="margin:16px 0 0">Alle andere (nieuwste eerst)</div>
+        <div class="bib-grid">${andere.map(tegel).join('')}</div>`:''}
       </div>
     </div>`);
   $('#bib_sluit').onclick=()=>$('#bib_paneel').remove();
