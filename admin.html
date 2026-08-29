@@ -1044,7 +1044,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-stemketen';
+const APP_VERSIE='2026-08-29-hook-edit';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3207,8 +3207,11 @@ function ctPakketTekenen(){
   vak.innerHTML=`
   <div class="ct-grid2">
     <div class="ct-vak" style="grid-column:1/-1">
-      ${kop('Kies je hook')}
-      ${(pk.hooks||[]).map((h,i)=>`<button class="ct-hook ${i===CT.hookKeus?'on':''}" data-hook="${i}">${esc(h)}</button>`).join('')}
+      ${kop('Kies je hook (en pas hem gerust aan)')}
+      ${(pk.hooks||[]).map((h,i)=>`<div class="ct-hook ${i===CT.hookKeus?'on':''}" data-hook="${i}" style="display:flex;gap:9px;align-items:center;cursor:pointer">
+        <span style="flex:none;font-size:15px">${i===CT.hookKeus?'●':'○'}</span>
+        <input data-hookedit="${i}" value="${esc(h)}" style="flex:1;border:none;background:none;font:inherit;outline:none;min-width:0">
+      </div>`).join('')}
       <div class="bc-hint">${CT.soort==='reel'?'Dit wordt de tekstoverlay in seconde 1, en de eerste regel van je caption.':'Dit wordt de covertitel en de eerste regel van je caption.'}</div>
     </div>
 
@@ -3292,6 +3295,20 @@ function ctPakketTekenen(){
     </div>
   </div>`;
 
+  // Hooks zijn na het genereren gewoon te bewerken; typ je in de gekozen
+  // hook, dan schuiven caption-regel 1 en de preview live mee.
+  vak.querySelectorAll('[data-hookedit]').forEach(inp=>{
+    let t;
+    inp.addEventListener('input',()=>{
+      const i=Number(inp.dataset.hookedit);
+      CT.pakket.hooks[i]=inp.value;
+      if(i===CT.hookKeus){
+        const ta=$('#ct_caption');
+        if(ta){const regels=ta.value.split('\n');regels[0]=inp.value;ta.value=regels.join('\n');}
+      }
+      clearTimeout(t); t=setTimeout(()=>{ctPreviewTekenen();ctOpslaan(null);},600);
+    });
+  });
   vak.querySelectorAll('[data-hook]').forEach(b=>b.onclick=()=>{
     CT.hookKeus=Number(b.dataset.hook);
     vak.querySelectorAll('[data-hook]').forEach(x=>x.classList.toggle('on',x===b));
@@ -3299,6 +3316,11 @@ function ctPakketTekenen(){
     const ta=$('#ct_caption'); const regels=ta.value.split('\n');
     regels[0]=CT.pakket.hooks[CT.hookKeus]||regels[0];
     ta.value=regels.join('\n');
+    vak.querySelectorAll('[data-hook]').forEach(x=>{
+      const aan=Number(x.dataset.hook)===CT.hookKeus;
+      x.classList.toggle('on',aan);
+      const bol=x.querySelector('span'); if(bol) bol.textContent=aan?'●':'○';
+    });
     ctPreviewTekenen();
   });
   // dubbele weergave: de hook-knoppen bovenin en de previewkaarten kiezen hetzelfde
