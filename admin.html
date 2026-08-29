@@ -1038,7 +1038,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-bibliotheek';
+const APP_VERSIE='2026-08-29-caption-groei';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2998,7 +2998,7 @@ function ctTeken(){
   $('#ct_onderwerplabel').textContent = wa==='reel'?'Waar gaat de reel over?':'Waar gaat de post over?';
   const bv=$('#ct_brollveld'); if(bv) bv.style.display = wa==='reel'?'':'none';
   $('#ct_mediahint').textContent = wa==='reel'
-    ? 'Een clip tot 250 MB. Het pakket levert het overlay-script; de tekst zet je er in de Instagram-editor of CapCut overheen.'
+    ? 'Grote clips mogen: boven de 200 MB wordt hij eerst in de browser verkleind naar 1080p (visueel verliesvrij, duurt zo lang als de clip). Het pakket levert het overlay-script; de tekst zet je er in de Instagram-editor of CapCut overheen.'
     : wa==='carousel' ? 'Upload 4 tot 10 beelden. Elke afbeelding krijgt zijn eigen slide-tekst; de eerste wordt de cover.'
     : 'Een sterke foto. De caption doet hier het werk.';
   ctMediaTekenen();
@@ -3041,11 +3041,17 @@ function ctMediaTekenen(){
         // verwarrende geval van twee video's waarvan er stilzwijgend een wint.
         if(CT.soort!=='carousel') CT.media=[];
         $('#ct_status').textContent=`Uploaden: ${f.name}…`;
-        let blob=f;
+        let blob=f, extO=null, typeO=null;
         if(/^image\//.test(f.type)){ try{ blob=(await pmCompress(f)).blob; }catch(e){} }
-        const ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';
+        if(/^video\//.test(f.type)&&f.size>VIDEO_VERKLEIN_GRENS){
+          try{
+            const kv=await videoVerkleinen(f, t=>{$('#ct_status').textContent=t;});
+            blob=kv.blob; extO=kv.ext; typeO=kv.type;
+          }catch(e){ toast(`Verkleinen mislukte (${e.message}), origineel wordt geprobeerd`,'err'); }
+        }
+        const ext=extO||(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';
         const pad=`${CT.soort}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-        const up=await sb.storage.from(CT_BUCKET).upload(pad,blob,{contentType:f.type||'application/octet-stream',upsert:false});
+        const up=await sb.storage.from(CT_BUCKET).upload(pad,blob,{contentType:typeO||f.type||'application/octet-stream',upsert:false});
         if(up.error){toast('Upload mislukt: '+up.error.message,'err');continue;}
         CT.media.push({path:pad,type:f.type||''});
         ctMediaTekenen();
@@ -3092,7 +3098,7 @@ function ctPakketTekenen(){
 
     <div class="ct-vak">
       ${kop('Caption','caption','x')}
-      <textarea class="ct-caption" id="ct_caption">${esc(pk.caption||'')}</textarea>
+      <textarea class="ct-caption" id="ct_caption" style="min-height:280px;overflow:hidden">${esc(pk.caption||'')}</textarea>
       <div style="display:flex;gap:8px;margin-top:8px">
         <input id="ct_feedback" class="ct-caption" style="min-height:0;flex:1;padding:8px 12px"
                placeholder="Wat moet anders? Bijv: korter, minder verkoperig, meer spreektaal, begin met de prijs…">
@@ -3335,6 +3341,13 @@ function ctPreviewTekenen(){
   vak.innerHTML=`<div class="ig-rij">${CT.soort==='reel'
     ? CT_STIJLEN.map((st,i)=>kaart(gekozenHook,i)).join('')
     : hooks.map((h,i)=>kaart(h,i)).join('')}</div>`+bewerkBalk;
+  // De caption groeit mee met de inhoud zodat je nooit in het vak scrollt
+  const capTa=document.querySelector('#ct_caption');
+  if(capTa&&!capTa.dataset.groei){
+    capTa.dataset.groei='1';
+    const groei=()=>{capTa.style.height='auto';capTa.style.height=Math.max(capTa.scrollHeight+4,280)+'px';};
+    capTa.addEventListener('input',groei); setTimeout(groei,0);
+  }
   vak.querySelectorAll('[data-meer]').forEach(m=>m.onclick=e=>{
     e.stopPropagation(); CT.capOpen=!CT.capOpen; ctPreviewTekenen();
   });
@@ -3369,6 +3382,61 @@ function ctPreviewTekenen(){
     : 'Klik de variant die je wilt; de hook wordt regel 1 van je caption. De cijfers en de knoppen zijn decor, zodat je hem ziet zoals een volger hem in de app ziet.');
   const ta=$('#ct_caption');
   if(ta&&!ta.dataset.previewkoppeling){ta.dataset.previewkoppeling='1';let t;ta.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(ctPreviewTekenen,400);});}
+}
+
+/* ============== GROTE VIDEO'S VERKLEINEN ==============
+   iPhone-video's zijn 4K HEVC met bitrates van 50 Mbps en meer; een clip van
+   een paar minuten is dan honderden MB's. Instagram codeert alles toch terug
+   naar zo'n 1080p, dus we doen dat hier alvast: opnieuw coderen op 1080p met
+   10 Mbps. Visueel verliesvrij voor social (echt lossless verkleinen bestaat
+   niet), en een factor vijf a tien kleiner. Het duurt wel zo lang als de clip
+   zelf duurt: de browser speelt hem af en neemt het resultaat op, dezelfde
+   beproefde pijplijn als de voice-over-render. Audio gaat mee via de
+   AudioContext (het element zelf blijft stil).
+   Boven deze grens wordt automatisch verkleind: */
+const VIDEO_VERKLEIN_GRENS = 200*1048576;
+
+async function videoVerkleinen(file, status){
+  const url=URL.createObjectURL(file);
+  try{
+    const v=document.createElement('video'); v.src=url; v.playsInline=true;
+    await new Promise((ok,nee)=>{v.onloadedmetadata=ok; v.onerror=()=>nee(new Error('video niet afspeelbaar in deze browser'));});
+    const duur=v.duration;
+    if(!isFinite(duur)||duur<=0) throw new Error('videoduur onbekend');
+    if(duur>15*60) throw new Error('langer dan 15 minuten; knip hem eerst');
+
+    // 1080 op de korte zijde, de verhouding blijft
+    const sch=Math.min(1, 1080/Math.min(v.videoWidth, v.videoHeight));
+    const bw=Math.round(v.videoWidth*sch/2)*2, bh=Math.round(v.videoHeight*sch/2)*2;
+    const canvas=document.createElement('canvas'); canvas.width=bw; canvas.height=bh;
+    const ctx=canvas.getContext('2d');
+
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    const bestem=ac.createMediaStreamDestination();
+    ac.createMediaElementSource(v).connect(bestem);
+
+    const beeld=canvas.captureStream(30);
+    const sporen=[...beeld.getVideoTracks(),...bestem.stream.getAudioTracks()];
+    const mime=['video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm']
+      .find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||'video/webm';
+    const uit=[]; const opn=new MediaRecorder(new MediaStream(sporen),{mimeType:mime,videoBitsPerSecond:10_000_000,audioBitsPerSecond:128_000});
+    opn.ondataavailable=e=>{if(e.data.size)uit.push(e.data);};
+    const klaar=new Promise(ok=>{opn.onstop=ok;});
+
+    const teken=()=>{ if(v.ended) return;
+      ctx.drawImage(v,0,0,bw,bh);
+      if(status) status(`Video verkleinen: ${Math.round(v.currentTime/duur*100)}% (duurt zo lang als de clip zelf)`);
+      requestAnimationFrame(teken); };
+
+    await ac.resume(); opn.start(1000); await v.play();
+    requestAnimationFrame(teken);
+    await new Promise(ok=>{v.onended=ok; setTimeout(ok,(duur+3)*1000);});
+    opn.stop(); await klaar; try{ac.close();}catch(e){}
+
+    const blob=new Blob(uit,{type:mime.split(';')[0]});
+    if(!blob.size) throw new Error('verkleinen leverde niets op');
+    return {blob, ext:mime.includes('mp4')?'mp4':'webm', type:mime.split(';')[0]};
+  } finally { URL.revokeObjectURL(url); }
 }
 
 /* ============== MEDIABIBLIOTHEEK ==============
@@ -3411,11 +3479,18 @@ async function bibUpload(){
     for(const f of files){
       n++; st.textContent=`Uploaden ${n}/${files.length}…`;
       const isVideo=/^video\//.test(f.type);
-      let blob=f;
+      let blob=f, extOverride=null, typeOverride=null;
       if(/^image\//.test(f.type)){ try{ blob=(await pmCompress(f)).blob; }catch(e){} }
-      const ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';
+      if(isVideo&&f.size>VIDEO_VERKLEIN_GRENS){
+        try{
+          const kv=await videoVerkleinen(f, t=>{st.textContent=`${f.name}: ${t}`;});
+          blob=kv.blob; extOverride=kv.ext; typeOverride=kv.type;
+          st.textContent=`${f.name}: verkleind van ${Math.round(f.size/1048576)} naar ${Math.round(blob.size/1048576)} MB, uploaden…`;
+        }catch(e){ toast(`${f.name}: verkleinen mislukte (${e.message}), origineel wordt geprobeerd`,'err'); }
+      }
+      const ext=extOverride||(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';
       const pad=`bibliotheek/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
-      const up=await sb.storage.from(CT_BUCKET).upload(pad,blob,{contentType:f.type||'application/octet-stream'});
+      const up=await sb.storage.from(CT_BUCKET).upload(pad,blob,{contentType:typeOverride||f.type||'application/octet-stream'});
       if(up.error){ toast(`${f.name}: ${up.error.message}`,'err'); continue; }
       let thumb=null;
       if(isVideo){
