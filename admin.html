@@ -455,6 +455,29 @@
   .ct-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:900px){.ct-grid2{grid-template-columns:1fr}}
 
+  /* Instagram-preview in de content-studio */
+  .ig-frame{width:min(340px,100%);margin:0 auto;border:1px solid var(--line);border-radius:14px;
+            background:#fff;overflow:hidden;box-shadow:0 8px 28px rgba(20,30,25,.08)}
+  .ig-kop{display:flex;align-items:center;gap:9px;padding:10px 12px}
+  .ig-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1d5c43,#8B5A3C);
+             color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+  .ig-kop b{font-size:13px}
+  .ig-media{position:relative;background:#000}
+  .ig-media img,.ig-media video{width:100%;display:block;max-height:420px;object-fit:cover}
+  .ig-media.reel img,.ig-media.reel video{aspect-ratio:9/16;max-height:none;object-fit:cover}
+  .ig-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px}
+  .ig-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5)}
+  .ig-dots i.on{background:#fff}
+  .ig-teller{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;
+             padding:2px 9px;border-radius:999px;font-size:11px}
+  .ig-acties{display:flex;gap:14px;padding:9px 12px;font-size:17px}
+  .ig-caption{padding:0 12px 6px;font-size:12.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+  .ig-caption b{margin-right:5px}
+  .ig-reactie{padding:2px 12px 12px;font-size:12px;color:var(--muted);word-break:break-word}
+  .ig-reactie b{margin-right:5px;color:var(--ink)}
+  .ig-overlaytip{position:absolute;top:12px;left:12px;right:12px;color:#fff;font-weight:800;
+                 font-size:15px;text-shadow:0 1px 8px rgba(0,0,0,.7);text-align:center}
+
   /* Campagne-overzicht met cijfers */
   .bc-camps{padding:0 18px 4px;display:flex;flex-direction:column;gap:8px}
   .bc-camp{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 14px;
@@ -929,7 +952,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-contentstudio';
+const APP_VERSIE='2026-08-29-ig-preview';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2921,6 +2944,17 @@ function ctPakketTekenen(){
       <div class="bc-hint">Slide 1 is de cover: grote titel, gecentreerd, met @stevenbalivillas erop. De laatste slide is de CTA.</div>
     </div>`:''}
 
+    <div class="ct-vak">
+      ${kop('Preview')}
+      <div id="ct_preview"></div>
+      <div class="bc-hint" id="ct_previewhint"></div>
+    </div>
+
+    <div class="ct-vak">
+      ${kop('Plaatsen')}
+      <div id="ct_plaats"><span class="muted" style="font-size:13px">Instagram-koppeling controleren…</span></div>
+    </div>
+
     <div class="ct-vak" style="grid-column:1/-1">
       ${kop('Waarom dit zo in elkaar zit')}
       <div style="font-size:13.5px;line-height:1.6">${esc(pk.waarom||'')}</div>
@@ -2940,6 +2974,7 @@ function ctPakketTekenen(){
     const ta=$('#ct_caption'); const regels=ta.value.split('\n');
     regels[0]=CT.pakket.hooks[CT.hookKeus]||regels[0];
     ta.value=regels.join('\n');
+    ctPreviewTekenen();
   });
   vak.querySelectorAll('[data-kopieer]').forEach(b=>b.onclick=()=>{
     const wat=b.dataset.kopieer;
@@ -2953,6 +2988,91 @@ function ctPakketTekenen(){
   $('#ct_klaar').onclick=()=>ctOpslaan('klaar');
   $('#ct_gepost').onclick=()=>ctOpslaan('gepost');
   $('#ct_opnieuw').onclick=ctGenereer;
+  ctPreviewTekenen(); ctPlaatsTekenen();
+}
+
+/* De preview toont wat er werkelijk op Instagram komt: jouw media zoals
+   geupload, met de caption eronder en de hashtags als eerste reactie. Bij een
+   reel ligt de gekozen hook als voorbeeld over het beeld, maar let op: de API
+   plaatst de video zoals hij is, tekstoverlays moeten al in de video zitten
+   (CapCut of de Instagram-editor). Daarom staat die kanttekening er ook bij. */
+function ctPreviewTekenen(){
+  const vak=$('#ct_preview'); if(!vak) return;
+  const pk=CT.pakket||{};
+  const isVideo=m=>/\.(mp4|mov|webm|m4v)$/i.test(m.path)||String(m.type||'').startsWith('video');
+  const capTekst=($('#ct_caption')&&$('#ct_caption').value)||pk.caption||'';
+  if(!CT.media.length){
+    vak.innerHTML='<div class="muted" style="font-size:13px">Upload eerst media, dan zie je hier de post zoals hij op Instagram komt.</div>';
+    $('#ct_previewhint').textContent='';
+    return;
+  }
+  const m0=CT.media[0];
+  const beeld=isVideo(m0)
+    ? `<video src="${ctPubliek(m0.path)}" muted playsinline loop autoplay></video>`
+    : `<img src="${ctPubliek(m0.path)}" alt="">`;
+  const hook=(pk.hooks&&pk.hooks[CT.hookKeus])||'';
+  vak.innerHTML=`
+  <div class="ig-frame">
+    <div class="ig-kop"><span class="ig-avatar">S</span><b>stevenbalivillas</b></div>
+    <div class="ig-media ${CT.soort==='reel'?'reel':''}">
+      ${beeld}
+      ${CT.soort==='reel'&&hook?`<div class="ig-overlaytip">${esc(hook)}</div>`:''}
+      ${CT.soort==='carousel'&&CT.media.length>1?`<span class="ig-teller">1/${CT.media.length}</span>
+        <div class="ig-dots">${CT.media.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</div>`:''}
+    </div>
+    <div class="ig-acties">♡ 💬 ↗</div>
+    <div class="ig-caption"><b>stevenbalivillas</b>${esc(capTekst)}</div>
+    ${pk.eerste_reactie?`<div class="ig-reactie"><b>stevenbalivillas</b>${esc(pk.eerste_reactie)}</div>`:''}
+  </div>`;
+  $('#ct_previewhint').innerHTML = CT.soort==='reel'
+    ? 'De hook-overlay hierboven is ter illustratie: de API plaatst je video precies zoals geupload. Zet de overlay-teksten er dus eerst op in CapCut of de Instagram-editor, of plaats de reel handmatig met dit pakket ernaast.'
+    : CT.soort==='carousel' ? 'Je afbeeldingen worden precies zo geplaatst als geupload; de slide-teksten hierboven zijn om erop te zetten voordat je publiceert.'
+    : '';
+  const ta=$('#ct_caption');
+  if(ta&&!ta.dataset.previewkoppeling){ta.dataset.previewkoppeling='1';ta.addEventListener('input',()=>{
+    const c=vak.querySelector('.ig-caption'); if(c)c.innerHTML='<b>stevenbalivillas</b>'+esc(ta.value);});}
+}
+
+/* Echt publiceren kan zodra de Instagram-koppeling er is; de check vertelt wat
+   er eventueel nog ontbreekt en de knop verschijnt alleen als het kan. */
+let CT_IG=null; // uitkomst van de check, 1x per sessie
+async function ctPlaatsTekenen(){
+  const vak=$('#ct_plaats'); if(!vak) return;
+  if(CT_IG===null){
+    try{ const {data}=await sb.functions.invoke('ig-publiceren',{body:{actie:'check'}}); CT_IG=data||{ok:false,reden:'geen antwoord'}; }
+    catch(e){ CT_IG={ok:false,reden:String(e&&e.message||e)}; }
+  }
+  if(!$('#ct_plaats')) return; // intussen weggeklikt
+  if(CT_IG.klaar){
+    vak.innerHTML=`
+      <div class="bc-hint" style="margin:0 0 8px">Gekoppeld aan <b>@${esc(CT_IG.account)}</b>. Caption en hashtags-reactie gaan automatisch mee.</div>
+      <button class="btn btn-primary btn-sm" id="ct_publiceer">📤 Plaats op Instagram</button>
+      <div class="muted" id="ct_plaatsstatus" style="font-size:13px;margin-top:6px"></div>`;
+    $('#ct_publiceer').onclick=ctPubliceer;
+  }else if(CT_IG.gevonden&&CT_IG.gevonden.length){
+    vak.innerHTML=`<div class="bc-hint" style="margin:0">Bijna: je Meta-token ziet <b>@${esc(CT_IG.gevonden[0].ig_naam)}</b> al (ig-id ${esc(CT_IG.gevonden[0].ig_id)}). Zet die id als <code>ig_user_id</code> in integration_config en publiceren staat aan.</div>`;
+  }else{
+    vak.innerHTML=`<div class="bc-hint" style="margin:0">Rechtstreeks plaatsen staat nog uit: ${esc(CT_IG.reden||'Instagram is niet gekoppeld')}.<br>
+      Tot die tijd: kopieer de caption en hashtags hiernaast en plaats via de Instagram-app; dat is twee minuten werk met dit pakket ernaast.</div>`;
+  }
+}
+
+async function ctPubliceer(){
+  if(!CT.postId){await ctOpslaan(null); if(!CT.postId){toast('Kon de post niet opslaan','err');return;}}
+  else await ctOpslaan(null); // laatste captionwijzigingen mee
+  const knop=$('#ct_publiceer'), st=$('#ct_plaatsstatus');
+  knop.disabled=true; st.textContent=CT.soort==='reel'?'Video naar Meta, verwerken kan een minuut duren…':'Plaatsen…';
+  try{
+    const {data,error}=await sb.functions.invoke('ig-publiceren',{body:{actie:'publiceer',post_id:CT.postId}});
+    if(error||!data||data.ok===false){
+      st.innerHTML=`<span class="err">${esc((data&&data.reden)||(error&&error.message)||'mislukt')}</span>`;
+      knop.disabled=false; return;
+    }
+    if(data.bezig){ st.textContent='Meta verwerkt de video nog. Klik over een minuut nog een keer, dan wordt hij afgerond.'; knop.disabled=false; return; }
+    st.innerHTML=`Geplaatst!${data.permalink?` <a href="${esc(data.permalink)}" target="_blank" rel="noopener">Bekijk hem op Instagram</a>.`:''}`+
+      (data.eerste_reactie_geplaatst?' Hashtags staan als eerste reactie eronder.':' <span class="err">De hashtags-reactie lukte niet; plak hem zelf even onder de post.</span>');
+    knop.textContent='✓ Geplaatst'; toast('Post staat op Instagram','ok'); ctLijstLaden();
+  }catch(e){ st.innerHTML=`<span class="err">${esc(String(e&&e.message||e))}</span>`; knop.disabled=false; }
 }
 
 async function ctOpslaan(status){
