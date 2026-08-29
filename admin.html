@@ -1044,7 +1044,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-hook-edit';
+const APP_VERSIE='2026-08-29-opnamedatum';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3610,10 +3610,16 @@ async function videoVerkleinen(file, status){
 let BIB={rijen:[],laden:false};
 
 async function bibLaden(){
-  const {data,error}=await sb.from('content_bibliotheek').select('*').order('aangemaakt_at',{ascending:false}).limit(400);
+  // Sorteren op wanneer het beeld gemaakt is, niet wanneer het geupload werd:
+  // de sync zette alles op een dag in albumvolgorde online en dan betekent
+  // uploaddatum feitelijk oudste-eerst.
+  const {data,error}=await sb.from('content_bibliotheek').select('*')
+    .order('opname_datum',{ascending:false,nullsFirst:false})
+    .order('aangemaakt_at',{ascending:false}).limit(700);
   if(!error&&Array.isArray(data)) BIB.rijen=data;
   return BIB.rijen;
 }
+const bibDatum=r=>new Date(r.opname_datum||r.aangemaakt_at);
 
 function bibThumb(r){ return ctPubliek(r.thumb_path||r.path); }
 
@@ -3787,7 +3793,7 @@ async function bibKiezer(){
   const voorgesteld=[...passend].sort((a,b)=>b.sc-a.sc).slice(0,12);
   const voorIds=new Set(voorgesteld.map(x=>x.r.id));
   const andere=passend.filter(x=>!voorIds.has(x.r.id))
-    .sort((a,b)=>new Date(b.r.aangemaakt_at)-new Date(a.r.aangemaakt_at)).slice(0,200);
+    .sort((a,b)=>bibDatum(b.r)-bibDatum(a.r)).slice(0,200);
   const tegel=x=>`
     <div class="bib-item" data-bibpak="${x.r.id}" title="${esc(x.r.beschrijving||'')}">
       ${bibTegelMedia(x.r)}
