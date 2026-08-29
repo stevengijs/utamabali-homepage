@@ -1044,7 +1044,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-voor-app';
+const APP_VERSIE='2026-08-29-stemketen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -4260,7 +4260,11 @@ async function voStart(){
   if(!woorden.length){toast('Er is nog geen caption om in te spreken','err');return;}
   if(!CT.media.length){toast('Upload eerst je b-roll, die is de achtergrond van de video','err');return;}
   let stream;
-  try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+  // Ruisonderdrukking, echo-onderdrukking en automatische versterking aan de
+  // bron: dit is de eerste helft van de schone stem, de render-keten doet de
+  // tweede helft.
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:{
+    echoCancellation:true, noiseSuppression:true, autoGainControl:true }}); }
   catch(e){
     toast(e.name==='NotAllowedError'
       ? 'De microfoon is geblokkeerd voor deze site. Klik op het slotje links van het webadres en zet Microfoon op Toestaan, ververs daarna de pagina.'
@@ -4296,7 +4300,9 @@ async function voStart(){
     VO.spraak=new SR();
     VO.spraak.lang='nl-NL'; VO.spraak.continuous=true; VO.spraak.interimResults=true;
     VO.spraak.onresult=ev=>{
-      const nu=(performance.now()-VO.t0)/1000;
+      // De herkenning meldt een woord pas ~0,6s nadat het gezegd is; zonder
+      // correctie loopt de ondertiteling structureel achter op de stem.
+      const nu=Math.max((performance.now()-VO.t0)/1000-0.6,0.05);
       const laatste=ev.results[ev.results.length-1];
       const gezegd=String(laatste[0].transcript||'').trim().split(/\s+/).map(voKaal).filter(Boolean);
       for(const g of gezegd.slice(-4)){
@@ -4398,7 +4404,23 @@ async function voRender(alleenMuziek){
 
     const ac=new (window.AudioContext||window.webkitAudioContext)();
     const bestem=ac.createMediaStreamDestination();
-    if(stem) ac.createMediaElementSource(stem).connect(bestem);
+    if(stem){
+      // De stem-keten: rumble en gerommel eronder wegfilteren (hoogdoorlaat
+      // 90 Hz), sissen temperen (laagdoorlaat 12 kHz), een presence-boost
+      // rond 3 kHz zodat de stem naar voren komt, en een compressor die het
+      // volume egaal en vol maakt. Dezelfde keten als een podcast-nabewerking.
+      const bronStem=ac.createMediaElementSource(stem);
+      const hoog=ac.createBiquadFilter(); hoog.type='highpass'; hoog.frequency.value=90;
+      const laag=ac.createBiquadFilter(); laag.type='lowpass'; laag.frequency.value=12000;
+      const presence=ac.createBiquadFilter(); presence.type='peaking';
+      presence.frequency.value=3000; presence.Q.value=1; presence.gain.value=3;
+      const comp=ac.createDynamicsCompressor();
+      comp.threshold.value=-26; comp.knee.value=12; comp.ratio.value=4;
+      comp.attack.value=0.003; comp.release.value=0.25;
+      const uitGain=ac.createGain(); uitGain.gain.value=1.35;
+      bronStem.connect(hoog); hoog.connect(laag); laag.connect(presence);
+      presence.connect(comp); comp.connect(uitGain); uitGain.connect(bestem);
+    }
 
     // De muziek loopt in een lus onder het geheel, door een volumeknop. Onder
     // een voice-over hoort die laag te staan; de slider is wat de kijker hoort.
@@ -4443,8 +4465,11 @@ async function voRender(alleenMuziek){
         return {van:m?parseFloat(m[1]):0, tot:m?parseFloat(m[2]):duur, tekst:String(o.tekst||'')};
       }).filter(o=>o.tekst);
     }
-    const brokVoor=t=>{ for(let i=brokken.length-1;i>=0;i--){ const b=brokken[i];
-        if(t>=(b[0].t||0)) return {b,i}; } return null; };
+    // Ondertitels horen een fractie voor de stem uit te lopen; 150 ms
+    // voorsprong leest als perfect synchroon.
+    const brokVoor=t=>{ const tv=t+0.15;
+      for(let i=brokken.length-1;i>=0;i--){ const b=brokken[i];
+        if(tv>=(b[0].t||0)) return {b,i}; } return null; };
 
     // De klok start pas als video, audio en recorder echt lopen; eerder
     // startte hij voor het bufferen van de video en dan waren de eerste
