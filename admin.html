@@ -425,6 +425,10 @@
                  border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;line-height:1}
   .ct-tegel .nr{position:absolute;bottom:5px;left:5px;padding:1px 7px;border-radius:999px;
                 background:rgba(0,0,0,.55);color:#fff;font-size:10.5px;font-weight:700}
+  .ct-tegel .schuif{position:absolute;bottom:5px;right:5px;display:flex;gap:3px}
+  .ct-tegel .schuif button{width:22px;height:22px;border-radius:6px;border:none;cursor:pointer;
+                           background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:1}
+  .ct-tegel .schuif button:disabled{opacity:.3;cursor:default}
   .ct-upload{display:flex;align-items:center;justify-content:center;width:110px;height:138px;
              border:2px dashed var(--line);border-radius:9px;background:none;cursor:pointer;
              color:var(--muted);font-size:26px}
@@ -512,10 +516,9 @@
   .ig-reelhud .zij svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block;margin:0 auto 3px}
   .ig-hooktekst{position:absolute;top:16%;left:14px;right:14px;text-align:center;color:#fff;
                 font-weight:800;font-size:15px;line-height:1.35;text-shadow:0 1px 10px rgba(0,0,0,.75)}
-  .ig-hooktekst.blok{text-shadow:none}
-  .ig-hooktekst.blok i{font-style:normal;background:#fff;color:#111;padding:3px 8px;border-radius:6px;
-                       -webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.75}
-  .ig-hooktekst.accent b{color:#FFE234;font-weight:800}
+  .ig-hooktekst i{font-style:normal;padding:3px 8px;border-radius:6px;
+                  -webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.75;text-shadow:none}
+  .ig-hooktekst b{color:#FFE234}
   /* Weekagenda: elke dag een post, vandaag uitgelicht */
   .wk-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:4px 0 10px}
   @media(max-width:900px){.wk-strip{grid-template-columns:repeat(2,1fr)}}
@@ -1018,7 +1021,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-muziek';
+const APP_VERSIE='2026-08-29-igfonts2';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2814,10 +2817,28 @@ let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:nul
    overlay, het witte tekstblok van de Instagram-teksttool, en de
    accentstijl met opgelichte woorden die finance-reels domineren. */
 const CT_STIJLEN=[
-  {key:'wit',    naam:'Strak wit',  uitleg:'Witte bold tekst met schaduw, gecentreerd'},
-  {key:'blok',   naam:'Tekstblok',  uitleg:'Witte blokken achter de tekst, zoals de Instagram-teksttool'},
-  {key:'accent', naam:'Accent',     uitleg:'Wit met geel opgelichte kernwoorden, de finance-reelstijl'},
+  {key:'wit',    naam:'Strak wit',  opmaak:{achtergrond:'geen', accent:false}},
+  {key:'blok',   naam:'Tekstblok',  opmaak:{achtergrond:'wit',  accent:false}},
+  {key:'accent', naam:'Accent',     opmaak:{achtergrond:'geen', accent:true}},
 ];
+
+/* Alleen de lettertypen die de teksttool van Instagram zelf aanbiedt
+   (Klassiek, Modern, Neon, Typewriter, Sterk, Literatuur), benaderd met
+   systeemfonts. Bewust niets anders: wat hier staat moet een kijker ook in de
+   app zelf kunnen zien, anders voelt de reel meteen als buiten Instagram
+   gemaakt. De achtergrond is de A-knop van de app: geen blok, wit blok met
+   donkere tekst, of zwart blok met witte tekst. */
+const CT_FONTS=[
+  {key:'klassiek',  naam:'Klassiek',  css:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif", dik:'700'},
+  {key:'modern',    naam:'Modern',    css:"'Helvetica Neue',Helvetica,Arial,sans-serif", dik:'300', spatie:true, caps:true},
+  {key:'neon',      naam:'Neon',      css:"'Arial Rounded MT Bold','Nunito','Segoe UI',sans-serif", dik:'700', gloed:true},
+  {key:'typewriter',naam:'Typewriter',css:"'American Typewriter','Courier New',monospace", dik:'700'},
+  {key:'sterk',     naam:'Sterk',     css:"'Arial Narrow','Helvetica Neue',Arial,sans-serif", dik:'800', caps:true},
+  {key:'literatuur',naam:'Literatuur',css:"Georgia,'Times New Roman',serif", dik:'700'},
+];
+// De losse opmaakknoppen kunnen van een preset afwijken; dit is de werkelijke
+// stand die preview en render allebei gebruiken.
+let CT_OPMAAK={achtergrond:'geen', accent:false, font:'klassiek'};
 
 const ctPubliek=pad=>{try{return sb.storage.from(CT_BUCKET).getPublicUrl(pad).data.publicUrl;}catch(e){return '';}};
 
@@ -2951,9 +2972,22 @@ function ctMediaTekenen(){
                   :`<img src="${ctPubliek(m.path)}" alt="">`}
       ${CT.soort==='carousel'?`<span class="nr">${i+1}</span>`:''}
       <button class="weg" data-weg="${i}" title="Verwijderen">×</button>
+      ${CT.soort==='carousel'&&CT.media.length>1?`<span class="schuif">
+        <button data-schuif="${i}:-1" ${i===0?'disabled':''} title="Naar voren">◀</button>
+        <button data-schuif="${i}:1" ${i===CT.media.length-1?'disabled':''} title="Naar achteren">▶</button>
+      </span>`:''}
     </div>`).join('')+
     `<button class="ct-upload" id="ct_upload" title="Media toevoegen">+</button>`;
-  vak.querySelectorAll('[data-weg]').forEach(b=>b.onclick=()=>{CT.media.splice(Number(b.dataset.weg),1);ctMediaTekenen();});
+  vak.querySelectorAll('[data-weg]').forEach(b=>b.onclick=()=>{CT.media.splice(Number(b.dataset.weg),1);ctMediaTekenen();ctPreviewTekenen();});
+  // Volgorde schuiven: de nummers en de slide-teksten volgen de nieuwe
+  // volgorde vanzelf, want die zijn positioneel (slide 1 = eerste afbeelding).
+  vak.querySelectorAll('[data-schuif]').forEach(b=>b.onclick=()=>{
+    const [i,r]=b.dataset.schuif.split(':').map(Number);
+    const j=i+r; if(j<0||j>=CT.media.length) return;
+    [CT.media[i],CT.media[j]]=[CT.media[j],CT.media[i]];
+    ctMediaTekenen(); ctPreviewTekenen();
+    if(CT.postId) ctOpslaan(null);
+  });
   $('#ct_upload').onclick=()=>{
     const k=document.createElement('input'); k.type='file';
     k.accept=CT.soort==='reel'?'video/*':'image/*';
@@ -3113,7 +3147,7 @@ async function ctVerbeter(){
   if(!CT.pakket){toast('Maak eerst een pakket','err');return;}
   const knop=$('#ct_verbeter'); knop.disabled=true; knop.textContent='Bezig…';
   try{
-    const huidig={...CT.pakket, stijl:CT.stijl, caption:($('#ct_caption')&&$('#ct_caption').value)||CT.pakket.caption};
+    const huidig={...CT.pakket, stijl:CT.stijl, opmaak:{...CT_OPMAAK}, caption:($('#ct_caption')&&$('#ct_caption').value)||CT.pakket.caption};
     const {data,error}=await sb.functions.invoke('content-maker',{body:{
       soort:CT.soort, onderwerp:$('#ct_onderwerp').value.trim(), project:CT.project||null,
       doel:CT.doel, aantal_media:CT.media.length, feedback, huidig}});
@@ -3154,14 +3188,30 @@ function ctPreviewTekenen(){
   const icDeel='<svg viewBox="0 0 24 24"><path d="M21 3 9.4 13.3M21 3l-6.9 18-4.7-7.7L2 9.9 21 3z"/></svg>';
   const icBewaar='<svg viewBox="0 0 24 24"><path d="M19 21 12 16.5 5 21V4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5V21z"/></svg>';
 
-  // Bij een reel: de gekozen hook in drie tekst-designs; de gekozen stijl
-  // wordt bij de voice-over echt zo in de video gebakken. Accentstijl: de
-  // woorden met cijfers of kernbegrippen lichten op.
+  // Bij een reel: de gekozen hook in drie tekst-designs; wat gekozen is wordt
+  // bij de voice-over echt zo in de video gebakken.
   const accentWoord=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
-  const hookOpmaak=(hook,stijl)=>{
-    if(stijl==='blok') return `<i>${esc(hook)}</i>`;
-    if(stijl==='accent') return hook.split(' ').map(w=>accentWoord(w)?`<b>${esc(w)}</b>`:esc(w)).join(' ');
-    return esc(hook);
+  const hookHtml=(hook,om)=>{
+    const f=CT_FONTS.find(x=>x.key===om.font)||CT_FONTS[0];
+    const tekst=f.caps?hook.toUpperCase():hook;
+    const stijlen=[`font-family:${f.css}`,`font-weight:${f.dik}`];
+    if(f.spatie) stijlen.push('letter-spacing:.09em');
+    if(f.gloed&&om.achtergrond==='geen') stijlen.push('text-shadow:0 0 10px rgba(255,255,255,.85),0 1px 10px rgba(0,0,0,.6)');
+    const inhoud = om.accent
+      ? tekst.split(' ').map(w=>accentWoord(w)?`<b>${esc(w)}</b>`:esc(w)).join(' ')
+      : esc(tekst);
+    if(om.achtergrond!=='geen'){
+      const [bg,fg]=om.achtergrond==='wit'?['#fff','#111']:['#111','#fff'];
+      return `<span style="${stijlen.join(';')}"><i style="background:${bg};color:${fg}">${inhoud}</i></span>`;
+    }
+    return `<span style="${stijlen.join(';')}">${inhoud}</span>`;
+  };
+  const hookOpmaak=(hook,stijlKey)=>{
+    const st=CT_STIJLEN.find(x=>x.key===stijlKey);
+    const om={...st.opmaak,font:CT_OPMAAK.font};
+    // De Tekstblok-kaart volgt de gekozen blokkleur van de achtergrondknop
+    if(stijlKey==='blok'&&CT_OPMAAK.achtergrond==='zwart') om.achtergrond='zwart';
+    return hookHtml(hook,om);
   };
   const kaart=(hook,i,stijl)=>{
     // Elke variant: de hook als regel 1, de rest van de caption blijft gelijk
@@ -3170,8 +3220,11 @@ function ctPreviewTekenen(){
 
     if(CT.soort==='reel'){
       const st=CT_STIJLEN[i];
-      return `<div class="ig-kaart ${st.key===CT.stijl?'on':''}" data-igstijl="${st.key}">
-        <div class="keuze"><span>${esc(st.naam)}</span><span>${st.key===CT.stijl?'✓ gekozen':'klik om te kiezen'}</span></div>
+      const actief=st.key==='blok'
+        ? (CT_OPMAAK.achtergrond!=='geen'&&!CT_OPMAAK.accent)
+        : (CT_OPMAAK.achtergrond===st.opmaak.achtergrond&&CT_OPMAAK.accent===st.opmaak.accent);
+      return `<div class="ig-kaart ${actief?'on':''}" data-igstijl="${st.key}">
+        <div class="keuze"><span>${esc(st.naam)}</span><span>${actief?'✓ gekozen':'klik om te kiezen'}</span></div>
         <div class="ig-frame reel"><div class="ig-media">
           ${beeld}
           <div class="ig-hooktekst ${st.key}">${hookOpmaak(hook,st.key)}</div>
@@ -3206,12 +3259,32 @@ function ctPreviewTekenen(){
   };
 
   const gekozenHook=hooks[Math.min(CT.hookKeus,hooks.length-1)]||hooks[0];
+  const bewerkBalk=CT.soort!=='reel'?'':`
+    <div class="vo-knoppen" style="margin-top:2px;flex-wrap:wrap">
+      <span class="muted" style="font-size:12px;font-weight:700">FONT</span>
+      ${CT_FONTS.map(f=>`<button class="bc-chip ${CT_OPMAAK.font===f.key?'on':''}" data-igfont="${f.key}" title="Zoals in de Instagram-editor">${f.naam}</button>`).join('')}
+      <span class="muted" style="font-size:12px;font-weight:700;margin-left:10px">ACHTERGROND</span>
+      ${[['geen','Geen'],['wit','Wit'],['zwart','Zwart']].map(([k,n])=>`<button class="bc-chip ${CT_OPMAAK.achtergrond===k?'on':''}" data-igbg="${k}">${n}</button>`).join('')}
+    </div>`;
   vak.innerHTML=`<div class="ig-rij">${CT.soort==='reel'
     ? CT_STIJLEN.map((st,i)=>kaart(gekozenHook,i)).join('')
-    : hooks.map((h,i)=>kaart(h,i)).join('')}</div>`;
+    : hooks.map((h,i)=>kaart(h,i)).join('')}</div>`+bewerkBalk;
   vak.querySelectorAll('[data-igstijl]').forEach(k=>k.onclick=()=>{
     CT.stijl=k.dataset.igstijl;
-    if(CT.pakket) CT.pakket.stijl=CT.stijl;
+    const st=CT_STIJLEN.find(x=>x.key===CT.stijl);
+    CT_OPMAAK={...CT_OPMAAK,...st.opmaak};
+    if(CT.pakket){CT.pakket.stijl=CT.stijl;CT.pakket.opmaak={...CT_OPMAAK};}
+    ctPreviewTekenen();
+  });
+  vak.querySelectorAll('[data-igfont]').forEach(k=>k.onclick=()=>{
+    CT_OPMAAK.font=k.dataset.igfont;
+    if(CT.pakket)CT.pakket.opmaak={...CT_OPMAAK};
+    ctPreviewTekenen();
+  });
+  vak.querySelectorAll('[data-igbg]').forEach(k=>k.onclick=()=>{
+    // De A-knop: de tekstkleur keert automatisch om met de achtergrond
+    CT_OPMAAK.achtergrond=k.dataset.igbg;
+    if(CT.pakket)CT.pakket.opmaak={...CT_OPMAAK};
     ctPreviewTekenen();
   });
   vak.querySelectorAll('[data-igkeuze]').forEach(k=>k.onclick=()=>{
@@ -3558,37 +3631,45 @@ async function voRender(alleenMuziek){
         const woorden=hit.b, van=woorden[0].t||0;
         const tot=(woorden[woorden.length-1].t??duur)+0.35;
         if(t<=tot){
-          // in de stijl die in de preview gekozen is
-          const stijl=CT.stijl||'wit';
-          ctx.font='700 64px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+          // in de opmaak die in de preview gekozen is: font, achtergrond,
+          // accent; de tekstkleur keert om met de achtergrond
+          const om=CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
+          const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
+          ctx.font=`${f.dik} 64px ${f.css}`;
+          try{ ctx.letterSpacing=f.spatie?'6px':'0px'; }catch(e){}
+          const toon=w=>f.caps?w.toUpperCase():w;
           const y=1490;
-          const breed=woorden.reduce((a,w)=>a+ctx.measureText(w.w+' ').width,0);
+          const breed=woorden.reduce((a,w)=>a+ctx.measureText(toon(w.w)+' ').width,0);
           let x=540-breed/2;
-          if(stijl==='blok'){
+          if(om.achtergrond!=='geen'){
+            const wit=om.achtergrond==='wit';
             ctx.shadowColor='transparent'; ctx.shadowBlur=0;
             const pad=22, hgt=92;
-            ctx.fillStyle='#ffffff';
-            const r=14, bx=x-pad, bw2=breed+pad*2;
-            ctx.beginPath(); ctx.roundRect(bx,y-66,bw2,hgt,r); ctx.fill();
-            for(const w of woorden){
-              ctx.fillStyle=(t>=(w.t||0))?'#111111':'#8a8a8a';
-              ctx.fillText(w.w,x,y); x+=ctx.measureText(w.w+' ').width;
-            }
-          }else{
-            ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=18; ctx.lineWidth=8;
-            const accent=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
+            ctx.fillStyle=wit?'#ffffff':'#111111';
+            ctx.beginPath(); ctx.roundRect(x-pad,y-66,breed+pad*2,hgt,14); ctx.fill();
             for(const w of woorden){
               const gezegd=t>=(w.t||0);
-              ctx.fillStyle = stijl==='accent'
-                ? (accent(w.w)?'#FFE234':'#ffffff')
-                : '#ffffff';
+              ctx.fillStyle = om.accent&&/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w.w)
+                ? '#c9a400'
+                : (wit ? (gezegd?'#111111':'#8a8a8a') : (gezegd?'#ffffff':'#9a9a9a'));
+              ctx.fillText(toon(w.w),x,y); x+=ctx.measureText(toon(w.w)+' ').width;
+            }
+          }else{
+            const accent=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
+            if(f.gloed){ ctx.shadowColor='rgba(255,255,255,.85)'; ctx.shadowBlur=26; }
+            else { ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=18; }
+            ctx.lineWidth=8;
+            for(const w of woorden){
+              const gezegd=t>=(w.t||0);
+              ctx.fillStyle = om.accent&&accent(w.w) ? '#FFE234' : '#ffffff';
               ctx.globalAlpha = gezegd?1:0.55;
-              ctx.strokeStyle='rgba(0,0,0,.45)';
-              ctx.strokeText(w.w,x,y); ctx.fillText(w.w,x,y);
-              x+=ctx.measureText(w.w+' ').width;
+              if(!f.gloed){ ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.strokeText(toon(w.w),x,y); }
+              ctx.fillText(toon(w.w),x,y);
+              x+=ctx.measureText(toon(w.w)+' ').width;
             }
             ctx.globalAlpha=1;
           }
+          try{ ctx.letterSpacing='0px'; }catch(e){}
         }
       }
       const prog=$('#vo_rprog'); if(prog) prog.textContent=Math.min(Math.round(t/duur*100),99);
@@ -3673,7 +3754,7 @@ async function ctOpslaan(status){
   const {data,error}=await sb.rpc('content_post_opslaan',{
     p_id:CT.postId, p_soort:CT.soort, p_onderwerp:$('#ct_onderwerp').value.trim()||null,
     p_project:CT.project||null, p_doel:CT.doel, p_media:CT.media,
-    p_pakket:CT.pakket?{...CT.pakket,stijl:CT.stijl}:null, p_caption:($('#ct_caption')&&$('#ct_caption').value)||null,
+    p_pakket:CT.pakket?{...CT.pakket,stijl:CT.stijl,opmaak:{...CT_OPMAAK}}:null, p_caption:($('#ct_caption')&&$('#ct_caption').value)||null,
     p_status:status||null});
   if(error){toast('Opslaan mislukt: '+error.message,'err');return;}
   CT.postId=data.id;
@@ -3703,6 +3784,7 @@ async function ctLijstLaden(){
     CT.soort=p.soort; CT.postId=p.id; CT.media=Array.isArray(p.media)?p.media:[];
     CT.project=p.project||''; CT.doel=p.doel||'comments'; CT.pakket=p.pakket||null;
     CT.stijl=(p.pakket&&p.pakket.stijl)||'wit';
+    CT_OPMAAK=(p.pakket&&p.pakket.opmaak)||{...(CT_STIJLEN.find(x=>x.key===CT.stijl)||CT_STIJLEN[0]).opmaak,font:'klassiek'};
     $('#ct_onderwerp').value=p.onderwerp||'';
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
