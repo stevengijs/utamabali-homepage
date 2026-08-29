@@ -1038,7 +1038,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-hashtags';
+const APP_VERSIE='2026-08-29-automaat';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2910,6 +2910,12 @@ async function renderContent(){
       <div class="wk-strip" id="wk_strip"><span class="muted" style="font-size:12px">Laden…</span></div>
     </div>
 
+    <div class="bc-buiten" style="padding-top:4px">
+      <button class="btn btn-primary" id="ct_verras" style="font-size:15px;padding:12px 22px">🪄 Maak de post van vandaag voor me</button>
+      <span class="muted" id="ct_verras_status" style="font-size:13px;margin-left:10px"></span>
+      <div class="bc-hint" style="margin-top:6px">Een klik: het onderwerp komt uit je weekplanning (en uit wat op je account werkt, zodra Instagram gekoppeld is), de beelden uit je bibliotheek, de teksten worden erop gebakken. Jij hoeft alleen te checken en te plaatsen. Reel-audio: je laatst gekozen muziek wordt gebruikt; een voice-over blijft jouw stem en spreek je zelf in.</div>
+    </div>
+
     <div class="field bc-buiten">
       <label>Wat maak je?</label>
       <div class="bc-rij">
@@ -2996,6 +3002,7 @@ async function renderContent(){
   });
   doelHint();
   $('#ct_genereer').onclick=ctGenereer;
+  $('#ct_verras').onclick=ctVerrasMe;
   $('#ct_spreek').onclick=ctSpreek;
   $('#bib_upload').onclick=bibUpload;
   bibTekenen();
@@ -3659,6 +3666,84 @@ async function bibKiezer(){
   });
 }
 
+/* ============== DE AUTOMAAT ==============
+   Een klik en de hele post ligt klaar: onderwerp uit de weekplanning van
+   vandaag, pakket van de generator (die de accountlessen al meeneemt zodra
+   Instagram gekoppeld is), beelden automatisch uit de bibliotheek gekozen met
+   dezelfde scoring als de kiezer, teksten erop gebakken (carousel) of het
+   overlay-script in de video (reel, met de laatst gekozen muziek eronder als
+   die er is). Steven checkt en plaatst; dat is alles. */
+async function ctVerrasMe(){
+  const knop=$('#ct_verras'), st=$('#ct_verras_status');
+  knop.disabled=true;
+  const zeg=t=>{if(st)st.textContent=t;};
+  try{
+    // 1. het plan van vandaag (of de eerstvolgende ongeposte dag)
+    zeg('Plan van vandaag ophalen…');
+    const {data:posts}=await sb.rpc('content_posts_lijst');
+    const vandaag=new Date(); vandaag.setHours(0,0,0,0);
+    const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    let plan=(posts||[]).find(p=>p.gepland_voor===iso(vandaag)&&p.status!=='gepost');
+    if(!plan){
+      zeg('Geen planning; week plannen…');
+      await sb.functions.invoke('content-maker',{body:{actie:'weekplan'}});
+      const her=await sb.rpc('content_posts_lijst');
+      plan=(her.data||[]).find(p=>p.gepland_voor===iso(vandaag)&&p.status!=='gepost');
+      if(!plan){toast('Kon geen plan voor vandaag maken','err');return;}
+    }
+    CT.soort=plan.soort; CT.postId=plan.id; CT.project=plan.project||'';
+    CT.doel=plan.doel||'comments'; CT.pakket=null; CT.media=[];
+    $('#ct_onderwerp').value=plan.onderwerp||'';
+    document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
+    document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
+    ctTeken();
+
+    // 2. beelden kiezen met dezelfde scoring als de kiezer
+    zeg('Beelden kiezen uit je bibliotheek…');
+    await bibLaden();
+    const woorden=(plan.onderwerp||'').toLowerCase().split(/\W+/).filter(w=>w.length>3);
+    const wilVideo=CT.soort==='reel';
+    const scoor=r=>{
+      if(wilVideo&&r.soort!=='video') return -1;
+      if(!wilVideo&&r.soort!=='foto') return -1;
+      let sc=(r.score||4)/2;
+      if(plan.rubriek&&(r.rubrieken||[]).includes(plan.rubriek)) sc+=3;
+      const tekst=((r.tags||[]).join(' ')+' '+(r.beschrijving||'')).toLowerCase();
+      sc+=woorden.filter(w=>tekst.includes(w)).length*1.5;
+      if(r.laatst_gebruikt&&Date.now()-new Date(r.laatst_gebruikt).getTime()<21*864e5) sc-=4;
+      return sc;
+    };
+    const kandidaten=BIB.rijen.map(r=>({r,sc:scoor(r)})).filter(x=>x.sc>=0).sort((a,b)=>b.sc-a.sc);
+    if(!kandidaten.length){toast(wilVideo?'Geen video in de bibliotheek voor deze reel':'Geen passende foto in de bibliotheek','err');return;}
+    const aantal=CT.soort==='carousel'?Math.min(5,kandidaten.length):1;
+    const gekozen=kandidaten.slice(0,aantal).map(x=>x.r);
+    CT.media=gekozen.map(r=>({path:r.path,type:r.soort==='video'?'video/mp4':'image/jpeg'}));
+    gekozen.forEach(r=>sb.from('content_bibliotheek').update({laatst_gebruikt:new Date().toISOString()}).eq('id',r.id).then(()=>{}));
+    ctMediaTekenen();
+
+    // 3. het pakket
+    zeg('Hook, caption en teksten schrijven…');
+    await ctGenereer();
+    if(!CT.pakket){return;}
+
+    // 4. afwerken per soort
+    if(CT.soort==='carousel'&&CT.pakket.slides&&CT.pakket.slides.length){
+      zeg('Teksten op de beelden zetten…');
+      await ctSlidesBakken();
+    }else if(CT.soort==='reel'){
+      zeg('Video maken met het overlay-script'+(VO.muziekUrl?' en muziek':'')+'…');
+      await voRender(true);
+      if(VO.stand==='video'){ await voGebruik(); }
+    }
+
+    await ctOpslaan('klaar');
+    zeg('');
+    toast('Klaar om te checken en te plaatsen','ok');
+    const fr=document.querySelector('.ig-rij');
+    if(fr) fr.scrollIntoView({behavior:'smooth',block:'center'});
+  } finally { knop.disabled=false; }
+}
+
 /* ============== ONDERWERP INSPREKEN ==============
    Steven vertelt hardop waar de post over moet gaan; de spraakherkenning
    schrijft live mee in het onderwerpveld en zodra hij stopt wordt het pakket
@@ -4080,7 +4165,8 @@ async function voRender(alleenMuziek){
   const m0=CT.media[0];
   const isVideo=/\.(mp4|mov|webm|m4v)$/i.test(m0.path)||String(m0.type||'').startsWith('video');
   const metStem=!alleenMuziek&&!!VO.url;
-  if(!metStem&&!VO.muziekUrl){toast('Geen audio: neem een voice-over op of voeg muziek toe','err');return;}
+  const heeftOverlays=CT.pakket&&Array.isArray(CT.pakket.overlays)&&CT.pakket.overlays.length>0;
+  if(!metStem&&!VO.muziekUrl&&!heeftOverlays){toast('Geen audio: neem een voice-over op of voeg muziek toe','err');return;}
   if(VO._mtest){VO._mtest.pause();VO._mtest=null;}
   VO.stand='renderen'; voTekenen();
   try{
@@ -4099,6 +4185,11 @@ async function voRender(alleenMuziek){
       duur=isFinite(stem.duration)&&stem.duration>0?stem.duration:VO.duur;
     }else{
       duur=isVideo?Math.min(bron.duration||15,60):15;
+      if(!isVideo&&heeftOverlays){
+        const eind=Math.max(...CT.pakket.overlays.map(o=>{
+          const m=String(o.tijd||'').match(/-\s*([\d.]+)/); return m?parseFloat(m[1]):0; }));
+        if(eind>3) duur=Math.min(eind+0.6,60);
+      }
     }
 
     const canvas=document.createElement('canvas'); canvas.width=1080; canvas.height=1920;
@@ -4131,6 +4222,16 @@ async function voRender(alleenMuziek){
         if(brok.length>=4||/[.!?]$/.test(w.w)){brokken.push(brok);brok=[];} });
       if(brok.length)brokken.push(brok);
     }
+    // Zonder stem maar met een overlay-script uit het pakket: elke regel op
+    // zijn eigen tijdvak ("0-2s") in beeld, in de gekozen opmaak. Zo kan de
+    // automaat een reel volledig af opleveren zonder opname.
+    let ovl=null;
+    if(!metStem&&heeftOverlays){
+      ovl=CT.pakket.overlays.map(o=>{
+        const m=String(o.tijd||'').match(/([\d.]+)\s*-\s*([\d.]+)/);
+        return {van:m?parseFloat(m[1]):0, tot:m?parseFloat(m[2]):duur, tekst:String(o.tekst||'')};
+      }).filter(o=>o.tekst);
+    }
     const brokVoor=t=>{ for(let i=brokken.length-1;i>=0;i--){ const b=brokken[i];
         if(t>=(b[0].t||0)) return {b,i}; } return null; };
 
@@ -4143,6 +4244,37 @@ async function voRender(alleenMuziek){
       const sch=Math.max(1080/bw,1920/bh);
       ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1920);
       ctx.drawImage(bron,(1080-bw*sch)/2,(1920-bh*sch)/2,bw*sch,bh*sch);
+      if(ovl){
+        const actief=ovl.find(o=>t>=o.van&&t<=o.tot);
+        if(actief){
+          const om=CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
+          const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
+          ctx.font=`${f.dik} 58px ${f.css}`;
+          const toonO=w=>f.caps?w.toUpperCase():w;
+          // regelterugloop binnen 940px
+          const woordenO=actief.tekst.split(/\s+/); const regelsO=[]; let rO='';
+          for(const w of woordenO){const kand=rO?rO+' '+toonO(w):toonO(w);
+            if(ctx.measureText(kand).width>940&&rO){regelsO.push(rO);rO=toonO(w);} else rO=kand;}
+          if(rO)regelsO.push(rO);
+          let yO=960-(regelsO.length-1)*40;
+          for(const regel of regelsO){
+            const breedO=ctx.measureText(regel).width; const xO=540-breedO/2;
+            if(om.achtergrond!=='geen'){
+              const wit=om.achtergrond==='wit';
+              ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+              ctx.fillStyle=wit?'#ffffff':'#111111';
+              ctx.beginPath(); ctx.roundRect(xO-20,yO-58,breedO+40,82,13); ctx.fill();
+              ctx.fillStyle=wit?'#111111':'#ffffff';
+            }else{
+              ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=16; ctx.lineWidth=7;
+              ctx.fillStyle='#ffffff'; ctx.strokeStyle='rgba(0,0,0,.45)';
+              ctx.strokeText(regel,xO,yO);
+            }
+            ctx.fillText(regel,xO,yO); yO+=80;
+          }
+          ctx.shadowBlur=0;
+        }
+      }
       const hit=brokVoor(t);
       if(hit){
         const woorden=hit.b, van=woorden[0].t||0;
