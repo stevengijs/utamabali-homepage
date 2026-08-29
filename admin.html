@@ -1041,7 +1041,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-fonts-vol';
+const APP_VERSIE='2026-08-29-mic-uitleg';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3815,7 +3815,15 @@ function ctSpreek(){
     }
     ta.value=(basis+vast+los).replace(/\s+/g,' ').trim();
   };
-  sr.onerror=e=>{ if(e.error==='not-allowed') toast('Geen toegang tot de microfoon','err'); };
+  sr.onerror=e=>{
+    const uitleg={
+      'not-allowed':'Geen toegang tot de microfoon. Klik op het slotje links van het webadres en zet Microfoon op Toestaan.',
+      'audio-capture':'Geen microfoon gevonden. Controleer je invoerapparaat in macOS.',
+      'network':'De spraakherkenning kon de spraakdienst niet bereiken; typ het onderwerp of probeer zo nog eens.',
+      'service-not-allowed':'De browser blokkeert de spraakdienst; typ het onderwerp in.',
+    };
+    if(e.error!=='no-speech'&&e.error!=='aborted') toast(uitleg[e.error]||('Opname-fout: '+e.error),'err');
+  };
   sr.onend=()=>{
     clearInterval(klok); CT_SPREEK=null;
     knop.textContent='🎙 Spreek in'; tijd.style.display='none';
@@ -4151,12 +4159,19 @@ async function voStart(){
   if(!CT.media.length){toast('Upload eerst je b-roll, die is de achtergrond van de video','err');return;}
   let stream;
   try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
-  catch(e){ toast('Geen toegang tot de microfoon: '+e.message,'err'); return; }
+  catch(e){
+    toast(e.name==='NotAllowedError'
+      ? 'De microfoon is geblokkeerd voor deze site. Klik op het slotje links van het webadres en zet Microfoon op Toestaan, ververs daarna de pagina.'
+      : 'Geen toegang tot de microfoon: '+e.message,'err');
+    return;
+  }
 
   VO.woorden=woorden.map(w=>({w, t:null, gehoord:false}));
   VO.wijzer=0; VO.t0=performance.now();
   const brokken=[];
-  VO.rec=new MediaRecorder(stream);
+  try{ VO.rec=new MediaRecorder(stream); }
+  catch(e){ stream.getTracks().forEach(t=>t.stop());
+    toast('Opnemen lukt niet in deze browser: '+e.message,'err'); return; }
   VO.rec.ondataavailable=e=>{if(e.data.size)brokken.push(e.data);};
   VO.rec.onstop=()=>{
     stream.getTracks().forEach(t=>t.stop());
