@@ -1044,7 +1044,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-alles-tonen';
+const APP_VERSIE='2026-08-29-trim';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2843,7 +2843,7 @@ async function bcVerstuurWa(test){
    Een post is daarmee geen bereik maar een leadmachine, en comments zijn
    precies wat het algoritme het zwaarst beloont. */
 const CT_BUCKET='content-media';
-let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:null, project:'', doel:'comments', lijst:[], capOpen:false, gesproken:false};
+let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:null, project:'', doel:'comments', lijst:[], capOpen:false, gesproken:false, trim:null};
 
 /* De drie tekst-designs voor reels. De preview toont ze en de gekozen stijl
    wordt door de voice-over-render echt zo in de video gebakken. De namen en
@@ -3115,7 +3115,8 @@ function ctMediaTekenen(){
      <button class="ct-upload" id="ct_bib_kies" title="${vol?'Vervangen uit de bibliotheek':'Kies uit de bibliotheek'}" style="font-size:13px;line-height:1.4">📚<br>${vol?'vervang<br>uit bieb':'bieb'}</button>
      ${gebakken?`<button class="ct-upload" id="ct_terug_origineel" title="De gebakken tekst eraf: terug naar je schone beeld" style="font-size:13px;line-height:1.4">🧽<br>tekst eraf</button>`:''}`;
     })();
-  vak.querySelectorAll('[data-weg]').forEach(b=>b.onclick=()=>{CT.media.splice(Number(b.dataset.weg),1);ctMediaTekenen();ctPreviewTekenen();});
+  vak.querySelectorAll('[data-weg]').forEach(b=>b.onclick=()=>{CT.media.splice(Number(b.dataset.weg),1);CT.trim=null;ctMediaTekenen();ctPreviewTekenen();});
+  ctTrimTekenen();
   // Volgorde schuiven: de nummers en de slide-teksten volgen de nieuwe
   // volgorde vanzelf, want die zijn positioneel (slide 1 = eerste afbeelding).
   const bk=$('#ct_bib_kies'); if(bk) bk.onclick=()=>bibKiezer();
@@ -3572,6 +3573,56 @@ function ctPreviewTekenen(){
   if(ta&&!ta.dataset.previewkoppeling){ta.dataset.previewkoppeling='1';let t;ta.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(ctPreviewTekenen,400);});}
 }
 
+/* ============== HET BESTE STUK KIEZEN (trim) ==============
+   Reels zijn kort en b-roll is vaak lang; met twee schuiven kies je het
+   segment dat de reel wordt. De bak gebruikt dan alleen dat stuk, en is je
+   voice-over langer dan het segment, dan herhaalt het segment zich netjes.
+   Het origineel blijft onaangetast; de keuze wordt bij de post bewaard. */
+function ctTrimTekenen(){
+  const oud=document.querySelector('#ct_trim'); if(oud) oud.remove();
+  const isVid=m=>m&&(/\.(mp4|mov|webm|m4v)$/i.test(m.path)||String(m.type||'').startsWith('video'));
+  if(CT.soort!=='reel'||!isVid(CT.media[0])) return;
+  const anker=$('#ct_mediahint'); if(!anker) return;
+  anker.insertAdjacentHTML('afterend',`
+    <div id="ct_trim" style="margin-top:10px;max-width:560px">
+      <div class="bc-lab" style="margin:0 0 6px">✂️ Het beste stuk voor de reel</div>
+      <video id="ct_trim_v" src="${ctPubliek(CT.media[0].path)}" muted playsinline
+             style="width:200px;border-radius:10px;background:#000;display:block"></video>
+      <div style="display:grid;grid-template-columns:52px 1fr;gap:6px 10px;align-items:center;margin-top:8px;font-size:12.5px">
+        <span class="muted">start</span><input type="range" id="ct_trim_van" min="0" max="100" step="0.1" value="0">
+        <span class="muted">einde</span><input type="range" id="ct_trim_tot" min="0" max="100" step="0.1" value="100">
+      </div>
+      <div class="vo-knoppen" style="margin-top:4px">
+        <button class="bc-zoekactie" id="ct_trim_speel">▶ selectie afspelen</button>
+        <span class="muted" id="ct_trim_info" style="font-size:12.5px"></span>
+      </div>
+    </div>`);
+  const v=$('#ct_trim_v'), rv=$('#ct_trim_van'), rt=$('#ct_trim_tot'), info=$('#ct_trim_info');
+  let bewaarT;
+  const bewaar=()=>{clearTimeout(bewaarT);bewaarT=setTimeout(()=>{if(CT.postId)ctOpslaan(null);},800);};
+  const toon=()=>{
+    const van=+rv.value, tot=+rt.value, len=tot-van;
+    info.textContent=`${van.toFixed(1)}s tot ${tot.toFixed(1)}s (${len.toFixed(1)}s)`+
+      (len>60?' · langer dan 60s, wordt afgekapt':len<3?' · wel erg kort':'');
+    CT.trim={van, tot}; bewaar();
+  };
+  v.onloadedmetadata=()=>{
+    const d=v.duration||0;
+    rv.max=rt.max=d.toFixed(1);
+    if(CT.trim&&CT.trim.tot<=d){ rv.value=CT.trim.van; rt.value=CT.trim.tot; }
+    else { rv.value=0; rt.value=d.toFixed(1); }
+    toon();
+  };
+  rv.oninput=()=>{ if(+rv.value>=+rt.value-1) rv.value=(+rt.value-1).toFixed(1);
+    v.currentTime=+rv.value; toon(); };
+  rt.oninput=()=>{ if(+rt.value<=+rv.value+1) rt.value=(+rv.value+1).toFixed(1);
+    v.currentTime=+rt.value; toon(); };
+  $('#ct_trim_speel').onclick=()=>{
+    v.currentTime=+rv.value; v.play();
+    v.ontimeupdate=()=>{ if(v.currentTime>=+rt.value){ v.pause(); v.ontimeupdate=null; } };
+  };
+}
+
 /* ============== GROTE VIDEO'S VERKLEINEN ==============
    iPhone-video's zijn 4K HEVC met bitrates van 50 Mbps en meer; een clip van
    een paar minuten is dan honderden MB's. Instagram codeert alles toch terug
@@ -3823,7 +3874,7 @@ function bibTekenenStil(){
 function bibGebruik(r){
   if(CT.soort==='reel'&&r.soort!=='video'){toast('Een reel heeft video nodig; deze foto kan in een post of carousel','err');return false;}
   if(CT.soort!=='reel'&&r.soort==='video'){toast('Video kan alleen in een reel; wissel eerst van soort','err');return false;}
-  if(CT.soort!=='carousel') CT.media=[];
+  if(CT.soort!=='carousel'){ CT.media=[]; CT.trim=null; }
   CT.media.push({path:r.path,type:r.soort==='video'?'video/mp4':'image/jpeg'});
   sb.from('content_bibliotheek').update({laatst_gebruikt:new Date().toISOString()}).eq('id',r.id).then(()=>{});
   ctMediaTekenen(); ctPreviewTekenen();
@@ -3909,7 +3960,7 @@ async function ctVerrasMe(){
     }
     const plan={...ideeR.data.idee, rubriek:null};
     CT.soort=plan.soort||'reel'; CT.postId=null; CT.project=plan.project||'';
-    CT.doel='comments'; CT.pakket=null; CT.media=[]; CT.mediaOrigineel=null;
+    CT.doel='comments'; CT.pakket=null; CT.media=[]; CT.mediaOrigineel=null; CT.trim=null;
     $('#ct_onderwerp').value=plan.onderwerp||'';
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
@@ -4513,12 +4564,14 @@ async function voRender(alleenMuziek){
     // Het leidende spoor bepaalt de lengte: de stem als die er is, anders de
     // b-roll-video, anders (foto plus muziek) een vast kort formaat.
     let stem=null, duur;
+    const trim=(isVideo&&CT.trim&&CT.trim.tot>CT.trim.van+0.5)?CT.trim:null;
+    const segLen=trim?(trim.tot-trim.van):(isVideo?(bron.duration||15):15);
     if(metStem){
       stem=new Audio(VO.url);
       await new Promise(ok=>{stem.onloadedmetadata=ok; stem.load();});
       duur=isFinite(stem.duration)&&stem.duration>0?stem.duration:VO.duur;
     }else{
-      duur=isVideo?Math.min(bron.duration||15,60):15;
+      duur=isVideo?Math.min(segLen,60):15;
       if(heeftOverlays){
         // De video moet het hele script dragen; is de b-roll korter, dan
         // loopt hij door (loop staat aan) tot de laatste regel is geweest.
@@ -4697,7 +4750,13 @@ async function voRender(alleenMuziek){
       if(t<duur+0.1) requestAnimationFrame(teken);
     };
 
-    if(isVideo){ bron.currentTime=0; await bron.play(); }
+    if(isVideo){
+      bron.currentTime=trim?trim.van:0;
+      // binnen het gekozen segment blijven: voorbij het einde springt hij
+      // terug naar de start (loopt door tot stem of script klaar is)
+      if(trim) bron.ontimeupdate=()=>{ if(bron.currentTime>=trim.tot-0.05) bron.currentTime=trim.van; };
+      await bron.play();
+    }
     await ac.resume(); opn.start(500);
     if(stem) await stem.play();
     if(muziek) await muziek.play();
@@ -4781,7 +4840,7 @@ async function ctOpslaan(status){
   const {data,error}=await sb.rpc('content_post_opslaan',{
     p_id:CT.postId, p_soort:CT.soort, p_onderwerp:$('#ct_onderwerp').value.trim()||null,
     p_project:CT.project||null, p_doel:CT.doel, p_media:CT.media,
-    p_pakket:CT.pakket?{...CT.pakket,stijl:CT.stijl,opmaak:{...CT_OPMAAK}}:null, p_caption:($('#ct_caption')&&$('#ct_caption').value)||null,
+    p_pakket:CT.pakket?{...CT.pakket,stijl:CT.stijl,opmaak:{...CT_OPMAAK},trim:CT.trim||null}:null, p_caption:($('#ct_caption')&&$('#ct_caption').value)||null,
     p_status:status||null});
   if(error){toast('Opslaan mislukt: '+error.message,'err');return;}
   CT.postId=data.id;
@@ -4828,6 +4887,7 @@ async function ctLijstLaden(){
     CT.project=p.project||''; CT.doel=p.doel||'comments'; CT.pakket=p.pakket||null;
     CT.stijl=(p.pakket&&p.pakket.stijl)||'wit';
     CT.mediaOrigineel=(p.pakket&&p.pakket.media_origineel)||null;
+    CT.trim=(p.pakket&&p.pakket.trim)||null;
     CT_OPMAAK=(p.pakket&&p.pakket.opmaak)||{...(CT_STIJLEN.find(x=>x.key===CT.stijl)||CT_STIJLEN[0]).opmaak,font:'klassiek'};
     $('#ct_onderwerp').value=p.onderwerp||'';
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
