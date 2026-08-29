@@ -1041,7 +1041,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-onderwerp-leidend';
+const APP_VERSIE='2026-08-29-bak-origineel';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3106,6 +3106,13 @@ function ctMediaTekenen(){
 }
 
 async function ctGenereer(){
+  // Waren de beelden al gebakken (tekst erin), zet dan eerst de schone
+  // originelen terug; anders toont de preview de oude tekst en zou een
+  // nieuwe bak eroverheen gaan.
+  if(CT.soort==='carousel'&&CT.mediaOrigineel&&CT.mediaOrigineel.length){
+    CT.media=[...CT.mediaOrigineel];
+    ctMediaTekenen();
+  }
   const onderwerp=$('#ct_onderwerp').value.trim();
   if(!onderwerp){toast('Vertel eerst in een paar zinnen waar het over gaat','err');return;}
   if(CT.soort==='carousel'&&CT.media.length<2){toast('Upload eerst je afbeeldingen, dan krijgt elke slide zijn eigen tekst','err');return;}
@@ -3735,7 +3742,7 @@ async function ctVerrasMe(){
     }
     const plan={...ideeR.data.idee, rubriek:null};
     CT.soort=plan.soort||'reel'; CT.postId=null; CT.project=plan.project||'';
-    CT.doel='comments'; CT.pakket=null; CT.media=[];
+    CT.doel='comments'; CT.pakket=null; CT.media=[]; CT.mediaOrigineel=null;
     $('#ct_onderwerp').value=plan.onderwerp||'';
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
@@ -3856,6 +3863,10 @@ async function ctSlidesBakken(){
   if(!CT.media.length){toast('Upload eerst je afbeeldingen','err');return;}
   const st=$('#ct_slides_status'); const knop=$('#ct_slides_bakken'); knop.disabled=true;
   try{
+    // De schone beelden onthouden: bij een nieuw pakket (nieuwe teksten) komen
+    // die terug, anders bak je tekst over oude tekst heen.
+    if(!CT.mediaOrigineel||!CT.mediaOrigineel.length) CT.mediaOrigineel=[...CT.media];
+    if(CT.pakket) CT.pakket.media_origineel=CT.mediaOrigineel;
     const nieuw=[];
     for(let i=0;i<CT.media.length;i++){
       st.innerHTML=`<span class="muted" style="font-size:13px">Slide ${i+1} van ${CT.media.length}…</span>`;
@@ -3876,9 +3887,7 @@ async function ctSlidesBakken(){
         const regels=ctWikkel(x,sl.kop,880);
         const y0=675-(regels.length-1)*52;
         regels.forEach((r,ri)=>x.fillText(r,540,y0+ri*104));
-        x.shadowBlur=0; x.font='500 36px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
-        x.fillStyle='rgba(255,255,255,.92)';
-        x.fillText('@stevenbalivillas',540,y0+regels.length*104+30);
+        x.shadowBlur=0;
       }else{
         // Binnenslide: profielregel boven, kop en ondertekst op verloop onder
         x.textAlign='left';
@@ -4542,6 +4551,7 @@ async function ctLijstLaden(){
     CT.soort=p.soort; CT.postId=p.id; CT.media=Array.isArray(p.media)?p.media:[];
     CT.project=p.project||''; CT.doel=p.doel||'comments'; CT.pakket=p.pakket||null;
     CT.stijl=(p.pakket&&p.pakket.stijl)||'wit';
+    CT.mediaOrigineel=(p.pakket&&p.pakket.media_origineel)||null;
     CT_OPMAAK=(p.pakket&&p.pakket.opmaak)||{...(CT_STIJLEN.find(x=>x.key===CT.stijl)||CT_STIJLEN[0]).opmaak,font:'klassiek'};
     $('#ct_onderwerp').value=p.onderwerp||'';
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
