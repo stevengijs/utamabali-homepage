@@ -1067,7 +1067,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-filmstrip';
+const APP_VERSIE='2026-08-29-trim-play';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3671,9 +3671,14 @@ function ctTrimTekenen(){
   const anker=$('#ct_mediahint'); if(!anker) return;
   anker.insertAdjacentHTML('afterend',`
     <div id="ct_trim" style="margin-top:12px;max-width:560px">
-      <div class="bc-lab" style="margin:0 0 6px">✂️ Het beste stuk voor de reel <span class="muted" id="ct_trim_info" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
-      <video id="ct_trim_v" src="${ctPubliek(CT.media[0].path)}" muted playsinline
-             style="width:210px;border-radius:12px;background:#000;display:block"></video>
+      <div class="bc-lab" style="margin:0 0 6px">✂️ Het beste stuk voor de reel</div>
+      <div style="position:relative;width:210px">
+        <video id="ct_trim_v" src="${ctPubliek(CT.media[0].path)}" muted playsinline
+               style="width:100%;border-radius:12px;background:#000;display:block;cursor:pointer"></video>
+        <div id="ct_trim_play" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+          <span style="width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;padding-left:3px">▶</span>
+        </div>
+      </div>
       <div class="trim-strip" id="ct_trim_strip">
         <div class="beeldjes" id="ct_trim_beeldjes"></div>
         <div class="trim-dim" id="ct_trim_diml" style="left:0"></div>
@@ -3684,8 +3689,9 @@ function ctTrimTekenen(){
         </div>
         <div class="trim-kop" id="ct_trim_kop" style="left:0"></div>
       </div>
+      <div class="muted" id="ct_trim_info" style="font-size:12.5px;margin-top:5px"></div>
     </div>`);
-  const v=$('#ct_trim_v'), strip=$('#ct_trim_strip'), venster=$('#ct_trim_venster'),
+  const v=$('#ct_trim_v'), speelIcoon=$('#ct_trim_play'), strip=$('#ct_trim_strip'), venster=$('#ct_trim_venster'),
         diml=$('#ct_trim_diml'), dimr=$('#ct_trim_dimr'), kop=$('#ct_trim_kop'), info=$('#ct_trim_info');
   let dur=0, van=0, tot=0, bewaarT;
 
@@ -3695,13 +3701,18 @@ function ctTrimTekenen(){
     venster.style.left=`calc(${l}% - 14px)`; venster.style.width=`calc(${r-l}% + 28px)`;
     diml.style.width=l+'%'; dimr.style.width=(100-r)+'%';
     const len=tot-van;
-    info.textContent=`· ${van.toFixed(1)}s tot ${tot.toFixed(1)}s (${len.toFixed(1)}s)`+
+    info.textContent=`${van.toFixed(1)}s tot ${tot.toFixed(1)}s · selectie ${len.toFixed(1)}s`+
       (len>60?' · boven 60s, wordt afgekapt':'');
     CT.trim={van,tot};
     clearTimeout(bewaarT); bewaarT=setTimeout(()=>{if(CT.postId)ctOpslaan(null);},800);
   };
 
-  // De selectie speelt vanzelf in een lus; geen playknop nodig
+  // De selectie speelt vanzelf in een lus. Het play-icoon in het midden
+  // toont wanneer hij stilstaat (bijv. als de browser autoplay nog blokkeert)
+  // en klikken op de video wisselt tussen spelen en pauze.
+  const icoon=()=>{ if(speelIcoon) speelIcoon.style.display=v.paused?'flex':'none'; };
+  v.addEventListener('play',icoon); v.addEventListener('pause',icoon);
+  v.addEventListener('click',()=>{ if(v.paused){v.play().catch(()=>{});} else v.pause(); });
   const lus=()=>{ if(v.currentTime>=tot-0.04||v.currentTime<van-0.2){ v.currentTime=van; } };
   v.addEventListener('timeupdate',()=>{ lus();
     if(dur) kop.style.left=(Math.min(Math.max(v.currentTime,van),tot)/dur*100)+'%'; });
