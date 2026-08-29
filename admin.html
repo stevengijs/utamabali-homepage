@@ -416,6 +416,45 @@
   .wa-bubbel{position:relative;max-width:420px;padding:11px 14px;border-radius:10px 10px 10px 2px;
              background:#e8f6ea;border:1px solid #cfe8d4;font-size:14px;line-height:1.5;
              color:#12211c;white-space:pre-wrap;word-break:break-word}
+  /* Content-studio */
+  .ct-media{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+  .ct-tegel{position:relative;width:110px;height:138px;border-radius:9px;overflow:hidden;
+            border:1px solid var(--line);background:#000}
+  .ct-tegel img,.ct-tegel video{width:100%;height:100%;object-fit:cover;display:block}
+  .ct-tegel .weg{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;
+                 border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:13px;line-height:1}
+  .ct-tegel .nr{position:absolute;bottom:5px;left:5px;padding:1px 7px;border-radius:999px;
+                background:rgba(0,0,0,.55);color:#fff;font-size:10.5px;font-weight:700}
+  .ct-upload{display:flex;align-items:center;justify-content:center;width:110px;height:138px;
+             border:2px dashed var(--line);border-radius:9px;background:none;cursor:pointer;
+             color:var(--muted);font-size:26px}
+  .ct-upload:hover{border-color:var(--brand);color:var(--brand)}
+  .ct-vak{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+          display:flex;flex-direction:column;gap:6px}
+  .ct-vak .kopje{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+                 color:var(--muted);display:flex;align-items:center;gap:8px}
+  .ct-vak .kopje .bc-zoekactie{margin-left:auto;text-transform:none;letter-spacing:0}
+  .ct-caption{width:100%;min-height:150px;padding:10px 12px;border:1px solid var(--line);
+              border-radius:8px;font:inherit;font-size:13.5px;line-height:1.55;resize:vertical}
+  .ct-hook{display:block;width:100%;text-align:left;padding:9px 12px;margin-top:6px;cursor:pointer;
+           border:1px solid var(--line);border-radius:8px;background:var(--ground);font:inherit;font-size:13.5px}
+  .ct-hook.on{border-color:var(--brand);background:var(--olive-soft, #e8f3ee);font-weight:600}
+  .ct-regel{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-soft,#f0ece2);font-size:13.5px}
+  .ct-regel:last-child{border-bottom:none}
+  .ct-regel .t{flex:none;width:52px;font-weight:700;color:var(--terra,#8B5A3C);
+               font-variant-numeric:tabular-nums;font-size:12px;padding-top:2px}
+  .ct-magneet{display:inline-block;padding:3px 12px;border-radius:999px;background:var(--brand);
+              color:#fff;font-weight:800;letter-spacing:.06em}
+  .ct-lijst{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .ct-item{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 14px;
+           border:1px solid var(--line);border-radius:9px;background:#fff;font-size:13px;cursor:pointer}
+  .ct-item:hover{border-color:var(--brand)}
+  .ct-item .soort{flex:none;font-size:11px;font-weight:700;letter-spacing:.04em;padding:2px 8px;
+                  border-radius:999px;background:#eef0ef;color:var(--muted);text-transform:uppercase}
+  .ct-item .st-gepost{color:var(--ok);font-weight:700}
+  .ct-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:900px){.ct-grid2{grid-template-columns:1fr}}
+
   /* Campagne-overzicht met cijfers */
   .bc-camps{padding:0 18px 4px;display:flex;flex-direction:column;gap:8px}
   .bc-camp{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 14px;
@@ -894,6 +933,7 @@ const PAGES = [
   {key:'leads',    label:'Leads / CRM',            icon:'📇'},
   {key:'sequences',label:'Bericht flows',          icon:'📤'},
   {key:'broadcast',label:'Broadcast',              icon:'📣'},
+  {key:'content',  label:'Content',                icon:'🎬'},
   {key:'webinars', label:'Webinar',                icon:'🎥'},
   {key:'projects', label:'Projects',               icon:'🏗️'},
   {key:'portal',   label:'Portal & Investors',     icon:'🏝️'},
@@ -1377,7 +1417,7 @@ function gzInit(){
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
+  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
   $('#pageTitle').textContent=titles[k]||k;
   if(k==='dashboard')return renderDashboard();
   if(k==='analytics')return renderAnalytics();
@@ -1390,6 +1430,7 @@ function go(k){
   if(k==='agenda')return renderAgenda();
   if(k==='sequences')return renderSequences();
   if(k==='broadcast')return renderBroadcast();
+  if(k==='content')return renderContent();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
 }
@@ -2636,6 +2677,297 @@ async function bcVerstuurWa(test){
     bcCampVergeten();
     toast(`WhatsApp-campagne klaar: ${data.doel} berichten`,'ok');
   }
+}
+
+/* ================= CONTENT-STUDIO =================
+   Instagram-posts, -carousels en -reels maken voor @stevenbalivillas.
+
+   De taakverdeling: Steven levert de media (B-roll voor een reel, eigen foto's
+   voor een carousel of post) en zegt in een paar zinnen waar het over gaat. De
+   generator levert de rest: hooks, caption, eerste reactie met hashtags,
+   slide-teksten of een overlay-script, en het comment-magneetwoord.
+
+   Dat magneetwoord is de schakel met de DM-bot die al op dit account draait:
+   wie het woord reageert krijgt automatisch een DM en wordt gekwalificeerd.
+   Een post is daarmee geen bereik maar een leadmachine, en comments zijn
+   precies wat het algoritme het zwaarst beloont. */
+const CT_BUCKET='content-media';
+let CT={soort:'reel', media:[], pakket:null, hookKeus:0, postId:null, project:'', doel:'comments', lijst:[]};
+
+const ctPubliek=pad=>{try{return sb.storage.from(CT_BUCKET).getPublicUrl(pad).data.publicUrl;}catch(e){return '';}};
+
+function ctKopieer(tekst, knop){
+  const klaar=()=>{ if(knop){const t=knop.textContent; knop.textContent='Gekopieerd'; setTimeout(()=>knop.textContent=t,1400);} };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(tekst).then(klaar).catch(()=>{}); return; }
+  const ta=document.createElement('textarea'); ta.value=tekst; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} ta.remove(); klaar();
+}
+
+async function renderContent(){
+  const v=$('#view');
+  v.innerHTML=`
+  <div class="panel">
+    <div class="panel-head"><div>
+      <h3>Content voor @stevenbalivillas</h3>
+      <div class="muted" style="font-size:13px;margin-top:2px">Upload je beeld, vertel in twee zinnen waar het over gaat, en je krijgt het complete pakket: hook, caption, hashtags en het comment-woord dat de DM-bot oppakt.</div>
+    </div></div>
+
+    <div class="bc-buiten" style="padding-top:14px">
+      <details class="bc-hint" style="margin-bottom:6px"><summary style="cursor:pointer;font-weight:700;color:var(--ink)">De vaste speelregels (waarom dit werkt)</summary>
+        <div style="margin-top:8px;line-height:1.7;max-width:70ch">
+        <b>1. Elke post wil comments.</b> Onder dit account draait de DM-bot: wie het magneetwoord reageert krijgt automatisch een DM en wordt gekwalificeerd. Comments zijn ook wat het algoritme het zwaarst beloont, dus de CTA is altijd: reageer een woord, krijg iets waardevols.<br>
+        <b>2. De hook beslist alles.</b> Eerste regel en eerste seconde: een concreet getal, een fout, een tegenstelling. Niet "even voorstellen".<br>
+        <b>3. Value verslaat verkoop.</b> Rekensommen, echte kosten, fouten en lessen, bouwvoortgang. Eerlijk over nadelen: dat is waarom mensen dit account vertrouwen en volgen.<br>
+        <b>4. Hashtags in de eerste reactie</b>, nooit in de caption. Rendement altijd als 12-17% bruto, ons model. Geen lang streepje.<br>
+        <b>5. Zet de DM-flow klaar.</b> Bij elk pakket staat wat de bot moet sturen aan wie het woord reageert. Zonder die flow is het magneetwoord een loze belofte.
+        </div>
+      </details>
+    </div>
+
+    <div class="field bc-buiten">
+      <label>Wat maak je?</label>
+      <div class="bc-rij">
+        <button class="seq-dbtn" data-ctsoort="reel">🎬 Reel (B-roll)</button>
+        <button class="seq-dbtn" data-ctsoort="carousel">🖼 Carousel</button>
+        <button class="seq-dbtn" data-ctsoort="post">📷 Post</button>
+      </div>
+    </div>
+
+    <div class="field bc-buiten">
+      <label id="ct_medialabel">Je B-roll</label>
+      <div class="ct-media" id="ct_media"></div>
+      <div class="bc-hint" id="ct_mediahint"></div>
+    </div>
+
+    <div class="bc-grid">
+      <div class="field bc-breed"><label id="ct_onderwerplabel">Waar gaat het over?</label>
+        <textarea id="ct_onderwerp" class="ct-caption" style="min-height:76px" placeholder="Bijv: drone-beelden van het resort in aanbouw, dakwerk klaar, zwembaden worden getegeld, eindshot over de rijstvelden."></textarea>
+        <div class="bc-hint">Twee zinnen is genoeg. Bij een reel: beschrijf wat er op de b-roll te zien is, dan past het overlay-script erop.</div></div>
+      <div class="field"><label>Project</label>
+        <div class="bc-rij">${['','MOKA','The Maison','The Reload'].map(pr=>
+          `<button class="bc-chip" data-ctproject="${pr}">${pr||'Geen, algemene value'}</button>`).join('')}</div></div>
+      <div class="field"><label>Hoofddoel</label>
+        <div class="bc-rij">
+          <button class="bc-chip" data-ctdoel="comments" title="Magneetwoord centraal, de DM-bot vangt de reacties">💬 Comments en leads</button>
+          <button class="bc-chip" data-ctdoel="saves" title="Lijstje of rekensom met een bewaar-CTA">🔖 Saves</button>
+          <button class="bc-chip" data-ctdoel="volgers" title="Serie en herkenbaarheid">➕ Volgers</button>
+        </div></div>
+    </div>
+
+    <div class="bc-acties">
+      <button class="btn btn-primary btn-sm" id="ct_genereer">✨ Maak het pakket</button>
+      <span class="muted" id="ct_status" style="font-size:13px;align-self:center"></span>
+    </div>
+
+    <div class="bc-buiten" id="ct_pakket" style="display:none"></div>
+
+    <div class="bc-buiten" style="padding-bottom:18px">
+      <div class="bc-lab" style="margin-top:8px">Eerdere posts</div>
+      <div class="ct-lijst" id="ct_lijst"><span class="muted" style="font-size:13px">Laden…</span></div>
+    </div>
+  </div>`;
+
+  document.querySelectorAll('[data-ctsoort]').forEach(b=>b.onclick=()=>{
+    CT.soort=b.dataset.ctsoort; CT.pakket=null; CT.postId=null; $('#ct_pakket').style.display='none';
+    ctTeken();
+  });
+  document.querySelectorAll('[data-ctproject]').forEach(b=>b.onclick=()=>{
+    CT.project=b.dataset.ctproject;
+    document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x===b));
+  });
+  document.querySelectorAll('[data-ctdoel]').forEach(b=>b.onclick=()=>{
+    CT.doel=b.dataset.ctdoel;
+    document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x===b));
+  });
+  $('#ct_genereer').onclick=ctGenereer;
+  document.querySelector(`[data-ctdoel="${CT.doel}"]`).classList.add('on');
+  document.querySelector(`[data-ctproject="${CT.project}"]`).classList.add('on');
+  ctTeken(); ctLijstLaden();
+}
+
+function ctTeken(){
+  document.querySelectorAll('[data-ctsoort]').forEach(x=>x.classList.toggle('on',x.dataset.ctsoort===CT.soort));
+  const wa=CT.soort;
+  $('#ct_medialabel').textContent = wa==='reel'?'Je B-roll (video)':wa==='carousel'?'Je afbeeldingen, in volgorde':'Je foto';
+  $('#ct_onderwerplabel').textContent = wa==='reel'?'Wat is er op de b-roll te zien?':'Waar gaat de post over?';
+  $('#ct_mediahint').textContent = wa==='reel'
+    ? 'Een clip tot 250 MB. Het pakket levert het overlay-script; de tekst zet je er in de Instagram-editor of CapCut overheen.'
+    : wa==='carousel' ? 'Upload 4 tot 10 beelden. Elke afbeelding krijgt zijn eigen slide-tekst; de eerste wordt de cover.'
+    : 'Een sterke foto. De caption doet hier het werk.';
+  ctMediaTekenen();
+}
+
+function ctMediaTekenen(){
+  const vak=$('#ct_media'); if(!vak) return;
+  const isVideo=m=>/\.(mp4|mov|webm|m4v)$/i.test(m.path)||String(m.type||'').startsWith('video');
+  vak.innerHTML=CT.media.map((m,i)=>`
+    <div class="ct-tegel">
+      ${isVideo(m)?`<video src="${ctPubliek(m.path)}" muted playsinline preload="metadata"></video>`
+                  :`<img src="${ctPubliek(m.path)}" alt="">`}
+      ${CT.soort==='carousel'?`<span class="nr">${i+1}</span>`:''}
+      <button class="weg" data-weg="${i}" title="Verwijderen">×</button>
+    </div>`).join('')+
+    `<button class="ct-upload" id="ct_upload" title="Media toevoegen">+</button>`;
+  vak.querySelectorAll('[data-weg]').forEach(b=>b.onclick=()=>{CT.media.splice(Number(b.dataset.weg),1);ctMediaTekenen();});
+  $('#ct_upload').onclick=()=>{
+    const k=document.createElement('input'); k.type='file';
+    k.accept=CT.soort==='reel'?'video/*':'image/*';
+    k.multiple=CT.soort==='carousel';
+    k.onchange=async()=>{
+      for(const f of Array.from(k.files||[])){
+        // Reel en post: een bestand vervangt het vorige, dat voorkomt het
+        // verwarrende geval van twee video's waarvan er stilzwijgend een wint.
+        if(CT.soort!=='carousel') CT.media=[];
+        $('#ct_status').textContent=`Uploaden: ${f.name}…`;
+        let blob=f;
+        if(/^image\//.test(f.type)){ try{ blob=(await pmCompress(f)).blob; }catch(e){} }
+        const ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';
+        const pad=`${CT.soort}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+        const up=await sb.storage.from(CT_BUCKET).upload(pad,blob,{contentType:f.type||'application/octet-stream',upsert:false});
+        if(up.error){toast('Upload mislukt: '+up.error.message,'err');continue;}
+        CT.media.push({path:pad,type:f.type||''});
+        ctMediaTekenen();
+      }
+      $('#ct_status').textContent='';
+    };
+    k.click();
+  };
+}
+
+async function ctGenereer(){
+  const onderwerp=$('#ct_onderwerp').value.trim();
+  if(!onderwerp){toast('Vertel eerst in een paar zinnen waar het over gaat','err');return;}
+  if(CT.soort==='carousel'&&CT.media.length<2){toast('Upload eerst je afbeeldingen, dan krijgt elke slide zijn eigen tekst','err');return;}
+  const knop=$('#ct_genereer'); knop.disabled=true;
+  $('#ct_status').textContent='Pakket maken, dit duurt zo’n 20 seconden…';
+  try{
+    const {data,error}=await sb.functions.invoke('content-maker',{body:{
+      soort:CT.soort, onderwerp, project:CT.project||null, doel:CT.doel,
+      aantal_media:CT.media.length}});
+    if(error||!data||data.ok===false){
+      $('#ct_status').innerHTML=`<span class="err">${esc((data&&data.reden)||(error&&error.message)||'mislukt')}</span>`;return;
+    }
+    CT.pakket=data.pakket; CT.hookKeus=0;
+    ctPakketTekenen();
+    await ctOpslaan('concept');
+    $('#ct_status').textContent='';
+  } finally { knop.disabled=false; }
+}
+
+function ctPakketTekenen(){
+  const pk=CT.pakket; if(!pk) return;
+  const vak=$('#ct_pakket'); vak.style.display='';
+  const kop=(t,knopId,kopieTekst)=>`<div class="kopje">${t}${kopieTekst!==undefined?`<button class="bc-zoekactie" data-kopieer="${esc(knopId)}">Kopieer</button>`:''}</div>`;
+
+  vak.innerHTML=`
+  <div class="ct-grid2">
+    <div class="ct-vak" style="grid-column:1/-1">
+      ${kop('Kies je hook')}
+      ${(pk.hooks||[]).map((h,i)=>`<button class="ct-hook ${i===CT.hookKeus?'on':''}" data-hook="${i}">${esc(h)}</button>`).join('')}
+      <div class="bc-hint">${CT.soort==='reel'?'Dit wordt de tekstoverlay in seconde 1, en de eerste regel van je caption.':'Dit wordt de covertitel en de eerste regel van je caption.'}</div>
+    </div>
+
+    <div class="ct-vak">
+      ${kop('Caption','caption','x')}
+      <textarea class="ct-caption" id="ct_caption">${esc(pk.caption||'')}</textarea>
+    </div>
+
+    <div class="ct-vak">
+      ${kop('Eerste reactie (hashtags)','hashtags','x')}
+      <div style="font-size:13px;line-height:1.6;color:var(--muted)" id="ct_hashtags">${esc(pk.eerste_reactie||'')}</div>
+      <div style="margin-top:10px">${kop('Comment-magneet')}
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px">
+          <span class="ct-magneet">${esc(pk.comment_woord||'')}</span>
+          <span class="bc-hint" style="margin:0">${esc(pk.dm_belofte||'')}</span>
+        </div>
+        <div class="bc-hint" style="margin-top:6px">Zet deze flow klaar in de DM-bot voordat je plaatst; anders is de belofte loos.</div>
+      </div>
+    </div>
+
+    ${(pk.overlays&&pk.overlays.length)?`<div class="ct-vak">
+      ${kop('Overlay-script voor op de b-roll','overlays','x')}
+      ${pk.overlays.map(o=>`<div class="ct-regel"><span class="t">${esc(o.tijd||'')}</span><span>${esc(o.tekst||'')}</span></div>`).join('')}
+      <div class="bc-hint">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>
+    </div>`:''}
+
+    ${(pk.slides&&pk.slides.length)?`<div class="ct-vak">
+      ${kop('Slide-teksten, in volgorde van je afbeeldingen','slides','x')}
+      ${pk.slides.map((sl,i)=>`<div class="ct-regel"><span class="t">${i+1}</span><span><b>${esc(sl.kop||'')}</b>${sl.sub?`<br><span class="muted">${esc(sl.sub)}</span>`:''}</span></div>`).join('')}
+      <div class="bc-hint">Slide 1 is de cover: grote titel, gecentreerd, met @stevenbalivillas erop. De laatste slide is de CTA.</div>
+    </div>`:''}
+
+    <div class="ct-vak" style="grid-column:1/-1">
+      ${kop('Waarom dit zo in elkaar zit')}
+      <div style="font-size:13.5px;line-height:1.6">${esc(pk.waarom||'')}</div>
+      <div class="bc-hint">${esc(pk.beste_moment||'')}${pk.alt_tekst?` · Alt-tekst: ${esc(pk.alt_tekst)}`:''}</div>
+      <div class="bc-acties" style="padding:10px 0 0">
+        <button class="btn btn-primary btn-sm" id="ct_klaar">✓ Klaar om te plaatsen</button>
+        <button class="btn btn-ghost btn-sm" id="ct_gepost">Gepost</button>
+        <button class="btn btn-ghost btn-sm" id="ct_opnieuw">↻ Nieuwe versie</button>
+      </div>
+    </div>
+  </div>`;
+
+  vak.querySelectorAll('[data-hook]').forEach(b=>b.onclick=()=>{
+    CT.hookKeus=Number(b.dataset.hook);
+    vak.querySelectorAll('[data-hook]').forEach(x=>x.classList.toggle('on',x===b));
+    // De gekozen hook wordt regel 1 van de caption, de rest schuift mee.
+    const ta=$('#ct_caption'); const regels=ta.value.split('\n');
+    regels[0]=CT.pakket.hooks[CT.hookKeus]||regels[0];
+    ta.value=regels.join('\n');
+  });
+  vak.querySelectorAll('[data-kopieer]').forEach(b=>b.onclick=()=>{
+    const wat=b.dataset.kopieer;
+    const tekst = wat==='caption' ? $('#ct_caption').value
+      : wat==='hashtags' ? (CT.pakket.eerste_reactie||'')
+      : wat==='overlays' ? (CT.pakket.overlays||[]).map(o=>`${o.tijd}  ${o.tekst}`).join('\n')
+      : wat==='slides' ? (CT.pakket.slides||[]).map((sl,i)=>`${i+1}. ${sl.kop}${sl.sub?'\n   '+sl.sub:''}`).join('\n')
+      : '';
+    ctKopieer(tekst, b);
+  });
+  $('#ct_klaar').onclick=()=>ctOpslaan('klaar');
+  $('#ct_gepost').onclick=()=>ctOpslaan('gepost');
+  $('#ct_opnieuw').onclick=ctGenereer;
+}
+
+async function ctOpslaan(status){
+  const {data,error}=await sb.rpc('content_post_opslaan',{
+    p_id:CT.postId, p_soort:CT.soort, p_onderwerp:$('#ct_onderwerp').value.trim()||null,
+    p_project:CT.project||null, p_doel:CT.doel, p_media:CT.media,
+    p_pakket:CT.pakket, p_caption:($('#ct_caption')&&$('#ct_caption').value)||null,
+    p_status:status||null});
+  if(error){toast('Opslaan mislukt: '+error.message,'err');return;}
+  CT.postId=data.id;
+  if(status==='klaar')toast('Klaar om te plaatsen. Alles staat bewaard.','ok');
+  if(status==='gepost')toast('Gemarkeerd als gepost','ok');
+  ctLijstLaden();
+}
+
+async function ctLijstLaden(){
+  const vak=$('#ct_lijst'); if(!vak) return;
+  const {data,error}=await sb.rpc('content_posts_lijst');
+  if(error||!Array.isArray(data)){vak.innerHTML='<span class="muted" style="font-size:13px">Kon de lijst niet laden.</span>';return;}
+  CT.lijst=data;
+  if(!data.length){vak.innerHTML='<span class="muted" style="font-size:13px">Nog geen posts. Je eerste pakket verschijnt hier.</span>';return;}
+  vak.innerHTML=data.map(p=>`
+    <div class="ct-item" data-open="${p.id}">
+      <span class="soort">${esc(p.soort)}</span>
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.onderwerp||'(zonder onderwerp)')}</span>
+      ${p.project?`<span class="muted">${esc(p.project)}</span>`:''}
+      <span class="${p.status==='gepost'?'st-gepost':'muted'}">${p.status==='gepost'?'gepost':p.status}</span>
+    </div>`).join('');
+  vak.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
+    const p=CT.lijst.find(x=>x.id===b.dataset.open); if(!p) return;
+    CT.soort=p.soort; CT.postId=p.id; CT.media=Array.isArray(p.media)?p.media:[];
+    CT.project=p.project||''; CT.doel=p.doel||'comments'; CT.pakket=p.pakket||null;
+    $('#ct_onderwerp').value=p.onderwerp||'';
+    document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
+    document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
+    ctTeken();
+    if(CT.pakket){ ctPakketTekenen(); if(p.caption&&$('#ct_caption'))$('#ct_caption').value=p.caption; }
+    else $('#ct_pakket').style.display='none';
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
 }
 
 /* ================= DASHBOARD ================= */
