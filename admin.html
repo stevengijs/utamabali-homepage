@@ -569,6 +569,24 @@
   .vo-tijd::before{content:'●';margin-right:6px;animation:voKnipper 1s infinite}
   @keyframes voKnipper{50%{opacity:.2}}
   .vo-klaarvideo{width:min(250px,100%);border-radius:10px;display:block;background:#000;aspect-ratio:9/16}
+  /* Filmstrip-trimmer zoals de Instagram-editor */
+  .trim-strip{position:relative;height:56px;border-radius:10px;overflow:hidden;margin-top:10px;
+              background:#1c2b24;user-select:none;touch-action:none;max-width:560px}
+  .trim-strip .beeldjes{position:absolute;inset:0;display:flex}
+  .trim-strip .beeldjes img{flex:1;min-width:0;object-fit:cover;height:100%;pointer-events:none}
+  .trim-dim{position:absolute;top:0;bottom:0;background:rgba(10,15,12,.65);pointer-events:none}
+  .trim-venster{position:absolute;top:0;bottom:0;border:3px solid #fff;border-left-width:14px;
+                border-right-width:14px;border-radius:10px;box-sizing:border-box;cursor:grab;
+                box-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .trim-venster::before,.trim-venster::after{content:'';position:absolute;top:50%;width:3px;height:18px;
+                border-radius:2px;background:#8a8a8a;transform:translateY(-50%)}
+  .trim-venster::before{left:-9px}
+  .trim-venster::after{right:-9px}
+  .trim-grip{position:absolute;top:0;bottom:0;width:26px;cursor:ew-resize}
+  .trim-grip.l{left:-20px}
+  .trim-grip.r{right:-20px}
+  .trim-kop{position:absolute;top:0;bottom:0;width:3px;background:#ffd400;pointer-events:none;
+            box-shadow:0 0 4px rgba(0,0,0,.5)}
   .vo-spin{display:inline-block;width:16px;height:16px;border:3px solid var(--line);
            border-top-color:var(--brand);border-radius:50%;animation:voDraai .8s linear infinite;vertical-align:-3px}
   @keyframes voDraai{to{transform:rotate(360deg)}}
@@ -1049,7 +1067,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-weggooi';
+const APP_VERSIE='2026-08-29-filmstrip';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3647,48 +3665,104 @@ async function voMuziekPaneel(vak){
    voice-over langer dan het segment, dan herhaalt het segment zich netjes.
    Het origineel blijft onaangetast; de keuze wordt bij de post bewaard. */
 function ctTrimTekenen(){
-  const oud=document.querySelector('#ct_trim'); if(oud) oud.remove();
+  const oudEl=document.querySelector('#ct_trim'); if(oudEl) oudEl.remove();
   const isVid=m=>m&&(/\.(mp4|mov|webm|m4v)$/i.test(m.path)||String(m.type||'').startsWith('video'));
   if(CT.soort!=='reel'||!isVid(CT.media[0])) return;
   const anker=$('#ct_mediahint'); if(!anker) return;
   anker.insertAdjacentHTML('afterend',`
-    <div id="ct_trim" style="margin-top:10px;max-width:560px">
-      <div class="bc-lab" style="margin:0 0 6px">✂️ Het beste stuk voor de reel</div>
+    <div id="ct_trim" style="margin-top:12px;max-width:560px">
+      <div class="bc-lab" style="margin:0 0 6px">✂️ Het beste stuk voor de reel <span class="muted" id="ct_trim_info" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
       <video id="ct_trim_v" src="${ctPubliek(CT.media[0].path)}" muted playsinline
-             style="width:200px;border-radius:10px;background:#000;display:block"></video>
-      <div style="display:grid;grid-template-columns:52px 1fr;gap:6px 10px;align-items:center;margin-top:8px;font-size:12.5px">
-        <span class="muted">start</span><input type="range" id="ct_trim_van" min="0" max="100" step="0.1" value="0">
-        <span class="muted">einde</span><input type="range" id="ct_trim_tot" min="0" max="100" step="0.1" value="100">
-      </div>
-      <div class="vo-knoppen" style="margin-top:4px">
-        <button class="bc-zoekactie" id="ct_trim_speel">▶ selectie afspelen</button>
-        <span class="muted" id="ct_trim_info" style="font-size:12.5px"></span>
+             style="width:210px;border-radius:12px;background:#000;display:block"></video>
+      <div class="trim-strip" id="ct_trim_strip">
+        <div class="beeldjes" id="ct_trim_beeldjes"></div>
+        <div class="trim-dim" id="ct_trim_diml" style="left:0"></div>
+        <div class="trim-dim" id="ct_trim_dimr" style="right:0"></div>
+        <div class="trim-venster" id="ct_trim_venster">
+          <span class="trim-grip l" data-grip="l"></span>
+          <span class="trim-grip r" data-grip="r"></span>
+        </div>
+        <div class="trim-kop" id="ct_trim_kop" style="left:0"></div>
       </div>
     </div>`);
-  const v=$('#ct_trim_v'), rv=$('#ct_trim_van'), rt=$('#ct_trim_tot'), info=$('#ct_trim_info');
-  let bewaarT;
-  const bewaar=()=>{clearTimeout(bewaarT);bewaarT=setTimeout(()=>{if(CT.postId)ctOpslaan(null);},800);};
-  const toon=()=>{
-    const van=+rv.value, tot=+rt.value, len=tot-van;
-    info.textContent=`${van.toFixed(1)}s tot ${tot.toFixed(1)}s (${len.toFixed(1)}s)`+
-      (len>60?' · langer dan 60s, wordt afgekapt':len<3?' · wel erg kort':'');
-    CT.trim={van, tot}; bewaar();
+  const v=$('#ct_trim_v'), strip=$('#ct_trim_strip'), venster=$('#ct_trim_venster'),
+        diml=$('#ct_trim_diml'), dimr=$('#ct_trim_dimr'), kop=$('#ct_trim_kop'), info=$('#ct_trim_info');
+  let dur=0, van=0, tot=0, bewaarT;
+
+  const teken=()=>{
+    if(!dur) return;
+    const l=van/dur*100, r=tot/dur*100;
+    venster.style.left=`calc(${l}% - 14px)`; venster.style.width=`calc(${r-l}% + 28px)`;
+    diml.style.width=l+'%'; dimr.style.width=(100-r)+'%';
+    const len=tot-van;
+    info.textContent=`· ${van.toFixed(1)}s tot ${tot.toFixed(1)}s (${len.toFixed(1)}s)`+
+      (len>60?' · boven 60s, wordt afgekapt':'');
+    CT.trim={van,tot};
+    clearTimeout(bewaarT); bewaarT=setTimeout(()=>{if(CT.postId)ctOpslaan(null);},800);
   };
-  v.onloadedmetadata=()=>{
-    const d=v.duration||0;
-    rv.max=rt.max=d.toFixed(1);
-    if(CT.trim&&CT.trim.tot<=d){ rv.value=CT.trim.van; rt.value=CT.trim.tot; }
-    else { rv.value=0; rt.value=d.toFixed(1); }
-    toon();
+
+  // De selectie speelt vanzelf in een lus; geen playknop nodig
+  const lus=()=>{ if(v.currentTime>=tot-0.04||v.currentTime<van-0.2){ v.currentTime=van; } };
+  v.addEventListener('timeupdate',()=>{ lus();
+    if(dur) kop.style.left=(Math.min(Math.max(v.currentTime,van),tot)/dur*100)+'%'; });
+
+  v.onloadedmetadata=async()=>{
+    dur=v.duration||0;
+    if(CT.trim&&CT.trim.tot<=dur+0.5){ van=CT.trim.van; tot=Math.min(CT.trim.tot,dur); }
+    else { van=0; tot=dur; }
+    teken();
+    v.currentTime=van;
+    v.play().catch(()=>{});
+    // filmstrip: 9 beeldjes uit de video vissen met een onzichtbare tweede speler
+    try{
+      const vt=document.createElement('video'); vt.src=ctPubliek(CT.media[0].path);
+      vt.muted=true; vt.playsInline=true; vt.crossOrigin='anonymous';
+      await new Promise((ok,nee)=>{vt.onloadeddata=ok;vt.onerror=nee;});
+      const bak=$('#ct_trim_beeldjes'); if(!bak) return;
+      for(let i=0;i<9;i++){
+        vt.currentTime=Math.min(dur*(i+0.5)/9,Math.max(dur-0.1,0));
+        await new Promise(ok=>{vt.onseeked=ok;setTimeout(ok,900);});
+        const c=document.createElement('canvas'); c.width=80; c.height=56;
+        const sch=Math.max(80/vt.videoWidth,56/vt.videoHeight);
+        c.getContext('2d').drawImage(vt,(80-vt.videoWidth*sch)/2,(56-vt.videoHeight*sch)/2,
+          vt.videoWidth*sch,vt.videoHeight*sch);
+        const img=document.createElement('img'); img.src=c.toDataURL('image/jpeg',0.6);
+        if($('#ct_trim_beeldjes')) $('#ct_trim_beeldjes').appendChild(img);
+      }
+    }catch(e){}
   };
-  rv.oninput=()=>{ if(+rv.value>=+rt.value-1) rv.value=(+rt.value-1).toFixed(1);
-    v.currentTime=+rv.value; toon(); };
-  rt.oninput=()=>{ if(+rt.value<=+rv.value+1) rt.value=(+rv.value+1).toFixed(1);
-    v.currentTime=+rt.value; toon(); };
-  $('#ct_trim_speel').onclick=()=>{
-    v.currentTime=+rv.value; v.play();
-    v.ontimeupdate=()=>{ if(v.currentTime>=+rt.value){ v.pause(); v.ontimeupdate=null; } };
-  };
+
+  // slepen: grepen voor start/einde, het venster zelf om de hele selectie te
+  // verschuiven; tijdens het slepen zoekt de video live mee
+  let sleep=null;
+  const naarTijd=cx=>{ const r=strip.getBoundingClientRect();
+    return Math.min(Math.max((cx-r.left)/r.width,0),1)*dur; };
+  strip.addEventListener('pointerdown',e=>{
+    if(!dur) return;
+    strip.setPointerCapture(e.pointerId);
+    const grip=e.target.dataset&&e.target.dataset.grip;
+    if(grip==='l') sleep={wat:'l'};
+    else if(grip==='r') sleep={wat:'r'};
+    else if(e.target===venster) sleep={wat:'m', vast:naarTijd(e.clientX)-van};
+    else { // klik ernaast: dichtstbijzijnde greep verplaatsen
+      const t=naarTijd(e.clientX);
+      sleep=(Math.abs(t-van)<Math.abs(t-tot))?{wat:'l'}:{wat:'r'};
+    }
+    v.pause();
+    e.preventDefault();
+  });
+  strip.addEventListener('pointermove',e=>{
+    if(!sleep||!dur) return;
+    const t=naarTijd(e.clientX);
+    if(sleep.wat==='l'){ van=Math.min(Math.max(t,0),tot-1); v.currentTime=van; }
+    else if(sleep.wat==='r'){ tot=Math.max(Math.min(t,dur),van+1); v.currentTime=tot; }
+    else { const len=tot-van; let nv=Math.min(Math.max(t-sleep.vast,0),dur-len);
+      van=nv; tot=nv+len; v.currentTime=van; }
+    teken();
+  });
+  const klaarSleep=()=>{ if(!sleep) return; sleep=null; v.currentTime=van; v.play().catch(()=>{}); };
+  strip.addEventListener('pointerup',klaarSleep);
+  strip.addEventListener('pointercancel',klaarSleep);
 }
 
 /* ============== GROTE VIDEO'S VERKLEINEN ==============
