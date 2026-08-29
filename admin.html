@@ -1044,7 +1044,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-ovl-edit';
+const APP_VERSIE='2026-08-29-spraak-leidend';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -4255,7 +4255,9 @@ function voTekenen(){
     if(am) am.onclick=()=>{ if(!CT.media.length){toast('Upload eerst je b-roll','err');return;} voRender(true); };
   }else if(VO.stand==='opnemen'){
     vak.innerHTML=`
-      <div class="vo-tele" id="vo_tele">${voWoorden().map((w,i)=>`<span data-w="${i}">${esc(w)} </span>`).join('')}</div>
+      <div class="bc-hint" style="margin:0 0 6px">De autocue hieronder is een geheugensteun; wat jij zegt is leidend. Improviseer gerust, de tekst in beeld volgt jouw woorden.</div>
+      <div class="vo-tele" id="vo_tele">${voWoorden().map((w,i)=>`<span data-w="${i}" class="gehad">${esc(w)} </span>`).join('')}</div>
+      <div class="bc-hint" style="margin:6px 0 0;font-style:italic">Verstaan: <span id="vo_tele_gehoord">…</span></div>
       <div class="vo-knoppen">
         <span class="vo-tijd" id="vo_tijd">0:00</span>
         <button class="btn btn-primary btn-sm" id="vo_stop">■ Klaar</button>
@@ -4264,17 +4266,19 @@ function voTekenen(){
     $('#vo_stop').onclick=()=>voStop(false);
     $('#vo_weg').onclick=()=>voStop(true);
   }else if(VO.stand==='klaar'){
-    const dekking=VO.woorden.filter(w=>w.gehoord).length/Math.max(VO.woorden.length,1);
     vak.innerHTML=muziekRij+`
       <div class="bc-hint" style="margin:0 0 8px">Opname van ${VO.duur.toFixed(1)}s.
-        ${dekking>=0.6?`De tekst is per woord meegeluisterd, de ondertiteling loopt strak mee.`
-                      :`De spraakherkenning ving te weinig op; de tekst wordt gelijkmatig over de opname verdeeld, dat oogt bij rustig voorlezen prima.`}</div>
-      <audio controls src="${VO.url}" style="width:100%;max-width:420px"></audio>
+        ${VO.vangnet?`De herkenning ving niets bruikbaars op; de caption wordt gelijkmatig verdeeld als ondertiteling. Pas de tekst hieronder gerust aan.`
+                    :`Dit is wat je zei; dat wordt de ondertiteling, exact op je stem. Verstond de herkenning een woord verkeerd, verbeter het hieronder: de timing blijft staan.`}</div>
+      <textarea id="vo_transcript" class="ct-caption" style="min-height:64px">${esc(VO.woorden.map(w=>w.w).join(' '))}</textarea>
+      <audio controls src="${VO.url}" style="width:100%;max-width:420px;margin-top:8px"></audio>
       <div class="vo-knoppen">
         <button class="btn btn-primary btn-sm" id="vo_render">🎬 Maak de video</button>
         <button class="btn btn-ghost btn-sm" id="vo_opnieuw">↻ Opnieuw opnemen</button>
       </div>`;
     muziekKoppelen();
+    const tr=$('#vo_transcript');
+    if(tr) tr.addEventListener('input',()=>{ voHertijd(tr.value); });
     $('#vo_render').onclick=()=>voRender(false);
     $('#vo_opnieuw').onclick=()=>{VO={...VO,stand:'leeg',blob:null,woorden:[]};voTekenen();};
   }else if(VO.stand==='renderen'){
@@ -4340,43 +4344,44 @@ async function voStart(){
     VO.blob=new Blob(brokken,{type:VO.rec.mimeType||'audio/webm'});
     VO.url=URL.createObjectURL(VO.blob);
     VO.duur=(performance.now()-VO.t0)/1000;
-    // Gaten opvullen: niet-gehoorde woorden naar rato van woordlengte tussen
-    // de wel-gehoorde ankers (of over de hele duur als er niets gehoord is).
-    voTijdenAanvullen();
+    if(VO.woorden.length<3){
+      // Vangnet: niets (goed) verstaan; dan alsnog de caption als tekst,
+      // gelijkmatig verdeeld, en dat melden we eerlijk in de klaar-stand.
+      VO.woorden=voWoorden().map(w=>({w, t:null, gehoord:false}));
+      voTijdenAanvullen();
+      VO.vangnet=true;
+    } else { VO.vangnet=false; }
+    // De oorspronkelijke opname als tijdankers bewaren zodat bewerken van de
+    // tekst de timing niet sloopt.
+    VO.ankers=VO.woorden.map(w=>({w:w.w, t:w.t}));
     VO.stand='klaar'; voTekenen();
   };
   VO.rec.start(250);
 
-  // Meeluisteren welk woord wanneer valt. De herkende woorden worden fuzzy
-  // tegen de caption gelegd met een wijzer die alleen vooruit mag; een misser
-  // van de herkenning schuift dan hooguit een paar woorden op.
+  // Wat Steven ZEGT is leidend: de ondertiteling wordt opgebouwd uit het
+  // transcript van de herkenning zelf, niet uit de caption. De caption blijft
+  // alleen de autocue; wijkt hij af of improviseert hij, dan volgt de tekst
+  // in beeld gewoon zijn woorden. Per woord wordt het moment van verschijnen
+  // in de tussenresultaten gestampt (met de ~0,6s herkenningsvertraging eraf).
+  VO.woorden=[];
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(SR){
     VO.spraak=new SR();
     VO.spraak.lang='nl-NL'; VO.spraak.continuous=true; VO.spraak.interimResults=true;
     VO.spraak.onresult=ev=>{
-      // De herkenning meldt een woord pas ~0,6s nadat het gezegd is; zonder
-      // correctie loopt de ondertiteling structureel achter op de stem.
       const nu=Math.max((performance.now()-VO.t0)/1000-0.6,0.05);
-      const laatste=ev.results[ev.results.length-1];
-      const gezegd=String(laatste[0].transcript||'').trim().split(/\s+/).map(voKaal).filter(Boolean);
-      for(const g of gezegd.slice(-4)){
-        for(let i=VO.wijzer;i<Math.min(VO.wijzer+5,VO.woorden.length);i++){
-          const doelw=voKaal(VO.woorden[i].w);
-          if(doelw&&(doelw===g||doelw.startsWith(g)||g.startsWith(doelw))){
-            for(let j=VO.wijzer;j<=i;j++) if(VO.woorden[j].t===null) VO.woorden[j].t=nu;
-            VO.woorden[i].t=nu; VO.woorden[i].gehoord=true; VO.wijzer=i+1;
-            break;
-          }
-        }
+      let vol='';
+      for(let i=0;i<ev.results.length;i++) vol+=ev.results[i][0].transcript+' ';
+      const tokens=vol.trim().split(/\s+/).filter(Boolean);
+      // nieuwe woorden stempelen op nu; bestaande woorden mogen door een
+      // revisie van tekst veranderen maar houden hun oorspronkelijke tijd
+      for(let i=0;i<tokens.length;i++){
+        if(!VO.woorden[i]) VO.woorden.push({w:tokens[i], t:nu, gehoord:true});
+        else VO.woorden[i].w=tokens[i];
       }
-      const tele=$('#vo_tele');
-      if(tele) tele.querySelectorAll('span').forEach((sp,i)=>{
-        sp.classList.toggle('gehad',i<VO.wijzer-1);
-        sp.classList.toggle('nu',i===Math.max(VO.wijzer-1,0));
-      });
-      const nuEl=tele&&tele.querySelector('span.nu');
-      if(nuEl) nuEl.scrollIntoView({block:'center',behavior:'smooth'});
+      if(tokens.length<VO.woorden.length) VO.woorden.length=tokens.length;
+      const tele=$('#vo_tele_gehoord');
+      if(tele){ tele.textContent=tokens.slice(-12).join(' '); }
     };
     VO.spraak.onerror=()=>{}; // stil: de naar-rato-verdeling vangt het op
     try{ VO.spraak.start(); }catch(e){}
@@ -4395,6 +4400,36 @@ function voStop(annuleer){
   try{ VO.spraak&&VO.spraak.stop(); }catch(e){}
   try{ VO.rec&&VO.rec.state!=='inactive'&&VO.rec.stop(); }catch(e){}
   if(annuleer) voTekenen();
+}
+
+/* Bewerkte transcripttekst opnieuw aan de oorspronkelijke tijdankers
+   hangen. De opname bepaalt de tijdlijn (VO.ankers, per gesproken woord een
+   tijdstip); de nieuwe woorden krijgen hun plek via de positie in de tekst:
+   zelfde aantal woorden = een-op-een, anders interpoleren we op cumulatieve
+   tekenpositie zodat een toegevoegd of gesplitst woord netjes tussen zijn
+   buren valt. */
+function voHertijd(tekst){
+  const nieuwe=String(tekst||'').split(/\s+/).filter(Boolean);
+  if(!nieuwe.length||!VO.ankers||!VO.ankers.length) return;
+  if(nieuwe.length===VO.ankers.length){
+    VO.woorden=nieuwe.map((w,i)=>({w, t:VO.ankers[i].t, gehoord:true}));
+    return;
+  }
+  const oudTot=VO.ankers.reduce((a,w)=>a+w.w.length+1,0)||1;
+  const punten=[]; let acc=0;
+  for(const w of VO.ankers){ acc+=w.w.length+1; punten.push({f:acc/oudTot, t:w.t||0}); }
+  const nieuwTot=nieuwe.reduce((a,w)=>a+w.length+1,0)||1;
+  let acc2=0;
+  VO.woorden=nieuwe.map(w=>{
+    acc2+=w.length+1; const f=acc2/nieuwTot;
+    let t=punten[punten.length-1].t;
+    for(let i=0;i<punten.length;i++){
+      if(f<=punten[i].f){ const p0=i?punten[i-1]:{f:0,t:0};
+        const span=(punten[i].f-p0.f)||1;
+        t=p0.t+(punten[i].t-p0.t)*((f-p0.f)/span); break; }
+    }
+    return {w, t, gehoord:true};
+  });
 }
 
 function voTijdenAanvullen(){
