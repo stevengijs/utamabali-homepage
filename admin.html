@@ -1068,7 +1068,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-wrap-muziek';
+const APP_VERSIE='2026-08-29-subtiel-blok';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2875,9 +2875,9 @@ let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:nul
    overlay, het witte tekstblok van de Instagram-teksttool, en de
    accentstijl met opgelichte woorden die finance-reels domineren. */
 const CT_STIJLEN=[
-  {key:'wit',    naam:'Strak wit',  opmaak:{achtergrond:'geen', accent:false}},
-  {key:'blok',   naam:'Tekstblok',  opmaak:{achtergrond:'wit',  accent:false}},
-  {key:'accent', naam:'Accent',     opmaak:{achtergrond:'geen', accent:true}},
+  {key:'wit',    naam:'Strak wit',    opmaak:{achtergrond:'geen', accent:false}},
+  {key:'blok',   naam:'Tekstblok',    opmaak:{achtergrond:'wit',  accent:false}},
+  {key:'semi',   naam:'Subtiel blok', opmaak:{achtergrond:'semi', accent:false}},
 ];
 
 /* Alleen de lettertypen die de teksttool van Instagram zelf aanbiedt
@@ -3483,7 +3483,9 @@ function ctPreviewTekenen(){
       ? tekst.split(' ').map(w=>accentWoord(w)?`<b>${esc(w)}</b>`:esc(w)).join(' ')
       : esc(tekst);
     if(om.achtergrond!=='geen'){
-      const [bg,fg]=om.achtergrond==='wit'?['#fff','#111']:['#111','#fff'];
+      const [bg,fg]=om.achtergrond==='wit'?['#fff','#111']
+        :om.achtergrond==='semi'?['rgba(17,17,17,.55)','#fff']
+        :['#111','#fff'];
       return `<span style="${stijlen.join(';')}"><i style="background:${bg};color:${fg}">${inhoud}</i></span>`;
     }
     return `<span style="${stijlen.join(';')}">${inhoud}</span>`;
@@ -3509,7 +3511,7 @@ function ctPreviewTekenen(){
     if(CT.soort==='reel'){
       const st=CT_STIJLEN[i];
       const actief=st.key==='blok'
-        ? (CT_OPMAAK.achtergrond!=='geen'&&!CT_OPMAAK.accent)
+        ? ((CT_OPMAAK.achtergrond==='wit'||CT_OPMAAK.achtergrond==='zwart')&&!CT_OPMAAK.accent)
         : (CT_OPMAAK.achtergrond===st.opmaak.achtergrond&&CT_OPMAAK.accent===st.opmaak.accent);
       return `<div class="ig-kaart ${actief?'on':''}" data-igstijl="${st.key}">
         <div class="keuze"><span>${esc(st.naam)}</span><span>${actief?'✓ gekozen':'klik om te kiezen'}</span></div>
@@ -3552,7 +3554,7 @@ function ctPreviewTekenen(){
       <span class="muted" style="font-size:12px;font-weight:700">FONT</span>
       ${CT_FONTS.map(f=>`<button class="bc-chip ${CT_OPMAAK.font===f.key?'on':''}" data-igfont="${f.key}" title="Zoals in de Instagram-editor">${f.naam}</button>`).join('')}
       <span class="muted" style="font-size:12px;font-weight:700;margin-left:10px">ACHTERGROND</span>
-      ${[['geen','Geen'],['wit','Wit'],['zwart','Zwart']].map(([k,n])=>`<button class="bc-chip ${CT_OPMAAK.achtergrond===k?'on':''}" data-igbg="${k}">${n}</button>`).join('')}
+      ${[['geen','Geen'],['wit','Wit'],['zwart','Zwart'],['semi','Subtiel']].map(([k,n])=>`<button class="bc-chip ${CT_OPMAAK.achtergrond===k?'on':''}" data-igbg="${k}">${n}</button>`).join('')}
     </div>`;
   vak.innerHTML=`<div class="ig-rij">${CT.soort==='reel'
     ? CT_STIJLEN.map((st,i)=>kaart(gekozenHook,i)).join('')
@@ -4927,9 +4929,9 @@ async function voRender(alleenMuziek){
           for(const regel of regelsO){
             const breedO=ctx.measureText(regel).width; const xO=540-breedO/2;
             if(om.achtergrond!=='geen'){
-              const wit=om.achtergrond==='wit';
+              const wit=om.achtergrond==='wit', semi=om.achtergrond==='semi';
               ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-              ctx.fillStyle=wit?'#ffffff':'#111111';
+              ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
               // per regel zijn eigen afgeronde balk, strak om de tekst zoals
               // de A-knop van Instagram
               const pad=Math.round(regelH*0.28);
@@ -4975,16 +4977,16 @@ async function voRender(alleenMuziek){
             const breed=rij.reduce((a,w)=>a+ctx.measureText(toon(w.w)+' ').width,0);
             let x=540-breed/2;
             if(om.achtergrond!=='geen'){
-              const wit=om.achtergrond==='wit';
+              const wit=om.achtergrond==='wit', semi=om.achtergrond==='semi';
               ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
               const pad=22;
-              ctx.fillStyle=wit?'#ffffff':'#111111';
+              ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
               ctx.beginPath(); ctx.roundRect(x-pad,y-regelH*0.72,breed+pad*2,regelH*0.98,14); ctx.fill();
               for(const w of rij){
                 const gezegd=t>=(w.t||0);
                 ctx.fillStyle = om.accent&&accent(w.w)
                   ? '#c9a400'
-                  : (wit ? (gezegd?'#111111':'#8a8a8a') : (gezegd?'#ffffff':'#9a9a9a'));
+                  : (wit ? (gezegd?'#111111':'#8a8a8a') : (gezegd?'#ffffff':'#c9c9c9'));
                 ctx.fillText(toon(w.w),x,y); x+=ctx.measureText(toon(w.w)+' ').width;
               }
             }else{
