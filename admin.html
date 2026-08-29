@@ -1044,7 +1044,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-spraak-leidend';
+const APP_VERSIE='2026-08-29-hover-play';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3659,6 +3659,36 @@ function bibTegelMedia(r){
   return `<img src="${bibThumb(r)}" loading="lazy" alt="">`;
 }
 
+/* Hoveren over een videotegel speelt hem meteen (gedempt, in een lus) zodat
+   je ziet wat er gebeurt zonder te klikken. Bij het verlaten stopt hij en
+   wordt de tijdelijke speler opgeruimd; tegels zonder thumbnail hebben al een
+   video-element als basis en spelen/pauzeren gewoon dat. */
+function bibHoverAan(wortel){
+  wortel.querySelectorAll('[data-bib],[data-bibpak]').forEach(t=>{
+    if(t.dataset.hover) return; t.dataset.hover='1';
+    const id=t.dataset.bib||t.dataset.bibpak;
+    const r=BIB.rijen.find(x=>x.id===id);
+    if(!r||r.soort!=='video') return;
+    t.addEventListener('mouseenter',()=>{
+      let v=t.querySelector('video');
+      if(!v){
+        v=document.createElement('video');
+        v.src=ctPubliek(r.path); v.muted=true; v.loop=true; v.playsInline=true;
+        v.dataset.tijdelijk='1';
+        v.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
+        t.insertBefore(v,t.firstChild.nextSibling);
+      }
+      v.play().catch(()=>{});
+    });
+    t.addEventListener('mouseleave',()=>{
+      const v=t.querySelector('video');
+      if(!v) return;
+      v.pause();
+      if(v.dataset.tijdelijk) v.remove();
+    });
+  });
+}
+
 /* Afspeelknop: het filmpje bekijken zonder het te selecteren. */
 function bibSpeler(pad){
   const oud=document.querySelector('#bib_speler'); if(oud) oud.remove();
@@ -3776,6 +3806,7 @@ function bibTekenenStil(){
   grid.querySelectorAll('[data-bib]').forEach(b=>b.onclick=()=>{
     const r=BIB.rijen.find(x=>x.id===b.dataset.bib); if(r) bibGebruik(r);
   });
+  bibHoverAan(grid);
 }
 
 /* Een bibliotheekbeeld in de huidige post zetten. Gedeeld door de kiezer
@@ -3843,6 +3874,7 @@ async function bibKiezer(){
       </div>
     </div>`);
   $('#bib_sluit').onclick=()=>$('#bib_paneel').remove();
+  bibHoverAan(document.querySelector('#bib_paneel'));
   document.querySelectorAll('#bib_paneel [data-speel]').forEach(b=>b.onclick=e=>{e.stopPropagation();bibSpeler(b.dataset.speel);});
   document.querySelectorAll('[data-bibpak]').forEach(b=>b.onclick=()=>{
     const r=BIB.rijen.find(x=>x.id===b.dataset.bibpak); if(!r) return;
