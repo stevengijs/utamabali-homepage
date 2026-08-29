@@ -1049,7 +1049,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-masterketen';
+const APP_VERSIE='2026-08-29-weggooi';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -5017,11 +5017,23 @@ async function ctLijstLaden(){
       <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.onderwerp||'(zonder onderwerp)')}</span>
       ${p.project?`<span class="muted">${esc(p.project)}</span>`:''}
       <span class="${p.status==='gepost'?'st-gepost':'muted'}">${p.status==='gepost'?'gepost':p.status}</span>
+      ${p.status!=='gepost'?`<button class="bc-zoekactie" data-weggooi="${p.id}" title="Verwijderen" style="padding:0 4px">🗑</button>`:''}
     </div>`;
   const favs=gemaakt.filter(p=>p.favoriet);
   vak.innerHTML=(favs.length?`<div class="bc-lab" style="margin:0">⭐ Favorieten</div>${favs.map(rij).join('')}
     <div class="bc-lab" style="margin:10px 0 0">Overige</div>`:'')+
     gemaakt.filter(p=>!p.favoriet).map(rij).join('');
+  vak.querySelectorAll('[data-weggooi]').forEach(b=>b.onclick=async(e)=>{
+    e.stopPropagation();
+    const p=CT.lijst.find(x=>x.id===b.dataset.weggooi); if(!p) return;
+    if(p.favoriet&&!confirm('Dit is een favoriet. Toch verwijderen?')) return;
+    if(!p.favoriet&&!confirm(`"${(p.onderwerp||'deze post').slice(0,60)}" verwijderen?`)) return;
+    const {data,error}=await sb.rpc('content_post_verwijderen',{p_id:p.id});
+    if(error||!data||data.ok===false){toast((data&&data.reden)||(error&&error.message)||'Verwijderen mislukte','err');return;}
+    if(CT.postId===p.id){CT.postId=null;}
+    toast('Verwijderd','ok');
+    ctLijstLaden();
+  });
   vak.querySelectorAll('[data-ster]').forEach(b=>b.onclick=async(e)=>{
     e.stopPropagation();
     const p=CT.lijst.find(x=>x.id===b.dataset.ster); if(!p) return;
