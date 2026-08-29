@@ -1068,7 +1068,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-brand-engine';
+const APP_VERSIE='2026-08-29-wrap-muziek';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3644,8 +3644,15 @@ async function voMuziekPaneel(vak){
     if(VO_PREVIEW){VO_PREVIEW.pause();VO_PREVIEW=null;}
     VO.muziek={name:b.dataset.mznaam};
     VO.muziekUrl=ctPubliek(b.dataset.mzkies);
-    toast(`"${b.dataset.mznaam.replace(/\.[^.]+$/,'')}" staat klaar; bak (opnieuw) en hij zit eronder`,'ok');
-    voTekenen();
+    if(VO.stand==='video'){
+      // De al gebakken video bevat nog de oude muziek; meteen opnieuw bakken
+      // zodat wat je hoort altijd klopt met wat er "actief" staat.
+      toast(`Nieuwe muziek gekozen; ik bak de video er meteen mee opnieuw`,'ok');
+      voRender(!VO.url);
+    } else {
+      toast(`"${b.dataset.mznaam.replace(/\.[^.]+$/,'')}" staat klaar en gaat mee bij het bakken`,'ok');
+      voTekenen();
+    }
   });
   const up=$('#mz_upload');
   if(up) up.onclick=()=>{
@@ -4951,36 +4958,49 @@ async function voRender(alleenMuziek){
           ctx.font=ctFontStr(f,64);
           try{ ctx.letterSpacing=ctSpatiePx(f,64); }catch(e){}
           const toon=w=>{const k=kaalWoord(w);return f.caps?k.toUpperCase():k;};
-          const y=1490;
-          const breed=woorden.reduce((a,w)=>a+ctx.measureText(toon(w.w)+' ').width,0);
-          let x=540-breed/2;
-          if(om.achtergrond!=='geen'){
-            const wit=om.achtergrond==='wit';
-            ctx.shadowColor='transparent'; ctx.shadowBlur=0;
-            const pad=22, hgt=92;
-            ctx.fillStyle=wit?'#ffffff':'#111111';
-            ctx.beginPath(); ctx.roundRect(x-pad,y-66,breed+pad*2,hgt,14); ctx.fill();
-            for(const w of woorden){
-              const gezegd=t>=(w.t||0);
-              ctx.fillStyle = om.accent&&/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w.w)
-                ? '#c9a400'
-                : (wit ? (gezegd?'#111111':'#8a8a8a') : (gezegd?'#ffffff':'#9a9a9a'));
-              ctx.fillText(toon(w.w),x,y); x+=ctx.measureText(toon(w.w)+' ').width;
+          // Lange brokken wikkelen naar meerdere gecentreerde regels in
+          // plaats van de volle breedte over; in de blok-stijl krijgt elke
+          // regel zijn eigen balk, zoals de A-knop van Instagram.
+          const regelH=Math.round(64*(f.schaal||1)*(f.regel||1.2));
+          const regelsK=[]; let rijK=[]; let rijBreed=0;
+          for(const w of woorden){
+            const wb=ctx.measureText(toon(w.w)+' ').width;
+            if(rijBreed+wb>860&&rijK.length){regelsK.push(rijK);rijK=[];rijBreed=0;}
+            rijK.push(w); rijBreed+=wb;
+          }
+          if(rijK.length)regelsK.push(rijK);
+          let y=1490-(regelsK.length-1)*regelH;
+          const accent=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
+          for(const rij of regelsK){
+            const breed=rij.reduce((a,w)=>a+ctx.measureText(toon(w.w)+' ').width,0);
+            let x=540-breed/2;
+            if(om.achtergrond!=='geen'){
+              const wit=om.achtergrond==='wit';
+              ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+              const pad=22;
+              ctx.fillStyle=wit?'#ffffff':'#111111';
+              ctx.beginPath(); ctx.roundRect(x-pad,y-regelH*0.72,breed+pad*2,regelH*0.98,14); ctx.fill();
+              for(const w of rij){
+                const gezegd=t>=(w.t||0);
+                ctx.fillStyle = om.accent&&accent(w.w)
+                  ? '#c9a400'
+                  : (wit ? (gezegd?'#111111':'#8a8a8a') : (gezegd?'#ffffff':'#9a9a9a'));
+                ctx.fillText(toon(w.w),x,y); x+=ctx.measureText(toon(w.w)+' ').width;
+              }
+            }else{
+              ctSchaduw(ctx,f);
+              for(const w of rij){
+                const gezegd=t>=(w.t||0);
+                ctx.fillStyle = om.accent&&accent(w.w) ? '#FFE234' : '#ffffff';
+                ctx.globalAlpha = gezegd?1:0.55;
+                if(f.rand){ ctx.lineWidth=12; ctx.strokeStyle='#000000'; ctx.strokeText(toon(w.w),x,y); }
+                else { ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.strokeText(toon(w.w),x,y); }
+                ctx.fillText(toon(w.w),x,y);
+                x+=ctx.measureText(toon(w.w)+' ').width;
+              }
+              ctx.globalAlpha=1;
             }
-          }else{
-            const accent=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
-            ctSchaduw(ctx,f);
-            ctx.lineWidth=f.rand?12:0;
-            for(const w of woorden){
-              const gezegd=t>=(w.t||0);
-              ctx.fillStyle = om.accent&&accent(w.w) ? '#FFE234' : '#ffffff';
-              ctx.globalAlpha = gezegd?1:0.55;
-              if(f.rand){ ctx.lineWidth=12; ctx.strokeStyle='#000000'; ctx.strokeText(toon(w.w),x,y); }
-              else { ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.strokeText(toon(w.w),x,y); }
-              ctx.fillText(toon(w.w),x,y);
-              x+=ctx.measureText(toon(w.w)+' ').width;
-            }
-            ctx.globalAlpha=1;
+            y+=regelH;
           }
           try{ ctx.letterSpacing='0px'; }catch(e){}
         }
