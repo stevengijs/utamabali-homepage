@@ -455,28 +455,74 @@
   .ct-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:900px){.ct-grid2{grid-template-columns:1fr}}
 
-  /* Instagram-preview in de content-studio */
-  .ig-frame{width:min(340px,100%);margin:0 auto;border:1px solid var(--line);border-radius:14px;
-            background:#fff;overflow:hidden;box-shadow:0 8px 28px rgba(20,30,25,.08)}
-  .ig-kop{display:flex;align-items:center;gap:9px;padding:10px 12px}
-  .ig-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1d5c43,#8B5A3C);
-             color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
-  .ig-kop b{font-size:13px}
+  /* Instagram-preview in de content-studio. Bewust de echte IG-waarden:
+     systeemfont van het platform, #262626 voor tekst, #8e8e8e voor grijs,
+     #dbdbdb voor randen, wit als ondergrond. De preview moet aanvoelen als een
+     screenshot uit de app, anders beoordeel je de caption niet zoals een
+     volger hem straks ziet. */
+  .ig-rij{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 10px}
+  .ig-kaart{flex:none;width:250px;cursor:pointer;border-radius:12px;padding:6px;
+            border:2px solid transparent;transition:border-color .15s}
+  .ig-kaart.on{border-color:var(--brand)}
+  .ig-kaart .keuze{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+                   color:var(--muted);padding:0 2px 6px;display:flex;justify-content:space-between}
+  .ig-kaart.on .keuze{color:var(--brand)}
+  .ig-frame{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+            background:#fff;border:1px solid #dbdbdb;border-radius:8px;overflow:hidden;color:#262626}
+  .ig-kop{display:flex;align-items:center;gap:8px;padding:8px 10px}
+  .ig-avatar{width:28px;height:28px;border-radius:50%;flex:none;
+             background:conic-gradient(from 210deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5,#feda75);
+             padding:2px}
+  .ig-avatar i{display:block;width:100%;height:100%;border-radius:50%;background:#1d5c43;color:#fff;
+               font-style:normal;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .ig-kop b{font-size:12.5px;font-weight:600;color:#262626}
+  .ig-kop .ig-meer{margin-left:auto;color:#262626;font-weight:700;letter-spacing:1px}
   .ig-media{position:relative;background:#000}
-  .ig-media img,.ig-media video{width:100%;display:block;max-height:420px;object-fit:cover}
-  .ig-media.reel img,.ig-media.reel video{aspect-ratio:9/16;max-height:none;object-fit:cover}
-  .ig-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px}
-  .ig-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5)}
-  .ig-dots i.on{background:#fff}
-  .ig-teller{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;
-             padding:2px 9px;border-radius:999px;font-size:11px}
-  .ig-acties{display:flex;gap:14px;padding:9px 12px;font-size:17px}
-  .ig-caption{padding:0 12px 6px;font-size:12.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
-  .ig-caption b{margin-right:5px}
-  .ig-reactie{padding:2px 12px 12px;font-size:12px;color:var(--muted);word-break:break-word}
-  .ig-reactie b{margin-right:5px;color:var(--ink)}
-  .ig-overlaytip{position:absolute;top:12px;left:12px;right:12px;color:#fff;font-weight:800;
-                 font-size:15px;text-shadow:0 1px 8px rgba(0,0,0,.7);text-align:center}
+  .ig-media img,.ig-media video{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+  .ig-teller{position:absolute;top:10px;right:10px;background:rgba(38,38,38,.8);color:#fff;
+             padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}
+  .ig-dots{display:flex;justify-content:center;gap:4px;padding:8px 0 0}
+  .ig-dots i{width:6px;height:6px;border-radius:50%;background:#dbdbdb}
+  .ig-dots i.on{background:#0095f6}
+  .ig-acties{display:flex;align-items:center;gap:14px;padding:8px 10px 4px}
+  .ig-acties svg{width:22px;height:22px;stroke:#262626;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .ig-acties .rechts{margin-left:auto}
+  .ig-likes{padding:0 10px;font-size:12.5px;font-weight:600}
+  .ig-caption{padding:3px 10px 2px;font-size:12.5px;line-height:1.45;color:#262626;
+              white-space:pre-wrap;word-break:break-word}
+  .ig-caption b{margin-right:5px;font-weight:600}
+  .ig-caption .meer{color:#8e8e8e}
+  .ig-reacties{padding:0 10px;font-size:12.5px;color:#8e8e8e}
+  .ig-tijd{padding:3px 10px 10px;font-size:10px;color:#8e8e8e;letter-spacing:.2px;text-transform:uppercase}
+  /* Reel: donkere weergave met de actiekolom rechts, zoals in de app */
+  .ig-frame.reel{background:#000;border-color:#262626}
+  .ig-frame.reel .ig-media img,.ig-frame.reel .ig-media video{aspect-ratio:9/16;object-fit:cover}
+  .ig-reelhud{position:absolute;inset:0;display:flex;pointer-events:none}
+  .ig-reelhud .onder{margin-top:auto;padding:10px 54px 12px 10px;color:#fff;width:100%;
+                     background:linear-gradient(transparent,rgba(0,0,0,.55))}
+  .ig-reelhud .onder .wie{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;margin-bottom:6px}
+  .ig-reelhud .onder .wie .ig-avatar{width:24px;height:24px}
+  .ig-reelhud .onder .volg{border:1px solid rgba(255,255,255,.9);border-radius:6px;padding:1px 7px;
+                           font-size:11px;font-weight:600}
+  .ig-reelhud .onder .cap{font-size:12px;line-height:1.4;overflow:hidden;display:-webkit-box;
+                          -webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .ig-reelhud .onder .audio{display:flex;align-items:center;gap:6px;font-size:11px;margin-top:7px;opacity:.95}
+  .ig-reelhud .zij{position:absolute;right:8px;bottom:14px;display:flex;flex-direction:column;
+                   gap:16px;align-items:center;color:#fff;font-size:10.5px;text-align:center}
+  .ig-reelhud .zij svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block;margin:0 auto 3px}
+  .ig-hooktekst{position:absolute;top:16%;left:14px;right:14px;text-align:center;color:#fff;
+                font-weight:800;font-size:15px;line-height:1.35;text-shadow:0 1px 10px rgba(0,0,0,.75)}
+  /* Voice-over-opname en karaoke-render */
+  .vo-tele{background:#111;color:#fff;border-radius:10px;padding:18px 20px;font-size:16px;
+           line-height:1.8;max-height:220px;overflow-y:auto}
+  .vo-tele span{opacity:.45;transition:opacity .12s,color .12s}
+  .vo-tele span.nu{opacity:1;color:#7ef0b2;font-weight:700}
+  .vo-tele span.gehad{opacity:.9}
+  .vo-knoppen{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .vo-tijd{font-variant-numeric:tabular-nums;font-weight:700;color:var(--err,#b3261e)}
+  .vo-tijd::before{content:'●';margin-right:6px;animation:voKnipper 1s infinite}
+  @keyframes voKnipper{50%{opacity:.2}}
+  .vo-klaarvideo{width:min(250px,100%);border-radius:10px;display:block;background:#000;aspect-ratio:9/16}
 
   /* Campagne-overzicht met cijfers */
   .bc-camps{padding:0 18px 4px;display:flex;flex-direction:column;gap:8px}
@@ -952,7 +998,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-ig-preview';
+const APP_VERSIE='2026-08-29-voiceover';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2918,6 +2964,12 @@ function ctPakketTekenen(){
     <div class="ct-vak">
       ${kop('Caption','caption','x')}
       <textarea class="ct-caption" id="ct_caption">${esc(pk.caption||'')}</textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="ct_feedback" class="ct-caption" style="min-height:0;flex:1;padding:8px 12px"
+               placeholder="Wat moet anders? Bijv: korter, minder verkoperig, meer spreektaal, begin met de prijs…">
+        <button class="btn btn-ghost btn-sm" id="ct_verbeter" style="flex:none">✨ Pas aan</button>
+      </div>
+      <div class="bc-hint">De aanwijzing wordt op het hele pakket toegepast (ook hooks en slides), niet alleen de caption. Je eigen wijzigingen in het tekstvak blijven het uitgangspunt.</div>
     </div>
 
     <div class="ct-vak">
@@ -2944,8 +2996,8 @@ function ctPakketTekenen(){
       <div class="bc-hint">Slide 1 is de cover: grote titel, gecentreerd, met @stevenbalivillas erop. De laatste slide is de CTA.</div>
     </div>`:''}
 
-    <div class="ct-vak">
-      ${kop('Preview')}
+    <div class="ct-vak" style="grid-column:1/-1">
+      ${kop('Preview, kies je variant')}
       <div id="ct_preview"></div>
       <div class="bc-hint" id="ct_previewhint"></div>
     </div>
@@ -2954,6 +3006,11 @@ function ctPakketTekenen(){
       ${kop('Plaatsen')}
       <div id="ct_plaats"><span class="muted" style="font-size:13px">Instagram-koppeling controleren…</span></div>
     </div>
+
+    ${CT.soort==='reel'?`<div class="ct-vak" style="grid-column:1/-1">
+      ${kop('Voice-over (spreek je caption in, de tekst loopt mee in beeld)')}
+      <div id="ct_voice"></div>
+    </div>`:''}
 
     <div class="ct-vak" style="grid-column:1/-1">
       ${kop('Waarom dit zo in elkaar zit')}
@@ -2976,6 +3033,7 @@ function ctPakketTekenen(){
     ta.value=regels.join('\n');
     ctPreviewTekenen();
   });
+  // dubbele weergave: de hook-knoppen bovenin en de previewkaarten kiezen hetzelfde
   vak.querySelectorAll('[data-kopieer]').forEach(b=>b.onclick=()=>{
     const wat=b.dataset.kopieer;
     const tekst = wat==='caption' ? $('#ct_caption').value
@@ -2988,7 +3046,33 @@ function ctPakketTekenen(){
   $('#ct_klaar').onclick=()=>ctOpslaan('klaar');
   $('#ct_gepost').onclick=()=>ctOpslaan('gepost');
   $('#ct_opnieuw').onclick=ctGenereer;
+  $('#ct_verbeter').onclick=ctVerbeter;
+  if(CT.soort==='reel') voTekenen();
+  $('#ct_feedback').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ctVerbeter();}});
   ctPreviewTekenen(); ctPlaatsTekenen();
+}
+
+/* Feedbackronde: het huidige pakket gaat mee (inclusief wat Steven zelf al in
+   het tekstvak aanpaste, dat is het uitgangspunt), plus de aanwijzing. Het
+   model herschrijft gericht en levert het volledige pakket opnieuw. */
+async function ctVerbeter(){
+  const feedback=$('#ct_feedback').value.trim();
+  if(!feedback){toast('Typ eerst wat er anders moet','err');return;}
+  if(!CT.pakket){toast('Maak eerst een pakket','err');return;}
+  const knop=$('#ct_verbeter'); knop.disabled=true; knop.textContent='Bezig…';
+  try{
+    const huidig={...CT.pakket, caption:($('#ct_caption')&&$('#ct_caption').value)||CT.pakket.caption};
+    const {data,error}=await sb.functions.invoke('content-maker',{body:{
+      soort:CT.soort, onderwerp:$('#ct_onderwerp').value.trim(), project:CT.project||null,
+      doel:CT.doel, aantal_media:CT.media.length, feedback, huidig}});
+    if(error||!data||data.ok===false){
+      toast((data&&data.reden)||(error&&error.message)||'Aanpassen mislukt','err');return;
+    }
+    CT.pakket=data.pakket; CT.hookKeus=0;
+    ctPakketTekenen();
+    await ctOpslaan(null);
+    toast('Pakket aangepast','ok');
+  } finally { knop.disabled=false; knop.textContent='✨ Pas aan'; }
 }
 
 /* De preview toont wat er werkelijk op Instagram komt: jouw media zoals
@@ -3000,9 +3084,8 @@ function ctPreviewTekenen(){
   const vak=$('#ct_preview'); if(!vak) return;
   const pk=CT.pakket||{};
   const isVideo=m=>/\.(mp4|mov|webm|m4v)$/i.test(m.path)||String(m.type||'').startsWith('video');
-  const capTekst=($('#ct_caption')&&$('#ct_caption').value)||pk.caption||'';
   if(!CT.media.length){
-    vak.innerHTML='<div class="muted" style="font-size:13px">Upload eerst media, dan zie je hier de post zoals hij op Instagram komt.</div>';
+    vak.innerHTML='<div class="muted" style="font-size:13px">Upload eerst media, dan zie je hier drie varianten zoals ze op Instagram komen.</div>';
     $('#ct_previewhint').textContent='';
     return;
   }
@@ -3010,27 +3093,326 @@ function ctPreviewTekenen(){
   const beeld=isVideo(m0)
     ? `<video src="${ctPubliek(m0.path)}" muted playsinline loop autoplay></video>`
     : `<img src="${ctPubliek(m0.path)}" alt="">`;
-  const hook=(pk.hooks&&pk.hooks[CT.hookKeus])||'';
-  vak.innerHTML=`
-  <div class="ig-frame">
-    <div class="ig-kop"><span class="ig-avatar">S</span><b>stevenbalivillas</b></div>
-    <div class="ig-media ${CT.soort==='reel'?'reel':''}">
-      ${beeld}
-      ${CT.soort==='reel'&&hook?`<div class="ig-overlaytip">${esc(hook)}</div>`:''}
-      ${CT.soort==='carousel'&&CT.media.length>1?`<span class="ig-teller">1/${CT.media.length}</span>
-        <div class="ig-dots">${CT.media.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</div>`:''}
-    </div>
-    <div class="ig-acties">♡ 💬 ↗</div>
-    <div class="ig-caption"><b>stevenbalivillas</b>${esc(capTekst)}</div>
-    ${pk.eerste_reactie?`<div class="ig-reactie"><b>stevenbalivillas</b>${esc(pk.eerste_reactie)}</div>`:''}
-  </div>`;
-  $('#ct_previewhint').innerHTML = CT.soort==='reel'
-    ? 'De hook-overlay hierboven is ter illustratie: de API plaatst je video precies zoals geupload. Zet de overlay-teksten er dus eerst op in CapCut of de Instagram-editor, of plaats de reel handmatig met dit pakket ernaast.'
-    : CT.soort==='carousel' ? 'Je afbeeldingen worden precies zo geplaatst als geupload; de slide-teksten hierboven zijn om erop te zetten voordat je publiceert.'
-    : '';
+  const basisCap=(($('#ct_caption')&&$('#ct_caption').value)||pk.caption||'');
+  const hooks=(pk.hooks&&pk.hooks.length?pk.hooks:[basisCap.split('\n')[0]||'']).slice(0,3);
+
+  // IG-iconen als inline SVG, in de lijnstijl van de app
+  const icHart='<svg viewBox="0 0 24 24"><path d="M12 20.5C7 16.5 2.8 12.9 2.8 8.9c0-2.6 2-4.6 4.6-4.6 1.8 0 3.5 1 4.6 2.7 1.1-1.7 2.8-2.7 4.6-2.7 2.6 0 4.6 2 4.6 4.6 0 4-4.2 7.6-9.2 11.6z"/></svg>';
+  const icReactie='<svg viewBox="0 0 24 24"><path d="M20.7 12a8.7 8.7 0 0 1-12.6 7.8L3 21l1.2-5.1A8.7 8.7 0 1 1 20.7 12z"/></svg>';
+  const icDeel='<svg viewBox="0 0 24 24"><path d="M21 3 9.4 13.3M21 3l-6.9 18-4.7-7.7L2 9.9 21 3z"/></svg>';
+  const icBewaar='<svg viewBox="0 0 24 24"><path d="M19 21 12 16.5 5 21V4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5V21z"/></svg>';
+
+  const kaart=(hook,i)=>{
+    // Elke variant: de hook als regel 1, de rest van de caption blijft gelijk
+    const regels=basisCap.split('\n'); regels[0]=hook; const cap=regels.join('\n');
+    const kort=cap.length>110?cap.slice(0,110).replace(/\s+\S*$/,''):cap;
+
+    if(CT.soort==='reel'){
+      return `<div class="ig-kaart ${i===CT.hookKeus?'on':''}" data-igkeuze="${i}">
+        <div class="keuze"><span>Optie ${i+1}</span><span>${i===CT.hookKeus?'✓ gekozen':'klik om te kiezen'}</span></div>
+        <div class="ig-frame reel"><div class="ig-media">
+          ${beeld}
+          <div class="ig-hooktekst">${esc(hook)}</div>
+          <div class="ig-reelhud">
+            <div class="onder">
+              <div class="wie"><span class="ig-avatar"><i>S</i></span> stevenbalivillas <span class="volg">Volgen</span></div>
+              <div class="cap">${esc(kort)}</div>
+              <div class="audio">♫ stevenbalivillas · Origineel audio</div>
+            </div>
+            <div class="zij">
+              <span>${icHart}12,4K</span><span>${icReactie}214</span><span>${icDeel}</span>
+            </div>
+          </div>
+        </div></div>
+      </div>`;
+    }
+    return `<div class="ig-kaart ${i===CT.hookKeus?'on':''}" data-igkeuze="${i}">
+      <div class="keuze"><span>Optie ${i+1}</span><span>${i===CT.hookKeus?'✓ gekozen':'klik om te kiezen'}</span></div>
+      <div class="ig-frame">
+        <div class="ig-kop"><span class="ig-avatar"><i>S</i></span><b>stevenbalivillas</b><span class="ig-meer">···</span></div>
+        <div class="ig-media">${beeld}
+          ${CT.soort==='carousel'&&CT.media.length>1?`<span class="ig-teller">1/${CT.media.length}</span>`:''}
+        </div>
+        ${CT.soort==='carousel'&&CT.media.length>1?`<div class="ig-dots">${CT.media.map((_,d)=>`<i class="${d===0?'on':''}"></i>`).join('')}</div>`:''}
+        <div class="ig-acties">${icHart}${icReactie}${icDeel}<span class="rechts">${icBewaar}</span></div>
+        <div class="ig-likes">1.204 vind-ik-leuks</div>
+        <div class="ig-caption"><b>stevenbalivillas</b>${esc(kort)}${cap.length>kort.length?'<span class="meer">… meer</span>':''}</div>
+        <div class="ig-reacties">Alle 89 reacties bekijken</div>
+        <div class="ig-tijd">1 uur geleden</div>
+      </div>
+    </div>`;
+  };
+
+  vak.innerHTML=`<div class="ig-rij">${hooks.map(kaart).join('')}</div>`;
+  vak.querySelectorAll('[data-igkeuze]').forEach(k=>k.onclick=()=>{
+    CT.hookKeus=Number(k.dataset.igkeuze);
+    const ta=$('#ct_caption');
+    if(ta){const regels=ta.value.split('\n');regels[0]=hooks[CT.hookKeus]||regels[0];ta.value=regels.join('\n');}
+    document.querySelectorAll('[data-hook]').forEach(b=>b.classList.toggle('on',Number(b.dataset.hook)===CT.hookKeus));
+    ctPreviewTekenen();
+  });
+
+  $('#ct_previewhint').innerHTML = (CT.soort==='reel'
+    ? 'Klik de variant die je wilt; de hook wordt regel 1 van je caption en de overlay. De cijfers en de knoppen zijn decor, zodat je hem ziet zoals een volger. Let op: de API plaatst je video zoals geupload, dus zet de overlay-tekst er eerst op in CapCut of de Instagram-editor.'
+    : 'Klik de variant die je wilt; de hook wordt regel 1 van je caption. De cijfers en de knoppen zijn decor, zodat je hem ziet zoals een volger hem in de app ziet.');
   const ta=$('#ct_caption');
-  if(ta&&!ta.dataset.previewkoppeling){ta.dataset.previewkoppeling='1';ta.addEventListener('input',()=>{
-    const c=vak.querySelector('.ig-caption'); if(c)c.innerHTML='<b>stevenbalivillas</b>'+esc(ta.value);});}
+  if(ta&&!ta.dataset.previewkoppeling){ta.dataset.previewkoppeling='1';let t;ta.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(ctPreviewTekenen,400);});}
+}
+
+/* ================= VOICE-OVER =================
+   Steven spreekt de caption in; de gesproken tekst komt als meelopende
+   ondertiteling in beeld en het geheel wordt met de b-roll tot een video
+   gebakken. Alles gebeurt in de browser: MediaRecorder voor de opname,
+   SpeechRecognition om per woord het tijdstip te vangen (hij leest een TEKST
+   DIE WE AL KENNEN, dus we hoeven alleen te horen wanneer welk woord valt,
+   niet wat er gezegd wordt), en een canvas-render die b-roll, stem en
+   karaoketekst samenvoegt. Herkent de browser de spraak niet (of matcht het
+   slecht), dan verdelen we de woorden naar rato van hun lengte over de duur
+   van de opname; bij normaal voorleestempo zit dat er dicht op. */
+let VO={stand:'leeg', blob:null, url:null, woorden:[], duur:0, rec:null, spraak:null,
+        t0:0, wijzer:0, video:null, videoPad:null, mime:''};
+
+function voWoorden(){
+  const cap=(($('#ct_caption')&&$('#ct_caption').value)||'').trim();
+  return cap.split(/\s+/).filter(Boolean);
+}
+const voKaal=w=>w.toLowerCase().replace(/[^a-z0-9à-ÿ]/g,'');
+
+function voTekenen(){
+  const vak=$('#ct_voice'); if(!vak) return;
+  if(VO.stand==='leeg'){
+    vak.innerHTML=`
+      <div class="bc-hint" style="margin:0 0 8px">Spreek de caption in als voice-over. Terwijl je leest loopt de tekst mee; daarna bakken we stem, meelopende tekst en je b-roll tot een reel. Werkt het best in Chrome, met toestemming voor de microfoon.</div>
+      <div class="vo-knoppen"><button class="btn btn-primary btn-sm" id="vo_start">🎙 Neem voice-over op</button></div>`;
+    $('#vo_start').onclick=voStart;
+  }else if(VO.stand==='opnemen'){
+    vak.innerHTML=`
+      <div class="vo-tele" id="vo_tele">${voWoorden().map((w,i)=>`<span data-w="${i}">${esc(w)} </span>`).join('')}</div>
+      <div class="vo-knoppen">
+        <span class="vo-tijd" id="vo_tijd">0:00</span>
+        <button class="btn btn-primary btn-sm" id="vo_stop">■ Klaar</button>
+        <button class="btn btn-ghost btn-sm" id="vo_weg">Annuleer</button>
+      </div>`;
+    $('#vo_stop').onclick=()=>voStop(false);
+    $('#vo_weg').onclick=()=>voStop(true);
+  }else if(VO.stand==='klaar'){
+    const dekking=VO.woorden.filter(w=>w.gehoord).length/Math.max(VO.woorden.length,1);
+    vak.innerHTML=`
+      <div class="bc-hint" style="margin:0 0 8px">Opname van ${VO.duur.toFixed(1)}s.
+        ${dekking>=0.6?`De tekst is per woord meegeluisterd, de ondertiteling loopt strak mee.`
+                      :`De spraakherkenning ving te weinig op; de tekst wordt gelijkmatig over de opname verdeeld, dat oogt bij rustig voorlezen prima.`}</div>
+      <audio controls src="${VO.url}" style="width:100%;max-width:420px"></audio>
+      <div class="vo-knoppen">
+        <button class="btn btn-primary btn-sm" id="vo_render">🎬 Maak de video</button>
+        <button class="btn btn-ghost btn-sm" id="vo_opnieuw">↻ Opnieuw opnemen</button>
+      </div>`;
+    $('#vo_render').onclick=voRender;
+    $('#vo_opnieuw').onclick=()=>{VO={...VO,stand:'leeg',blob:null,woorden:[]};voTekenen();};
+  }else if(VO.stand==='renderen'){
+    vak.innerHTML=`<div class="bc-hint" style="margin:0">🎬 Video maken: b-roll, je stem en de meelopende tekst worden samengevoegd. Dit duurt ongeveer zo lang als de opname zelf (<span id="vo_rprog">0</span>%). Laat dit tabblad open en zichtbaar.</div>`;
+  }else if(VO.stand==='video'){
+    vak.innerHTML=`
+      <video class="vo-klaarvideo" controls src="${VO.video}"></video>
+      <div class="vo-knoppen">
+        <button class="btn btn-primary btn-sm" id="vo_gebruik">✓ Gebruik als reel-video</button>
+        <a class="btn btn-ghost btn-sm" href="${VO.video}" download="reel-voiceover">⬇ Download</a>
+        <button class="btn btn-ghost btn-sm" id="vo_opnieuw2">↻ Opnieuw</button>
+      </div>
+      <div class="bc-hint">${VO.mime.includes('mp4')?'MP4, klaar om direct via de plaatsknop te publiceren.':'Deze browser kan alleen webm opnemen en Instagram wil mp4: download hem en plaats via de app, of haal hem even door CapCut.'}</div>`;
+    $('#vo_gebruik').onclick=voGebruik;
+    $('#vo_opnieuw2').onclick=()=>{VO={...VO,stand:'klaar'};voTekenen();};
+  }
+}
+
+async function voStart(){
+  const woorden=voWoorden();
+  if(!woorden.length){toast('Er is nog geen caption om in te spreken','err');return;}
+  if(!CT.media.length){toast('Upload eerst je b-roll, die is de achtergrond van de video','err');return;}
+  let stream;
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ toast('Geen toegang tot de microfoon: '+e.message,'err'); return; }
+
+  VO.woorden=woorden.map(w=>({w, t:null, gehoord:false}));
+  VO.wijzer=0; VO.t0=performance.now();
+  const brokken=[];
+  VO.rec=new MediaRecorder(stream);
+  VO.rec.ondataavailable=e=>{if(e.data.size)brokken.push(e.data);};
+  VO.rec.onstop=()=>{
+    stream.getTracks().forEach(t=>t.stop());
+    if(VO.stand!=='opnemen') return; // geannuleerd
+    VO.blob=new Blob(brokken,{type:VO.rec.mimeType||'audio/webm'});
+    VO.url=URL.createObjectURL(VO.blob);
+    VO.duur=(performance.now()-VO.t0)/1000;
+    // Gaten opvullen: niet-gehoorde woorden naar rato van woordlengte tussen
+    // de wel-gehoorde ankers (of over de hele duur als er niets gehoord is).
+    voTijdenAanvullen();
+    VO.stand='klaar'; voTekenen();
+  };
+  VO.rec.start(250);
+
+  // Meeluisteren welk woord wanneer valt. De herkende woorden worden fuzzy
+  // tegen de caption gelegd met een wijzer die alleen vooruit mag; een misser
+  // van de herkenning schuift dan hooguit een paar woorden op.
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(SR){
+    VO.spraak=new SR();
+    VO.spraak.lang='nl-NL'; VO.spraak.continuous=true; VO.spraak.interimResults=true;
+    VO.spraak.onresult=ev=>{
+      const nu=(performance.now()-VO.t0)/1000;
+      const laatste=ev.results[ev.results.length-1];
+      const gezegd=String(laatste[0].transcript||'').trim().split(/\s+/).map(voKaal).filter(Boolean);
+      for(const g of gezegd.slice(-4)){
+        for(let i=VO.wijzer;i<Math.min(VO.wijzer+5,VO.woorden.length);i++){
+          const doelw=voKaal(VO.woorden[i].w);
+          if(doelw&&(doelw===g||doelw.startsWith(g)||g.startsWith(doelw))){
+            for(let j=VO.wijzer;j<=i;j++) if(VO.woorden[j].t===null) VO.woorden[j].t=nu;
+            VO.woorden[i].t=nu; VO.woorden[i].gehoord=true; VO.wijzer=i+1;
+            break;
+          }
+        }
+      }
+      const tele=$('#vo_tele');
+      if(tele) tele.querySelectorAll('span').forEach((sp,i)=>{
+        sp.classList.toggle('gehad',i<VO.wijzer-1);
+        sp.classList.toggle('nu',i===Math.max(VO.wijzer-1,0));
+      });
+      const nuEl=tele&&tele.querySelector('span.nu');
+      if(nuEl) nuEl.scrollIntoView({block:'center',behavior:'smooth'});
+    };
+    VO.spraak.onerror=()=>{}; // stil: de naar-rato-verdeling vangt het op
+    try{ VO.spraak.start(); }catch(e){}
+  }
+
+  VO.stand='opnemen'; voTekenen();
+  const klok=()=>{ if(VO.stand!=='opnemen') return;
+    const t=(performance.now()-VO.t0)/1000;
+    const el=$('#vo_tijd'); if(el) el.textContent=`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+    requestAnimationFrame(klok); };
+  klok();
+}
+
+function voStop(annuleer){
+  if(annuleer) VO.stand='leeg';
+  try{ VO.spraak&&VO.spraak.stop(); }catch(e){}
+  try{ VO.rec&&VO.rec.state!=='inactive'&&VO.rec.stop(); }catch(e){}
+  if(annuleer) voTekenen();
+}
+
+function voTijdenAanvullen(){
+  const ws=VO.woorden; if(!ws.length) return;
+  const gewicht=w=>Math.max(voKaal(w).length,2);
+  let vorigeT=0, vorigeI=-1;
+  const stukken=[];
+  ws.forEach((w,i)=>{ if(w.t!==null&&w.gehoord){ stukken.push({van:vorigeI,tot:i,t0:vorigeT,t1:w.t}); vorigeI=i; vorigeT=w.t; } });
+  stukken.push({van:vorigeI,tot:ws.length,t0:vorigeT,t1:VO.duur});
+  for(const st of stukken){
+    const tussen=[]; for(let i=st.van+1;i<st.tot;i++) tussen.push(i);
+    if(!tussen.length) continue;
+    const tot=tussen.reduce((a,i)=>a+gewicht(ws[i].w),0)+0.0001;
+    let lopend=st.t0;
+    for(const i of tussen){ lopend+=(st.t1-st.t0)*gewicht(ws[i].w)/tot; ws[i].t=Math.min(lopend,VO.duur); }
+  }
+}
+
+/* De render: 1080x1920-canvas, b-roll gedempt op de achtergrond (in een lus
+   als hij korter is dan de stem), de karaoketekst in brokken van ~4 woorden,
+   en de opgenomen stem als audiospoor. MediaRecorder maakt er mp4 van waar de
+   browser dat kan; anders webm, en dan zegt de UI eerlijk dat Instagram mp4
+   wil. */
+async function voRender(){
+  const m0=CT.media[0];
+  const isVideo=/\.(mp4|mov|webm|m4v)$/i.test(m0.path)||String(m0.type||'').startsWith('video');
+  VO.stand='renderen'; voTekenen();
+  try{
+    const bron=document.createElement(isVideo?'video':'img');
+    bron.crossOrigin='anonymous'; bron.src=ctPubliek(m0.path);
+    if(isVideo){ bron.muted=true; bron.loop=true; bron.playsInline=true; }
+    await new Promise((ok,nee)=>{ bron.onerror=()=>nee(new Error('b-roll laden mislukt'));
+      if(isVideo){bron.onloadeddata=ok;} else {bron.onload=ok;} });
+
+    const stem=new Audio(VO.url); stem.crossOrigin='anonymous';
+    await new Promise(ok=>{stem.onloadedmetadata=ok; stem.load();});
+    const duur=isFinite(stem.duration)&&stem.duration>0?stem.duration:VO.duur;
+
+    const canvas=document.createElement('canvas'); canvas.width=1080; canvas.height=1920;
+    const ctx=canvas.getContext('2d');
+
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    const bestem=ac.createMediaStreamDestination();
+    ac.createMediaElementSource(stem).connect(bestem);
+
+    const beeldStroom=canvas.captureStream(30);
+    const mix=new MediaStream([...beeldStroom.getVideoTracks(),...bestem.stream.getAudioTracks()]);
+    VO.mime=['video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm']
+      .find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||'video/webm';
+    const uit=[]; const opn=new MediaRecorder(mix,{mimeType:VO.mime,videoBitsPerSecond:6_000_000});
+    opn.ondataavailable=e=>{if(e.data.size)uit.push(e.data);};
+    const klaarBelofte=new Promise(ok=>{opn.onstop=ok;});
+
+    // brokken van maximaal 4 woorden, elk zichtbaar van het eerste tot het
+    // laatste woord van de brok (plus een kleine staart)
+    const brokken=[]; let brok=[];
+    VO.woorden.forEach(w=>{ brok.push(w);
+      if(brok.length>=4||/[.!?]$/.test(w.w)){brokken.push(brok);brok=[];} });
+    if(brok.length)brokken.push(brok);
+    const brokVoor=t=>{ for(let i=brokken.length-1;i>=0;i--){ const b=brokken[i];
+        if(t>=(b[0].t||0)) return {b,i}; } return null; };
+
+    const teken=()=>{
+      const t=stem.currentTime;
+      const bw=isVideo?bron.videoWidth:bron.naturalWidth, bh=isVideo?bron.videoHeight:bron.naturalHeight;
+      const sch=Math.max(1080/bw,1920/bh);
+      ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1920);
+      ctx.drawImage(bron,(1080-bw*sch)/2,(1920-bh*sch)/2,bw*sch,bh*sch);
+      const hit=brokVoor(t);
+      if(hit){
+        const woorden=hit.b, van=woorden[0].t||0;
+        const tot=(woorden[woorden.length-1].t??duur)+0.35;
+        if(t<=tot){
+          ctx.textAlign='center'; ctx.font='700 64px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+          ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=18; ctx.lineWidth=8;
+          const y=1490;
+          // het woord dat NU klinkt licht op, de rest van de brok staat er wit
+          let x=540-woorden.reduce((a,w)=>a+ctx.measureText(w.w+' ').width,0)/2;
+          ctx.textAlign='left';
+          for(const w of woorden){
+            ctx.fillStyle=(t>=(w.t||0))?'#7ef0b2':'#ffffff';
+            ctx.strokeStyle='rgba(0,0,0,.45)';
+            ctx.strokeText(w.w,x,y); ctx.fillText(w.w,x,y);
+            x+=ctx.measureText(w.w+' ').width;
+          }
+        }
+      }
+      const prog=$('#vo_rprog'); if(prog) prog.textContent=Math.min(Math.round(t/duur*100),99);
+      if(!stem.ended&&t<duur) requestAnimationFrame(teken);
+    };
+
+    if(isVideo){ bron.currentTime=0; await bron.play(); }
+    await ac.resume(); opn.start(500); await stem.play();
+    requestAnimationFrame(teken);
+    await new Promise(ok=>{stem.onended=ok; setTimeout(ok,(duur+2)*1000);});
+    if(isVideo) bron.pause();
+    opn.stop(); await klaarBelofte; try{ac.close();}catch(e){}
+
+    const vblob=new Blob(uit,{type:VO.mime.split(';')[0]});
+    VO.videoBlob=vblob; VO.video=URL.createObjectURL(vblob);
+    VO.stand='video'; voTekenen();
+  }catch(e){
+    VO.stand='klaar'; voTekenen();
+    toast('Video maken mislukte: '+(e&&e.message||e),'err');
+  }
+}
+
+async function voGebruik(){
+  const ext=VO.mime.includes('mp4')?'mp4':'webm';
+  const pad=`reel/voiceover-${Date.now()}.${ext}`;
+  toast('Video uploaden…','ok');
+  const up=await sb.storage.from(CT_BUCKET).upload(pad,VO.videoBlob,{contentType:VO.mime.split(';')[0]});
+  if(up.error){toast('Upload mislukt: '+up.error.message,'err');return;}
+  CT.media=[{path:pad,type:'video/'+ext}];
+  await ctOpslaan(null);
+  ctMediaTekenen(); ctPreviewTekenen();
+  toast('De reel gebruikt nu de video met voice-over','ok');
 }
 
 /* Echt publiceren kan zodra de Instagram-koppeling er is; de check vertelt wat
