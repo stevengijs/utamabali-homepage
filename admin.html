@@ -1022,7 +1022,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-preview-naast';
+const APP_VERSIE='2026-08-29-spreek';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2904,9 +2904,11 @@ async function renderContent(){
     </div>
 
     <div class="bc-grid">
-      <div class="field bc-breed"><label id="ct_onderwerplabel">Waar gaat het over?</label>
-        <textarea id="ct_onderwerp" class="ct-caption" style="min-height:76px" placeholder="De boodschap. Bijv: waarom passief inkomen uit Bali-vastgoed anders werkt dan verhuur in Nederland."></textarea>
-        <div class="bc-hint">Twee zinnen is genoeg. Dit is de boodschap; de hook en de caption doen het werk.</div></div>
+      <div class="field bc-breed"><label id="ct_onderwerplabel" style="display:flex;align-items:center;gap:10px">Waar gaat het over?
+          <button class="bc-zoekactie" id="ct_spreek" type="button" style="text-transform:none">🎙 Spreek in</button>
+          <span class="vo-tijd" id="ct_spreektijd" style="display:none">0:00</span></label>
+        <textarea id="ct_onderwerp" class="ct-caption" style="min-height:76px" placeholder="De boodschap. Typ hem, of klik op Spreek in en vertel gewoon waar de post over moet gaan."></textarea>
+        <div class="bc-hint" id="ct_spreekhint">Twee zinnen is genoeg. Dit is de boodschap; de hook en de caption doen het werk. Inspreken mag ook: zodra je stopt wordt het pakket vanzelf gemaakt.</div></div>
       <div class="field bc-breed" id="ct_brollveld" style="display:none"><label>Wat is er op de b-roll te zien? (optioneel)</label>
         <textarea id="ct_broll" class="ct-caption" style="min-height:52px" placeholder="Mag leeg. De b-roll is meestal decor: jij kijkend naar het strand werkt prima onder een verhaal over passief inkomen."></textarea>
         <div class="bc-hint">Alleen invullen als het script naar de beelden moet verwijzen (bijv. een bouwupdate). Anders staat de tekst op zichzelf.</div></div>
@@ -2947,6 +2949,7 @@ async function renderContent(){
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x===b));
   });
   $('#ct_genereer').onclick=ctGenereer;
+  $('#ct_spreek').onclick=ctSpreek;
   $('#wk_plan').onclick=async()=>{
     const b=$('#wk_plan'); b.disabled=true; b.textContent='Plannen…';
     try{
@@ -3338,6 +3341,48 @@ function ctPreviewTekenen(){
     : 'Klik de variant die je wilt; de hook wordt regel 1 van je caption. De cijfers en de knoppen zijn decor, zodat je hem ziet zoals een volger hem in de app ziet.');
   const ta=$('#ct_caption');
   if(ta&&!ta.dataset.previewkoppeling){ta.dataset.previewkoppeling='1';let t;ta.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(ctPreviewTekenen,400);});}
+}
+
+/* ============== ONDERWERP INSPREKEN ==============
+   Steven vertelt hardop waar de post over moet gaan; de spraakherkenning
+   schrijft live mee in het onderwerpveld en zodra hij stopt wordt het pakket
+   vanzelf gemaakt. Het gesprokene hoeft niet netjes te zijn: het is een
+   prompt, geen caption, en de generator maakt er toch zijn eigen tekst van.
+   Zelfde motor als de voice-over (Chrome, nl-NL). */
+let CT_SPREEK=null;
+function ctSpreek(){
+  const knop=$('#ct_spreek'), tijd=$('#ct_spreektijd'), ta=$('#ct_onderwerp');
+  if(CT_SPREEK){ try{CT_SPREEK.stop();}catch(e){} return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Spraakherkenning werkt alleen in Chrome','err');return;}
+  const sr=new SR(); CT_SPREEK=sr;
+  sr.lang='nl-NL'; sr.continuous=true; sr.interimResults=true;
+  const basis=ta.value.trim()?ta.value.trim()+' ':'';
+  let vast='';
+  const t0=Date.now();
+  knop.textContent='◼ Klaar'; tijd.style.display='';
+  const klok=setInterval(()=>{const t=(Date.now()-t0)/1000;
+    tijd.textContent=`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;},500);
+  sr.onresult=ev=>{
+    // Alles opnieuw opbouwen uit de resultaten: vaste stukken plus wat er nu
+    // nog hardop gezegd wordt, live in het veld.
+    vast=''; let los='';
+    for(let i=0;i<ev.results.length;i++){
+      const r=ev.results[i];
+      if(r.isFinal) vast+=r[0].transcript+' '; else los+=r[0].transcript;
+    }
+    ta.value=(basis+vast+los).replace(/\s+/g,' ').trim();
+  };
+  sr.onerror=e=>{ if(e.error==='not-allowed') toast('Geen toegang tot de microfoon','err'); };
+  sr.onend=()=>{
+    clearInterval(klok); CT_SPREEK=null;
+    knop.textContent='🎙 Spreek in'; tijd.style.display='none';
+    if(ta.value.trim().length>=10){
+      $('#ct_spreekhint').textContent='Opgenomen. Het pakket wordt gemaakt…';
+      ctGenereer().finally(()=>{$('#ct_spreekhint').textContent='Twee zinnen is genoeg. Dit is de boodschap; de hook en de caption doen het werk. Inspreken mag ook: zodra je stopt wordt het pakket vanzelf gemaakt.';});
+    }
+  };
+  try{ sr.start(); }catch(e){ clearInterval(klok); CT_SPREEK=null; knop.textContent='🎙 Spreek in'; toast('Opname starten mislukte','err'); }
 }
 
 /* ============== SLIDES BAKKEN ==============
