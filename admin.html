@@ -465,7 +465,7 @@
      screenshot uit de app, anders beoordeel je de caption niet zoals een
      volger hem straks ziet. */
   .ig-rij{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 10px}
-  .ig-kaart{flex:none;width:250px;cursor:pointer;border-radius:12px;padding:6px;
+  .ig-kaart{flex:none;width:228px;cursor:pointer;border-radius:12px;padding:6px;
             border:2px solid transparent;transition:border-color .15s}
   .ig-kaart.on{border-color:var(--brand)}
   .ig-kaart .keuze{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
@@ -502,6 +502,7 @@
   .ig-frame.reel{background:#000;border-color:#262626}
   .ig-frame.reel .ig-media img,.ig-frame.reel .ig-media video{aspect-ratio:9/16;object-fit:cover}
   .ig-reelhud{position:absolute;inset:0;display:flex;pointer-events:none}
+  .ig-reelhud .meer{pointer-events:auto}
   .ig-reelhud .onder{margin-top:auto;padding:10px 54px 12px 10px;color:#fff;width:100%;
                      background:linear-gradient(transparent,rgba(0,0,0,.55))}
   .ig-reelhud .onder .wie{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;margin-bottom:6px}
@@ -1021,7 +1022,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-igfonts2';
+const APP_VERSIE='2026-08-29-preview-naast';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2187,6 +2188,10 @@ function bcOpstellen(hervatCamp){
         <div class="bc-hint">Alleen voor jezelf, staat niet in de mail.</div></div>
       <div class="field bc-emailonly"><label>Onderwerp</label>
         <input id="bc_onderwerp" placeholder="Wat zien mensen in hun inbox?">
+        <div class="vo-knoppen" style="margin-top:6px">
+          <button class="bc-zoekactie" id="bc_feiten" type="button">🔎 Actuele marktcijfers voor deze nieuwsbrief</button>
+        </div>
+        <div id="bc_feitenvak"></div>
         <div class="bc-hint">De regel waarop mensen besluiten of ze openen.</div></div>
       <div class="field bc-breed bc-emailonly"><label>Voorbeeldregel</label>
         <input id="bc_pre" placeholder="Optioneel. Leeg laten: dan pakt hij de eerste zin.">
@@ -2237,6 +2242,8 @@ function bcOpstellen(hervatCamp){
     if($('#bc_golf')) $('#bc_golf').value = BC.golf;
     if(hervatCamp.kanaal !== 'whatsapp'){
       if($('#bc_onderwerp')) $('#bc_onderwerp').value = hervatCamp.onderwerp || '';
+      const fknop=$('#bc_feiten');
+      if(fknop&&!fknop.dataset.klaar){fknop.dataset.klaar='1';}
       if($('#bc_pre'))       $('#bc_pre').value       = hervatCamp.preheader || '';
       if($('#bc_body'))      $('#bc_body').innerHTML  = hervatCamp.body_html || '';
     }
@@ -2333,6 +2340,11 @@ function bcOpstellen(hervatCamp){
   $('#bc_preview').onclick=bcPreview;
   $('#bc_test').onclick=()=>bcVerstuur(true);
   $('#bc_verstuur').onclick=()=>bcVerstuur(false);
+  const bcF=$('#bc_feiten');
+  if(bcF) bcF.onclick=()=>feitenOphalen(
+    $('#bc_onderwerp').value.trim()||$('#bc_naam').value.trim()||'marktupdate Bali vastgoed voor NL investeerders',
+    $('#bc_feitenvak'),
+    f=>{ const body=$('#bc_body'); if(body){ body.innerHTML+=`<p>${esc(f.feit)}</p>`; } });
   bcKanaalTekenen();
   $('#bc_opstelpaneel').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -2809,7 +2821,7 @@ async function bcVerstuurWa(test){
    Een post is daarmee geen bereik maar een leadmachine, en comments zijn
    precies wat het algoritme het zwaarst beloont. */
 const CT_BUCKET='content-media';
-let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:null, project:'', doel:'comments', lijst:[]};
+let CT={soort:'reel', media:[], pakket:null, hookKeus:0, stijl:'wit', postId:null, project:'', doel:'comments', lijst:[], capOpen:false};
 
 /* De drie tekst-designs voor reels. De preview toont ze en de gekozen stijl
    wordt door de voice-over-render echt zo in de video gebakken. De namen en
@@ -3059,6 +3071,29 @@ function ctPakketTekenen(){
     </div>
 
     <div class="ct-vak">
+      ${kop('Preview, kies je variant')}
+      <div id="ct_preview"></div>
+      <div class="bc-hint" id="ct_previewhint"></div>
+    </div>
+
+
+    ${(pk.overlays&&pk.overlays.length)?`<div class="ct-vak">
+      ${kop('Overlay-script voor op de b-roll','overlays','x')}
+      ${pk.overlays.map(o=>`<div class="ct-regel"><span class="t">${esc(o.tijd||'')}</span><span>${esc(o.tekst||'')}</span></div>`).join('')}
+      <div class="bc-hint">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>
+    </div>`:''}
+
+    ${(pk.slides&&pk.slides.length)?`<div class="ct-vak">
+      ${kop('Slide-teksten, in volgorde van je afbeeldingen','slides','x')}
+      ${pk.slides.map((sl,i)=>`<div class="ct-regel"><span class="t">${i+1}</span><span><b>${esc(sl.kop||'')}</b>${sl.sub?`<br><span class="muted">${esc(sl.sub)}</span>`:''}</span></div>`).join('')}
+      <div class="vo-knoppen" style="margin-top:8px">
+        <button class="btn btn-primary btn-sm" id="ct_slides_bakken">🎨 Zet de teksten op je afbeeldingen</button>
+      </div>
+      <div class="bc-hint">Deze teksten horen op je afbeeldingen te staan. Klik hierboven en ze worden erop gezet: slide 1 als cover (grote titel, gecentreerd, met @stevenbalivillas), de rest met de kop onderin. Daarna zie je het resultaat in de preview en kun je direct plaatsen.</div>
+      <div id="ct_slides_status"></div>
+    </div>`:''}
+
+    <div class="ct-vak">
       ${kop('Eerste reactie (hashtags)','hashtags','x')}
       <div style="font-size:13px;line-height:1.6;color:var(--muted)" id="ct_hashtags">${esc(pk.eerste_reactie||'')}</div>
       <div style="margin-top:10px">${kop('Comment-magneet')}
@@ -3070,24 +3105,6 @@ function ctPakketTekenen(){
       </div>
     </div>
 
-    ${(pk.overlays&&pk.overlays.length)?`<div class="ct-vak">
-      ${kop('Overlay-script voor op de b-roll','overlays','x')}
-      ${pk.overlays.map(o=>`<div class="ct-regel"><span class="t">${esc(o.tijd||'')}</span><span>${esc(o.tekst||'')}</span></div>`).join('')}
-      <div class="bc-hint">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>
-    </div>`:''}
-
-    ${(pk.slides&&pk.slides.length)?`<div class="ct-vak">
-      ${kop('Slide-teksten, in volgorde van je afbeeldingen','slides','x')}
-      ${pk.slides.map((sl,i)=>`<div class="ct-regel"><span class="t">${i+1}</span><span><b>${esc(sl.kop||'')}</b>${sl.sub?`<br><span class="muted">${esc(sl.sub)}</span>`:''}</span></div>`).join('')}
-      <div class="bc-hint">Slide 1 is de cover: grote titel, gecentreerd, met @stevenbalivillas erop. De laatste slide is de CTA.</div>
-    </div>`:''}
-
-    <div class="ct-vak" style="grid-column:1/-1">
-      ${kop('Preview, kies je variant')}
-      <div id="ct_preview"></div>
-      <div class="bc-hint" id="ct_previewhint"></div>
-    </div>
-
     <div class="ct-vak">
       ${kop('Plaatsen')}
       <div id="ct_plaats"><span class="muted" style="font-size:13px">Instagram-koppeling controleren…</span></div>
@@ -3097,6 +3114,12 @@ function ctPakketTekenen(){
       ${kop('Audio: voice-over en muziek')}
       <div id="ct_voice"></div>
     </div>`:''}
+
+    <div class="ct-vak" style="grid-column:1/-1">
+      ${kop('Actuele cijfers voor deze post')}
+      <div class="vo-knoppen" style="margin:0 0 6px"><button class="btn btn-ghost btn-sm" id="ct_feiten">🔎 Zoek actuele cijfers (met bron)</button></div>
+      <div id="ct_feitenvak"><span class="muted" style="font-size:13px">Verse marktdata voor value posts: toerisme, prijzen, regelgeving, NL-vergelijking. Elk cijfer komt met bron, jij beslist wat erin gaat.</span></div>
+    </div>
 
     <div class="ct-vak" style="grid-column:1/-1">
       ${kop('Waarom dit zo in elkaar zit')}
@@ -3133,6 +3156,12 @@ function ctPakketTekenen(){
   $('#ct_gepost').onclick=()=>ctOpslaan('gepost');
   $('#ct_opnieuw').onclick=ctGenereer;
   $('#ct_verbeter').onclick=ctVerbeter;
+  const bakKnop=$('#ct_slides_bakken');
+  if(bakKnop) bakKnop.onclick=ctSlidesBakken;
+  $('#ct_feiten').onclick=()=>feitenOphalen(
+    $('#ct_onderwerp').value.trim()||CT.pakket.caption.slice(0,140),
+    $('#ct_feitenvak'),
+    f=>{ const ta=$('#ct_caption'); ta.value=ta.value.replace(/\n*$/,'\n\n')+f.feit; ctPreviewTekenen(); });
   if(CT.soort==='reel') voTekenen();
   $('#ct_feedback').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ctVerbeter();}});
   ctPreviewTekenen(); ctPlaatsTekenen();
@@ -3216,7 +3245,13 @@ function ctPreviewTekenen(){
   const kaart=(hook,i,stijl)=>{
     // Elke variant: de hook als regel 1, de rest van de caption blijft gelijk
     const regels=basisCap.split('\n'); regels[0]=hook; const cap=regels.join('\n');
-    const kort=cap.length>110?cap.slice(0,110).replace(/\s+\S*$/,''):cap;
+    // "… meer" werkt zoals in de app: klik en de hele caption klapt uit
+    const dicht=cap.length>110?cap.slice(0,110).replace(/\s+\S*$/,''):cap;
+    const kort=CT.capOpen?cap:dicht;
+    const meerHtml=cap.length>dicht.length
+      ? (CT.capOpen?' <span class="meer" data-meer style="cursor:pointer">minder</span>'
+                   :'<span class="meer" data-meer style="cursor:pointer">… meer</span>')
+      : '';
 
     if(CT.soort==='reel'){
       const st=CT_STIJLEN[i];
@@ -3231,7 +3266,7 @@ function ctPreviewTekenen(){
           <div class="ig-reelhud">
             <div class="onder">
               <div class="wie"><span class="ig-avatar"><i>S</i></span> stevenbalivillas <span class="volg">Volgen</span></div>
-              <div class="cap">${esc(kort)}</div>
+              <div class="cap" style="${CT.capOpen?'display:block;-webkit-line-clamp:unset':''}">${esc(kort)}${meerHtml}</div>
               <div class="audio">♫ stevenbalivillas · Origineel audio</div>
             </div>
             <div class="zij">
@@ -3251,7 +3286,7 @@ function ctPreviewTekenen(){
         ${CT.soort==='carousel'&&CT.media.length>1?`<div class="ig-dots">${CT.media.map((_,d)=>`<i class="${d===0?'on':''}"></i>`).join('')}</div>`:''}
         <div class="ig-acties">${icHart}${icReactie}${icDeel}<span class="rechts">${icBewaar}</span></div>
         <div class="ig-likes">1.204 vind-ik-leuks</div>
-        <div class="ig-caption"><b>stevenbalivillas</b>${esc(kort)}${cap.length>kort.length?'<span class="meer">… meer</span>':''}</div>
+        <div class="ig-caption"><b>stevenbalivillas</b>${esc(kort)}${meerHtml}</div>
         <div class="ig-reacties">Alle 89 reacties bekijken</div>
         <div class="ig-tijd">1 uur geleden</div>
       </div>
@@ -3269,6 +3304,9 @@ function ctPreviewTekenen(){
   vak.innerHTML=`<div class="ig-rij">${CT.soort==='reel'
     ? CT_STIJLEN.map((st,i)=>kaart(gekozenHook,i)).join('')
     : hooks.map((h,i)=>kaart(h,i)).join('')}</div>`+bewerkBalk;
+  vak.querySelectorAll('[data-meer]').forEach(m=>m.onclick=e=>{
+    e.stopPropagation(); CT.capOpen=!CT.capOpen; ctPreviewTekenen();
+  });
   vak.querySelectorAll('[data-igstijl]').forEach(k=>k.onclick=()=>{
     CT.stijl=k.dataset.igstijl;
     const st=CT_STIJLEN.find(x=>x.key===CT.stijl);
@@ -3300,6 +3338,124 @@ function ctPreviewTekenen(){
     : 'Klik de variant die je wilt; de hook wordt regel 1 van je caption. De cijfers en de knoppen zijn decor, zodat je hem ziet zoals een volger hem in de app ziet.');
   const ta=$('#ct_caption');
   if(ta&&!ta.dataset.previewkoppeling){ta.dataset.previewkoppeling='1';let t;ta.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(ctPreviewTekenen,400);});}
+}
+
+/* ============== SLIDES BAKKEN ==============
+   Zet de slide-teksten op de geuploade afbeeldingen, zodat de carousel af is
+   zonder Canva. Vast stramien van het account: de cover gecentreerd met een
+   grote titel en @stevenbalivillas eronder; binnenslides een compacte
+   profielregel bovenin en de kop met ondertekst op een donker verloop
+   onderin. 1080x1350 (4:5), het formaat dat Instagram voor feed-carousels
+   aanhoudt. De gebakken beelden vervangen de media van de post; de originelen
+   blijven in de opslag staan. */
+function ctWikkel(ctx,tekst,maxB){
+  const woorden=String(tekst||'').split(/\s+/).filter(Boolean); const regels=[]; let r='';
+  for(const w of woorden){ const kand=r?r+' '+w:w;
+    if(ctx.measureText(kand).width>maxB&&r){regels.push(r);r=w;} else r=kand; }
+  if(r)regels.push(r); return regels;
+}
+async function ctSlidesBakken(){
+  const pk=CT.pakket; if(!pk||!pk.slides||!pk.slides.length){toast('Geen slide-teksten','err');return;}
+  if(!CT.media.length){toast('Upload eerst je afbeeldingen','err');return;}
+  const st=$('#ct_slides_status'); const knop=$('#ct_slides_bakken'); knop.disabled=true;
+  try{
+    const nieuw=[];
+    for(let i=0;i<CT.media.length;i++){
+      st.innerHTML=`<span class="muted" style="font-size:13px">Slide ${i+1} van ${CT.media.length}…</span>`;
+      const sl=pk.slides[i]||pk.slides[pk.slides.length-1]||{kop:''};
+      const img=new Image(); img.crossOrigin='anonymous'; img.src=ctPubliek(CT.media[i].path);
+      await new Promise((ok,nee)=>{img.onload=ok;img.onerror=()=>nee(new Error('afbeelding '+(i+1)+' laden mislukt'));});
+      const c=document.createElement('canvas'); c.width=1080; c.height=1350;
+      const x=c.getContext('2d');
+      const sch=Math.max(1080/img.naturalWidth,1350/img.naturalHeight);
+      x.drawImage(img,(1080-img.naturalWidth*sch)/2,(1350-img.naturalHeight*sch)/2,
+                  img.naturalWidth*sch,img.naturalHeight*sch);
+      x.textAlign='center';
+      if(i===0){
+        // Cover: rustig donker waas, grote titel in het midden, handle eronder
+        x.fillStyle='rgba(0,0,0,.38)'; x.fillRect(0,0,1080,1350);
+        x.fillStyle='#fff'; x.shadowColor='rgba(0,0,0,.5)'; x.shadowBlur=16;
+        x.font='800 84px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        const regels=ctWikkel(x,sl.kop,880);
+        const y0=675-(regels.length-1)*52;
+        regels.forEach((r,ri)=>x.fillText(r,540,y0+ri*104));
+        x.shadowBlur=0; x.font='500 36px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        x.fillStyle='rgba(255,255,255,.92)';
+        x.fillText('@stevenbalivillas',540,y0+regels.length*104+30);
+      }else{
+        // Binnenslide: profielregel boven, kop en ondertekst op verloop onder
+        x.textAlign='left';
+        x.fillStyle='rgba(0,0,0,.45)';
+        x.beginPath(); x.roundRect(48,48,470,72,999); x.fill();
+        x.fillStyle='#fff'; x.beginPath(); x.arc(90,84,26,0,7); x.fill();
+        x.fillStyle='#1d5c43'; x.font='800 26px -apple-system,sans-serif'; x.textAlign='center';
+        x.fillText('S',90,93);
+        x.fillStyle='#fff'; x.textAlign='left'; x.font='600 30px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        x.fillText('@stevenbalivillas',132,95);
+        const grad=x.createLinearGradient(0,880,0,1350);
+        grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(1,'rgba(0,0,0,.78)');
+        x.fillStyle=grad; x.fillRect(0,880,1080,470);
+        x.fillStyle='#fff'; x.shadowColor='rgba(0,0,0,.45)'; x.shadowBlur=10;
+        x.font='800 60px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        const kopR=ctWikkel(x,sl.kop,940);
+        x.font='400 40px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        const subR=ctWikkel(x,sl.sub||'',940);
+        const totH=kopR.length*74+(subR.length?14+subR.length*54:0);
+        let y=1350-80-totH+62;
+        x.font='800 60px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        kopR.forEach(r=>{x.fillText(r,70,y);y+=74;});
+        if(subR.length){ y+=6; x.font='400 40px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+          x.fillStyle='rgba(255,255,255,.94)'; subR.forEach(r=>{x.fillText(r,70,y);y+=54;}); }
+        x.shadowBlur=0;
+      }
+      const blob=await new Promise(ok=>c.toBlob(ok,'image/jpeg',0.9));
+      const pad=`carousel/af-${Date.now()}-${i+1}.jpg`;
+      const up=await sb.storage.from(CT_BUCKET).upload(pad,blob,{contentType:'image/jpeg'});
+      if(up.error) throw new Error('upload slide '+(i+1)+': '+up.error.message);
+      nieuw.push({path:pad,type:'image/jpeg'});
+    }
+    CT.media=nieuw;
+    await ctOpslaan(null);
+    ctMediaTekenen(); ctPreviewTekenen();
+    st.innerHTML='<span style="font-size:13px;color:var(--ok)">Klaar. De teksten staan op de beelden; zo gaan ze ook naar Instagram.</span>';
+    toast('Slides zijn af','ok');
+  }catch(e){
+    st.innerHTML=`<span class="err" style="font-size:13px">${esc(String(e&&e.message||e))}</span>`;
+  } finally { knop.disabled=false; }
+}
+
+/* ============== ACTUELE MARKTCIJFERS (met bron) ==============
+   Claude zoekt live naar cijfers die bij het onderwerp passen (toerisme Bali,
+   huurprijzen, regelgeving, NL-rente ter vergelijking) en levert elk cijfer
+   met bron-URL en datum. De cijfers gaan bewust NIET vanzelf de tekst in:
+   Steven checkt de bron en klikt zelf in wat hij wil gebruiken. Zo blijft de
+   regel overeind dat er nooit een onverifieerbaar getal onder zijn naam
+   staat. Cache aan de serverkant: per onderwerp een dag. */
+async function feitenOphalen(onderwerp, vak, invoeg){
+  vak.innerHTML='<span class="muted" style="font-size:13px">🔎 Zoeken naar actuele cijfers, dit duurt zo’n halve minuut…</span>';
+  let data;
+  try{
+    const r=await sb.functions.invoke('content-maker',{body:{actie:'feiten',onderwerp}});
+    if(r.error||!r.data||r.data.ok===false){
+      vak.innerHTML=`<span class="err" style="font-size:13px">${esc((r.data&&r.data.reden)||(r.error&&r.error.message)||'zoeken mislukte')}</span>`;return;
+    }
+    data=r.data;
+  }catch(e){ vak.innerHTML=`<span class="err" style="font-size:13px">${esc(String(e&&e.message||e))}</span>`; return; }
+  const feiten=data.feiten||[];
+  if(!feiten.length){ vak.innerHTML='<span class="muted" style="font-size:13px">Geen controleerbare cijfers gevonden voor dit onderwerp. Beter geen getal dan een vaag getal.</span>'; return; }
+  vak.innerHTML=`
+    <div class="bc-hint" style="margin:0 0 8px">Check de bron voordat je een cijfer gebruikt; jouw naam staat eronder.${data.uit_cache?' (uit de cache van vandaag)':''}</div>
+    ${feiten.map((f,i)=>`
+      <div class="ct-regel" style="align-items:flex-start">
+        <span style="flex:1">${esc(f.feit)}<br>
+          <a href="${esc(f.bron_url)}" target="_blank" rel="noopener" style="font-size:12px">${esc(f.bron_titel||f.bron_url)}</a>
+          ${f.datum?`<span class="muted" style="font-size:12px"> · ${esc(f.datum)}</span>`:''}</span>
+        <button class="bc-zoekactie" data-feit="${i}" style="flex:none">↩ gebruik</button>
+      </div>`).join('')}`;
+  vak.querySelectorAll('[data-feit]').forEach(b=>b.onclick=()=>{
+    invoeg(feiten[Number(b.dataset.feit)]);
+    const t=b.textContent; b.textContent='✓'; setTimeout(()=>b.textContent=t,1200);
+  });
 }
 
 /* De weekstrip: zeven dagen, elke dag zijn rubriek en onderwerp uit de
