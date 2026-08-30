@@ -1,24 +1,8 @@
 {
-  "redirects": [
-    {
-      "source": "/webinar/replay",
-      "destination": "/webinar-vorige/replay",
-      "permanent": false
-    },
-    {
-      "source": "/webinar/utama-webinar.ics",
-      "destination": "/webinar-vorige/utama-webinar.ics",
-      "permanent": false
-    }
-  ],
   "rewrites": [
     {
       "source": "/r/:code",
       "destination": "https://gcpachivrwalsneuvlsa.supabase.co/functions/v1/klik?c=:code"
-    },
-    {
-      "source": "/webinar",
-      "destination": "https://utama-webinar-pages.vercel.app/"
     },
     {
       "source": "/webinar/:path*",
