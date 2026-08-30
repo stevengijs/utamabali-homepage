@@ -1069,7 +1069,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-tekstgrootte';
+const APP_VERSIE='2026-08-29-kanaalchips';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -6276,6 +6276,12 @@ function inboxRenderMsgs(msgs){
   const cur=INBOX.cur||{};let lastDay='';
   // Skip empty placeholder messages so they can't leave a stray bubble/time.
   const list=(msgs||[]).filter(m=>((m.body||'').trim())||(m.attachments&&m.attachments.length));
+  // Mengt de tijdlijn kanalen (WhatsApp naast e-mail naast Instagram), dan
+  // krijgt ELK bericht een duidelijke kanaalchip; in een gesprek met een
+  // kanaal blijft het kleine icoontje genoeg.
+  const kanaalSet=new Set(list.filter(m=>!m.is_note).map(m=>m.channel||cur.channel||'instagram'));
+  const gemengd=kanaalSet.size>1;
+  const kanaalChip=med=>`<span class="ibx-chtag" style="color:${med.color};background:${med.bg};border-color:${med.bd};font-size:10px;padding:1px 7px;vertical-align:1px">${med.icon} ${med.label}</span>`;
   box.innerHTML=list.map((m,i)=>{
     // Centered date separator when the calendar day changes (like WhatsApp/IG).
     const day=inboxDayKey(m.created_at);let sep='';
@@ -6323,7 +6329,11 @@ function inboxRenderMsgs(msgs){
       const wie=who==='ai'?'UTAMA-bot':esc(teamName(m.sender_name));
       const hoe=who==='ai'?'automatisch':'handmatig via portal';
       const acct=biz?`<span class="ibx-acct">UTAMA-account · ${esc(med.label)} ${esc(biz)}</span>`:'';
-      tag=`<div class="ibx-bhead"><span class="ibx-who">${wie}</span><span class="ibx-how">${hoe}</span>${acct}</div>`;
+      tag=`<div class="ibx-bhead">${gemengd?kanaalChip(med)+' ':''}<span class="ibx-who">${wie}</span><span class="ibx-how">${hoe}</span>${acct}</div>`;
+    }
+    // Ook inkomende berichten krijgen in een gemengde tijdlijn hun kanaalchip.
+    if(!tag&&gemengd&&!m.is_note){
+      tag=`<div class="ibx-bhead" style="border:none;padding-bottom:2px;margin-bottom:3px">${kanaalChip(med)}</div>`;
     }
     const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
     const undelNote=undel?`<div class="ibx-undel">${m.delivery_status==='failed'?'⚠︎ Niet afgeleverd':'⏳ Niet verzonden — kanaal nog niet gekoppeld'}</div>`:'';
@@ -6349,7 +6359,7 @@ function inboxRenderMsgs(msgs){
     const showTime=!nx||inboxClock(nx.created_at)!==inboxClock(m.created_at)||inboxDayKey(nx.created_at)!==day;
     // Meta line under each bubble: the message's medium icon always (so it's
     // clear which channel it came via), plus the time once per minute-cluster.
-    const metaHtml=`<div class="ibx-btime"><span class="ibx-medico" title="${esc(med.label)}">${med.icon}</span>${showTime?' '+esc(inboxClock(m.created_at)):''}</div>`;
+    const metaHtml=`<div class="ibx-btime"><span class="ibx-medico" title="${esc(med.label)}">${med.icon}${gemengd?' '+esc(med.label):''}</span>${showTime?' '+esc(inboxClock(m.created_at)):''}</div>`;
     return `${sep}<div class="ibx-mrow ${out?'out':'in'}">
       <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}${chCls}">${tag}${media.length?imgHtml(media):''}${bodyTxt?`<div class="ibx-btext">${esc(bodyTxt)}</div>`:''}${undelNote}</div></div>
       ${metaHtml}</div>`;
@@ -7929,12 +7939,15 @@ async function inboxRenderContactChat(contactId){
   alle.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   const nieuwste=threads.slice().sort((a,b)=>new Date(b.last_message_at||0)-new Date(a.last_message_at||0))[0];
   const kanalen=threads.map(t=>{const ch=INBOX_CH[t.channel]||INBOX_CH.instagram;return `<span class="ibx-chtag" style="color:${ch.color};background:${ch.bg};border-color:${ch.bd}">${ch.icon} ${ch.label}</span>`;}).join(' ');
+  const kanaalSetPd=new Set(alle.map(m=>m.channel||'instagram'));
+  const gemengdPd=kanaalSetPd.size>1;
   const bubbles=alle.map(m=>{
     const out=m.direction==='out',who=m.sender;
     const mch=INBOX_CH[m.channel]||INBOX_CH.instagram;
+    const chip=gemengdPd?`<span class="ibx-chtag" style="color:${mch.color};background:${mch.bg};border-color:${mch.bd};font-size:10px;padding:1px 7px;margin-right:6px">${mch.icon} ${mch.label}</span>`:'';
     const tag=who==='ai'?'AI':who==='human'?esc((m.sender_name||'Team').split('@')[0]):'';
     const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
-    return `<div class="pdc-row ${out?'out':'in'}"><div class="pdc-bub ${out?(who==='human'?'human':'ai'):'lead'}">${tag?`<span class="pdc-tag">${tag}</span>`:''}<span class="pdc-txt">${esc(m.body||'')}</span><span class="pdc-time">${mch.icon} ${inboxRel(m.created_at)}${undel?' · niet geleverd':''}</span></div></div>`;
+    return `<div class="pdc-row ${out?'out':'in'}"><div class="pdc-bub ${out?(who==='human'?'human':'ai'):'lead'}">${(chip||tag)?`<span class="pdc-tag">${chip}${tag}</span>`:''}<span class="pdc-txt">${esc(m.body||'')}</span><span class="pdc-time">${mch.icon}${gemengdPd?' '+esc(mch.label):''} · ${inboxRel(m.created_at)}${undel?' · niet geleverd':''}</span></div></div>`;
   }).join('')||'<div class="muted" style="font-size:12px">Geen berichten.</div>';
   cur.innerHTML=`<div class="pdc-thread">
     <div class="pdc-head">${kanalen}
