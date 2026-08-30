@@ -1079,7 +1079,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-preview-geluid';
+const APP_VERSIE='2026-08-31-hooks-en-bak';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3349,6 +3349,9 @@ function ctPakketTekenen(){
         <span style="flex:none;font-size:15px">${i===CT.hookKeus?'●':'○'}</span>
         <input data-hookedit="${i}" value="${esc(h)}" style="flex:1;border:none;background:none;font:inherit;outline:none;min-width:0">
       </div>`).join('')}
+      <div class="vo-knoppen" style="margin-top:6px">
+        <button class="bc-zoekactie" id="ct_hooks_nieuw">✨ Nieuwe hooks met AI</button>
+      </div>
       <div class="bc-hint">${CT.soort==='reel'?'Dit wordt de tekstoverlay in seconde 1, en de eerste regel van je caption.':'Dit wordt de covertitel en de eerste regel van je caption.'}</div>
     </div>
 
@@ -3530,6 +3533,25 @@ function ctPakketTekenen(){
     ob.disabled=true;
     try{ await voRender(true); }
     finally{ ob.disabled=false; }
+  };
+  // Verse hooks via de hook engine (dezelfde strategie als het hele pakket):
+  // vijf nieuwe invalshoeken, de huidige opties gaan mee als niet-herhalen-lijst.
+  const hn=$('#ct_hooks_nieuw');
+  if(hn) hn.onclick=async()=>{
+    hn.disabled=true; const oud=hn.textContent; hn.textContent='✨ Hooks bedenken…';
+    try{
+      const {data,error}=await sb.functions.invoke('content-maker',{body:{
+        actie:'hooks',
+        onderwerp:CT.pakket&&CT.pakket.onderwerp||$('#ct_onderwerp')&&$('#ct_onderwerp').value||'',
+        caption:($('#ct_caption')&&$('#ct_caption').value)||(CT.pakket&&CT.pakket.caption)||'',
+        huidige:(CT.pakket&&CT.pakket.hooks)||[],
+      }});
+      if(error||!data||data.ok===false) throw new Error((data&&data.reden)||(error&&error.message)||'onbekend');
+      CT.pakket.hooks=data.hooks; CT.hookKeus=0;
+      ctPakketTekenen(); ctOpslaan(null);
+      toast('Vijf nieuwe hooks, via verschillende mechanismen','ok');
+    }catch(e){ toast('Nieuwe hooks mislukte: '+String(e&&e.message||e),'err'); }
+    hn.disabled=false; hn.textContent=oud;
   };
   $('#ct_klaar').onclick=()=>ctOpslaan('klaar');
   $('#ct_gepost').onclick=()=>ctOpslaan('gepost');
@@ -5142,48 +5164,56 @@ async function voRender(alleenMuziek){
     // (de bug waardoor alleen de laatste regel in beeld kwam). Met een stem
     // volgt hij bovendien de stemklok, die is exact.
     let start=performance.now();
+    // Tekent een tekstblok in de gekozen opmaak (font, achtergrond, schaduw),
+    // met regelterugloop binnen 940px. Gebruikt voor de hook bovenin en het
+    // overlay-script in het midden, zodat de bak exact de preview volgt.
+    const blokTekenen=(tekst,yMid,grootte)=>{
+      const om=CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
+      const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
+      ctx.textAlign='left';
+      ctx.font=ctFontStr(f,grootte);
+      try{ ctx.letterSpacing=ctSpatiePx(f,grootte); }catch(e){}
+      const regelH=Math.round(grootte*(f.schaal||1)*(CT_OPMAAK.maat||1)*(f.regel||1.2));
+      const toon=w=>f.caps?w.toUpperCase():w;
+      const woorden=String(tekst).split(/\s+/); const regels=[]; let r='';
+      for(const w of woorden){const kand=r?r+' '+toon(w):toon(w);
+        if(ctx.measureText(kand).width>940&&r){regels.push(r);r=toon(w);} else r=kand;}
+      if(r)regels.push(r);
+      let y=yMid-Math.round((regels.length-1)*regelH/2);
+      for(const regel of regels){
+        const breed=ctx.measureText(regel).width; const x=540-breed/2;
+        if(om.achtergrond!=='geen'){
+          const wit=om.achtergrond==='wit', semi=om.achtergrond==='semi';
+          ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+          ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
+          const pad=Math.round(regelH*0.28);
+          ctx.beginPath(); ctx.roundRect(x-pad,y-regelH*0.78,breed+pad*2,regelH*1.05,Math.round(regelH*0.22)); ctx.fill();
+          ctx.fillStyle=wit?'#111111':'#ffffff';
+        }else{
+          ctSchaduw(ctx,f);
+          if(f.rand){ ctx.lineWidth=11; ctx.strokeStyle='#000000'; ctx.strokeText(regel,x,y); }
+          else { ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.strokeText(regel,x,y); }
+          ctx.fillStyle='#ffffff';
+        }
+        ctx.fillText(regel,x,y); y+=regelH;
+      }
+      ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+    };
+    // De hook stond wel in de preview maar werd nooit meegebakken; dat is
+    // precies de tekst waar de kijker op blijft hangen, dus hij gaat er nu
+    // altijd in, bovenin, de hele reel lang.
+    const hookTekst=(()=>{ const hs=(CT.pakket&&CT.pakket.hooks)||[]; if(!hs.length) return '';
+      return String(hs[Math.min(CT.hookKeus||0,hs.length-1)]||''); })();
     const teken=()=>{
       const t=(metStem&&stem)?stem.currentTime:(performance.now()-start)/1000;
       const bw=isVideo?bron.videoWidth:bron.naturalWidth, bh=isVideo?bron.videoHeight:bron.naturalHeight;
       const sch=Math.max(1080/bw,1920/bh);
       ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1920);
       ctx.drawImage(bron,(1080-bw*sch)/2,(1920-bh*sch)/2,bw*sch,bh*sch);
+      if(hookTekst) blokTekenen(hookTekst, 380, 64);
       if(ovl){
         const actief=ovl.find(o=>t>=o.van&&t<=o.tot);
-        if(actief){
-          const om=CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
-          const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
-          ctx.font=ctFontStr(f,58);
-          try{ ctx.letterSpacing=ctSpatiePx(f,58); }catch(e){}
-          const regelH=Math.round(58*(f.schaal||1)*(CT_OPMAAK.maat||1)*(f.regel||1.2));
-          const toonO=w=>f.caps?w.toUpperCase():w;
-          // regelterugloop binnen 940px
-          const woordenO=actief.tekst.split(/\s+/); const regelsO=[]; let rO='';
-          for(const w of woordenO){const kand=rO?rO+' '+toonO(w):toonO(w);
-            if(ctx.measureText(kand).width>940&&rO){regelsO.push(rO);rO=toonO(w);} else rO=kand;}
-          if(rO)regelsO.push(rO);
-          let yO=960-Math.round((regelsO.length-1)*regelH/2);
-          for(const regel of regelsO){
-            const breedO=ctx.measureText(regel).width; const xO=540-breedO/2;
-            if(om.achtergrond!=='geen'){
-              const wit=om.achtergrond==='wit', semi=om.achtergrond==='semi';
-              ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-              ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
-              // per regel zijn eigen afgeronde balk, strak om de tekst zoals
-              // de A-knop van Instagram
-              const pad=Math.round(regelH*0.28);
-              ctx.beginPath(); ctx.roundRect(xO-pad,yO-regelH*0.78,breedO+pad*2,regelH*1.05,Math.round(regelH*0.22)); ctx.fill();
-              ctx.fillStyle=wit?'#111111':'#ffffff';
-            }else{
-              ctSchaduw(ctx,f);
-              if(f.rand){ ctx.lineWidth=11; ctx.strokeStyle='#000000'; ctx.strokeText(regel,xO,yO); }
-              else { ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.strokeText(regel,xO,yO); }
-              ctx.fillStyle='#ffffff';
-            }
-            ctx.fillText(regel,xO,yO); yO+=regelH;
-          }
-          ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-        }
+        if(actief) blokTekenen(actief.tekst, 960, 58);
       }
       // De CTA in beeld: onder de hookzone, vanaf het gekozen moment tot het
       // einde, zodat de kijker eerst de hook leest en dan de vervolgstap ziet.
