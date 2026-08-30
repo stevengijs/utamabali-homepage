@@ -605,8 +605,7 @@
   .bc-camps{padding:0 18px 4px;display:flex;flex-direction:column;gap:5px}
   .bc-camp{display:flex;flex-wrap:wrap;align-items:center;gap:7px 12px;padding:7px 11px;
            border:1px solid var(--line);border-radius:8px;background:#fff}
-  .bc-camp.loopt .bc-camp-naam::before{content:'';display:inline-block;width:7px;height:7px;
-           border-radius:50%;background:var(--warn);margin-right:7px;vertical-align:1px}
+  .bc-camp.loopt{border-color:var(--warn);background:#fffbeb}
   .bc-camp-naam{font-weight:600;font-size:12.5px;flex:1 1 200px;min-width:0;
                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .bc-camp-kan{flex:none;font-size:10px;font-weight:600;letter-spacing:.04em;padding:1px 7px;
@@ -1080,7 +1079,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-campagne-annuleren';
+const APP_VERSIE='2026-08-30-lopend-geel';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
