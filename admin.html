@@ -577,8 +577,8 @@
   .trim-strip .beeldjes{position:absolute;inset:0;display:flex}
   .trim-strip .beeldjes img{flex:1;min-width:0;object-fit:cover;height:100%;pointer-events:none}
   .trim-dim{position:absolute;top:0;bottom:0;background:rgba(10,15,12,.65);pointer-events:none}
-  .trim-venster{position:absolute;top:0;bottom:0;border:3px solid #fff;border-left-width:14px;
-                border-right-width:14px;border-radius:10px;box-sizing:border-box;cursor:grab;
+  .trim-venster{position:absolute;top:0;bottom:0;box-sizing:border-box;border:3px solid #fff;border-left-width:14px;
+                border-right-width:14px;border-radius:10px;cursor:grab;
                 box-shadow:0 1px 6px rgba(0,0,0,.4)}
   .trim-venster::before,.trim-venster::after{content:'';position:absolute;top:50%;width:3px;height:18px;
                 border-radius:2px;background:#8a8a8a;transform:translateY(-50%)}
@@ -589,6 +589,12 @@
   .trim-grip.r{right:-20px}
   .trim-kop{position:absolute;top:0;bottom:0;width:3px;background:#ffd400;pointer-events:none;
             box-shadow:0 0 4px rgba(0,0,0,.5)}
+  /* Sleepbare zone rond de gele afspeelkop, met een knopje als handvat */
+  .trim-kop-grip{position:absolute;top:0;bottom:0;width:22px;transform:translateX(-50%);
+                 cursor:ew-resize;touch-action:none}
+  .trim-kop-grip::after{content:'';position:absolute;top:1px;left:50%;transform:translateX(-50%);
+                 width:11px;height:11px;border-radius:50%;background:#ffd400;
+                 box-shadow:0 1px 3px rgba(0,0,0,.5)}
   .vo-spin{display:inline-block;width:16px;height:16px;border:3px solid var(--line);
            border-top-color:var(--brand);border-radius:50%;animation:voDraai .8s linear infinite;vertical-align:-3px}
   @keyframes voDraai{to{transform:rotate(360deg)}}
@@ -1073,7 +1079,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-campagnes-compact';
+const APP_VERSIE='2026-08-30-trimmer-sleepbaar';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1951,7 +1957,7 @@ function bcCampagnesHtml(data){
       ? `<div class="bc-lab" style="margin:0">Lopende campagnes</div>`+lopend.map(kaart).join('')
       : '',
     onder: rest.length
-      ? `<details open><summary class="bc-zoekactie" style="cursor:pointer;padding:4px 0">Afgeronde en eerdere campagnes (${rest.length})</summary>
+      ? `<details><summary class="bc-zoekactie" style="cursor:pointer;padding:4px 0">Afgeronde en eerdere campagnes (${rest.length})</summary>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rest.map(kaart).join('')}</div></details>`
       : '',
   };
@@ -3806,17 +3812,21 @@ function ctTrimTekenen(){
           <span class="trim-grip r" data-grip="r"></span>
         </div>
         <div class="trim-kop" id="ct_trim_kop" style="left:0"></div>
+        <div class="trim-kop-grip" id="ct_trim_kopgrip" style="left:0"></div>
       </div>
       <div class="muted" id="ct_trim_info" style="font-size:12.5px;margin-top:5px"></div>
     </div>`);
   const v=$('#ct_trim_v'), speelIcoon=$('#ct_trim_play'), strip=$('#ct_trim_strip'), venster=$('#ct_trim_venster'),
-        diml=$('#ct_trim_diml'), dimr=$('#ct_trim_dimr'), kop=$('#ct_trim_kop'), info=$('#ct_trim_info');
+        diml=$('#ct_trim_diml'), dimr=$('#ct_trim_dimr'), kop=$('#ct_trim_kop'), kopgrip=$('#ct_trim_kopgrip'), info=$('#ct_trim_info');
+  const kopNaar=pctL=>{ kop.style.left=pctL+'%'; kopgrip.style.left=pctL+'%'; };
   let dur=0, van=0, tot=0, bewaarT;
 
   const teken=()=>{
     if(!dur) return;
     const l=van/dur*100, r=tot/dur*100;
-    venster.style.left=`calc(${l}% - 14px)`; venster.style.width=`calc(${r-l}% + 28px)`;
+    // De grepen liggen ín de strip (border-box), zoals bij Instagram; anders
+    // vallen ze bij een volledige selectie buiten beeld en lijkt inkorten onmogelijk.
+    venster.style.left=l+'%'; venster.style.width=(r-l)+'%';
     diml.style.width=l+'%'; dimr.style.width=(100-r)+'%';
     const len=tot-van;
     info.textContent=`${van.toFixed(1)}s tot ${tot.toFixed(1)}s · selectie ${len.toFixed(1)}s`+
@@ -3833,7 +3843,7 @@ function ctTrimTekenen(){
   v.addEventListener('click',()=>{ if(v.paused){v.play().catch(()=>{});} else v.pause(); });
   const lus=()=>{ if(v.currentTime>=tot-0.04||v.currentTime<van-0.2){ v.currentTime=van; } };
   v.addEventListener('timeupdate',()=>{ lus();
-    if(dur) kop.style.left=(Math.min(Math.max(v.currentTime,van),tot)/dur*100)+'%'; });
+    if(dur) kopNaar(Math.min(Math.max(v.currentTime,van),tot)/dur*100); });
 
   v.onloadedmetadata=async()=>{
     dur=v.duration||0;
@@ -3870,7 +3880,8 @@ function ctTrimTekenen(){
     if(!dur) return;
     strip.setPointerCapture(e.pointerId);
     const grip=e.target.dataset&&e.target.dataset.grip;
-    if(grip==='l') sleep={wat:'l'};
+    if(e.target.closest&&e.target.closest('.trim-kop-grip')) sleep={wat:'kop'};
+    else if(grip==='l') sleep={wat:'l'};
     else if(grip==='r') sleep={wat:'r'};
     else if(e.target===venster) sleep={wat:'m', vast:naarTijd(e.clientX)-van};
     else { // klik ernaast: dichtstbijzijnde greep verplaatsen
@@ -3883,13 +3894,19 @@ function ctTrimTekenen(){
   strip.addEventListener('pointermove',e=>{
     if(!sleep||!dur) return;
     const t=naarTijd(e.clientX);
+    if(sleep.wat==='kop'){ const nt=Math.min(Math.max(t,van),tot);
+      v.currentTime=nt; kopNaar(nt/dur*100); return; }
     if(sleep.wat==='l'){ van=Math.min(Math.max(t,0),tot-1); v.currentTime=van; }
     else if(sleep.wat==='r'){ tot=Math.max(Math.min(t,dur),van+1); v.currentTime=tot; }
     else { const len=tot-van; let nv=Math.min(Math.max(t-sleep.vast,0),dur-len);
       van=nv; tot=nv+len; v.currentTime=van; }
     teken();
   });
-  const klaarSleep=()=>{ if(!sleep) return; sleep=null; v.currentTime=van; v.play().catch(()=>{}); };
+  const klaarSleep=()=>{ if(!sleep) return;
+    // Na het slepen van de gele kop verder spelen vanaf die plek; na het
+    // verschuiven van de selectie weer vooraan in de selectie beginnen.
+    if(sleep.wat!=='kop') v.currentTime=van;
+    sleep=null; v.play().catch(()=>{}); };
   strip.addEventListener('pointerup',klaarSleep);
   strip.addEventListener('pointercancel',klaarSleep);
 }
