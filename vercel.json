@@ -5,6 +5,14 @@
       "destination": "https://gcpachivrwalsneuvlsa.supabase.co/functions/v1/klik?c=:code"
     },
     {
+      "source": "/webinar",
+      "destination": "https://utama-webinar-pages.vercel.app/"
+    },
+    {
+      "source": "/webinar/:path*",
+      "destination": "https://utama-webinar-pages.vercel.app/:path*"
+    },
+    {
       "source": "/admin",
       "destination": "/admin.html"
     },
