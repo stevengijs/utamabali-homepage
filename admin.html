@@ -1079,7 +1079,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-hooks-en-bak';
+const APP_VERSIE='2026-08-31-geen-dubbele-tekst';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3639,6 +3639,9 @@ function ctPreviewTekenen(){
     return;
   }
   const m0=CT.media[0];
+  // In een gebakken video zit alle tekst (hook, script, CTA) al in de pixels;
+  // de preview legt er dan niets meer overheen, anders staat alles dubbel.
+  const mediaGebakken=!!(CT.mediaOrigineel&&CT.mediaOrigineel.length&&m0&&m0.path!==CT.mediaOrigineel[0].path);
   const beeld=isVideo(m0)
     ? `<video src="${ctPubliek(m0.path)}" muted playsinline loop autoplay></video>`
     : `<img src="${ctPubliek(m0.path)}" alt="">`;
@@ -3702,13 +3705,13 @@ function ctPreviewTekenen(){
         <div class="keuze"><span>${esc(st.naam)}</span><span>${actief?'✓ gekozen':'klik om te kiezen'}</span></div>
         <div class="ig-frame reel"><div class="ig-media">
           ${beeld}
-          <div class="ig-hooktekst ${st.key}">${hookOpmaak(hook,st.key)}
+          ${mediaGebakken?'':`<div class="ig-hooktekst ${st.key}">${hookOpmaak(hook,st.key)}
             ${CT.ctaOverlay&&CT.ctaOverlay.tekst?(()=>{const cs=CT.ctaOverlay.stijl||'zwartblok';
               const basis=`font-size:${(10.5*((CT.ctaOverlay.maat)||1)).toFixed(1)}px;font-weight:${CT.ctaOverlay.vet?700:400};margin-top:7px;letter-spacing:0;opacity:0;animation:ctaIn .4s ease ${(CT.ctaOverlay.na||0)}s forwards;`;
               const per={zwartblok:'color:#fff;text-shadow:none;',witblok:'color:#111;text-shadow:none;',wit:'color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.65);',zwart:'color:#111;text-shadow:0 1px 3px rgba(255,255,255,.55);'}[cs];
               const pill=cs==='zwartblok'?'<span style="background:rgba(0,0,0,.85);padding:3px 10px;border-radius:7px;display:inline-block">':cs==='witblok'?'<span style="background:#fff;padding:3px 10px;border-radius:7px;display:inline-block">':'<span>';
               return `<div style="${basis}${per}">${pill}${esc(CT.ctaOverlay.tekst)}</span></div>`;})():''}
-          </div>
+          </div>`}
           <div class="ig-reelhud">
             <div class="onder">
               <div class="wie"><span class="ig-avatar"><i>S</i></span> stevenbalivillas <span class="volg">Volgen</span></div>
