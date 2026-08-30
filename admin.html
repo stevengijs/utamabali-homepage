@@ -1079,7 +1079,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-knoppen-ontdubbeld';
+const APP_VERSIE='2026-08-30-preview-geluid';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3183,6 +3183,34 @@ function ctTeken(){
   ctMediaTekenen();
 }
 
+/* Geluid bij de previews. Op een gebakken video zetten we simpelweg het echte
+   geluid van de eerste kaart aan (stem, tekst-timing en muziek zitten er al
+   perfect synchroon in). Vóór het bakken spelen we de gekozen muziek los mee,
+   startend op het gekozen startpunt en gelijkgetrokken met de videotijd. */
+function ctPreviewGeluid(){
+  const vids=[...document.querySelectorAll('#ct_preview video')];
+  const gebakken=CT.mediaOrigineel&&CT.mediaOrigineel.length&&CT.media[0]&&CT.media[0].path!==CT.mediaOrigineel[0].path;
+  vids.forEach((v,i)=>{ v.muted=!(CT.geluid&&gebakken&&i===0); });
+  const wilMuziek=CT.geluid&&!gebakken&&typeof VO!=='undefined'&&VO&&VO.muziekUrl&&vids[0];
+  if(!wilMuziek){ if(CT._mzPrev){CT._mzPrev.pause();CT._mzPrev=null;} return; }
+  if(!CT._mzPrev||CT._mzPrevUrl!==VO.muziekUrl){
+    if(CT._mzPrev) CT._mzPrev.pause();
+    CT._mzPrev=new Audio(VO.muziekUrl); CT._mzPrevUrl=VO.muziekUrl;
+  }
+  CT._mzPrev.volume=Math.min(1,(VO.muziekVol||0.25)*2);
+  const v=vids[0];
+  if(!v.dataset.mzkoppel){ v.dataset.mzkoppel='1';
+    v.addEventListener('timeupdate',()=>{
+      const mz=CT._mzPrev; if(!mz||!CT.geluid) return;
+      const doel=(VO.muziekStart||0)+Math.max(0, v.currentTime-((CT.trim&&CT.trim.van)||0));
+      if(Math.abs(mz.currentTime-doel)>0.35){ try{mz.currentTime=doel;}catch(e){} }
+      if(v.paused&&!mz.paused) mz.pause();
+      if(!v.paused&&mz.paused) mz.play().catch(()=>{});
+    });
+    v.addEventListener('pause',()=>{ if(CT._mzPrev) CT._mzPrev.pause(); });
+  }
+  if(!v.paused) CT._mzPrev.play().catch(()=>{});
+}
 /* Laat een videoelement alleen het gekozen trim-stuk afspelen. Leest CT.trim
    live, dus schuiven in de trimmer werkt direct door in elke weergave.
    Gebakken video's zijn al ingekort en volgen de trim dus niet nog een keer. */
@@ -3700,11 +3728,15 @@ function ctPreviewTekenen(){
       <button class="bc-chip" data-igmaat="1">+</button>
       <span class="muted" style="font-size:12px;font-weight:700;margin-left:10px">ACHTERGROND</span>
       ${[['geen','Geen'],['wit','Wit'],['zwart','Zwart'],['semi','Subtiel']].map(([k,n])=>`<button class="bc-chip ${CT_OPMAAK.achtergrond===k?'on':''}" data-igbg="${k}">${n}</button>`).join('')}
+      <button class="bc-chip ${CT.geluid?'on':''}" id="ct_geluid" style="margin-left:10px" title="Hoor de audio bij de eerste preview: van een gebakken video het echte geluid, anders je gekozen muziek vanaf het startpunt">${CT.geluid?'🔊 Geluid aan':'🔇 Geluid'}</button>
     </div>`;
   vak.innerHTML=`<div class="ig-rij">${CT.soort==='reel'
     ? CT_STIJLEN.map((st,i)=>kaart(gekozenHook,i)).join('')
     : hooks.map((h,i)=>kaart(h,i)).join('')}</div>`+bewerkBalk;
   vak.querySelectorAll('video').forEach(ctTrimVolgen);
+  const gel=$('#ct_geluid');
+  if(gel) gel.onclick=()=>{ CT.geluid=!CT.geluid; ctPreviewTekenen(); };
+  ctPreviewGeluid();
   // De caption groeit mee met de inhoud zodat je nooit in het vak scrollt
   const capTa=document.querySelector('#ct_caption');
   if(capTa&&!capTa.dataset.groei){
@@ -4773,7 +4805,6 @@ function voTekenen(){
   }else if(VO.stand==='video'){
     vak.innerHTML=`
       <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
-        <video class="vo-klaarvideo" controls src="${VO.video}" style="flex:none"></video>
         ${VO.woorden&&VO.woorden.length?`<div style="flex:1;min-width:250px;max-width:440px">
           <div class="bc-lab" style="margin:0 0 6px">Ondertiteling (pas gerust aan)</div>
           <textarea id="vo_transcript2" class="ct-caption" style="min-height:140px">${esc(VO.woorden.map(w=>w.w).join(' '))}</textarea>
