@@ -1079,7 +1079,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-muziek-startpunt';
+const APP_VERSIE='2026-08-30-knoppen-ontdubbeld';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3421,7 +3421,7 @@ function ctPakketTekenen(){
       <div class="bc-acties" style="padding:10px 0 0">
         <button class="btn btn-primary btn-sm" id="ct_klaar">✓ Klaar om te plaatsen</button>
         <button class="btn btn-ghost btn-sm" id="ct_gepost">Gepost</button>
-        <button class="btn btn-ghost btn-sm" id="ct_opnieuw">↻ Nieuwe versie</button>
+        <button class="btn btn-ghost btn-sm" id="ct_opnieuw" title="Laat de AI het hele pakket (hooks, caption, hashtags) opnieuw bedenken">✨ Genereer nieuwe versie</button>
         <button class="btn btn-ghost btn-sm" id="ct_ster">☆ Favoriet</button>
       </div>
     </div>
@@ -3500,7 +3500,7 @@ function ctPakketTekenen(){
   if(ob) ob.onclick=async()=>{
     if(!CT.media.length){toast('Kies eerst je b-roll','err');return;}
     ob.disabled=true;
-    try{ await voRender(true); if(VO.stand==='video'){ await voGebruik(); } }
+    try{ await voRender(true); }
     finally{ ob.disabled=false; }
   };
   $('#ct_klaar').onclick=()=>ctOpslaan('klaar');
@@ -4370,7 +4370,6 @@ async function ctVerrasMe(){
     }else if(CT.soort==='reel'){
       zeg('Video maken met het overlay-script'+(VO.muziekUrl?' en muziek':'')+'…');
       await voRender(true);
-      if(VO.stand==='video'){ await voGebruik(); }
     }
 
     await ctOpslaan('klaar');
@@ -4784,14 +4783,12 @@ function voTekenen(){
         <div id="vo_mzpaneel" style="flex:none;width:250px"></div>
       </div>
       <div class="vo-knoppen">
-        <button class="btn btn-primary btn-sm" id="vo_gebruik">✓ Gebruik als reel-video</button>
-        <a class="btn btn-ghost btn-sm" href="${VO.video}" download="reel-voiceover">⬇ Download</a>
-        <button class="btn btn-ghost btn-sm" id="vo_opnieuw2">↻ Opnieuw</button>
+        <a class="btn btn-primary btn-sm" href="${VO.video}" download="reel-voiceover">⬇ Download</a>
+        <button class="btn btn-ghost btn-sm" id="vo_opnieuw2">✏️ Terug naar bewerken</button>
         <button class="btn btn-ghost btn-sm" id="vo_alsnog_stem">🎙 Alsnog voice-over inspreken</button>
         <button class="btn btn-ghost btn-sm" id="vo_voor_app" title="Video downloaden en caption plus hashtags op je klembord: in de app alleen nog IG-muziek kiezen en plakken">📲 Voor de app (met IG-muziek)</button>
       </div>
-      <div class="bc-hint">${VO.mime.includes('mp4')?'MP4, klaar om direct via de plaatsknop te publiceren.':'Deze browser kan alleen webm opnemen en Instagram wil mp4: download hem en plaats via de app, of haal hem even door CapCut.'}</div>`;
-    $('#vo_gebruik').onclick=voGebruik;
+      <div class="bc-hint">${VO.mime.includes('mp4')?'Dit is automatisch je actieve reel-video: plaatsen en downloaden gebruiken precies dit bestand.':'Deze browser kan alleen webm opnemen en Instagram wil mp4: download hem en plaats via de app, of haal hem even door CapCut.'}</div>`;
     $('#vo_opnieuw2').onclick=()=>{VO={...VO,stand:VO.url?'klaar':'leeg'};voTekenen();};
     const alsnog=$('#vo_alsnog_stem');
     if(alsnog) alsnog.onclick=()=>{VO={...VO,stand:'leeg',blob:null,url:null,woorden:[]};voTekenen();};
@@ -5263,7 +5260,11 @@ async function voRender(alleenMuziek){
 
     const vblob=new Blob(uit,{type:VO.mime.split(';')[0]});
     VO.videoBlob=vblob; VO.video=URL.createObjectURL(vblob);
-    VO.stand='video'; voTekenen();
+    VO.stand='video';
+    // De gebakken video wordt direct de actieve reel-video: wat je ziet is wat
+    // er geplaatst en gedownload wordt. De losse "Gebruik als"-knop is daarmee weg.
+    await voGebruik();
+    voTekenen();
   }catch(e){
     VO.stand=VO.url?'klaar':'leeg'; voTekenen();
     toast('Video maken mislukte: '+(e&&e.message||e),'err');
