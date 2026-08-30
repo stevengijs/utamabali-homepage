@@ -1079,7 +1079,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-tekst-echt-weg';
+const APP_VERSIE='2026-08-30-trim-overal';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3183,6 +3183,17 @@ function ctTeken(){
   ctMediaTekenen();
 }
 
+/* Laat een videoelement alleen het gekozen trim-stuk afspelen. Leest CT.trim
+   live, dus schuiven in de trimmer werkt direct door in elke weergave.
+   Gebakken video's zijn al ingekort en volgen de trim dus niet nog een keer. */
+function ctTrimVolgen(v){
+  if(!v||v.dataset.trimvolgt) return; v.dataset.trimvolgt='1';
+  const origineel=()=>!(CT.mediaOrigineel&&CT.mediaOrigineel.length&&CT.media[0]&&CT.media[0].path!==CT.mediaOrigineel[0].path);
+  v.addEventListener('timeupdate',()=>{ const t=CT.trim;
+    if(!t||!origineel()) return;
+    if(v.currentTime<t.van-0.3||v.currentTime>=t.tot-0.05) v.currentTime=t.van; });
+  v.addEventListener('loadedmetadata',()=>{ const t=CT.trim; if(t&&origineel()) v.currentTime=t.van; });
+}
 function ctMediaTekenen(){
   const vak=$('#ct_media'); if(!vak) return;
   const isVideo=m=>/\.(mp4|mov|webm|m4v)$/i.test(m.path)||String(m.type||'').startsWith('video');
@@ -3212,6 +3223,7 @@ function ctMediaTekenen(){
      ${gebakken?`<button class="ct-upload" id="ct_terug_origineel" title="De gebakken tekst eraf: terug naar je schone beeld" style="font-size:13px;line-height:1.4">🧽<br>tekst eraf</button>`:''}`;
     })();
   vak.querySelectorAll('[data-weg]').forEach(b=>b.onclick=()=>{CT.media.splice(Number(b.dataset.weg),1);CT.trim=null;ctMediaTekenen();ctPreviewTekenen();});
+  vak.querySelectorAll('.ct-tegel video').forEach(ctTrimVolgen);
   ctTrimTekenen();
   // Volgorde schuiven: de nummers en de slide-teksten volgen de nieuwe
   // volgorde vanzelf, want die zijn positioneel (slide 1 = eerste afbeelding).
@@ -3692,6 +3704,7 @@ function ctPreviewTekenen(){
   vak.innerHTML=`<div class="ig-rij">${CT.soort==='reel'
     ? CT_STIJLEN.map((st,i)=>kaart(gekozenHook,i)).join('')
     : hooks.map((h,i)=>kaart(h,i)).join('')}</div>`+bewerkBalk;
+  vak.querySelectorAll('video').forEach(ctTrimVolgen);
   // De caption groeit mee met de inhoud zodat je nooit in het vak scrollt
   const capTa=document.querySelector('#ct_caption');
   if(capTa&&!capTa.dataset.groei){
