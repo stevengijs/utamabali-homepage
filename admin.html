@@ -596,20 +596,24 @@
   .vo-balk i{display:block;height:100%;width:0%;background:var(--brand);transition:width .4s}
 
   /* Campagne-overzicht met cijfers */
-  .bc-camps{padding:0 18px 4px;display:flex;flex-direction:column;gap:8px}
-  .bc-camp{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 14px;
-           border:1px solid var(--line);border-radius:10px;background:#fff}
-  .bc-camp.loopt{border-color:var(--warn);background:#fffbeb}
-  .bc-camp-naam{font-weight:700;font-size:13.5px;flex:1 1 220px;min-width:0;
+  .bc-camps{padding:0 18px 4px;display:flex;flex-direction:column;gap:5px}
+  .bc-camp{display:flex;flex-wrap:wrap;align-items:center;gap:7px 12px;padding:7px 11px;
+           border:1px solid var(--line);border-radius:8px;background:#fff}
+  .bc-camp.loopt .bc-camp-naam::before{content:'';display:inline-block;width:7px;height:7px;
+           border-radius:50%;background:var(--warn);margin-right:7px;vertical-align:1px}
+  .bc-camp-naam{font-weight:600;font-size:12.5px;flex:1 1 200px;min-width:0;
                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .bc-camp-kan{flex:none;font-size:11px;font-weight:700;letter-spacing:.04em;padding:2px 8px;
+  .bc-camp-kan{flex:none;font-size:10px;font-weight:600;letter-spacing:.04em;padding:1px 7px;
                border-radius:999px;background:#eef0ef;color:var(--muted)}
-  .bc-cijfers{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);
+  .bc-cijfers{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--muted);
               font-variant-numeric:tabular-nums}
-  .bc-cijfers b{color:var(--ink);font-weight:700}
+  .bc-cijfers b{color:var(--ink);font-weight:600}
   .bc-cijfers .op{color:var(--brand)}
-  .bc-bar{flex:1 1 120px;min-width:90px;height:6px;border-radius:3px;background:#eef0ef;overflow:hidden}
+  .bc-bar{flex:1 1 90px;min-width:70px;height:4px;border-radius:2px;background:#eef0ef;overflow:hidden}
   .bc-bar i{display:block;height:100%;background:var(--brand)}
+  .bc-camp .btn{padding:5px 12px;font-size:12px;font-weight:600}
+  .bc-camp .btn-primary{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+  .bc-camp .btn-primary:hover{background:var(--brand);color:#fff}
   .bc-zoekrij{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:0 18px}
   .bc-zoek{flex:1 1 320px;min-width:0;padding:9px 12px;font:inherit;font-size:13.5px;
            color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px}
@@ -1069,7 +1073,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-campagnes-herbouwd';
+const APP_VERSIE='2026-08-30-campagnes-compact';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1867,6 +1871,7 @@ async function renderBroadcast(){
         <span class="bc-zoekinfo" id="bc_zoekinfo"></span>
       </div>
       <div id="bc_tabel"></div>
+      <div class="bc-camps" id="bc_campagnes_oud" style="margin-top:14px">${BC.campHtmlOud||''}</div>
     </div>
   </div>
   <div id="bc_opstel"></div>`;
@@ -1939,15 +1944,25 @@ function bcCampagnesHtml(data){
              :`<button type="button" class="bc-zoekactie" data-detail="${c.id}">Wie kreeg wat</button>`}
     </div>`;
   };
-  return (lopend.length
-      ? `<div class="bc-lab" style="margin:0">Nog niet afgeronde campagnes</div>`+lopend.map(kaart).join('')
-      : '')+
-    (rest.length?`<details open><summary class="bc-zoekactie" style="cursor:pointer;padding:4px 0">Afgeronde en eerdere campagnes (${rest.length})</summary>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rest.map(kaart).join('')}</div></details>`:'');
+  // Lopende campagnes bovenaan het paneel; alles wat af of oud is als apart
+  // blok onderaan, onder de adressenlijst.
+  return {
+    boven: lopend.length
+      ? `<div class="bc-lab" style="margin:0">Lopende campagnes</div>`+lopend.map(kaart).join('')
+      : '',
+    onder: rest.length
+      ? `<details open><summary class="bc-zoekactie" style="cursor:pointer;padding:4px 0">Afgeronde en eerdere campagnes (${rest.length})</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rest.map(kaart).join('')}</div></details>`
+      : '',
+  };
 }
 async function bcCampagnesLaden(){
-  const teken=html=>{ BC.campHtml=html; const nu=$('#bc_campagnes'); if(nu) nu.innerHTML=html; };
-  if(!BC.campHtml) teken(`<div class="muted" style="padding:0 18px 8px;font-size:13px">Campagne-overzicht laden… <span style="opacity:.55">(${APP_VERSIE})</span></div>`);
+  const teken=(boven,onder)=>{
+    BC.campHtml=boven; BC.campHtmlOud=onder;
+    const a=$('#bc_campagnes'); if(a) a.innerHTML=boven;
+    const b=$('#bc_campagnes_oud'); if(b) b.innerHTML=onder;
+  };
+  if(!BC.campHtml) teken(`<div class="muted" style="padding:0 18px 8px;font-size:12px">Campagne-overzicht laden…</div>`, BC.campHtmlOud||'');
   try{
     const tok=bcSessieToken();
     if(!tok) throw new Error('geen ingelogde sessie gevonden; ververs de pagina en log opnieuw in');
@@ -1957,8 +1972,9 @@ async function bcCampagnesLaden(){
       body:'{}'});
     if(!r.ok){ const b=await r.text().catch(()=>String(r.status)); throw new Error(`server gaf ${r.status}: ${b.slice(0,140)}`); }
     const data=await r.json();
-    if(!Array.isArray(data)||!data.length){ teken(`<div class="muted" style="padding:0 18px 8px;font-size:13px">Nog geen campagnes verstuurd.</div>`); return; }
-    teken(bcCampagnesHtml(data));
+    if(!Array.isArray(data)||!data.length){ teken(`<div class="muted" style="padding:0 18px 8px;font-size:12px">Nog geen campagnes verstuurd.</div>`, ''); return; }
+    const h=bcCampagnesHtml(data);
+    teken(h.boven, h.onder);
     // Open-en-klikcijfers van recente e-mailcampagnes één keer per paginabezoek
     // op de achtergrond verversen; daarna de lijst stilletjes bijwerken.
     if(!BC.campStatsGedaan){
@@ -1974,7 +1990,7 @@ async function bcCampagnesLaden(){
       }
     }
   }catch(e){
-    teken(`<div class="bc-hint err">Campagne-overzicht kon niet laden: ${esc(String(e&&e.message||e))} · <a href="#" onclick="BC.campHtml=null;bcCampagnesLaden();return false">probeer opnieuw</a></div>`);
+    teken(`<div class="bc-hint err">Campagne-overzicht kon niet laden: ${esc(String(e&&e.message||e))} · <a href="#" onclick="BC.campHtml=null;bcCampagnesLaden();return false">probeer opnieuw</a></div>`, BC.campHtmlOud||'');
     setTimeout(()=>{ BC.campHtml=null; bcCampagnesLaden(); }, 20000);
   }
 }
