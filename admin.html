@@ -1069,7 +1069,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-campagnes-taai3';
+const APP_VERSIE='2026-08-30-campagnes-herbouwd';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1850,7 +1850,7 @@ async function renderBroadcast(){
       <div class="muted" style="font-size:13px;margin-top:2px">${fac.totaal} contacten (${esc(bronregel)}): ${fac.totaal_email} met e-mail, ${fac.totaal_tel} met telefoonnummer. Binnengekomen tussen ${bcDatum(fac.vroegste)} en ${bcDatum(fac.nieuwste)}. Deze lijst staat buiten het CRM en komt dus nooit in een pijplijn.${fac.uitgesloten?` <span title="Teamleden en testinvoer. Die tellen niet mee en krijgen nooit een mailing.">${fac.uitgesloten} team- en testrijen zijn overgeslagen.</span>`:''}</div>
     </div></div>
     <div id="bc_rest">
-      <div class="bc-camps" id="bc_campagnes"></div>
+      <div class="bc-camps" id="bc_campagnes">${BC.campHtml||''}</div>
       <div class="bc-filters" id="bc_filters"></div>
       <div class="muted" style="font-size:12px;padding:8px 18px 0">Het grijze getal achter een keuze is het totaal aantal contacten, het groene getal hoeveel daarvan bereikbaar zijn via het gekozen kanaal. Versturen kan alleen naar wie een e-mailadres heeft. <b>Ingelogd op invest</b> betekent dat iemand ooit een inloglink heeft aangevraagd, wat alleen voor de dataroom nodig is; iedereen in deze lijst staat sowieso in het portaal. <b>Klant</b> is wie een ITP tekende of aanbetaalde, plus iedereen die als klant in Moneybird staat. Zet dat filter op <b>Nog geen klant</b> om je bestaande kopers over te slaan.</div>
       <div class="bc-telling" id="bc_telling"></div>
@@ -1896,74 +1896,39 @@ async function renderBroadcast(){
   bcLaad();
 }
 
-/* Het overzicht van campagnes. Dit bestond niet: je kon versturen, maar daarna
-   nooit meer zien wat ermee gebeurd was, en een campagne die je halverwege had
-   verlaten was onvindbaar. Lopende campagnes staan bovenaan met een knop om
-   verder te gaan. */
-async function bcCampagnesLaden(vervolg){
-  const vak=$('#bc_campagnes'); if(!vak) return;
-  // Er staat vanaf de eerste tel iets in het vak. Blijft "laden" staan, dan
-  // komt het antwoord van de server nooit aan en is dát het spoor; voorheen
-  // was een lege sectie niet te onderscheiden van een sectie die nog bezig was.
-  if(!vervolg && !vak.childElementCount) vak.innerHTML=`<div class="muted" style="padding:0 18px 8px;font-size:13px">Campagne-overzicht laden… <span style="opacity:.55">(${APP_VERSIE})</span></div>`;
-  // De aanroep via de supabase-client kan in zeldzame gevallen eindeloos
-  // wachten (de client zet verzoeken in een rij achter een token-verversing
-  // die nooit afrondt). Daarom: maximaal 6 seconden wachten en daarna hetzelfde
-  // verzoek rechtstreeks doen, buiten de client om, met het token dat er al is.
-  let data, error;
+/* Het overzicht van campagnes, herbouwd zonder de supabase-client.
+   De lijst wordt rechtstreeks bij PostgREST opgehaald met het sessietoken uit
+   localStorage: geen wachtrij, geen token-verversing die alles kan blokkeren.
+   De opgebouwde HTML wordt bewaard in BC.campHtml, zodat elke hertekening van
+   het paneel de lijst meteen weer laat zien, en de knoppen werken via één
+   permanente click-listener zodat hertekenen ze nooit lostrekt. */
+function bcSessieToken(){
   try{
-    const uit=await Promise.race([
-      sb.rpc('broadcast_campagnes_lijst'),
-      new Promise(res=>setTimeout(()=>res({timeout:true}), 2500)),
-    ]);
-    if(uit && uit.timeout){
-      const tok=(JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k=>k.startsWith('sb-')&&k.endsWith('-auth-token'))||'')||'{}').access_token)||SUPABASE_ANON;
-      const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/broadcast_campagnes_lijst`,{
-        method:'POST', signal:AbortSignal.timeout(10000),
-        headers:{apikey:SUPABASE_ANON, Authorization:'Bearer '+tok, 'Content-Type':'application/json'},
-        body:'{}'});
-      if(r.ok) data=await r.json();
-      else error={message:`server gaf ${r.status} (na een vastgelopen eerste poging)`};
-    } else { data=uit.data; error=uit.error; }
-  }catch(e){ error={message:String(e&&e.message||e)}; }
-  if(error){
-    vak.innerHTML=`<div class="bc-hint err">Campagne-overzicht kon niet laden: ${esc(error.message||'onbekend')} · <a href="#" onclick="bcCampagnesLaden();return false">probeer opnieuw</a></div>`;
-    setTimeout(()=>{ if($('#bc_campagnes')===vak) bcCampagnesLaden(); }, 20000);
-    return;
-  }
-  if(!Array.isArray(data)||!data.length){ vak.innerHTML=`<div class="muted" style="padding:0 18px 8px;font-size:13px">Nog geen campagnes verstuurd.</div>`; return; }
-
-  // Eerst tekenen met wat er is; de open-en-klikcijfers van e-mailcampagnes
-  // worden daarna op de achtergrond ververst en de lijst wordt dan één keer
-  // opnieuw getekend. Zo kan een trage verversing het overzicht nooit
-  // tegenhouden (het vak bleef anders leeg tot alles klaar was).
-  if(!vervolg){
-    const vers=data.filter(c=>c.kanaal==='email' && c.verzonden>0 &&
-      (!c.klaar || Date.now()-new Date(c.klaar).getTime() < 31*864e5));
-    if(vers.length){
-      Promise.all(vers.slice(0,10).map(c=>
-        sb.rpc('broadcast_email_stats_bijwerken',{p_campagne:c.id}).catch(()=>{})))
-        .then(()=>bcCampagnesLaden(true)).catch(()=>{});
+    for(const k of Object.keys(localStorage)){
+      if(k.startsWith('sb-')&&k.endsWith('-auth-token')){
+        const t=JSON.parse(localStorage.getItem(k)||'{}');
+        if(t&&t.access_token) return t.access_token;
+      }
     }
-  }
-
+  }catch(e){}
+  return null;
+}
+function bcCampagnesHtml(data){
   const lopend=data.filter(c=>c.status==='bezig');
   const rest=data.filter(c=>c.status!=='bezig').slice(0,6);
   const pct=(a,b)=>b>0?Math.round(a/b*100):0;
-
   const kaart=c=>{
-    const behandeld=c.verzonden+c.mislukt+c.overgeslagen;
+    const behandeld=(c.verzonden||0)+(c.mislukt||0)+(c.overgeslagen||0);
     const loopt=c.status==='bezig';
-    // Percentages op de basis die past bij het kanaal: opens en clicks reken je
-    // over wat is afgeleverd, niet over wat is verstuurd. Een bounce heeft nooit
-    // de kans gehad geopend te worden.
+    // Opens en clicks reken je over wat is afgeleverd, niet over wat is
+    // verstuurd: een bounce heeft nooit de kans gehad geopend te worden.
     const basis=c.afgeleverd||c.verzonden||0;
     return `<div class="bc-camp ${loopt?'loopt':''}">
       <span class="bc-camp-naam" title="${esc(c.onderwerp||'')}">${esc(c.naam||'(zonder naam)')}</span>
       <span class="bc-camp-kan">${c.kanaal==='whatsapp'?'WhatsApp':'E-mail'}</span>
       <div class="bc-bar" title="${behandeld} van ${c.doel} behandeld"><i style="width:${pct(behandeld,c.doel)}%"></i></div>
       <div class="bc-cijfers">
-        <span><b>${c.verzonden}</b> verstuurd</span>
+        <span><b>${c.verzonden||0}</b> verstuurd</span>
         ${c.afgeleverd?`<span><b>${c.afgeleverd}</b> aangekomen</span>`:''}
         ${c.geopend?`<span class="op"><b>${c.geopend}</b> ${c.kanaal==='whatsapp'?'gelezen':'geopend'} (${pct(c.geopend,basis)}%)</span>`:''}
         ${c.geklikt?`<span class="op"><b>${c.geklikt}</b> geklikt (${pct(c.geklikt,basis)}%)</span>`:''}
@@ -1974,16 +1939,52 @@ async function bcCampagnesLaden(vervolg){
              :`<button type="button" class="bc-zoekactie" data-detail="${c.id}">Wie kreeg wat</button>`}
     </div>`;
   };
-
-  vak.innerHTML=(lopend.length
+  return (lopend.length
       ? `<div class="bc-lab" style="margin:0">Nog niet afgeronde campagnes</div>`+lopend.map(kaart).join('')
       : '')+
     (rest.length?`<details open><summary class="bc-zoekactie" style="cursor:pointer;padding:4px 0">Afgeronde en eerdere campagnes (${rest.length})</summary>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rest.map(kaart).join('')}</div></details>`:'');
-
-  vak.querySelectorAll('[data-verder]').forEach(b=>b.onclick=()=>bcCampagneHervatten(b.dataset.verder));
-  vak.querySelectorAll('[data-detail]').forEach(b=>b.onclick=()=>bcCampagneDetail(b.dataset.detail));
 }
+async function bcCampagnesLaden(){
+  const teken=html=>{ BC.campHtml=html; const nu=$('#bc_campagnes'); if(nu) nu.innerHTML=html; };
+  if(!BC.campHtml) teken(`<div class="muted" style="padding:0 18px 8px;font-size:13px">Campagne-overzicht laden… <span style="opacity:.55">(${APP_VERSIE})</span></div>`);
+  try{
+    const tok=bcSessieToken();
+    if(!tok) throw new Error('geen ingelogde sessie gevonden; ververs de pagina en log opnieuw in');
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/broadcast_campagnes_lijst`,{
+      method:'POST', signal:AbortSignal.timeout(12000),
+      headers:{apikey:SUPABASE_ANON, Authorization:'Bearer '+tok, 'Content-Type':'application/json'},
+      body:'{}'});
+    if(!r.ok){ const b=await r.text().catch(()=>String(r.status)); throw new Error(`server gaf ${r.status}: ${b.slice(0,140)}`); }
+    const data=await r.json();
+    if(!Array.isArray(data)||!data.length){ teken(`<div class="muted" style="padding:0 18px 8px;font-size:13px">Nog geen campagnes verstuurd.</div>`); return; }
+    teken(bcCampagnesHtml(data));
+    // Open-en-klikcijfers van recente e-mailcampagnes één keer per paginabezoek
+    // op de achtergrond verversen; daarna de lijst stilletjes bijwerken.
+    if(!BC.campStatsGedaan){
+      BC.campStatsGedaan=true;
+      const vers=data.filter(c=>c.kanaal==='email' && c.verzonden>0 &&
+        (!c.klaar || Date.now()-new Date(c.klaar).getTime() < 31*864e5)).slice(0,10);
+      if(vers.length){
+        Promise.all(vers.map(c=>fetch(`${SUPABASE_URL}/rest/v1/rpc/broadcast_email_stats_bijwerken`,{
+          method:'POST', signal:AbortSignal.timeout(12000),
+          headers:{apikey:SUPABASE_ANON, Authorization:'Bearer '+tok, 'Content-Type':'application/json'},
+          body:JSON.stringify({p_campagne:c.id})}).catch(()=>{})))
+          .then(()=>bcCampagnesLaden()).catch(()=>{});
+      }
+    }
+  }catch(e){
+    teken(`<div class="bc-hint err">Campagne-overzicht kon niet laden: ${esc(String(e&&e.message||e))} · <a href="#" onclick="BC.campHtml=null;bcCampagnesLaden();return false">probeer opnieuw</a></div>`);
+    setTimeout(()=>{ BC.campHtml=null; bcCampagnesLaden(); }, 20000);
+  }
+}
+// Eén permanente listener voor de campagneknoppen: overleeft elke hertekening.
+document.addEventListener('click',e=>{
+  const v=e.target.closest&&e.target.closest('[data-verder]');
+  if(v){ bcCampagneHervatten(v.dataset.verder); return; }
+  const d=e.target.closest&&e.target.closest('[data-detail]');
+  if(d) bcCampagneDetail(d.dataset.detail);
+});
 
 /* Verder met een campagne die nog loopt. Alles komt uit de campagne zelf, niet
    uit het geheugen van de pagina: template, variabelen, golfgrootte, tekst. Je
