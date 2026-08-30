@@ -1902,6 +1902,10 @@ async function renderBroadcast(){
    verder te gaan. */
 async function bcCampagnesLaden(vervolg){
   const vak=$('#bc_campagnes'); if(!vak) return;
+  // Er staat vanaf de eerste tel iets in het vak. Blijft "laden" staan, dan
+  // komt het antwoord van de server nooit aan en is dát het spoor; voorheen
+  // was een lege sectie niet te onderscheiden van een sectie die nog bezig was.
+  if(!vervolg && !vak.childElementCount) vak.innerHTML='<div class="muted" style="padding:0 18px 8px;font-size:13px">Campagne-overzicht laden…</div>';
   const {data,error}=await sb.rpc('broadcast_campagnes_lijst');
   if(error){ vak.innerHTML=`<div class="bc-hint err">Campagne-overzicht kon niet laden: ${esc(error.message||'onbekend')}</div>`; return; }
   if(!Array.isArray(data)||!data.length){ vak.innerHTML=`<div class="muted" style="padding:0 18px 8px;font-size:13px">Nog geen campagnes verstuurd.</div>`; return; }
