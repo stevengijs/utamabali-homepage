@@ -1069,7 +1069,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-29-cta-stijl';
+const APP_VERSIE='2026-08-29-tekstgrootte';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2926,11 +2926,11 @@ async function ctFontsLaden(){
   try{ await Promise.all(CT_FONTS.map(f=>document.fonts.load(`${f.schuin?'italic ':''}${f.dik} 64px ${f.css.split(',')[0]}`))); }
   catch(e){}
 }
-const ctFontStr=(f,px)=>`${f.schuin?'italic ':''}${f.dik} ${Math.round(px*(f.schaal||1))}px ${f.css}`;
+const ctFontStr=(f,px)=>`${f.schuin?'italic ':''}${f.dik} ${Math.round(px*(f.schaal||1)*((CT_OPMAAK&&CT_OPMAAK.maat)||1))}px ${f.css}`;
 const ctSpatiePx=(f,px)=>((f.spatieEm||0)*px*(f.schaal||1)).toFixed(1)+'px';
 // De losse opmaakknoppen kunnen van een preset afwijken; dit is de werkelijke
 // stand die preview en render allebei gebruiken.
-let CT_OPMAAK={achtergrond:'geen', accent:false, font:'klassiek'};
+let CT_OPMAAK={achtergrond:'geen', accent:false, font:'klassiek', maat:1};
 
 const ctPubliek=pad=>{try{return sb.storage.from(CT_BUCKET).getPublicUrl(pad).data.publicUrl;}catch(e){return '';}};
 
@@ -3259,6 +3259,9 @@ function ctPakketTekenen(){
       <div class="bc-rij" style="margin-top:6px">
         ${[['zwartblok','Wit op zwart'],['witblok','Zwart op wit'],['wit','Wit los'],['zwart','Zwart los']].map(([k,n])=>`<button class="bc-chip ${(CT.ctaOverlay&&CT.ctaOverlay.stijl)===k?'on':''}" data-ctastijl="${k}">${n}</button>`).join('')}
         <button class="bc-chip ${CT.ctaOverlay&&CT.ctaOverlay.vet?'on':''}" data-ctavet="1" style="font-weight:800">B vet</button>
+        <button class="bc-chip" data-ctamaat="-1">−</button>
+        <span class="muted" id="cta_maat_pct" style="font-size:12.5px">${Math.round(((CT.ctaOverlay&&CT.ctaOverlay.maat)||1)*100)}%</span>
+        <button class="bc-chip" data-ctamaat="1">+</button>
       </div>
       <div class="bc-hint">Komt in de gebakken reel onder de hook in beeld vanaf het gekozen moment (3 a 4 seconden werkt het best: eerst leest de kijker de hook) en blijft tot het einde staan.</div>`:''}
     </div>
@@ -3430,6 +3433,13 @@ function ctPakketTekenen(){
       document.querySelectorAll('[data-ctastijl]').forEach(x=>x.classList.toggle('on',x===b));
       ctaBewaar();
     });
+    document.querySelectorAll('[data-ctamaat]').forEach(b=>b.onclick=()=>{
+      const nu=CT.ctaOverlay.maat||1;
+      CT.ctaOverlay.maat=Math.min(Math.max(nu+Number(b.dataset.ctamaat)*0.1,0.5),2);
+      const pct=document.querySelector('#cta_maat_pct');
+      if(pct) pct.textContent=Math.round(CT.ctaOverlay.maat*100)+'%';
+      ctaBewaar();
+    });
     const vetKnop=document.querySelector('[data-ctavet]');
     if(vetKnop) vetKnop.onclick=()=>{
       CT.ctaOverlay.vet=!CT.ctaOverlay.vet;
@@ -3505,7 +3515,7 @@ function ctPreviewTekenen(){
     const f=CT_FONTS.find(x=>x.key===om.font)||CT_FONTS[0];
     const tekst=f.caps?hook.toUpperCase():hook;
     const stijlen=[`font-family:${f.css}`,`font-weight:${f.dik}`,
-      `font-size:${(15*(f.schaal||1)).toFixed(1)}px`,`line-height:${(f.regel||1.2)}`];
+      `font-size:${(15*(f.schaal||1)*(om.maat||CT_OPMAAK.maat||1)).toFixed(1)}px`,`line-height:${(f.regel||1.2)}`];
     if(f.schuin) stijlen.push('font-style:italic');
     if(f.spatieEm) stijlen.push(`letter-spacing:${f.spatieEm}em`);
     if(f.gloed&&om.achtergrond==='geen') stijlen.push('text-shadow:0 0 8px rgba(255,255,255,.9),0 0 16px rgba(255,255,255,.5)');
@@ -3551,7 +3561,7 @@ function ctPreviewTekenen(){
           ${beeld}
           <div class="ig-hooktekst ${st.key}">${hookOpmaak(hook,st.key)}
             ${CT.ctaOverlay&&CT.ctaOverlay.tekst?(()=>{const cs=CT.ctaOverlay.stijl||'zwartblok';
-              const basis=`font-size:10.5px;font-weight:${CT.ctaOverlay.vet?700:400};margin-top:7px;letter-spacing:0;opacity:0;animation:ctaIn .4s ease ${(CT.ctaOverlay.na||0)}s forwards;`;
+              const basis=`font-size:${(10.5*((CT.ctaOverlay.maat)||1)).toFixed(1)}px;font-weight:${CT.ctaOverlay.vet?700:400};margin-top:7px;letter-spacing:0;opacity:0;animation:ctaIn .4s ease ${(CT.ctaOverlay.na||0)}s forwards;`;
               const per={zwartblok:'color:#fff;text-shadow:none;',witblok:'color:#111;text-shadow:none;',wit:'color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.65);',zwart:'color:#111;text-shadow:0 1px 3px rgba(255,255,255,.55);'}[cs];
               const pill=cs==='zwartblok'?'<span style="background:rgba(0,0,0,.85);padding:3px 10px;border-radius:7px;display:inline-block">':cs==='witblok'?'<span style="background:#fff;padding:3px 10px;border-radius:7px;display:inline-block">':'<span>';
               return `<div style="${basis}${per}">${pill}${esc(CT.ctaOverlay.tekst)}</span></div>`;})():''}
@@ -3591,6 +3601,10 @@ function ctPreviewTekenen(){
     <div class="vo-knoppen" style="margin-top:2px;flex-wrap:wrap">
       <span class="muted" style="font-size:12px;font-weight:700">FONT</span>
       ${CT_FONTS.map(f=>`<button class="bc-chip ${CT_OPMAAK.font===f.key?'on':''}" data-igfont="${f.key}" title="Zoals in de Instagram-editor">${f.naam}</button>`).join('')}
+      <span class="muted" style="font-size:12px;font-weight:700;margin-left:10px">GROOTTE</span>
+      <button class="bc-chip" data-igmaat="-1">−</button>
+      <span class="muted" id="ig_maat_pct" style="font-size:12.5px;min-width:44px;text-align:center">${Math.round((CT_OPMAAK.maat||1)*100)}%</span>
+      <button class="bc-chip" data-igmaat="1">+</button>
       <span class="muted" style="font-size:12px;font-weight:700;margin-left:10px">ACHTERGROND</span>
       ${[['geen','Geen'],['wit','Wit'],['zwart','Zwart'],['semi','Subtiel']].map(([k,n])=>`<button class="bc-chip ${CT_OPMAAK.achtergrond===k?'on':''}" data-igbg="${k}">${n}</button>`).join('')}
     </div>`;
@@ -3616,6 +3630,12 @@ function ctPreviewTekenen(){
   });
   vak.querySelectorAll('[data-igfont]').forEach(k=>k.onclick=()=>{
     CT_OPMAAK.font=k.dataset.igfont;
+    if(CT.pakket)CT.pakket.opmaak={...CT_OPMAAK};
+    ctPreviewTekenen();
+  });
+  vak.querySelectorAll('[data-igmaat]').forEach(k=>k.onclick=()=>{
+    const nu=CT_OPMAAK.maat||1;
+    CT_OPMAAK.maat=Math.min(Math.max(nu+Number(k.dataset.igmaat)*0.1,0.5),1.8);
     if(CT.pakket)CT.pakket.opmaak={...CT_OPMAAK};
     ctPreviewTekenen();
   });
@@ -4956,7 +4976,7 @@ async function voRender(alleenMuziek){
           const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
           ctx.font=ctFontStr(f,58);
           try{ ctx.letterSpacing=ctSpatiePx(f,58); }catch(e){}
-          const regelH=Math.round(58*(f.schaal||1)*(f.regel||1.2));
+          const regelH=Math.round(58*(f.schaal||1)*(CT_OPMAAK.maat||1)*(f.regel||1.2));
           const toonO=w=>f.caps?w.toUpperCase():w;
           // regelterugloop binnen 940px
           const woordenO=actief.tekst.split(/\s+/); const regelsO=[]; let rO='';
@@ -4990,7 +5010,7 @@ async function voRender(alleenMuziek){
       // einde, zodat de kijker eerst de hook leest en dan de vervolgstap ziet.
       if(CT.ctaOverlay&&CT.ctaOverlay.tekst&&t>=(CT.ctaOverlay.na||0)){
         const cs=CT.ctaOverlay.stijl||'zwartblok';
-        ctx.font=`${CT.ctaOverlay.vet?700:400} 42px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif`;
+        ctx.font=`${CT.ctaOverlay.vet?700:400} ${Math.round(42*((CT.ctaOverlay.maat)||1))}px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif`;
         ctx.textAlign='left';
         const ctaB=ctx.measureText(CT.ctaOverlay.tekst).width;
         const cx=540-ctaB/2, cy=510;
@@ -5022,7 +5042,7 @@ async function voRender(alleenMuziek){
           // Lange brokken wikkelen naar meerdere gecentreerde regels in
           // plaats van de volle breedte over; in de blok-stijl krijgt elke
           // regel zijn eigen balk, zoals de A-knop van Instagram.
-          const regelH=Math.round(64*(f.schaal||1)*(f.regel||1.2));
+          const regelH=Math.round(64*(f.schaal||1)*(CT_OPMAAK.maat||1)*(f.regel||1.2));
           const regelsK=[]; let rijK=[]; let rijBreed=0;
           for(const w of woorden){
             const wb=ctx.measureText(toon(w.w)+' ').width;
@@ -5225,6 +5245,7 @@ async function ctLijstLaden(){
     if(!CT.ctaOverlay.stijl) CT.ctaOverlay.stijl='zwartblok';
     if(CT.ctaOverlay.vet===undefined) CT.ctaOverlay.vet=true;
     CT_OPMAAK=(p.pakket&&p.pakket.opmaak)||{...(CT_STIJLEN.find(x=>x.key===CT.stijl)||CT_STIJLEN[0]).opmaak,font:'klassiek'};
+    if(!CT_OPMAAK.maat) CT_OPMAAK.maat=1;
     $('#ct_onderwerp').value=p.onderwerp||'';
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
