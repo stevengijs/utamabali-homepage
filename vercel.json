@@ -1,4 +1,16 @@
 {
+  "redirects": [
+    {
+      "source": "/webinar/replay",
+      "destination": "/webinar-vorige/replay",
+      "permanent": false
+    },
+    {
+      "source": "/webinar/utama-webinar.ics",
+      "destination": "/webinar-vorige/utama-webinar.ics",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/r/:code",
