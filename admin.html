@@ -1069,7 +1069,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-campagnes-taai';
+const APP_VERSIE='2026-08-30-campagnes-taai2';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1905,7 +1905,7 @@ async function bcCampagnesLaden(vervolg){
   // Er staat vanaf de eerste tel iets in het vak. Blijft "laden" staan, dan
   // komt het antwoord van de server nooit aan en is dát het spoor; voorheen
   // was een lege sectie niet te onderscheiden van een sectie die nog bezig was.
-  if(!vervolg && !vak.childElementCount) vak.innerHTML='<div class="muted" style="padding:0 18px 8px;font-size:13px">Campagne-overzicht laden…</div>';
+  if(!vervolg && !vak.childElementCount) vak.innerHTML=`<div class="muted" style="padding:0 18px 8px;font-size:13px">Campagne-overzicht laden… <span style="opacity:.55">(${APP_VERSIE})</span></div>`;
   // De aanroep via de supabase-client kan in zeldzame gevallen eindeloos
   // wachten (de client zet verzoeken in een rij achter een token-verversing
   // die nooit afrondt). Daarom: maximaal 6 seconden wachten en daarna hetzelfde
