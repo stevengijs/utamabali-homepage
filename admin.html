@@ -1079,7 +1079,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-trim-overal';
+const APP_VERSIE='2026-08-30-muziek-startpunt';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3786,7 +3786,16 @@ async function voMuziekPaneel(vak){
     <div class="vo-knoppen" style="margin-top:8px">
       <button class="bc-zoekactie" id="mz_upload">⬆ Track toevoegen</button>
       ${VO.muziek?`<span class="muted" style="font-size:12px">actief: ${esc(VO.muziek.name||'eigen track')}</span>`:''}
-    </div>`;
+    </div>
+    ${VO.muziek&&VO.muziekUrl?`<div style="margin-top:10px">
+      <div class="bc-lab" style="margin:0 0 4px">Startpunt in het nummer</div>
+      <div style="display:flex;align-items:center;gap:10px;max-width:420px">
+        <button class="bc-zoekactie" id="mz_starttest" title="Beluister vanaf het gekozen punt" style="flex:none;padding:0 4px">▶</button>
+        <input type="range" id="mz_start" min="0" max="100" step="0.1" value="0" style="flex:1;min-width:0">
+        <span class="muted" id="mz_startlab" style="font-size:12px;min-width:40px;font-variant-numeric:tabular-nums">0:00</span>
+      </div>
+      <div class="bc-hint" style="margin-top:2px">De reel gebruikt het nummer vanaf dit punt (en herhaalt ook vanaf hier).</div>
+    </div>`:''}`;
   vak.querySelectorAll('[data-mzpre]').forEach(b=>b.onclick=()=>{
     if(VO_PREVIEW){ VO_PREVIEW.pause(); const was=VO_PREVIEW.dataset===b.dataset; VO_PREVIEW=null;
       vak.querySelectorAll('[data-mzpre]').forEach(x=>x.textContent='▶'); if(was) return; }
@@ -3798,6 +3807,7 @@ async function voMuziekPaneel(vak){
     if(VO_PREVIEW){VO_PREVIEW.pause();VO_PREVIEW=null;}
     VO.muziek={name:b.dataset.mznaam};
     VO.muziekUrl=ctPubliek(b.dataset.mzkies);
+    VO.muziekStart=0;
     if(VO.stand==='video'){
       // De al gebakken video bevat nog de oude muziek; meteen opnieuw bakken
       // zodat wat je hoort altijd klopt met wat er "actief" staat.
@@ -3808,6 +3818,36 @@ async function voMuziekPaneel(vak){
       voTekenen();
     }
   });
+  // Startpunt-schuif: kies vanaf welk punt in het nummer de reel begint.
+  const st=vak.querySelector('#mz_start');
+  if(st){
+    const lab=vak.querySelector('#mz_startlab'), test=vak.querySelector('#mz_starttest');
+    const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+    const meta=new Audio(VO.muziekUrl);
+    meta.addEventListener('loadedmetadata',()=>{
+      st.max=Math.max((meta.duration||60)-1,1).toFixed(1);
+      st.value=Math.min(VO.muziekStart||0, parseFloat(st.max));
+      lab.textContent=fmt(parseFloat(st.value));
+    });
+    st.oninput=()=>{ lab.textContent=fmt(parseFloat(st.value)||0); };
+    st.onchange=()=>{
+      VO.muziekStart=parseFloat(st.value)||0;
+      if(VO_PREVIEW){VO_PREVIEW.pause();VO_PREVIEW=null;vak.querySelectorAll('[data-mzpre]').forEach(x=>x.textContent='▶');if(test)test.textContent='▶';}
+      if(VO.stand==='video'){
+        toast('Startpunt gekozen; ik bak de video opnieuw met dit stuk van het nummer','ok');
+        voRender(!VO.url);
+      } else {
+        toast(`Muziek start straks op ${fmt(VO.muziekStart)}`,'ok');
+      }
+    };
+    if(test) test.onclick=()=>{
+      if(VO_PREVIEW){VO_PREVIEW.pause();VO_PREVIEW=null;test.textContent='▶';return;}
+      VO_PREVIEW=new Audio(VO.muziekUrl); VO_PREVIEW.volume=0.6;
+      VO_PREVIEW.addEventListener('loadedmetadata',()=>{try{VO_PREVIEW.currentTime=parseFloat(st.value)||0;}catch(e){}});
+      VO_PREVIEW.play(); test.textContent='◼';
+      VO_PREVIEW.onended=()=>{test.textContent='▶';VO_PREVIEW=null;};
+    };
+  }
   const up=$('#mz_upload');
   if(up) up.onclick=()=>{
     const k=document.createElement('input'); k.type='file'; k.accept='audio/*'; k.multiple=true;
@@ -4610,7 +4650,7 @@ async function wkTekenen(){
    van de opname; bij normaal voorleestempo zit dat er dicht op. */
 let VO={stand:'leeg', blob:null, url:null, woorden:[], duur:0, rec:null, spraak:null,
         t0:0, wijzer:0, video:null, videoPad:null, mime:'',
-        muziek:null, muziekUrl:null, muziekVol:0.25};
+        muziek:null, muziekUrl:null, muziekVol:0.25, muziekStart:0};
 
 function voWoorden(){
   const cap=(($('#ct_caption')&&$('#ct_caption').value)||'').trim();
@@ -4651,7 +4691,7 @@ function voTekenen(){
       const k=document.createElement('input'); k.type='file'; k.accept='audio/*';
       k.onchange=()=>{ const f=k.files&&k.files[0]; if(!f) return;
         if(VO.muziekUrl) URL.revokeObjectURL(VO.muziekUrl);
-        VO.muziek=f; VO.muziekUrl=URL.createObjectURL(f); voTekenen(); };
+        VO.muziek=f; VO.muziekUrl=URL.createObjectURL(f); VO.muziekStart=0; voTekenen(); };
       k.click();
     };
     const vol=$('#vo_mvol');
@@ -5013,7 +5053,13 @@ async function voRender(alleenMuziek){
     // een voice-over hoort die laag te staan; de slider is wat de kijker hoort.
     let muziek=null;
     if(VO.muziekUrl){
-      muziek=new Audio(); muziek.crossOrigin='anonymous'; muziek.src=VO.muziekUrl; muziek.loop=true;
+      muziek=new Audio(); muziek.crossOrigin='anonymous'; muziek.src=VO.muziekUrl;
+      // De lus start weer op het gekozen startpunt, niet op 0: anders hoor je
+      // bij herhaling ineens een ander stuk van het nummer dan je uitkoos.
+      const mStart=Math.max(0, VO.muziekStart||0);
+      muziek.addEventListener('loadedmetadata',()=>{ try{ muziek.currentTime=Math.min(mStart, Math.max((muziek.duration||1)-1,0)); }catch(e){} });
+      muziek.addEventListener('timeupdate',()=>{ if(muziek.duration && muziek.currentTime>=muziek.duration-0.08) muziek.currentTime=mStart; });
+      muziek.addEventListener('ended',()=>{ muziek.currentTime=mStart; muziek.play().catch(()=>{}); });
       const gain=ac.createGain(); gain.gain.value=VO.muziekVol;
       ac.createMediaElementSource(muziek).connect(gain); gain.connect(bestem);
     }
@@ -5205,7 +5251,7 @@ async function voRender(alleenMuziek){
     }
     await ac.resume(); opn.start(500);
     if(stem) await stem.play();
-    if(muziek) await muziek.play();
+    if(muziek){ try{ muziek.currentTime=Math.max(0,VO.muziekStart||0); }catch(e){} await muziek.play(); }
     start=performance.now();
     requestAnimationFrame(teken);
     await new Promise(ok=>setTimeout(ok,(duur+0.4)*1000));
