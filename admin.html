@@ -1079,7 +1079,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-lopend-geel';
+const APP_VERSIE='2026-08-30-audio-in-preview';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3341,6 +3341,10 @@ function ctPakketTekenen(){
       ${kop('Preview, kies je variant')}
       <div id="ct_preview"></div>
       <div class="bc-hint" id="ct_previewhint"></div>
+      ${CT.soort==='reel'?`<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
+        ${kop('Audio: voice-over en muziek')}
+        <div id="ct_voice"></div>
+      </div>`:''}
     </div>
 
 
@@ -3352,7 +3356,7 @@ function ctPakketTekenen(){
         <button class="bc-zoekactie" data-ovlweg="${i}" title="Regel verwijderen" style="flex:none;padding:0 4px">✕</button>
       </div>`).join('')}
       <div class="vo-knoppen" style="margin-top:4px"><button class="bc-zoekactie" id="ct_ovl_plus">＋ regel toevoegen</button></div>
-      <div class="bc-hint">Dit ziet de kijker in beeld terwijl de reel speelt, regel voor regel op het aangegeven moment. Je hoeft hier niets voor in te spreken: de knop hieronder bakt deze tekst automatisch in je b-roll, met je muziek eronder als die klaarstaat. Wil je liever je eigen stem eronder: scrol naar het vak <b>Audio: voice-over en muziek</b> hieronder en klik <b>🎙 Neem voice-over op</b>; je leest gewoon de caption voor, en dan vervalt dit script en loopt je gesproken tekst als ondertiteling mee, exact op je stem. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
+      <div class="bc-hint">Dit ziet de kijker in beeld terwijl de reel speelt, regel voor regel op het aangegeven moment. Je hoeft hier niets voor in te spreken: de knop hieronder bakt deze tekst automatisch in je b-roll, met je muziek eronder als die klaarstaat. Wil je liever je eigen stem eronder: ga naar <b>Audio: voice-over en muziek</b> onderin het vak Preview en klik <b>🎙 Neem voice-over op</b>; je leest gewoon de caption voor, en dan vervalt dit script en loopt je gesproken tekst als ondertiteling mee, exact op je stem. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
       <div class="vo-knoppen" style="margin-top:6px">
         <button class="btn btn-primary btn-sm" id="ct_overlaybak">🎬 Bak deze tekst in de video</button>
       </div>
@@ -3383,11 +3387,6 @@ function ctPakketTekenen(){
         <div class="bc-hint" style="margin:4px 0 0">${esc({comment:'Comment: een volwassen vraag in de caption; reageer zelf op elke reactie.',save:'Save: dit is bewaar-content; de caption vraagt om hem op te slaan.',share:'Share: gemaakt om door te sturen naar een compagnon of partner.',follow:'Follow: de caption geeft een reden om te volgen (serie, visie).',dm:'DM: nodigt uit tot een priveberoep zonder magneetwoord.'}[pk.cta_type]||'Een natuurlijke CTA in de caption.')}</div>`}
       </div>
     </div>
-
-    ${CT.soort==='reel'?`<div class="ct-vak" style="grid-column:1/-1">
-      ${kop('Audio: voice-over en muziek')}
-      <div id="ct_voice"></div>
-    </div>`:''}
 
     <div class="ct-vak">
       ${kop('Plaatsen')}
