@@ -618,8 +618,9 @@
   .bc-bar{flex:1 1 90px;min-width:70px;height:4px;border-radius:2px;background:#eef0ef;overflow:hidden}
   .bc-bar i{display:block;height:100%;background:var(--brand)}
   .bc-camp .btn{padding:5px 12px;font-size:12px;font-weight:600}
-  .bc-camp .btn-primary{background:#fff;color:var(--brand);border:1px solid var(--brand)}
-  .bc-camp .btn-primary:hover{background:var(--brand);color:#fff}
+  .bc-annuleer{flex:none;font-size:11.5px;color:var(--muted);background:none;border:none;
+               cursor:pointer;text-decoration:underline;padding:2px 4px}
+  .bc-annuleer:hover{color:#b42318}
   .bc-zoekrij{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:0 18px}
   .bc-zoek{flex:1 1 320px;min-width:0;padding:9px 12px;font:inherit;font-size:13.5px;
            color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px}
@@ -1079,7 +1080,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-30-trimmer-sleepbaar';
+const APP_VERSIE='2026-08-30-campagne-annuleren';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1937,6 +1938,7 @@ function bcCampagnesHtml(data){
     return `<div class="bc-camp ${loopt?'loopt':''}">
       <span class="bc-camp-naam" title="${esc(c.onderwerp||'')}">${esc(c.naam||'(zonder naam)')}</span>
       <span class="bc-camp-kan">${c.kanaal==='whatsapp'?'WhatsApp':'E-mail'}</span>
+      ${!loopt&&c.status!=='klaar'?`<span class="bc-camp-kan"${c.status==='geannuleerd'?' style="background:#fbeaea;color:#b42318"':''}>${esc(c.status)}</span>`:''}
       <div class="bc-bar" title="${behandeld} van ${c.doel} behandeld"><i style="width:${pct(behandeld,c.doel)}%"></i></div>
       <div class="bc-cijfers">
         <span><b>${c.verzonden||0}</b> verstuurd</span>
@@ -1946,7 +1948,8 @@ function bcCampagnesHtml(data){
         ${c.mislukt?`<span class="err"><b>${c.mislukt}</b> mislukt</span>`:''}
         ${loopt?`<span><b>${c.wachtend}</b> te gaan</span>`:''}
       </div>
-      ${loopt?`<button type="button" class="btn btn-primary btn-sm" data-verder="${c.id}">Verder met deze golf</button>`
+      ${loopt?`<button type="button" class="btn btn-primary btn-sm" data-verder="${c.id}">Verder met deze golf</button>
+               <button type="button" class="bc-annuleer" data-annuleer="${c.id}" title="Zet de campagne stop; wat al verzonden is blijft geregistreerd">Annuleren</button>`
              :`<button type="button" class="bc-zoekactie" data-detail="${c.id}">Wie kreeg wat</button>`}
     </div>`;
   };
@@ -2005,8 +2008,24 @@ document.addEventListener('click',e=>{
   const v=e.target.closest&&e.target.closest('[data-verder]');
   if(v){ bcCampagneHervatten(v.dataset.verder); return; }
   const d=e.target.closest&&e.target.closest('[data-detail]');
-  if(d) bcCampagneDetail(d.dataset.detail);
+  if(d){ bcCampagneDetail(d.dataset.detail); return; }
+  const a=e.target.closest&&e.target.closest('[data-annuleer]');
+  if(a) bcCampagneAnnuleren(a.dataset.annuleer);
 });
+async function bcCampagneAnnuleren(id){
+  if(!confirm('Deze campagne annuleren? Wat al verzonden is blijft staan; de rest van de lijst krijgt niets meer.')) return;
+  try{
+    const tok=bcSessieToken();
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/broadcast_campagne_annuleren`,{
+      method:'POST', signal:AbortSignal.timeout(12000),
+      headers:{apikey:SUPABASE_ANON, Authorization:'Bearer '+tok, 'Content-Type':'application/json'},
+      body:JSON.stringify({p_id:id})});
+    const uit=await r.json().catch(()=>null);
+    if(!r.ok||!uit||uit.ok===false) throw new Error((uit&&uit.reden)||('server gaf '+r.status));
+    toast('Campagne geannuleerd','ok');
+  }catch(e){ toast('Annuleren lukte niet: '+String(e&&e.message||e),'err'); }
+  BC.campHtml=null; bcCampagnesLaden();
+}
 
 /* Verder met een campagne die nog loopt. Alles komt uit de campagne zelf, niet
    uit het geheugen van de pagina: template, variabelen, golfgrootte, tekst. Je
