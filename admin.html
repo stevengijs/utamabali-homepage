@@ -5579,7 +5579,7 @@ async function ctExporteer(voorApp){
     const r=await fetch(location.pathname+'?vc='+Date.now(),{cache:'no-store'});
     const m=(await r.text()).match(/APP_VERSIE='([^']+)'/);
     if(m&&m[1]!==APP_VERSIE){
-      versieCheck._laatst=0; versieCheck();
+      _versieLaatst=0; versieCheck();
       toast('Je tab draait een oudere versie van de studio. Ververs de pagina (Cmd+R) en download daarna opnieuw; anders wijkt de video af van de preview.','err');
       return;
     }
