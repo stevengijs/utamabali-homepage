@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-eerste-reactie-helder';
+const APP_VERSIE='2026-08-31-comment-met-cta';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3016,6 +3016,18 @@ const ctPubliek=pad=>{try{return sb.storage.from(CT_BUCKET).getPublicUrl(pad).da
 
 // Ook oudere pakketten waarin het model kale woorden leverde tonen en
 // kopieren als echte hashtags.
+/* De volledige eerste comment: de magneet-CTA (met wat je dan krijgt) plus
+   de hashtags. Zonder magneetwoord alleen de hashtags. */
+function ctEersteReactie(pk){
+  const tags=ctHashtags(pk&&pk.eerste_reactie);
+  if(!pk||!pk.comment_woord) return tags;
+  const b=String(pk.dm_belofte||'').trim();
+  let zin;
+  if(/^ik stuur je\b/i.test(b)) zin='Reageer '+pk.comment_woord+', dan stuur ik je'+b.slice(11).replace(/\.+$/,'')+'.';
+  else if(b) zin='Reageer '+pk.comment_woord+' en je krijgt van mij: '+b.replace(/\.+$/,'')+'.';
+  else zin='Reageer '+pk.comment_woord+', dan stuur ik het je in je DM.';
+  return zin+'\n\n'+tags;
+}
 function ctHashtags(t){
   return String(t||'').split(/[\s,]+/).filter(Boolean)
     .map(w=>w.startsWith('#')?w:'#'+w.replace(/^#+/,'')).join(' ');
@@ -3502,7 +3514,7 @@ function ctPakketTekenen(){
     <div class="ct-vak">
       ${kop('Eerste reactie onder je post','hashtags','x')}
       <div class="bc-hint" style="margin:0 0 6px">Plak dit als eerste comment onder je eigen post (Direct posten doet dit automatisch):</div>
-      <div style="font-size:13px;line-height:1.6;color:var(--muted)" id="ct_hashtags">${esc(ctHashtags(pk.eerste_reactie))}</div>
+      <div style="font-size:13px;line-height:1.6;color:var(--muted);white-space:pre-wrap" id="ct_hashtags">${esc(ctEersteReactie(pk))}</div>
       <div style="margin-top:12px">
         ${pk.comment_woord?`${kop('Wat de DM-bot doet bij deze post')}
         <div class="bc-hint" style="margin:4px 0 0">Je caption eindigt met de vraag om <span class="ct-magneet" style="font-size:11px;padding:1px 8px">${esc(pk.comment_woord)}</span> te reageren. Wie dat doet, krijgt automatisch deze DM van de bot: <i>"${esc(pk.dm_belofte||'')}"</i>. Jij hoeft hier niets te plaatsen; controleer alleen dat de bot dit ook echt kan waarmaken voordat je plaatst.</div>`
@@ -3561,7 +3573,7 @@ function ctPakketTekenen(){
   vak.querySelectorAll('[data-kopieer]').forEach(b=>b.onclick=()=>{
     const wat=b.dataset.kopieer;
     const tekst = wat==='caption' ? $('#ct_caption').value
-      : wat==='hashtags' ? ctHashtags(CT.pakket.eerste_reactie)
+      : wat==='hashtags' ? ctEersteReactie(CT.pakket)
       : wat==='overlays' ? (CT.pakket.overlays||[]).map(o=>`${o.tijd}  ${o.tekst}`).join('\n')
       : wat==='slides' ? (CT.pakket.slides||[]).map((sl,i)=>`${i+1}. ${sl.kop}${sl.sub?'\n   '+sl.sub:''}`).join('\n')
       : '';
@@ -5579,9 +5591,9 @@ async function ctExporteer(voorApp){
     if(!VO.videoBlob||VO.bakVinger!==ctBakVinger()){toast('De video kon niet gemaakt worden','err');return;}
     const a=document.createElement('a'); a.href=VO.video; a.download='reel-'+Date.now(); a.click();
     const cap=($('#ct_caption')&&$('#ct_caption').value)||(CT.pakket&&CT.pakket.caption)||'';
-    const tags=CT.pakket?ctHashtags(CT.pakket.eerste_reactie):'';
-    ctKopieer(cap+(tags?'\n\n'+tags:''));
-    toast('Video gedownload; caption en hashtags staan op je klembord','ok');
+    const tags=CT.pakket?ctEersteReactie(CT.pakket):'';
+    ctKopieer(cap+(tags?'\n\n--- eerste comment ---\n'+tags:''));
+    toast('Video gedownload; caption en de eerste comment staan op je klembord','ok');
   } finally { if(knop) knop.disabled=false; }
 }
 /* Een tab met oude code bakt of post oude resultaten; dat blokkeren we hard. */
