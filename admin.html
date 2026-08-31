@@ -530,6 +530,9 @@
   .ig-scriptregel{position:absolute;top:52%;left:12px;right:12px;transform:translateY(-50%);
                   text-align:center;color:#fff;font-weight:700;font-size:11.5px;line-height:1.5;
                   text-shadow:0 1px 6px rgba(0,0,0,.8);pointer-events:none}
+  .ig-subs{position:absolute;bottom:24%;left:12px;right:12px;text-align:center;color:#fff;
+           font-weight:800;font-size:11.5px;line-height:1.5;
+           text-shadow:0 1px 6px rgba(0,0,0,.85);pointer-events:none}
   /* Mediabibliotheek */
   .bib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
   .bib-item{position:relative;aspect-ratio:4/5;border-radius:9px;overflow:hidden;cursor:pointer;
@@ -1085,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-wysiwyg-geluid';
+const APP_VERSIE='2026-08-31-stem-in-preview';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3202,10 +3205,19 @@ function ctTeken(){
   ctMediaTekenen();
 }
 
+/* Dezelfde brok-indeling als de bak: afbreken op zinseinde of na 4 woorden;
+   leestekens sturen wel maar komen niet in beeld. */
+function voLiveBrokken(){
+  const uit=[]; let brok=[];
+  (VO.woorden||[]).forEach(w=>{ brok.push(w);
+    if(/[.!?]$/.test(w.w)||brok.length>=4){uit.push(brok);brok=[];} });
+  if(brok.length)uit.push(brok);
+  return uit;
+}
 /* Geluid bij de previews. Op een gebakken video zetten we simpelweg het echte
-   geluid van de eerste kaart aan (stem, tekst-timing en muziek zitten er al
-   perfect synchroon in). Vóór het bakken spelen we de gekozen muziek los mee,
-   startend op het gekozen startpunt en gelijkgetrokken met de videotijd. */
+   geluid van de eerste kaart aan. Vóór het bakken spelen muziek EN je
+   ingesproken stem live mee, met de ondertiteling erbij, precies zoals het
+   gebakken bestand gaat klinken en ogen. */
 function ctPreviewGeluid(){
   const vids=[...document.querySelectorAll('#ct_preview video')];
   const gebakken=CT.mediaOrigineel&&CT.mediaOrigineel.length&&CT.media[0]&&CT.media[0].path!==CT.mediaOrigineel[0].path;
@@ -3222,14 +3234,56 @@ function ctPreviewGeluid(){
   if(!v.dataset.mzkoppel){ v.dataset.mzkoppel='1';
     v.addEventListener('timeupdate',()=>{
       const mz=CT._mzPrev; if(!mz||!CT.geluid) return;
-      const doel=(VO.muziekStart||0)+Math.max(0, v.currentTime-((CT.trim&&CT.trim.van)||0));
+      // Met een stem is de stem de klok (het beeld loopt eronder in een lus,
+      // precies zoals in de bak); zonder stem volgt de muziek de videotijd.
+      const st=CT._stemPrev;
+      const doel=(VO.muziekStart||0)+((st&&!st.paused)?st.currentTime
+        :Math.max(0, v.currentTime-((CT.trim&&CT.trim.van)||0)));
       if(Math.abs(mz.currentTime-doel)>0.25){ try{mz.currentTime=doel;}catch(e){} }
       if(v.paused&&!mz.paused) mz.pause();
       if(!v.paused&&mz.paused) mz.play().catch(()=>{});
     });
-    v.addEventListener('pause',()=>{ if(CT._mzPrev) CT._mzPrev.pause(); });
+    v.addEventListener('pause',()=>{ if(CT._mzPrev) CT._mzPrev.pause(); if(CT._stemPrev) CT._stemPrev.pause(); });
   }
   if(!v.paused) CT._mzPrev.play().catch(()=>{});
+  ctPreviewStem(vids[0]);
+}
+/* De ingesproken stem live in de preview, met karaoke-ondertiteling. */
+function ctPreviewStem(v){
+  const subsEls=[...document.querySelectorAll('[data-live-subs]')];
+  const gebakken=CT.mediaOrigineel&&CT.mediaOrigineel.length&&CT.media[0]&&CT.media[0].path!==CT.mediaOrigineel[0].path;
+  const wilStem=CT.geluid&&!gebakken&&typeof VO!=='undefined'&&VO&&VO.url&&(VO.woorden||[]).length&&v;
+  if(!wilStem){
+    if(CT._stemPrev){CT._stemPrev.pause();CT._stemPrev=null;}
+    subsEls.forEach(e=>e.style.display='none');
+    return;
+  }
+  if(!CT._stemPrev||CT._stemPrevUrl!==VO.url){
+    if(CT._stemPrev) CT._stemPrev.pause();
+    CT._stemPrev=new Audio(VO.url); CT._stemPrevUrl=VO.url;
+    CT._stemPrev.addEventListener('timeupdate',()=>{
+      const st=CT._stemPrev; if(!st) return;
+      const tt=st.currentTime+0.15; // zelfde leesvoorsprong als de bak
+      const brokken=voLiveBrokken();
+      let actief=null;
+      for(let i=brokken.length-1;i>=0;i--){ const b=brokken[i];
+        if(tt>=(b[0].t||0)){ actief=b; break; } }
+      const tot=actief?(actief[actief.length-1].t??1e9)+0.35:0;
+      const tekst=(actief&&tt<=tot)?actief.map(w=>String(w.w).replace(/[.!?]+$/,'')).join(' '):'';
+      document.querySelectorAll('[data-live-subs]').forEach(e=>{
+        if(tekst){e.textContent=tekst;e.style.display='block';} else e.style.display='none';
+      });
+    });
+    CT._stemPrev.addEventListener('ended',()=>{
+      document.querySelectorAll('[data-live-subs]').forEach(e=>e.style.display='none');
+    });
+  }
+  if(!v.dataset.stemkoppel){ v.dataset.stemkoppel='1';
+    v.addEventListener('play',()=>{ const st=CT._stemPrev; if(!st) return;
+      if(st.ended) st.currentTime=0;
+      st.play().catch(()=>{}); });
+  }
+  if(!v.paused) CT._stemPrev.play().catch(()=>{});
 }
 /* Laat een videoelement alleen het gekozen trim-stuk afspelen. Leest CT.trim
    live, dus schuiven in de trimmer werkt direct door in elke weergave.
@@ -3819,7 +3873,8 @@ function ctPreviewTekenen(){
               const pill=cs==='zwartblok'?'<span style="background:rgba(0,0,0,.85);padding:3px 10px;border-radius:7px;display:inline-block">':cs==='witblok'?'<span style="background:#fff;padding:3px 10px;border-radius:7px;display:inline-block">':'<span>';
               return `<div style="${basis}${per}">${pill}${esc(CT.ctaOverlay.tekst)}</span></div>`;})():''}
           </div>
-          <div class="ig-scriptregel" data-live-script style="display:none"></div>`}
+          <div class="ig-scriptregel" data-live-script style="display:none"></div>
+          <div class="ig-subs" data-live-subs style="display:none"></div>`}
           <div class="ig-reelhud">
             <div class="onder">
               <div class="wie"><span class="ig-avatar"><i>S</i></span> stevenbalivillas <span class="volg">Volgen</span></div>
