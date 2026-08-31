@@ -507,6 +507,11 @@
   .ig-frame.reel .ig-media canvas.ig-live{width:100%;aspect-ratio:9/16;display:block;background:#000}
   .ig-reelhud{position:absolute;inset:0;display:flex;pointer-events:none}
   .ig-reelhud .meer{pointer-events:auto}
+  /* Uitgeklapte caption: zoals in de app dimt het hele beeld en scrollt de
+     tekst binnen het onderste deel, in plaats van kaal over de video te vallen. */
+  .ig-reelhud.open{background:rgba(0,0,0,.6)}
+  .ig-reelhud.open .onder{background:none}
+  .ig-reelhud.open .onder .cap{display:block;-webkit-line-clamp:unset;max-height:250px;overflow:auto;pointer-events:auto}
   .ig-reelhud .onder{margin-top:auto;padding:10px 54px 12px 10px;color:#fff;width:100%;
                      background:linear-gradient(transparent,rgba(0,0,0,.55))}
   .ig-reelhud .onder .wie{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;margin-bottom:6px}
@@ -1089,7 +1094,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-een-tekenaar';
+const APP_VERSIE='2026-08-31-caption-dimt';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3935,10 +3940,10 @@ function ctPreviewTekenen(){
             ? `<video class="ig-bron" src="${ctPubliek(m0.path)}" muted playsinline loop autoplay crossorigin="anonymous" style="position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none"></video>`
             : `<img class="ig-bron" src="${ctPubliek(m0.path)}" alt="" crossorigin="anonymous" style="position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none">`}
           <canvas class="ig-live" width="540" height="960" data-stijl="${st.key}"></canvas>
-          <div class="ig-reelhud">
+          <div class="ig-reelhud${CT.capOpen?' open':''}">
             <div class="onder">
               <div class="wie"><span class="ig-avatar"><i>S</i></span> stevenbalivillas <span class="volg">Volgen</span></div>
-              <div class="cap" style="${CT.capOpen?'display:block;-webkit-line-clamp:unset':''}">${esc(kort)}${meerHtml}</div>
+              <div class="cap">${esc(kort)}${meerHtml}</div>
               <div class="audio">♫ stevenbalivillas · Origineel audio</div>
             </div>
             <div class="zij">
