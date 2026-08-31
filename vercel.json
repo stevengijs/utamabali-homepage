@@ -57,5 +57,12 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/pma",
+      "destination": "/heb-je-een-pt-pma-nodig-om-op-bali-te-investeren",
+      "permanent": false
+    }
   ]
 }
