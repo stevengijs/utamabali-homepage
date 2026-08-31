@@ -1094,7 +1094,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-vervolgcampagne';
+const APP_VERSIE='2026-08-31-vervolg-waterdicht';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1654,7 +1654,7 @@ let BC = {fac:null, sjablonen:[],
           // zodat het scherm nooit meer "gaat naar 692" zegt terwijl er 168 gaan.
           // vervolgUit/vervolgVan: uitsluitingen voor een vervolgcampagne, zodat
           // wie de vorige al kreeg hem nooit dubbel krijgt.
-          vast:null, vervolgUit:new Set(), vervolgVan:null};
+          vast:null, vervolgUit:new Set(), vervolgVan:null, getest:false};
 
 const bcArg = a => a && a.length ? a : null;
 const bcFilters = () => ({
@@ -2053,15 +2053,19 @@ async function bcVervolgStarten(id){
   if(ladenUit.error||alUit.error||!camp||camp.ok===false){toast('Kon de campagne niet laden','err');return;}
   if(camp.kanaal==='whatsapp'){toast('Een vervolg klaarzetten werkt voor e-mailcampagnes; een WhatsApp-campagne loopt via golven gewoon door','err');return;}
   bcCampVergeten();
-  BC.camp=null; BC.vast=null; BC.waGolven=0; BC.verzendKanaal='email';
+  BC.camp=null; BC.vast=null; BC.waGolven=0; BC.getest=false; BC.verzendKanaal='email';
   BC.layout=camp.layout||'utama'; BC.golf=camp.golf_grootte||40;
   BC.vervolgUit=new Set(alUit.data||[]);
   BC.vervolgVan={id, naam:camp.naam||camp.onderwerp||'vorige campagne'};
+  // De selectie opnieuw laden: de server sluit de eerdere ontvangers nu uit
+  // vóór de 2000-cap, zodat ook aanwas achter die grens gewoon meetelt.
+  toast('Vervolg voorbereiden…','ok');
+  await bcSelectieLaden();
   const nieuw=bcMailbaar().length;
   if(!nieuw){
     BC.vervolgUit=new Set(); BC.vervolgVan=null;
     toast('Iedereen in je huidige selectie kreeg deze campagne al; er valt niets na te sturen','ok');
-    bcTelling(); return;
+    await bcSelectieLaden(); return;
   }
   bcOpstellen(null);
   if($('#bc_naam')) $('#bc_naam').value=(camp.naam||'campagne')+' — vervolg';
@@ -2100,10 +2104,20 @@ async function bcCampagneHervatten(id){
   BC.golf=data.golf_grootte||40;
   BC.layout=data.layout||'utama';
   // De lijst van deze campagne ligt vast; dat moet het scherm blijven zeggen,
-  // hoe de filters ook staan. Een eventueel klaargezet vervolg vervalt hier.
+  // hoe de filters ook staan.
   BC.vast={naam:data.naam||data.onderwerp||'', doel:data.doel||0,
            resterend:data.resterend||0, verzonden:data.verzonden||0};
-  BC.vervolgUit=new Set(); BC.vervolgVan=null;
+  // Was dit een vervolgcampagne (relatie opgeslagen in de filters), dan komt
+  // de uitsluiting mee terug. Zonder dit zou hervatten na alleen een proefmail
+  // de uitsluiting kwijtraken en de volgende opslag de VOLLE selectie
+  // vastleggen: dan kreeg de halve lijst de mail dubbel.
+  const vvId=data.filters&&data.filters.vervolg_van;
+  if(vvId){
+    BC.vervolgVan={id:vvId, naam:(data.filters.vervolg_naam||'vorige campagne')};
+    try{ const {data:al}=await sb.rpc('broadcast_al_gemaild',{p_id:vvId}); BC.vervolgUit=new Set(al||[]); }
+    catch(e){ BC.vervolgUit=new Set(); }
+    await bcSelectieLaden();
+  } else { BC.vervolgUit=new Set(); BC.vervolgVan=null; }
   if(data.kanaal==='whatsapp'){
     BC.waVars=Array.isArray(data.wa_variabelen)?data.wa_variabelen:[];
     BC.waTplNaam=data.wa_template;   // het template zelf komt uit de lijst van Meta
@@ -2144,7 +2158,11 @@ async function bcLaad(){
     p_bronnen:f.bronnen, p_funnels:f.funnels, p_projecten:f.projecten, p_banden:f.banden,
     p_timings:f.timings, p_talen:f.talen, p_vastgoed:f.vastgoed, p_doelen:f.doelen,
     p_statussen:f.statussen, p_temperaturen:f.temperaturen, p_account:f.account,
-    p_klant:f.klant, p_periode:f.periode, p_kanaal:f.kanaal, p_limit:2000});
+    p_klant:f.klant, p_periode:f.periode, p_kanaal:f.kanaal, p_limit:2000,
+    // Vervolgcampagne: de server laat iedereen weg die de vorige campagne al
+    // kreeg, VÓÓR de 2000-cap. Client-side filteren miste anders iedereen
+    // achter de afkapgrens, precies de aanwas waarvoor de knop bestaat.
+    p_zonder_campagne:BC.vervolgVan?BC.vervolgVan.id:null});
   if(error){$('#bc_telling').innerHTML=`<span class="err">${esc(error.message)}</span>`;return;}
   BC.sel=data; BC.uit.clear(); BC.open.clear();
   bcTelling(); bcTabel();
@@ -2163,14 +2181,13 @@ function bcTelling(){
   const account=g.filter(r=>r.heeft_account).length;
   const klanten=g.filter(r=>r.klant).length;
   bcZoekInfo();
-  // Hoeveel van de huidige selectie buiten beeld blijft omdat ze de vorige
-  // campagne al kregen; alleen relevant zolang er een vervolg is klaargezet.
-  const vervolgWeg=BC.vervolgUit&&BC.vervolgUit.size
-    ? ((BC.sel&&BC.sel.rijen)||[]).filter(r=>BC.vervolgUit.has(r.id)).length : 0;
+  // De vervolg-uitsluiting gebeurt server-side (die mensen zitten dus niet in
+  // BC.sel); de teller toont hoeveel ontvangers de vorige campagne had.
+  const vervolgWeg=(BC.vervolgVan&&BC.vervolgUit)?BC.vervolgUit.size:0;
   $('#bc_telling').innerHTML=
     `<b>${g.length}</b> geselecteerd`+
     (uit?` <span class="muted">(${uit} handmatig afgevinkt)</span>`:'')+
-    (vervolgWeg?` <span class="bc-let-inline"><b>${vervolgWeg}</b> uitgesloten: kreeg "${esc((BC.vervolgVan&&BC.vervolgVan.naam)||'de vorige campagne')}" al · <button type="button" class="bc-zoekactie" id="bc_vervolgweg">toch meenemen</button></span>`:'')+
+    (vervolgWeg?` <span class="bc-let-inline"><b>${vervolgWeg}</b> eerdere ontvangers van "${esc((BC.vervolgVan&&BC.vervolgVan.naam)||'de vorige campagne')}" uitgesloten · <button type="button" class="bc-zoekactie" id="bc_vervolgweg">toch meenemen</button></span>`:'')+
     `, waarvan <b>${m.length}</b> met e-mailadres`+
     (g.length-m.length?` <span class="muted">(${g.length-m.length} alleen telefonisch bereikbaar)</span>`:'')+
     (klanten?` &middot; <span class="bc-let-inline"><b>${klanten}</b> is al klant</span>`:'')+
@@ -2179,10 +2196,11 @@ function bcTelling(){
     // campagne samen die stilzwijgend maar een deel van je selectie dekt.
     ((BC.sel&&BC.sel.afgekapt)?`<div class="err" style="margin-top:6px">Deze selectie is groter dan 2000 en wordt afgekapt. Maak hem kleiner met de filters, anders gaat de campagne maar naar de eerste 2000 op naam.</div>`:'');
   const vwKnop=$('#bc_vervolgweg');
-  if(vwKnop) vwKnop.onclick=()=>{
+  if(vwKnop) vwKnop.onclick=async()=>{
     if(!confirm('De uitsluiting opheffen? Wie de vorige campagne al kreeg, krijgt deze mail dan OOK.')) return;
     BC.vervolgUit=new Set(); BC.vervolgVan=null;
-    bcTelling(); bcTabel(); if($('#bc_kop')) bcKanaalTekenen();
+    await bcSelectieLaden(); // de server sloot ze uit, dus de lijst moet opnieuw
+    if($('#bc_kop')) bcKanaalTekenen();
   };
 }
 
@@ -2320,7 +2338,7 @@ function bcOpstellen(hervatCamp){
     // Begin bij het kanaal dat het meeste bereik heeft, maar laat de keuze los.
     if(!m.length) BC.verzendKanaal='whatsapp';
     else if(!w.length) BC.verzendKanaal='email';
-    BC.camp=null; BC.waTpl=null; BC.waTplNaam=null; BC.waVars=[]; BC.waGolven=0;
+    BC.camp=null; BC.waTpl=null; BC.waTplNaam=null; BC.waVars=[]; BC.waGolven=0; BC.getest=false;
   } else {
     // Het template zelf komt uit de lijst van Meta; die kan al geladen zijn.
     BC.waTpl=(BC.waTpls||[]).find(t=>t.naam===BC.waTplNaam)||null;
@@ -2522,18 +2540,21 @@ function bcOpstellen(hervatCamp){
   if(hervatJa) hervatJa.onclick=()=>bcCampagneHervatten(hervat.id);
   const hervatNee=$('#bc_hervatnee');
   if(hervatNee) hervatNee.onclick=()=>{ bcCampVergeten(); $('#bc_hervat').remove(); };
-  document.querySelectorAll('[data-kanaal]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-kanaal]').forEach(b=>b.onclick=async()=>{
     BC.verzendKanaal=b.dataset.kanaal;
-    BC.camp=null; BC.vast=null;         // ander kanaal is een andere campagne
+    BC.camp=null; BC.vast=null; BC.getest=false; // ander kanaal is een andere campagne
+    // Een e-mailvervolg is per WhatsApp betekenisloos (die mensen kregen nooit
+    // een appje); de uitsluiting vervalt dus mee met de kanaalwissel.
+    if(BC.vervolgVan){ BC.vervolgUit=new Set(); BC.vervolgVan=null; await bcSelectieLaden(); }
     bcKanaalTekenen();
   });
   $('#bc_golf').oninput=e=>{ BC.golf=Math.max(1,Math.min(200,Number(e.target.value)||40)); };
-  $('#bc_annuleer').onclick=()=>{
+  $('#bc_annuleer').onclick=async()=>{
     $('#bc_opstel').innerHTML='';
     // De opsteller sluiten laat geen halve toestand achter: geen vastgelegde
     // campagne meer in beeld en geen vervolg-uitsluitingen die stil blijven hangen.
-    BC.camp=null; BC.vast=null;
-    if(BC.vervolgUit.size){ BC.vervolgUit=new Set(); BC.vervolgVan=null; bcTelling(); bcTabel(); }
+    BC.camp=null; BC.vast=null; BC.getest=false;
+    if(BC.vervolgVan){ BC.vervolgUit=new Set(); BC.vervolgVan=null; await bcSelectieLaden(); }
   };
   $('#bc_preview').onclick=bcPreview;
   $('#bc_test').onclick=()=>bcVerstuur(true);
@@ -2610,8 +2631,11 @@ function bcKanaalTekenen(){
     ? `🚀 Golf versturen (${Math.min(BC.golf, n)} van ${n})`
     : `🚀 Versturen naar ${n}`;
   // Bij een campagne die al loopt is het proefbericht allang gestuurd; die knop
-  // opnieuw op slot zetten zou je dwingen je eigen lijst nog een testje te sturen.
-  const loopt = BC.camp && BC.waGolven > 0;
+  // opnieuw op slot zetten zou je dwingen je eigen lijst nog een testje te
+  // sturen. BC.getest onthoudt de proefmail van deze sessie, zodat een
+  // hertekening (klanten overslaan, uitsluiting opheffen) de knop niet
+  // opnieuw op slot gooit.
+  const loopt = (BC.camp && BC.waGolven > 0) || BC.getest;
   verstuur.disabled = !loopt;
   verstuur.title = loopt ? '' : (wa ? 'Stuur eerst een proefbericht' : 'Stuur eerst een proefmail');
 
@@ -2832,7 +2856,12 @@ async function bcBewaar(){
                     : $('#bc_onderwerp').value.trim(),
     p_preheader: wa ? null : ($('#bc_pre').value.trim()||null),
     p_body_html: wa ? null : $('#bc_body').innerHTML,
-    p_ontvangers:ids, p_filters:bcFilters(), p_layout:BC.layout,
+    // De vervolg-relatie reist mee in de filters: wordt deze campagne later
+    // hervat (bijvoorbeeld na alleen een proefmail), dan herstelt het scherm
+    // de uitsluiting in plaats van stilletjes de volle selectie te pakken.
+    p_ontvangers:ids,
+    p_filters:{...bcFilters(), ...(BC.vervolgVan?{vervolg_van:BC.vervolgVan.id, vervolg_naam:BC.vervolgVan.naam}:{})},
+    p_layout:BC.layout,
     p_kanaal: wa?'whatsapp':'email',
     p_wa_template: wa&&BC.waTpl ? BC.waTpl.naam : null,
     p_wa_template_taal: wa&&BC.waTpl ? BC.waTpl.taal : null,
@@ -2870,6 +2899,17 @@ async function bcVerstuur(test){
     // Bij een vastgelegde lijst zegt de bevestiging wat er ECHT gebeurt: de
     // rest van die lijst, niet de huidige filterselectie. Precies het verschil
     // tussen "692 op het scherm" en "168 verstuurd" dat eerder verwarring gaf.
+    // Ook in het retrypad ("Klik nogmaals om verder te gaan") na een deels
+    // gelukte verzending: dan is de lijst inmiddels bevroren maar was BC.vast
+    // nooit gezet; verse cijfers halen zodat de bevestiging het echte
+    // restaantal noemt in plaats van de volle lijst.
+    if(BC.camp&&bewaard.bevroren&&!BC.vast){
+      try{
+        const {data:vd}=await sb.rpc('broadcast_campagne_laden',{p_id:BC.camp});
+        if(vd&&vd.doel) BC.vast={naam:vd.naam||$('#bc_naam').value.trim()||'', doel:vd.doel,
+                                 resterend:vd.resterend||0, verzonden:vd.verzonden||0};
+      }catch(e){}
+    }
     const vraag = (BC.camp&&BC.vast)
       ? `Je gaat verder met "${BC.vast.naam||'deze campagne'}".\n\nDe lijst is vastgelegd bij de eerste verzending: ${BC.vast.doel} ontvangers, waarvan nog ongeveer ${BC.vast.resterend} te gaan. Alleen die rest krijgt nu een mail; je huidige filterselectie staat hier los van.\n\nDit kun je niet terugdraaien. Doorgaan?`
       : `Je staat op het punt deze nieuwsbrief te versturen naar ${n} mensen`+
@@ -2885,6 +2925,7 @@ async function bcVerstuur(test){
   if(data&&data.ok===false){st.innerHTML=`<span class="err">${esc(data.reden||'mislukt')}</span>`;return;}
   if(test){
     st.innerHTML=`Proefmail verstuurd naar <b>${esc(data.naar)}</b>. Controleer hem, dan kun je versturen.`;
+    BC.getest=true; // overleeft hertekeningen van de knoppenbalk
     const b=$('#bc_verstuur'); b.disabled=false; b.title='';
     return;
   }
@@ -2912,6 +2953,7 @@ async function bcVerstuur(test){
     totaal+=vervolg.data.verzonden||0;
     totMislukt+=vervolg.data.mislukt||0;
     rest=vervolg.data.resterend||0;
+    if(BC.vast) BC.vast.resterend=rest; // kopregel en een eventuele retry-confirm blijven kloppen
   }
 
   st.innerHTML=`Klaar. Verstuurd: <b>${totaal}</b>`+
@@ -2921,8 +2963,8 @@ async function bcVerstuur(test){
   bcCampVergeten();
   // De campagne is af: vastgelegde-lijst-stand en vervolg-uitsluitingen wissen,
   // zodat de volgende campagne met een schone lei begint.
-  BC.camp=null; BC.vast=null;
-  if(BC.vervolgUit.size){ BC.vervolgUit=new Set(); BC.vervolgVan=null; bcTelling(); bcTabel(); }
+  BC.camp=null; BC.vast=null; BC.getest=false;
+  if(BC.vervolgVan){ BC.vervolgUit=new Set(); BC.vervolgVan=null; bcSelectieLaden(); }
   bcCampagnesLaden();
   toast(`Nieuwsbrief verstuurd naar ${totaal} mensen`,'ok');
 }
