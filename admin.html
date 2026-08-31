@@ -1085,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-een-video-plek';
+const APP_VERSIE='2026-08-31-tekstblok-schakelaar';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3393,18 +3393,21 @@ function ctPakketTekenen(){
     </div>`:''}
 
 
-    ${(pk.overlays&&pk.overlays.length)?`<div class="ct-vak">
+    ${CT.soort==='reel'?`<div class="ct-vak">
       ${kop('Tekst in beeld tijdens de reel','overlays','x')}
-      ${pk.overlays.map((o,i)=>`<div class="ct-regel" style="align-items:center;gap:8px">
+      <div class="vo-knoppen" style="margin:2px 0 ${pk.tekst_in_beeld?'8px':'0'}">
+        <button class="bc-chip ${pk.tekst_in_beeld?'on':''}" id="ct_ovl_aan">${pk.tekst_in_beeld?'Aan':'Uit'}</button>
+        ${pk.tekst_in_beeld?'':`<span class="muted" style="font-size:12.5px">Er komt geen losse teksten in beeld. Zet aan om het script te tonen, live in de preview en mee in de video.</span>`}
+      </div>
+      ${pk.tekst_in_beeld?`
+      ${(pk.overlays||[]).map((o,i)=>`<div class="ct-regel" style="align-items:center;gap:8px">
         <input data-ovltijd="${i}" value="${esc(o.tijd||'')}" style="flex:none;width:58px;border:1px solid var(--line);border-radius:6px;padding:3px 6px;font:inherit;font-size:12px;color:var(--terra,#8B5A3C);font-weight:700">
         <input data-ovltekst="${i}" value="${esc(o.tekst||'')}" style="flex:1;min-width:0;border:none;background:none;font:inherit;outline:none">
         <button class="bc-zoekactie" data-ovlweg="${i}" title="Regel verwijderen" style="flex:none;padding:0 4px">✕</button>
       </div>`).join('')}
       <div class="vo-knoppen" style="margin-top:4px"><button class="bc-zoekactie" id="ct_ovl_plus">＋ regel toevoegen</button></div>
-      <div class="bc-hint">Deze tekst staat LIVE in de preview hieronder: een regel aanpassen, weghalen of toevoegen zie je direct terug, en precies dit gaat automatisch mee in de video bij het downloaden of plaatsen (onderaan bij Afronden). Wil je je eigen stem: <b>🎙 Neem voice-over op</b> bij Muziek en voice-over; dan vervalt dit script en loopt je gesproken tekst als ondertiteling mee. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
-      ${(CT.mediaOrigineel&&CT.mediaOrigineel.length&&JSON.stringify(CT.media.map(m=>m.path))!==JSON.stringify(CT.mediaOrigineel.map(m=>m.path)))?`
-      <div class="bc-hint" style="color:#8a5a00;margin-top:4px">Let op: in je video staat nu de eerder gebakken tekst. Regels wijzigen of weghalen zie je pas terug na 🎬 opnieuw bakken; alle tekst eraf kan direct met de knop <b>🧽 tekst eraf</b> bij je media.</div>`:''}
-      <div class="bc-hint" style="margin-top:4px">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>
+      <div class="bc-hint">Staat LIVE in de preview en gaat automatisch mee in de video bij Afronden. Eigen stem? <b>🎙 Neem voice-over op</b> bij Muziek en voice-over; dan vervalt dit script. Zelf in CapCut of de IG-editor? Gebruik Kopieer hierboven.</div>
+      <div class="bc-hint" style="margin-top:4px">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>`:''}
     </div>`:''}
 
     <div class="ct-vak">
@@ -3507,6 +3510,11 @@ function ctPakketTekenen(){
     CT.pakket.overlays[Number(inp.dataset.ovltekst)].tekst=inp.value; ovlBewaar();}));
   vak.querySelectorAll('[data-ovltijd]').forEach(inp=>inp.addEventListener('input',()=>{
     CT.pakket.overlays[Number(inp.dataset.ovltijd)].tijd=inp.value; ovlBewaar();}));
+  const ovlAan=$('#ct_ovl_aan');
+  if(ovlAan) ovlAan.onclick=()=>{
+    CT.pakket.tekst_in_beeld=!CT.pakket.tekst_in_beeld;
+    ctPakketTekenen(); ctOpslaan(null);
+  };
   vak.querySelectorAll('[data-ovlweg]').forEach(b=>b.onclick=()=>{
     CT.pakket.overlays.splice(Number(b.dataset.ovlweg),1);
     // De tekst zit ingebakken in het actieve videobestand; regels weghalen
@@ -3776,7 +3784,7 @@ function ctPreviewTekenen(){
     const v=k.querySelector('video'), el=k.querySelector('[data-live-script]');
     if(!v||!el||v.dataset.scriptvolgt) return; v.dataset.scriptvolgt='1';
     v.addEventListener('timeupdate',()=>{
-      const rows=(CT.pakket&&CT.pakket.overlays)||[];
+      const rows=(CT.pakket&&CT.pakket.tekst_in_beeld&&CT.pakket.overlays)||[];
       const van=(CT.trim&&CT.trim.van)||0; const tt=Math.max(0,v.currentTime-van);
       let act=null;
       for(const o of rows){const m=String(o.tijd||'').match(/([\d.]+)\s*-\s*([\d.]+)/);
@@ -5052,7 +5060,7 @@ async function voRender(alleenMuziek, metTekst){
   const m0=(CT.mediaOrigineel&&CT.mediaOrigineel[0])||CT.media[0];
   const isVideo=/\.(mp4|mov|webm|m4v)$/i.test(m0.path)||String(m0.type||'').startsWith('video');
   const metStem=!alleenMuziek&&!!VO.url;
-  const heeftOverlays=metTekst&&CT.pakket&&Array.isArray(CT.pakket.overlays)&&CT.pakket.overlays.length>0;
+  const heeftOverlays=metTekst&&CT.pakket&&CT.pakket.tekst_in_beeld===true&&Array.isArray(CT.pakket.overlays)&&CT.pakket.overlays.length>0;
   if(!metStem&&!VO.muziekUrl&&!heeftOverlays){toast('Geen audio: neem een voice-over op of voeg muziek toe','err');return;}
   if(VO._mtest){VO._mtest.pause();VO._mtest=null;}
   VO.stand='renderen'; voTekenen();
@@ -5386,7 +5394,7 @@ function ctBakVinger(){
   return JSON.stringify({
     m:(CT.mediaOrigineel&&CT.mediaOrigineel[0]&&CT.mediaOrigineel[0].path)||(CT.media[0]&&CT.media[0].path)||null,
     hook:((pk.hooks||[])[Math.min(CT.hookKeus||0,Math.max((pk.hooks||[]).length-1,0))])||'',
-    ovl:pk.overlays||[], cta:CT.ctaOverlay||null, stijl:CT.stijl||null, om:CT_OPMAAK,
+    ovl:pk.tekst_in_beeld?(pk.overlays||[]):[], ovlAan:!!pk.tekst_in_beeld, cta:CT.ctaOverlay||null, stijl:CT.stijl||null, om:CT_OPMAAK,
     trim:CT.trim||null, mz:[VO.muziekUrl||null,VO.muziekStart||0,VO.muziekVol||0], stem:VO.url||null});
 }
 /* Afronden: download (of voor-de-app) met een verse bak als er iets wijzigde.
