@@ -1085,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-tekstblok-schakelaar';
+const APP_VERSIE='2026-08-31-preview-naast-caption';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3387,6 +3387,12 @@ function ctPakketTekenen(){
       <div class="bc-hint">Komt in de gebakken reel onder de hook in beeld vanaf het gekozen moment (3 a 4 seconden werkt het best: eerst leest de kijker de hook) en blijft tot het einde staan.</div>`:''}
     </div>
 
+    <div class="ct-vak">
+      ${kop('Preview, kies je variant')}
+      <div id="ct_preview"></div>
+      <div class="bc-hint" id="ct_previewhint"></div>
+    </div>
+
     ${CT.soort==='reel'?`<div class="ct-vak">
       ${kop('Muziek en voice-over')}
       <div id="ct_voice"></div>
@@ -3409,12 +3415,6 @@ function ctPakketTekenen(){
       <div class="bc-hint">Staat LIVE in de preview en gaat automatisch mee in de video bij Afronden. Eigen stem? <b>🎙 Neem voice-over op</b> bij Muziek en voice-over; dan vervalt dit script. Zelf in CapCut of de IG-editor? Gebruik Kopieer hierboven.</div>
       <div class="bc-hint" style="margin-top:4px">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>`:''}
     </div>`:''}
-
-    <div class="ct-vak">
-      ${kop('Preview, kies je variant')}
-      <div id="ct_preview"></div>
-      <div class="bc-hint" id="ct_previewhint"></div>
-    </div>
 
     ${(pk.slides&&pk.slides.length)?`<div class="ct-vak">
       ${kop('Slide-teksten, in volgorde van je afbeeldingen','slides','x')}
