@@ -1082,7 +1082,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-ai-chip-eerlijk';
+const APP_VERSIE='2026-08-31-tekst-is-keuze';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3403,7 +3403,7 @@ function ctPakketTekenen(){
         <button class="bc-zoekactie" data-ovlweg="${i}" title="Regel verwijderen" style="flex:none;padding:0 4px">✕</button>
       </div>`).join('')}
       <div class="vo-knoppen" style="margin-top:4px"><button class="bc-zoekactie" id="ct_ovl_plus">＋ regel toevoegen</button></div>
-      <div class="bc-hint">Dit ziet de kijker in beeld terwijl de reel speelt, regel voor regel op het aangegeven moment. Je hoeft hier niets voor in te spreken: de knop hieronder bakt deze tekst automatisch in je b-roll, met je muziek eronder als die klaarstaat. Wil je liever je eigen stem eronder: ga naar <b>Audio: voice-over en muziek</b> onderin het vak Preview en klik <b>🎙 Neem voice-over op</b>; je leest gewoon de caption voor, en dan vervalt dit script en loopt je gesproken tekst als ondertiteling mee, exact op je stem. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
+      <div class="bc-hint">Dit is een VOORSTEL: deze regels komen alleen in je video als je hieronder op <b>🎬 Bak deze tekst in de video</b> klikt. Regels aanpassen of weghalen kan gewoon. Wil je alleen muziek zonder tekst in beeld, gebruik dan <b>🎬 Video met alleen muziek (geen tekst)</b> in het audio-gedeelte. Wil je je eigen stem: <b>🎙 Neem voice-over op</b>; dan vervalt dit script en loopt je gesproken tekst als ondertiteling mee. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
       <div class="vo-knoppen" style="margin-top:6px">
         <button class="btn btn-primary btn-sm" id="ct_overlaybak">🎬 Bak deze tekst in de video</button>
       </div>
@@ -3535,7 +3535,7 @@ function ctPakketTekenen(){
   if(ob) ob.onclick=async()=>{
     if(!CT.media.length){toast('Kies eerst je b-roll','err');return;}
     ob.disabled=true;
-    try{ await voRender(true); }
+    try{ await voRender(true,true); }
     finally{ ob.disabled=false; }
   };
   // Verse hooks via de hook engine (dezelfde strategie als het hele pakket):
@@ -4780,12 +4780,12 @@ function voTekenen(){
       <div class="bc-hint" style="margin:0 0 8px">Spreek de caption in als voice-over. Terwijl je leest loopt de tekst mee; daarna bakken we stem, tekst${VO.muziek?', muziek':''} en je b-roll tot een reel. Werkt het best in Chrome, met toestemming voor de microfoon.</div>
       <div class="vo-knoppen">
         <button class="btn btn-primary btn-sm" id="vo_start">🎙 Neem voice-over op</button>
-        ${VO.muziek?`<button class="btn btn-ghost btn-sm" id="vo_alleenmuziek">🎬 Video met alleen muziek</button>`:''}
+        ${VO.muziek?`<button class="btn btn-ghost btn-sm" id="vo_alleenmuziek" title="Alleen je beeld met muziek eronder; er wordt geen tekst in de video gebrand">🎬 Video met alleen muziek (geen tekst)</button>`:''}
       </div>`;
     muziekKoppelen();
     $('#vo_start').onclick=voStart;
     const am=$('#vo_alleenmuziek');
-    if(am) am.onclick=()=>{ if(!CT.media.length){toast('Upload eerst je b-roll','err');return;} voRender(true); };
+    if(am) am.onclick=()=>{ if(!CT.media.length){toast('Upload eerst je b-roll','err');return;} voRender(true,false); };
   }else if(VO.stand==='opnemen'){
     vak.innerHTML=`
       <div class="bc-hint" style="margin:0 0 6px">De autocue hieronder is een geheugensteun; wat jij zegt is leidend. Improviseer gerust, de tekst in beeld volgt jouw woorden.</div>
@@ -5018,13 +5018,18 @@ function voTijdenAanvullen(){
    en de opgenomen stem als audiospoor. MediaRecorder maakt er mp4 van waar de
    browser dat kan; anders webm, en dan zegt de UI eerlijk dat Instagram mp4
    wil. */
-async function voRender(alleenMuziek){
+async function voRender(alleenMuziek, metTekst){
+  // metTekst bepaalt of hook, tijdscript en CTA in de video gebrand worden.
+  // Zonder expliciete keuze geldt de vorige keuze (zodat een muziekwissel
+  // dezelfde soort video herbakt); standaard met tekst.
+  if(metTekst===undefined) metTekst=(VO.bakMetTekst!==false);
+  VO.bakMetTekst=metTekst;
   // Altijd vanaf het schone origineel bakken: na een eerdere bak staat de
   // gebakken video in CT.media en zou een nieuwe ronde tekst over tekst zetten.
   const m0=(CT.mediaOrigineel&&CT.mediaOrigineel[0])||CT.media[0];
   const isVideo=/\.(mp4|mov|webm|m4v)$/i.test(m0.path)||String(m0.type||'').startsWith('video');
   const metStem=!alleenMuziek&&!!VO.url;
-  const heeftOverlays=CT.pakket&&Array.isArray(CT.pakket.overlays)&&CT.pakket.overlays.length>0;
+  const heeftOverlays=metTekst&&CT.pakket&&Array.isArray(CT.pakket.overlays)&&CT.pakket.overlays.length>0;
   if(!metStem&&!VO.muziekUrl&&!heeftOverlays){toast('Geen audio: neem een voice-over op of voeg muziek toe','err');return;}
   if(VO._mtest){VO._mtest.pause();VO._mtest=null;}
   VO.stand='renderen'; voTekenen();
@@ -5218,7 +5223,8 @@ async function voRender(alleenMuziek){
     // De hook stond wel in de preview maar werd nooit meegebakken; dat is
     // precies de tekst waar de kijker op blijft hangen, dus hij gaat er nu
     // altijd in, bovenin, de hele reel lang.
-    const hookTekst=(()=>{ const hs=(CT.pakket&&CT.pakket.hooks)||[]; if(!hs.length) return '';
+    const hookTekst=(()=>{ if(!metTekst&&!metStem) return '';
+      const hs=(CT.pakket&&CT.pakket.hooks)||[]; if(!hs.length) return '';
       return String(hs[Math.min(CT.hookKeus||0,hs.length-1)]||''); })();
     const teken=()=>{
       const t=(metStem&&stem)?stem.currentTime:(performance.now()-start)/1000;
@@ -5233,7 +5239,7 @@ async function voRender(alleenMuziek){
       }
       // De CTA in beeld: onder de hookzone, vanaf het gekozen moment tot het
       // einde, zodat de kijker eerst de hook leest en dan de vervolgstap ziet.
-      if(CT.ctaOverlay&&CT.ctaOverlay.tekst&&t>=(CT.ctaOverlay.na||0)){
+      if((metTekst||metStem)&&CT.ctaOverlay&&CT.ctaOverlay.tekst&&t>=(CT.ctaOverlay.na||0)){
         const cs=CT.ctaOverlay.stijl||'zwartblok';
         ctx.font=`${CT.ctaOverlay.vet?700:400} ${Math.round(42*((CT.ctaOverlay.maat)||1))}px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif`;
         ctx.textAlign='left';
