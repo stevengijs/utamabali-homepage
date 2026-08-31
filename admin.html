@@ -1085,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-uit-is-uit';
+const APP_VERSIE='2026-08-31-slimmer-zoeken';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3685,7 +3685,7 @@ async function ctVerbeter(){
     // Vraagt de feedback om cijfers of data, dan zoekt hij die eerst zelf op
     // (met bron) en geeft ze mee aan de herschrijfronde. Geen apart blok meer.
     let feedbackAI=feedback;
-    if(/(cijfer|data|bron|actue|statisti|marktdata|onderzoek|percentage|bezetting|toerisme|zoek\s+op)/i.test(feedback)){
+    if(/(cijfer|data|bron|actue|statisti|marktdata|onderzoek|percentage|bezetting|toerisme|regelgeving|regels|wet|belasting|visum|leasehold|nieuwste|laatste stand|onderbouw|bewijs|zoek)/i.test(feedback)){
       knop.textContent='🔎 Cijfers zoeken…';
       const feiten=await feitenAlsLijst(($('#ct_onderwerp').value.trim()||CT.pakket.caption.slice(0,140))+' | wens: '+feedback);
       if(feiten.length){
@@ -3693,7 +3693,7 @@ async function ctVerbeter(){
           +feiten.map(f=>`- ${f.feit} (bron: ${f.bron_titel||f.bron_url}${f.datum?', '+f.datum:''})`).join('\n');
         toast(`${feiten.length} actuele cijfers gevonden en meegenomen`,'ok');
       } else {
-        toast('Geen actuele cijfers gevonden; ik pas alleen de tekst aan','err');
+        toast('Zoeken leverde nu niets bruikbaars op; ik pas de tekst aan zonder verse cijfers','err');
       }
       knop.textContent='Bezig…';
     }
@@ -4683,10 +4683,10 @@ async function feitenAlsLijst(onderwerp){
     if(r.error||d.ok===false) return [];
     if(Array.isArray(d.feiten)&&d.feiten.length) return d.feiten;
     if(d.bezig&&d.sleutel){
-      for(let i=0;i<30;i++){
+      for(let i=0;i<12;i++){
         await new Promise(res=>setTimeout(res,5000));
         const {data:rij}=await sb.from('markt_feiten').select('feiten').eq('id',d.sleutel).maybeSingle();
-        if(rij&&Array.isArray(rij.feiten)&&rij.feiten.length) return rij.feiten;
+        if(rij&&Array.isArray(rij.feiten)) return rij.feiten; // ook leeg = klaar, niet blijven wachten
       }
     }
   }catch(e){}
