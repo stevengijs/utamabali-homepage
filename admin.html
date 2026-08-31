@@ -1082,7 +1082,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-wit-echt-wit';
+const APP_VERSIE='2026-08-31-muziek-als-ig';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3194,6 +3194,7 @@ function ctPreviewGeluid(){
   const vids=[...document.querySelectorAll('#ct_preview video')];
   const gebakken=CT.mediaOrigineel&&CT.mediaOrigineel.length&&CT.media[0]&&CT.media[0].path!==CT.mediaOrigineel[0].path;
   vids.forEach((v,i)=>{ v.muted=!(CT.geluid&&gebakken&&i===0); });
+  if(CT.geluid&&vids[0]&&vids[0].paused) vids[0].play().catch(()=>{});
   const wilMuziek=CT.geluid&&!gebakken&&typeof VO!=='undefined'&&VO&&VO.muziekUrl&&vids[0];
   if(!wilMuziek){ if(CT._mzPrev){CT._mzPrev.pause();CT._mzPrev=null;} return; }
   if(!CT._mzPrev||CT._mzPrevUrl!==VO.muziekUrl){
@@ -3206,7 +3207,7 @@ function ctPreviewGeluid(){
     v.addEventListener('timeupdate',()=>{
       const mz=CT._mzPrev; if(!mz||!CT.geluid) return;
       const doel=(VO.muziekStart||0)+Math.max(0, v.currentTime-((CT.trim&&CT.trim.van)||0));
-      if(Math.abs(mz.currentTime-doel)>0.35){ try{mz.currentTime=doel;}catch(e){} }
+      if(Math.abs(mz.currentTime-doel)>0.25){ try{mz.currentTime=doel;}catch(e){} }
       if(v.paused&&!mz.paused) mz.pause();
       if(!v.paused&&mz.paused) mz.play().catch(()=>{});
     });
@@ -3850,11 +3851,10 @@ async function voMuziekPaneel(vak){
     ${VO.muziek&&VO.muziekUrl?`<div style="margin-top:10px">
       <div class="bc-lab" style="margin:0 0 4px">Startpunt in het nummer</div>
       <div style="display:flex;align-items:center;gap:10px;max-width:420px">
-        <button class="bc-zoekactie" id="mz_starttest" title="Beluister vanaf het gekozen punt" style="flex:none;padding:0 4px">▶</button>
         <input type="range" id="mz_start" min="0" max="100" step="0.1" value="0" style="flex:1;min-width:0">
         <span class="muted" id="mz_startlab" style="font-size:12px;min-width:40px;font-variant-numeric:tabular-nums">0:00</span>
       </div>
-      <div class="bc-hint" style="margin-top:2px">De reel gebruikt het nummer vanaf dit punt (en herhaalt ook vanaf hier).</div>
+      <div class="bc-hint" style="margin-top:2px">Schuif en je hoort het direct in de preview; de reel gebruikt het nummer vanaf dit punt (en herhaalt vanaf hier).</div>
     </div>`:''}`;
   vak.querySelectorAll('[data-mzpre]').forEach(b=>b.onclick=()=>{
     if(VO_PREVIEW){ VO_PREVIEW.pause(); const was=VO_PREVIEW.dataset===b.dataset; VO_PREVIEW=null;
@@ -3868,20 +3868,23 @@ async function voMuziekPaneel(vak){
     VO.muziek={name:b.dataset.mznaam};
     VO.muziekUrl=ctPubliek(b.dataset.mzkies);
     VO.muziekStart=0;
+    // Gekozen = horen: het geluid gaat aan en loopt mee met de preview-video.
+    CT.geluid=true;
     if(VO.stand==='video'){
       // De al gebakken video bevat nog de oude muziek; meteen opnieuw bakken
       // zodat wat je hoort altijd klopt met wat er "actief" staat.
       toast(`Nieuwe muziek gekozen; ik bak de video er meteen mee opnieuw`,'ok');
       voRender(!VO.url);
     } else {
-      toast(`"${b.dataset.mznaam.replace(/\.[^.]+$/,'')}" staat klaar en gaat mee bij het bakken`,'ok');
+      toast(`"${b.dataset.mznaam.replace(/\.[^.]+$/,'')}" speelt mee in de preview en gaat mee bij het bakken`,'ok');
       voTekenen();
     }
+    ctPreviewTekenen();
   });
   // Startpunt-schuif: kies vanaf welk punt in het nummer de reel begint.
   const st=vak.querySelector('#mz_start');
   if(st){
-    const lab=vak.querySelector('#mz_startlab'), test=vak.querySelector('#mz_starttest');
+    const lab=vak.querySelector('#mz_startlab');
     const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
     const meta=new Audio(VO.muziekUrl);
     meta.addEventListener('loadedmetadata',()=>{
@@ -3889,23 +3892,16 @@ async function voMuziekPaneel(vak){
       st.value=Math.min(VO.muziekStart||0, parseFloat(st.max));
       lab.textContent=fmt(parseFloat(st.value));
     });
-    st.oninput=()=>{ lab.textContent=fmt(parseFloat(st.value)||0); };
+    // Geen aparte afspeelknop: schuiven is horen, het geluid loopt altijd
+    // synchroon mee met de preview-video (zoals in de Instagram-editor).
+    st.oninput=()=>{ VO.muziekStart=parseFloat(st.value)||0; lab.textContent=fmt(VO.muziekStart);
+      if(VO_PREVIEW){VO_PREVIEW.pause();VO_PREVIEW=null;vak.querySelectorAll('[data-mzpre]').forEach(x=>x.textContent='▶');}
+      CT.geluid=true; ctPreviewGeluid(); };
     st.onchange=()=>{
-      VO.muziekStart=parseFloat(st.value)||0;
-      if(VO_PREVIEW){VO_PREVIEW.pause();VO_PREVIEW=null;vak.querySelectorAll('[data-mzpre]').forEach(x=>x.textContent='▶');if(test)test.textContent='▶';}
       if(VO.stand==='video'){
         toast('Startpunt gekozen; ik bak de video opnieuw met dit stuk van het nummer','ok');
         voRender(!VO.url);
-      } else {
-        toast(`Muziek start straks op ${fmt(VO.muziekStart)}`,'ok');
       }
-    };
-    if(test) test.onclick=()=>{
-      if(VO_PREVIEW){VO_PREVIEW.pause();VO_PREVIEW=null;test.textContent='▶';return;}
-      VO_PREVIEW=new Audio(VO.muziekUrl); VO_PREVIEW.volume=0.6;
-      VO_PREVIEW.addEventListener('loadedmetadata',()=>{try{VO_PREVIEW.currentTime=parseFloat(st.value)||0;}catch(e){}});
-      VO_PREVIEW.play(); test.textContent='◼';
-      VO_PREVIEW.onended=()=>{test.textContent='▶';VO_PREVIEW=null;};
     };
   }
   const up=$('#mz_upload');
@@ -4731,7 +4727,9 @@ function voTekenen(){
            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)">volume
              <input type="range" id="vo_mvol" min="0" max="100" value="${Math.round(VO.muziekVol*100)}" style="width:130px">
              <span id="vo_mvolpct" style="min-width:34px">${Math.round(VO.muziekVol*100)}%</span></label>
-           <button class="bc-zoekactie" id="vo_mtest">▶ test</button>
+           <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)" title="Laat de track later beginnen, bijvoorbeeld bij de climax">start
+             <input type="range" id="vo_mstart" min="0" max="60" step="0.5" value="${VO.muziekStart||0}" style="width:130px">
+             <span id="vo_mstartlab" style="min-width:34px;font-variant-numeric:tabular-nums">0:00</span></label>
            <button class="bc-zoekactie" id="vo_mweg">✕ weg</button>`
         : `<button class="btn btn-ghost btn-sm" id="vo_muziek">🎵 Eigen bestand</button>
            <button class="btn btn-ghost btn-sm" id="vo_muziek_bieb">📚 Muziekbibliotheek</button>
@@ -4750,19 +4748,28 @@ function voTekenen(){
       const k=document.createElement('input'); k.type='file'; k.accept='audio/*';
       k.onchange=()=>{ const f=k.files&&k.files[0]; if(!f) return;
         if(VO.muziekUrl) URL.revokeObjectURL(VO.muziekUrl);
-        VO.muziek=f; VO.muziekUrl=URL.createObjectURL(f); VO.muziekStart=0; voTekenen(); };
+        VO.muziek=f; VO.muziekUrl=URL.createObjectURL(f); VO.muziekStart=0; CT.geluid=true; voTekenen(); ctPreviewTekenen(); };
       k.click();
     };
     const vol=$('#vo_mvol');
     if(vol) vol.oninput=()=>{ VO.muziekVol=Number(vol.value)/100; $('#vo_mvolpct').textContent=vol.value+'%';
-      if(VO._mtest) VO._mtest.volume=VO.muziekVol; };
-    const test=$('#vo_mtest');
-    if(test) test.onclick=()=>{
-      if(VO._mtest){ VO._mtest.pause(); VO._mtest=null; test.textContent='▶ test'; return; }
-      VO._mtest=new Audio(VO.muziekUrl); VO._mtest.volume=VO.muziekVol; VO._mtest.play();
-      test.textContent='◼ stop';
-      VO._mtest.onended=()=>{VO._mtest=null; if($('#vo_mtest'))$('#vo_mtest').textContent='▶ test';};
-    };
+      if(CT._mzPrev) CT._mzPrev.volume=Math.min(1,VO.muziekVol*2); };
+    // Er is bewust GEEN losse afspeelknop voor de muziek: het geluid loopt
+    // altijd mee met de preview-video, zoals in de Instagram-editor. De
+    // start-schuif verschuift waar de track begint; je hoort het direct.
+    const mst=$('#vo_mstart');
+    if(mst){
+      const lab=$('#vo_mstartlab');
+      const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+      const meta=new Audio(VO.muziekUrl);
+      meta.addEventListener('loadedmetadata',()=>{ mst.max=Math.max((meta.duration||60)-1,1).toFixed(1);
+        mst.value=Math.min(VO.muziekStart||0,parseFloat(mst.max)); lab.textContent=fmt(parseFloat(mst.value)); });
+      lab.textContent=fmt(VO.muziekStart||0);
+      mst.oninput=()=>{ VO.muziekStart=parseFloat(mst.value)||0; lab.textContent=fmt(VO.muziekStart);
+        CT.geluid=true; ctPreviewGeluid(); };
+      mst.onchange=()=>{ if(VO.stand==='video'){
+        toast('Startpunt gekozen; ik bak de video opnieuw met dit stuk van het nummer','ok'); voRender(!VO.url); } };
+    }
     const weg=$('#vo_mweg');
     if(weg) weg.onclick=()=>{ if(VO._mtest){VO._mtest.pause();VO._mtest=null;}
       if(VO.muziekUrl) URL.revokeObjectURL(VO.muziekUrl); VO.muziek=null; VO.muziekUrl=null; voTekenen(); };
