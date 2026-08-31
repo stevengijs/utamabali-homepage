@@ -1085,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-muziek-rechts';
+const APP_VERSIE='2026-08-31-eigen-prompt';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3052,8 +3052,13 @@ async function renderContent(){
     </div>
 
     <div class="bc-buiten" style="padding-top:4px">
-      <button class="btn btn-primary" id="ct_verras" style="font-size:15px;padding:12px 22px">🪄 Verras me met een nieuwe post</button>
-      <span class="muted" id="ct_verras_status" style="font-size:13px;margin-left:10px"></span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" id="ct_verras" style="font-size:15px;padding:12px 22px">🪄 Verras me met een nieuwe post</button>
+        <input id="ct_eigen_prompt" class="ct-caption" style="min-height:0;flex:1;min-width:260px;padding:11px 14px"
+               placeholder="Of typ zelf waar de reel over moet gaan, bijv: de rooftop van MOKA is af, laat de jacuzzi zien…">
+        <button class="btn btn-ghost" id="ct_eigen_maak" style="padding:11px 18px">🎬 Maak deze reel</button>
+      </div>
+      <span class="muted" id="ct_verras_status" style="font-size:13px"></span>
       <div class="bc-hint" style="margin-top:6px">Een klik: de AI verzint een geheel nieuw idee (los van de weekplanning, en gestuurd door wat op je account werkt zodra Instagram gekoppeld is), kiest zelf de beelden uit je bibliotheek en bakt de teksten erop. Jij checkt en plaatst. De post van de dag maak je via de weekkaart hierboven; een geplande dag regenereer je daar met ↻.</div>
     </div>
 
@@ -3154,7 +3159,15 @@ async function renderContent(){
   });
   doelHint();
   $('#ct_genereer').onclick=ctGenereer;
-  $('#ct_verras').onclick=ctVerrasMe;
+  $('#ct_verras').onclick=()=>ctVerrasMe();
+  const eigenMaak=$('#ct_eigen_maak');
+  if(eigenMaak) eigenMaak.onclick=()=>{
+    const v=($('#ct_eigen_prompt')&&$('#ct_eigen_prompt').value.trim())||'';
+    if(!v){toast('Typ eerst waar de reel over moet gaan','err');return;}
+    ctVerrasMe(v);
+  };
+  const eigenInp=$('#ct_eigen_prompt');
+  if(eigenInp) eigenInp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();eigenMaak.click();}});
   $('#ct_spreek').onclick=ctSpreek;
   // handmatig typen heft de transcript-markering weer op
   $('#ct_onderwerp').addEventListener('input',()=>{CT.gesproken=false;});
@@ -4445,18 +4458,23 @@ async function bibKiezer(){
    dezelfde scoring als de kiezer, teksten erop gebakken (carousel) of het
    overlay-script in de video (reel, met de laatst gekozen muziek eronder als
    die er is). Steven checkt en plaatst; dat is alles. */
-async function ctVerrasMe(){
+async function ctVerrasMe(eigenIdee){
   const knop=$('#ct_verras'), st=$('#ct_verras_status');
   knop.disabled=true;
   const zeg=t=>{if(st)st.textContent=t;};
   try{
-    // 1. een geheel nieuw idee, los van de weekplanning
-    zeg('Een nieuw idee bedenken…');
-    const ideeR=await sb.functions.invoke('content-maker',{body:{actie:'idee'}});
-    if(ideeR.error||!ideeR.data||ideeR.data.ok===false){
-      toast((ideeR.data&&ideeR.data.reden)||'Kon geen idee bedenken','err');return;
+    // 1. het idee: van Steven zelf (de prompt) of anders verzint de AI er een
+    let plan;
+    if(typeof eigenIdee==='string'&&eigenIdee.trim()){
+      plan={onderwerp:eigenIdee.trim(), soort:'reel', project:'', rubriek:null};
+    } else {
+      zeg('Een nieuw idee bedenken…');
+      const ideeR=await sb.functions.invoke('content-maker',{body:{actie:'idee'}});
+      if(ideeR.error||!ideeR.data||ideeR.data.ok===false){
+        toast((ideeR.data&&ideeR.data.reden)||'Kon geen idee bedenken','err');return;
+      }
+      plan={...ideeR.data.idee, rubriek:null};
     }
-    const plan={...ideeR.data.idee, rubriek:null};
     CT.soort=plan.soort||'reel'; CT.postId=null; CT.project=plan.project||'';
     CT.doel='comments'; CT.pakket=null; CT.media=[]; CT.mediaOrigineel=null; CT.trim=null;
     $('#ct_onderwerp').value=plan.onderwerp||'';
