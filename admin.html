@@ -1085,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-script-zichtbaar';
+const APP_VERSIE='2026-08-31-uit-is-uit';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3527,6 +3527,9 @@ function ctPakketTekenen(){
   const ovlAan=$('#ct_ovl_aan');
   if(ovlAan) ovlAan.onclick=()=>{
     CT.pakket.tekst_in_beeld=!CT.pakket.tekst_in_beeld;
+    // meteen uit beeld, ook als de preview stilstaat (anders blijft de
+    // laatst getoonde regel hangen tot de volgende tijd-tik)
+    if(!CT.pakket.tekst_in_beeld) document.querySelectorAll('[data-live-script]').forEach(e=>e.style.display='none');
     ctPakketTekenen(); ctOpslaan(null);
   };
   vak.querySelectorAll('[data-ovlweg]').forEach(b=>b.onclick=()=>{
@@ -3851,7 +3854,8 @@ function ctPreviewTekenen(){
     const v=k.querySelector('video'), el=k.querySelector('[data-live-script]');
     if(!v||!el||v.dataset.scriptvolgt) return; v.dataset.scriptvolgt='1';
     v.addEventListener('timeupdate',()=>{
-      const rows=(CT.pakket&&CT.pakket.tekst_in_beeld&&CT.pakket.overlays)||[];
+      if(!(CT.pakket&&CT.pakket.tekst_in_beeld===true)){ el.style.display='none'; return; }
+      const rows=CT.pakket.overlays||[];
       const van=(CT.trim&&CT.trim.van)||0; const tt=Math.max(0,v.currentTime-van);
       let act=null;
       for(const o of rows){const m=String(o.tijd||'').match(/([\d.]+)\s*-\s*([\d.]+)/);
