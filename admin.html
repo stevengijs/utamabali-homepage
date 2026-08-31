@@ -1085,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-studio-herbouwd';
+const APP_VERSIE='2026-08-31-een-video-plek';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3892,15 +3892,8 @@ async function voMuziekPaneel(vak){
     VO.muziekStart=0;
     // Gekozen = horen: het geluid gaat aan en loopt mee met de preview-video.
     CT.geluid=true;
-    if(VO.stand==='video'){
-      // De al gebakken video bevat nog de oude muziek; meteen opnieuw bakken
-      // zodat wat je hoort altijd klopt met wat er "actief" staat.
-      toast(`Nieuwe muziek gekozen; ik bak de video er meteen mee opnieuw`,'ok');
-      voRender(!VO.url);
-    } else {
-      toast(`"${b.dataset.mznaam.replace(/\.[^.]+$/,'')}" speelt mee in de preview en gaat mee bij het bakken`,'ok');
-      voTekenen();
-    }
+    toast(`"${b.dataset.mznaam.replace(/\.[^.]+$/,'')}" speelt live mee in de preview en gaat automatisch mee bij het afronden`,'ok');
+    voTekenen();
     ctPreviewTekenen();
   });
   // Startpunt-schuif: kies vanaf welk punt in het nummer de reel begint.
@@ -3919,12 +3912,7 @@ async function voMuziekPaneel(vak){
     st.oninput=()=>{ VO.muziekStart=parseFloat(st.value)||0; lab.textContent=fmt(VO.muziekStart);
       if(VO_PREVIEW){VO_PREVIEW.pause();VO_PREVIEW=null;vak.querySelectorAll('[data-mzpre]').forEach(x=>x.textContent='▶');}
       CT.geluid=true; ctPreviewGeluid(); };
-    st.onchange=()=>{
-      if(VO.stand==='video'){
-        toast('Startpunt gekozen; ik bak de video opnieuw met dit stuk van het nummer','ok');
-        voRender(!VO.url);
-      }
-    };
+
   }
   const up=$('#mz_upload');
   if(up) up.onclick=()=>{
@@ -4807,8 +4795,7 @@ function voTekenen(){
       lab.textContent=fmt(VO.muziekStart||0);
       mst.oninput=()=>{ VO.muziekStart=parseFloat(mst.value)||0; lab.textContent=fmt(VO.muziekStart);
         CT.geluid=true; ctPreviewGeluid(); };
-      mst.onchange=()=>{ if(VO.stand==='video'){
-        toast('Startpunt gekozen; ik bak de video opnieuw met dit stuk van het nummer','ok'); voRender(!VO.url); } };
+
     }
     const weg=$('#vo_mweg');
     if(weg) weg.onclick=()=>{ if(VO._mtest){VO._mtest.pause();VO._mtest=null;}
@@ -4873,8 +4860,8 @@ function voTekenen(){
         <span class="vo-spin"></span> 🎬 Video wordt gemaakt · <span id="vo_rprog">0</span>%
       </div>
       <div class="vo-balk"><i id="vo_rbalk"></i></div>
-      <div id="vo_rcanvas" style="margin-top:10px"></div>
-      <div class="bc-hint" style="margin-top:6px">Hierboven kijk je live mee terwijl b-roll, tekst${VO.url?', je stem':''}${VO.muziekUrl?' en muziek':''} worden samengevoegd. Duurt ongeveer zo lang als de clip zelf; laat dit tabblad open en zichtbaar.</div>`;
+      <div id="vo_rcanvas" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden" aria-hidden="true"></div>
+      <div class="bc-hint" style="margin-top:6px">B-roll, tekst${VO.url?', je stem':''}${VO.muziekUrl?' en muziek':''} worden samengevoegd tot het definitieve bestand. Duurt ongeveer zo lang als de clip zelf; laat dit tabblad open en zichtbaar.</div>`;
   }else if(VO.stand==='video'){
     vak.innerHTML=`
       <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
