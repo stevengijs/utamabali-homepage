@@ -1085,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-preview-naast-caption';
+const APP_VERSIE='2026-08-31-hook-favorieten';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3355,10 +3355,12 @@ function ctPakketTekenen(){
       ${(pk.hooks||[]).map((h,i)=>`<div class="ct-hook ${i===CT.hookKeus?'on':''}" data-hook="${i}" style="display:flex;gap:9px;align-items:center;cursor:pointer">
         <span style="flex:none;font-size:15px">${i===CT.hookKeus?'●':'○'}</span>
         <input data-hookedit="${i}" value="${esc(h)}" style="flex:1;border:none;background:none;font:inherit;outline:none;min-width:0">
+        <button class="bc-zoekactie" data-hookfav="${i}" title="Bewaar deze hook, samen met de huidige caption" style="flex:none;padding:0 6px;font-size:15px">☆</button>
       </div>`).join('')}
       <div class="vo-knoppen" style="margin-top:6px">
         <button class="bc-zoekactie" id="ct_hooks_nieuw">✨ Nieuwe hooks met AI</button>
       </div>
+      <div id="ct_hookfavs"></div>
       <div class="bc-hint">${CT.soort==='reel'?'Dit wordt de tekstoverlay in seconde 1, en de eerste regel van je caption.':'Dit wordt de covertitel en de eerste regel van je caption.'}</div>
     </div>
 
@@ -3540,6 +3542,24 @@ function ctPakketTekenen(){
   };
   const dlk=$('#ct_download'); if(dlk) dlk.onclick=()=>ctExporteer(false);
   const vak2=$('#ct_voorapp'); if(vak2) vak2.onclick=()=>ctExporteer(true);
+  // Hook bewaren: de hook plus de caption van dit moment, zodat het duo
+  // later in een klik terug te halen is.
+  vak.querySelectorAll('[data-hookfav]').forEach(b=>b.onclick=async e=>{
+    e.stopPropagation();
+    const i=Number(b.dataset.hookfav);
+    const hook=((CT.pakket&&CT.pakket.hooks)||[])[i]||'';
+    if(!hook.trim()) return;
+    const caption=($('#ct_caption')&&$('#ct_caption').value)||(CT.pakket&&CT.pakket.caption)||'';
+    const {data,error}=await sb.from('content_hook_favorieten')
+      .insert({hook,caption,onderwerp:($('#ct_onderwerp')&&$('#ct_onderwerp').value.trim())||''})
+      .select().single();
+    if(error){toast('Bewaren mislukte: '+error.message,'err');return;}
+    CT.hookFavs=[data,...(CT.hookFavs||[])];
+    b.textContent='⭐';
+    toast('Hook bewaard, samen met de caption','ok');
+    ctHookFavsTekenen();
+  });
+  ctHookFavsTekenen();
   // Verse hooks via de hook engine (dezelfde strategie als het hele pakket):
   // vijf nieuwe invalshoeken, de huidige opties gaan mee als niet-herhalen-lijst.
   const hn=$('#ct_hooks_nieuw');
@@ -3601,6 +3621,41 @@ function ctPakketTekenen(){
   if(CT.soort==='reel') voTekenen();
   $('#ct_feedback').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ctVerbeter();}});
   ctPreviewTekenen(); ctPlaatsTekenen();
+}
+
+/* Bewaarde hooks: ingeklapt lijstje onder de hook-kiezer. Gebruik zet de
+   hook als gekozen optie EN de bijbehorende caption terug in het tekstvak. */
+async function ctHookFavsTekenen(){
+  const vak=$('#ct_hookfavs'); if(!vak) return;
+  if(!CT.hookFavs){
+    const {data}=await sb.from('content_hook_favorieten').select('*')
+      .order('aangemaakt_at',{ascending:false}).limit(50);
+    CT.hookFavs=data||[];
+  }
+  const fs=CT.hookFavs;
+  vak.innerHTML=fs.length?`<details style="margin-top:6px"><summary class="bc-zoekactie" style="cursor:pointer;padding:2px 0">⭐ Bewaarde hooks (${fs.length})</summary>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">
+    ${fs.map(f=>`<div class="ct-regel" style="align-items:center;gap:8px">
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px" title="${esc(f.hook)}">${esc(f.hook)}</span>
+      <button class="bc-zoekactie" data-favgebruik="${f.id}" title="Zet deze hook plus de bewaarde caption in dit pakket" style="flex:none">gebruik</button>
+      <button class="bc-zoekactie" data-favweg="${f.id}" title="Verwijderen" style="flex:none;padding:0 4px">🗑</button>
+    </div>`).join('')}</div></details>`:'';
+  vak.querySelectorAll('[data-favgebruik]').forEach(b=>b.onclick=()=>{
+    const f=(CT.hookFavs||[]).find(x=>x.id===b.dataset.favgebruik); if(!f) return;
+    if(!CT.pakket){toast('Genereer eerst een pakket','err');return;}
+    CT.pakket.hooks=CT.pakket.hooks||[];
+    let i=CT.pakket.hooks.indexOf(f.hook);
+    if(i<0){ CT.pakket.hooks.unshift(f.hook); i=0; }
+    CT.hookKeus=i;
+    if(f.caption){ CT.pakket.caption=f.caption; const ta=$('#ct_caption'); if(ta) ta.value=f.caption; }
+    ctPakketTekenen(); ctOpslaan(null);
+    toast('Hook en bijbehorende caption staan klaar','ok');
+  });
+  vak.querySelectorAll('[data-favweg]').forEach(b=>b.onclick=async()=>{
+    await sb.from('content_hook_favorieten').delete().eq('id',b.dataset.favweg);
+    CT.hookFavs=(CT.hookFavs||[]).filter(x=>x.id!==b.dataset.favweg);
+    ctHookFavsTekenen();
+  });
 }
 
 /* Feedbackronde: het huidige pakket gaat mee (inclusief wat Steven zelf al in
@@ -3706,7 +3761,7 @@ function ctPreviewTekenen(){
     // Elke variant: de hook als regel 1, de rest van de caption blijft gelijk
     const regels=basisCap.split('\n'); regels[0]=hook; const cap=regels.join('\n');
     // "… meer" werkt zoals in de app: klik en de hele caption klapt uit
-    const dicht=cap.length>110?cap.slice(0,110).replace(/\s+\S*$/,''):cap;
+    const dicht=cap.length>62?cap.slice(0,62).replace(/\s+\S*$/,''):cap;
     const kort=CT.capOpen?cap:dicht;
     const meerHtml=cap.length>dicht.length
       ? (CT.capOpen?' <span class="meer" data-meer style="cursor:pointer">minder</span>'
