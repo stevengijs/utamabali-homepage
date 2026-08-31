@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-direct-posten';
+const APP_VERSIE='2026-08-31-muziek-compact';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -5022,7 +5022,7 @@ function voTekenen(){
       <div id="vo_rcanvas" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden" aria-hidden="true"></div>
       <div class="bc-hint" style="margin-top:6px">B-roll, tekst${VO.url?', je stem':''}${VO.muziekUrl?' en muziek':''} worden samengevoegd tot het definitieve bestand. Duurt ongeveer zo lang als de clip zelf; laat dit tabblad open en zichtbaar.</div>`;
   }else if(VO.stand==='video'){
-    vak.innerHTML=`
+    vak.innerHTML=muziekRij+`
       <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
         ${VO.woorden&&VO.woorden.length?`<div style="flex:1;min-width:250px;max-width:440px">
           <div class="bc-lab" style="margin:0 0 6px">Ondertiteling (pas gerust aan)</div>
@@ -5030,7 +5030,6 @@ function voTekenen(){
           <div class="bc-hint">Verkeerd verstaan woord? Verbeter het hier; de timing blijft staan. Typ een <b>punt</b> waar een zin eindigt: die wordt niet getoond, maar zorgt dat de ondertiteling daar afbreekt in plaats van midden in een zin.</div>
           <button class="btn btn-primary btn-sm" id="vo_herbak" style="margin-top:6px">🔁 Opnieuw bakken met deze tekst</button>
         </div>`:''}
-        <div id="vo_mzpaneel" style="flex:none;width:250px"></div>
       </div>
       <div class="vo-knoppen">
         <button class="btn btn-ghost btn-sm" id="vo_opnieuw2">✏️ Terug naar bewerken</button>
@@ -5047,7 +5046,7 @@ function voTekenen(){
        keer. */
     const tr2=$('#vo_transcript2');
     if(tr2) tr2.addEventListener('input',()=>{ voHertijd(tr2.value); });
-    const mzp=$('#vo_mzpaneel'); if(mzp) voMuziekPaneel(mzp);
+    muziekKoppelen();
     const herbak=$('#vo_herbak');
     if(herbak) herbak.onclick=()=>{ voRender(false); };
     const voorApp=$('#vo_voor_app');
