@@ -1094,7 +1094,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-vervolg-waterdicht';
+const APP_VERSIE='2026-08-31-zelfmarkering';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1513,6 +1513,28 @@ async function boot(){
   // Bel-teller ook live bijwerken terwijl het portaal openstaat (bijv. als een
   // klant intussen een ITP tekent of een aanbetaling meldt).
   setInterval(refreshNotifBadge,60000);
+  anZelfMarkeren();
+}
+/* Elk apparaat waarop een teamlid inlogt markeert zichzelf automatisch als
+   intern, zodat eigen bezoek aan de site nooit in de analytics meetelt. De id
+   is dezelfde _ua_vid die t.js op de publieke site zet (zelfde domein, dus
+   zelfde localStorage). Bestaat er al een markering met die id, dan blijft
+   die gewoon staan (do nothing op de server); en wie zijn apparaat ooit
+   bewust dé-markeert in Recente bezoekers wordt vanaf datzelfde apparaat
+   niet opnieuw automatisch gemarkeerd: de gedaan-vlag onthoudt dat de
+   automaat er al geweest is. */
+async function anZelfMarkeren(){
+  try{
+    const vid=localStorage.getItem('_ua_vid');
+    // Zonder vid heeft dit apparaat de publieke site nog nooit bezocht: er
+    // bestaan dan ook geen metingen om uit te sluiten.
+    if(!vid) return;
+    const vlag='an_zelfmark_'+vid;
+    if(localStorage.getItem(vlag)) return;
+    const label=((ME&&(ME.full_name||ME.email))||'Teamlid')+' · automatisch';
+    const {data,error}=await sb.rpc('analytics_zelf_markeren',{p_vid:vid,p_label:label});
+    if(!error&&data&&data.ok) localStorage.setItem(vlag,new Date().toISOString());
+  }catch(e){ /* nooit de login-flow hinderen */ }
 }
 /* Shareable deep links: utamabali.com/admin#contact/<id> opens that contact for the team */
 function crmDeepLink(contactId){return location.origin+location.pathname+'#contact/'+contactId;}
