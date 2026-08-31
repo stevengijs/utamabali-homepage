@@ -522,7 +522,10 @@
                 font-weight:800;font-size:15px;line-height:1.35;text-shadow:0 1px 10px rgba(0,0,0,.75)}
   @keyframes ctaIn{to{opacity:1}}
   .ig-hooktekst i{font-style:normal;padding:3px 8px;border-radius:6px;
-                  -webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.75;text-shadow:none}
+                  -webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.75;text-shadow:none;
+                  /* zachte rand onder het blok: boven fel beeld leest puur wit
+                     anders als grijs (simultaancontrast) */
+                  box-shadow:0 1px 6px rgba(0,0,0,.22)}
   .ig-hooktekst b{color:#FFE234}
   /* Mediabibliotheek */
   .bib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
@@ -1079,7 +1082,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-geen-dubbele-tekst';
+const APP_VERSIE='2026-08-31-wit-echt-wit';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -5187,10 +5190,13 @@ async function voRender(alleenMuziek){
         const breed=ctx.measureText(regel).width; const x=540-breed/2;
         if(om.achtergrond!=='geen'){
           const wit=om.achtergrond==='wit', semi=om.achtergrond==='semi';
-          ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+          // Zachte rand onder het blok, net als in de preview: anders leest
+          // een wit blok boven fel beeld als grijs.
+          ctx.shadowColor='rgba(0,0,0,.28)'; ctx.shadowBlur=10; ctx.shadowOffsetY=2;
           ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
           const pad=Math.round(regelH*0.28);
           ctx.beginPath(); ctx.roundRect(x-pad,y-regelH*0.78,breed+pad*2,regelH*1.05,Math.round(regelH*0.22)); ctx.fill();
+          ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
           ctx.fillStyle=wit?'#111111':'#ffffff';
         }else{
           ctSchaduw(ctx,f);
