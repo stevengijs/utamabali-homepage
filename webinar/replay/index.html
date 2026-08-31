@@ -11,6 +11,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/webinar/webinar.css">
+<style>
+  /* Op deze pagina staat alle tekst gecentreerd */
+  body{text-align:center}
+  .ladder,.host{text-align:center}
+  .host{justify-content:center}
+  .sec-head,.ladder-item p{margin-left:auto;margin-right:auto}
+</style>
 <!-- CONFIG · replay-deadline aanpassen? Pas aan: (1) de teksten met "zondag 9 augustus",
      (2) data-deadline op de body hieronder. Na de deadline verbergt de pagina de video
      automatisch en toont hij de afsluitkaart. -->
@@ -117,7 +124,9 @@
           <!-- CAL_EMBED:START : Calendly van Ashley (30 min Villa Plan Gesprek).
                Zonder month/date-parameters: Calendly toont dan vanzelf de
                eerstvolgende beschikbare datum in plaats van een vaste maand. -->
-          <div class="calendly-inline-widget" data-url="https://calendly.com/ashley-utamabali/30min-follow-up-call?hide_gdpr_banner=1" style="min-width:300px;height:680px;margin-bottom:14px"></div>
+          <!-- Hoog genoeg zodat de hele maandkalender past en er in de embed
+               zelf niet gescrold hoeft te worden. -->
+          <div class="calendly-inline-widget" data-url="https://calendly.com/ashley-utamabali/30min-follow-up-call?hide_gdpr_banner=1" style="min-width:300px;height:1150px;margin-bottom:14px"></div>
           <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
           <!-- CAL_EMBED:END -->
           <a class="btn ghost" target="_blank" rel="noopener" href="https://wa.me/31624845014?text=Hoi!%20Ik%20heb%20de%20masterclass%20gezien%20en%20wil%20graag%20een%20Villa%20Plan%20Gesprek%20met%20Ashley%20plannen.">Plan via WhatsApp</a>
