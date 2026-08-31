@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-maten-en-kleur';
+const APP_VERSIE='2026-08-31-meer-altijd-zichtbaar';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3855,7 +3855,9 @@ function ctPreviewTekenen(){
     // Elke variant: de hook als regel 1, de rest van de caption blijft gelijk
     const regels=basisCap.split('\n'); regels[0]=hook; const cap=regels.join('\n');
     // "… meer" werkt zoals in de app: klik en de hele caption klapt uit
-    const dicht=cap.length>62?cap.slice(0,62).replace(/\s+\S*$/,''):cap;
+    // Kort genoeg dat het klikbare '… meer' ALTIJD binnen de twee zichtbare
+    // regels valt, ook met een lange hook als eerste regel.
+    const dicht=cap.length>42?cap.slice(0,42).replace(/\s+\S*$/,''):cap;
     const kort=CT.capOpen?cap:dicht;
     const meerHtml=cap.length>dicht.length
       ? (CT.capOpen?' <span class="meer" data-meer style="cursor:pointer">minder</span>'
