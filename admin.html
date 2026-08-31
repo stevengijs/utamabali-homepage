@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-nooit-meer-stale';
+const APP_VERSIE='2026-08-31-een-downloadknop';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3527,9 +3527,8 @@ function ctPakketTekenen(){
       ${kop('Afronden: downloaden of plaatsen')}
       ${CT.soort==='reel'?`<div class="vo-knoppen" style="margin:0 0 8px">
         <button class="btn btn-primary btn-sm" id="ct_download">⬇ Download video</button>
-        <button class="btn btn-ghost btn-sm" id="ct_voorapp" title="Video downloaden en caption plus hashtags op je klembord: in de app alleen nog IG-muziek kiezen en plakken">📲 Voor de app (met IG-muziek)</button>
       </div>
-      <div class="bc-hint" style="margin:0 0 10px">Downloaden bakt eerst automatisch de definitieve video, precies zoals de preview hem toont (beeld, tekst, muziek en je stem als je die opnam). Dat duurt ongeveer zo lang als de clip zelf; de voortgang zie je bij Muziek en voice-over.</div>`:''}
+      <div class="bc-hint" style="margin:0 0 10px">Downloaden bakt eerst automatisch de definitieve video, precies zoals de preview hem toont, en zet meteen de caption plus hashtags op je klembord: in de Instagram-app alleen nog plakken (en eventueel IG-muziek kiezen). Duurt ongeveer zo lang als de clip zelf; de voortgang zie je bij Muziek en voice-over.</div>`:''}
       <div id="ct_plaats"><span class="muted" style="font-size:13px">Instagram-koppeling controleren…</span></div>
     </div>
   </div>`;
@@ -3611,8 +3610,7 @@ function ctPakketTekenen(){
     const laatsteInp=[...document.querySelectorAll('[data-ovltekst]')].pop();
     if(laatsteInp) laatsteInp.focus();
   };
-  const dlk=$('#ct_download'); if(dlk) dlk.onclick=()=>ctExporteer(false);
-  const vak2=$('#ct_voorapp'); if(vak2) vak2.onclick=()=>ctExporteer(true);
+  const dlk=$('#ct_download'); if(dlk) dlk.onclick=()=>ctExporteer(true);
   // Hook bewaren: de hook plus de caption van dit moment, zodat het duo
   // later in een klik terug te halen is.
   vak.querySelectorAll('[data-hookfav]').forEach(b=>b.onclick=async e=>{
@@ -5595,12 +5593,10 @@ async function ctExporteer(voorApp){
     }
     if(!VO.videoBlob||VO.bakVinger!==ctBakVinger()){toast('De video kon niet gemaakt worden','err');return;}
     const a=document.createElement('a'); a.href=VO.video; a.download='reel-'+Date.now(); a.click();
-    if(voorApp){
-      const cap=($('#ct_caption')&&$('#ct_caption').value)||(CT.pakket&&CT.pakket.caption)||'';
-      const tags=CT.pakket?ctHashtags(CT.pakket.eerste_reactie):'';
-      ctKopieer(cap+(tags?'\n\n'+tags:''));
-      toast('Video gedownload en caption plus hashtags op je klembord. In de app: nieuwe reel, deze video, muziek kiezen, caption plakken.','ok');
-    } else toast('Video gedownload','ok');
+    const cap=($('#ct_caption')&&$('#ct_caption').value)||(CT.pakket&&CT.pakket.caption)||'';
+    const tags=CT.pakket?ctHashtags(CT.pakket.eerste_reactie):'';
+    ctKopieer(cap+(tags?'\n\n'+tags:''));
+    toast('Video gedownload; caption en hashtags staan op je klembord','ok');
   } finally { if(knop) knop.disabled=false; }
 }
 async function voGebruik(){
