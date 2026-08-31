@@ -504,6 +504,7 @@
   /* Reel: donkere weergave met de actiekolom rechts, zoals in de app */
   .ig-frame.reel{background:#000;border-color:#262626}
   .ig-frame.reel .ig-media img,.ig-frame.reel .ig-media video{aspect-ratio:9/16;object-fit:cover}
+  .ig-frame.reel .ig-media canvas.ig-live{width:100%;aspect-ratio:9/16;display:block;background:#000}
   .ig-reelhud{position:absolute;inset:0;display:flex;pointer-events:none}
   .ig-reelhud .meer{pointer-events:auto}
   .ig-reelhud .onder{margin-top:auto;padding:10px 54px 12px 10px;color:#fff;width:100%;
@@ -1088,7 +1089,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-meer-altijd-zichtbaar';
+const APP_VERSIE='2026-08-31-een-tekenaar';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3226,6 +3227,59 @@ function voLiveBrokken(){
   if(brok.length)uit.push(brok);
   return uit;
 }
+/* De invoer voor ctFramePainter, opgebouwd volgens exact dezelfde regels als
+   voRender die hanteert bij het bakken: dezelfde hook, hetzelfde script
+   (alleen zonder stem), dezelfde CTA en dezelfde karaoke-brokken. Alleen de
+   stijlkaart wisselt per previewkaart. */
+function ctPreviewCfg(stijlKey){
+  const pk=CT.pakket;
+  const gebakken=CT.mediaOrigineel&&CT.mediaOrigineel.length&&CT.media[0]&&CT.media[0].path!==CT.mediaOrigineel[0].path;
+  // In een gebakken video zit alle tekst al in de pixels: kaal frame tonen.
+  if(gebakken||!pk) return {om:ctOmEffectief(stijlKey),hookTekst:'',ovl:null,brokken:[],cta:null,duur:1e9};
+  const metStem=!!(typeof VO!=='undefined'&&VO&&VO.url&&(VO.woorden||[]).length);
+  const hs=pk.hooks||[];
+  const hookTekst=hs.length?String(hs[Math.min(CT.hookKeus||0,hs.length-1)]||''):'';
+  let ovl=null;
+  if(!metStem&&pk.tekst_in_beeld===true&&Array.isArray(pk.overlays)&&pk.overlays.length){
+    ovl=pk.overlays.map(o=>{const m=String(o.tijd||'').match(/([\d.]+)\s*-\s*([\d.]+)/);
+      return {van:m?parseFloat(m[1]):0,tot:m?parseFloat(m[2]):1e9,tekst:String(o.tekst||'')};}).filter(o=>o.tekst);
+  }
+  return {om:ctOmEffectief(stijlKey), hookTekst, ovl,
+    brokken:metStem?voLiveBrokken():[],
+    cta:(CT.ctaOverlay&&CT.ctaOverlay.tekst)?CT.ctaOverlay:null, duur:1e9};
+}
+/* Elke previewkaart tekent zichzelf per frame via ctFramePainter, dezelfde
+   functie die de export tekent. Wordt de preview hertekend, dan verdwijnen de
+   oude canvassen uit de pagina en stoppen hun lussen vanzelf. */
+function ctPreviewCanvasStart(){
+  if(typeof ctFontsLaden==='function'){ try{ ctFontsLaden(); }catch(e){} }
+  document.querySelectorAll('#ct_preview canvas.ig-live').forEach(cv=>{
+    if(cv.dataset.loop) return; cv.dataset.loop='1';
+    const media=cv.closest('.ig-media');
+    const bron=media&&media.querySelector('.ig-bron'); if(!bron) return;
+    let cx=null; try{ cx=cv.getContext('2d',{colorSpace:'display-p3'}); }catch(e){}
+    if(!cx) cx=cv.getContext('2d');
+    const isVid=bron.tagName==='VIDEO';
+    const t0=performance.now();
+    const stap=()=>{
+      if(!document.body.contains(cv)) return;
+      const klaar=isVid?bron.readyState>=2:(bron.complete&&bron.naturalWidth>0);
+      if(klaar){
+        // Dezelfde klok als de bak: de stem als die live meespeelt, anders de
+        // videotijd binnen het trim-segment; een foto krijgt een eigen klok.
+        const st=CT._stemPrev;
+        const t=st?st.currentTime
+          :(isVid?Math.max(0,bron.currentTime-((CT.trim&&CT.trim.van)||0))
+                 :((performance.now()-t0)/1000)%15);
+        const sch=cv.width/1080;
+        cx.setTransform(sch,0,0,sch,0,0);
+        try{ ctFramePainter(cx,bron,isVid,t,ctPreviewCfg(cv.dataset.stijl)); }catch(e){}
+      }
+      requestAnimationFrame(stap);
+    };
+    requestAnimationFrame(stap);
+  });
+}
 /* Geluid bij de previews. Op een gebakken video zetten we simpelweg het echte
    geluid van de eerste kaart aan. Vóór het bakken spelen muziek EN je
    ingesproken stem live mee, met de ondertiteling erbij, precies zoals het
@@ -3535,8 +3589,9 @@ function ctPakketTekenen(){
         <div style="font-size:13px;line-height:1.6;margin-top:6px">${esc(pk.waarom||'')}</div>
         <div class="bc-hint">${esc(pk.beste_moment||'')}${pk.alt_tekst?` · Alt-tekst: ${esc(pk.alt_tekst)}`:''}</div>
       </details>`:''}
+      <div id="ct_afrond_prog" style="display:none;margin:0 0 10px"></div>
       ${CT.soort==='reel'?`
-      <div class="bc-hint" style="margin:0 0 10px">Downloaden bakt eerst automatisch de definitieve video, precies zoals de preview hem toont, en zet meteen de caption plus hashtags op je klembord: in de Instagram-app alleen nog plakken (en eventueel IG-muziek kiezen). Duurt ongeveer zo lang als de clip zelf; de voortgang zie je bij Muziek en voice-over.</div>`:''}
+      <div class="bc-hint" style="margin:0 0 10px">Downloaden bakt eerst automatisch de definitieve video, precies zoals de preview hem toont, en zet meteen de caption plus hashtags op je klembord: in de Instagram-app alleen nog plakken (en eventueel IG-muziek kiezen). Duurt ongeveer zo lang als de clip zelf; de voortgang zie je hier verschijnen.</div>`:''}
       <div id="ct_plaats"><span class="muted" style="font-size:13px">Instagram-koppeling controleren…</span></div>
     </div>
   </div>`;
@@ -3869,19 +3924,17 @@ function ctPreviewTekenen(){
       const actief=st.key==='blok'
         ? ((CT_OPMAAK.achtergrond==='wit'||CT_OPMAAK.achtergrond==='zwart')&&!CT_OPMAAK.accent)
         : (CT_OPMAAK.achtergrond===st.opmaak.achtergrond&&CT_OPMAAK.accent===st.opmaak.accent);
+      // De kaart is een klein live-canvas dat elk frame met exact dezelfde
+      // functie tekent als de export (ctFramePainter). Wat je hier ziet IS
+      // wat er gedownload wordt; verschil is daarmee onmogelijk. De bron
+      // (video of foto) hangt er onzichtbaar naast als beeld- en klokbron.
       return `<div class="ig-kaart ${actief?'on':''}" data-igstijl="${st.key}">
         <div class="keuze"><span>${esc(st.naam)}</span><span>${actief?'✓ gekozen':'klik om te kiezen'}</span></div>
         <div class="ig-frame reel"><div class="ig-media">
-          ${beeld}
-          ${mediaGebakken?'':`<div class="ig-hooktekst ${st.key}">${hookOpmaak(hook,st.key)}
-            ${CT.ctaOverlay&&CT.ctaOverlay.tekst?(()=>{const cs=CT.ctaOverlay.stijl||'zwartblok';
-              const basis=`font-size:${(8.3*((CT.ctaOverlay.maat)||1)).toFixed(1)}px;font-weight:${CT.ctaOverlay.vet?700:400};margin-top:7px;letter-spacing:0;opacity:0;animation:ctaIn .4s ease ${(CT.ctaOverlay.na||0)}s forwards;`;
-              const per={zwartblok:'color:#fff;text-shadow:none;',witblok:'color:#111;text-shadow:none;',wit:'color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.65);',zwart:'color:#111;text-shadow:0 1px 3px rgba(255,255,255,.55);'}[cs];
-              const pill=cs==='zwartblok'?'<span style="background:rgba(0,0,0,.85);padding:3px 10px;border-radius:7px;display:inline-block">':cs==='witblok'?'<span style="background:#fff;padding:3px 10px;border-radius:7px;display:inline-block">':'<span>';
-              return `<div style="${basis}${per}">${pill}${esc(CT.ctaOverlay.tekst)}</span></div>`;})():''}
-          </div>
-          <div class="ig-scriptregel" data-live-script style="display:none"></div>
-          <div class="ig-subs" data-live-subs style="display:none"></div>`}
+          ${isVideo(m0)
+            ? `<video class="ig-bron" src="${ctPubliek(m0.path)}" muted playsinline loop autoplay crossorigin="anonymous" style="position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none"></video>`
+            : `<img class="ig-bron" src="${ctPubliek(m0.path)}" alt="" crossorigin="anonymous" style="position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none">`}
+          <canvas class="ig-live" width="540" height="960" data-stijl="${st.key}"></canvas>
           <div class="ig-reelhud">
             <div class="onder">
               <div class="wie"><span class="ig-avatar"><i>S</i></span> stevenbalivillas <span class="volg">Volgen</span></div>
@@ -3949,6 +4002,7 @@ function ctPreviewTekenen(){
   // Geen muziek willen horen = de track weghalen (of de computer op stil).
   CT.geluid=true;
   ctPreviewGeluid();
+  ctPreviewCanvasStart();
   // De caption groeit mee met de inhoud zodat je nooit in het vak scrollt
   const capTa=document.querySelector('#ct_caption');
   if(capTa&&!capTa.dataset.groei){
@@ -4909,6 +4963,9 @@ const voKaal=w=>w.toLowerCase().replace(/[^a-z0-9à-ÿ]/g,'');
 
 function voTekenen(){
   const vak=$('#ct_voice'); if(!vak) return;
+  // Zodra er niet meer gerenderd wordt verdwijnt de voortgang uit Afronden.
+  const apKlaar=$('#ct_afrond_prog');
+  if(apKlaar&&VO.stand!=='renderen'){ apKlaar.style.display='none'; apKlaar.innerHTML=''; }
 
   /* De muziekrij staat los van de opname-toestand: muziek kan onder een
      voice-over (gedempt, jouw stem blijft verstaanbaar) of als enige audio
@@ -5021,13 +5078,22 @@ function voTekenen(){
     $('#vo_render').onclick=()=>voRender(false);
     $('#vo_opnieuw').onclick=()=>{VO={...VO,stand:'leeg',blob:null,woorden:[]};voTekenen();};
   }else if(VO.stand==='renderen'){
-    vak.innerHTML=`
+    const progHtml=`
       <div style="display:flex;align-items:center;gap:10px;font-weight:700">
         <span class="vo-spin"></span> 🎬 Video wordt gemaakt · <span id="vo_rprog">0</span>%
       </div>
       <div class="vo-balk"><i id="vo_rbalk"></i></div>
       <div id="vo_rcanvas" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden" aria-hidden="true"></div>
       <div class="bc-hint" style="margin-top:6px">B-roll, tekst${VO.url?', je stem':''}${VO.muziekUrl?' en muziek':''} worden samengevoegd tot het definitieve bestand. Duurt ongeveer zo lang als de clip zelf; laat dit tabblad open en zichtbaar.</div>`;
+    // Gestart vanuit Afronden (Download of Direct posten)? Dan hoort de
+    // voortgang ook dáár te staan, niet in het muziekblok bovenaan.
+    const ap=$('#ct_afrond_prog');
+    if(VO.renderInAfronden&&ap){
+      ap.style.display='block'; ap.innerHTML=progHtml;
+      vak.innerHTML=`<div class="muted" style="font-size:13px">🎬 De video wordt gemaakt; de voortgang staat onderaan bij Afronden.</div>`;
+    }else{
+      vak.innerHTML=progHtml;
+    }
   }else if(VO.stand==='video'){
     vak.innerHTML=muziekRij+`
       <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
@@ -5206,6 +5272,158 @@ function voTijdenAanvullen(){
    en de opgenomen stem als audiospoor. MediaRecorder maakt er mp4 van waar de
    browser dat kan; anders webm, en dan zegt de UI eerlijk dat Instagram mp4
    wil. */
+/* EEN tekenfunctie voor previews en de definitieve bak. Beide tekenen elk
+   frame met exact deze code in 1080x1920-ruimte (de preview geschaald via de
+   transform), dus preview en download KUNNEN niet meer verschillen. */
+function ctOmEffectief(stijlKey){
+  const kaart=(typeof CT_STIJLEN!=='undefined'&&CT_STIJLEN.find(x=>x.key===(stijlKey||CT.stijl)))||null;
+  if(!kaart) return CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
+  const om={...kaart.opmaak, font:CT_OPMAAK.font, maat:CT_OPMAAK.maat};
+  if(kaart.key==='blok'&&CT_OPMAAK.achtergrond==='zwart') om.achtergrond='zwart';
+  return om;
+}
+function ctFramePainter(ctx,bron,isVideo,t,cfg){
+  const kaalWoord=w=>String(w).replace(/[.!?]+$/,'');
+  const brokVoor=tv0=>{ const tv=tv0+0.15;
+    for(let i=cfg.brokken.length-1;i>=0;i--){ const b=cfg.brokken[i];
+      if(tv>=(b[0].t||0)) return {b,i}; } return null; };
+    // Tekent een tekstblok in de gekozen opmaak (font, achtergrond, schaduw),
+    // met regelterugloop binnen 940px. Gebruikt voor de hook bovenin en het
+    // overlay-script in het midden, zodat de bak exact de preview volgt.
+    const blokTekenen=(tekst,yMid,grootte)=>{
+      const om=cfg.om;
+      const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
+      ctx.textAlign='left';
+      ctx.font=ctFontStr(f,grootte);
+      try{ ctx.letterSpacing=ctSpatiePx(f,grootte); }catch(e){}
+      const basisB=grootte*(f.schaal||1)*(om.maat||1);
+      // Met een achtergrondblok krijgt elke regel lucht, zoals de A-knop van
+      // de Instagram-editor; losse tekst houdt de regelafstand van het font.
+      const regelH=Math.round(basisB*(om.achtergrond!=='geen'?1.5:(f.regel||1.2)));
+      const toon=w=>f.caps?w.toUpperCase():w;
+      const woorden=String(tekst).split(/\s+/); const regels=[]; let r='';
+      for(const w of woorden){const kand=r?r+' '+toon(w):toon(w);
+        if(ctx.measureText(kand).width>940&&r){regels.push(r);r=toon(w);} else r=kand;}
+      if(r)regels.push(r);
+      let y=yMid-Math.round((regels.length-1)*regelH/2);
+      for(const regel of regels){
+        const breed=ctx.measureText(regel).width; const x=540-breed/2;
+        if(om.achtergrond!=='geen'){
+          const wit=om.achtergrond==='wit', semi=om.achtergrond==='semi';
+          // Zachte rand onder het blok, net als in de preview: anders leest
+          // een wit blok boven fel beeld als grijs.
+          ctx.shadowColor='rgba(0,0,0,.28)'; ctx.shadowBlur=10; ctx.shadowOffsetY=2;
+          ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
+          const padX=Math.round(basisB*0.5);
+          const hoog=Math.round(basisB*1.32);
+          ctx.beginPath(); ctx.roundRect(x-padX,y-Math.round(basisB*0.98),breed+padX*2,hoog,Math.round(basisB*0.3)); ctx.fill();
+          ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+          ctx.fillStyle=wit?'#111111':'#ffffff';
+        }else{
+          ctSchaduw(ctx,f);
+          if(f.rand){ ctx.lineWidth=11; ctx.strokeStyle='#000000'; ctx.strokeText(regel,x,y); }
+          else { ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.strokeText(regel,x,y); }
+          ctx.fillStyle='#ffffff';
+        }
+        ctx.fillText(regel,x,y); y+=regelH;
+      }
+      ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+      return y; // de basislijn onder het blok, voor wat eronder moet komen
+    };
+      const bw=isVideo?bron.videoWidth:bron.naturalWidth, bh=isVideo?bron.videoHeight:bron.naturalHeight;
+      const sch=Math.max(1080/bw,1920/bh);
+      ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1920);
+      ctx.drawImage(bron,(1080-bw*sch)/2,(1920-bh*sch)/2,bw*sch,bh*sch);
+      let hookOnder=null;
+      if(cfg.hookTekst) hookOnder=blokTekenen(cfg.hookTekst, 380, 64);
+      if(cfg.ovl){
+        const actief=cfg.ovl.find(o=>t>=o.van&&t<=o.tot);
+        if(actief) blokTekenen(actief.tekst, 960, 58);
+      }
+      // De CTA in beeld: onder de hookzone, vanaf het gekozen moment tot het
+      // einde, zodat de kijker eerst de hook leest en dan de vervolgstap ziet.
+      if(cfg.cta&&cfg.cta.tekst&&t>=(cfg.cta.na||0)){
+        const cs=cfg.cta.stijl||'zwartblok';
+        ctx.font=`${cfg.cta.vet?700:400} ${Math.round(42*((cfg.cta.maat)||1))}px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif`;
+        ctx.textAlign='left';
+        const ctaB=ctx.measureText(cfg.cta.tekst).width;
+        // Direct onder de hook, hoe hoog die ook uitvalt; zonder hook op de
+        // oude vaste plek.
+        const cx=540-ctaB/2, cy=(typeof hookOnder==='number'?hookOnder+8:510);
+        if(cs==='zwartblok'||cs==='witblok'){
+          ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+          ctx.fillStyle=cs==='zwartblok'?'rgba(0,0,0,.85)':'#ffffff';
+          ctx.beginPath(); ctx.roundRect(cx-18,cy-40,ctaB+36,58,12); ctx.fill();
+          ctx.fillStyle=cs==='zwartblok'?'#ffffff':'#111111';
+        }else{
+          if(cs==='wit'){ ctx.shadowColor='rgba(0,0,0,.6)'; ctx.fillStyle='#ffffff'; }
+          else { ctx.shadowColor='rgba(255,255,255,.55)'; ctx.fillStyle='#111111'; }
+          ctx.shadowBlur=8; ctx.shadowOffsetY=2;
+        }
+        ctx.fillText(cfg.cta.tekst,cx,cy);
+        ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+      }
+      const hit=brokVoor(t);
+      if(hit){
+        const woorden=hit.b, van=woorden[0].t||0;
+        const tot=(woorden[woorden.length-1].t??cfg.duur)+0.35;
+        if(t<=tot){
+          // in de opmaak die in de preview gekozen is: font, achtergrond,
+          // accent; de tekstkleur keert om met de achtergrond
+          const om=cfg.om;
+          const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
+          ctx.font=ctFontStr(f,64);
+          try{ ctx.letterSpacing=ctSpatiePx(f,64); }catch(e){}
+          const toon=w=>{const k=kaalWoord(w);return f.caps?k.toUpperCase():k;};
+          // Lange brokken wikkelen naar meerdere gecentreerde regels in
+          // plaats van de volle breedte over; in de blok-stijl krijgt elke
+          // regel zijn eigen balk, zoals de A-knop van Instagram.
+          const regelH=Math.round(64*(f.schaal||1)*(om.maat||1)*(f.regel||1.2));
+          const regelsK=[]; let rijK=[]; let rijBreed=0;
+          for(const w of woorden){
+            const wb=ctx.measureText(toon(w.w)+' ').width;
+            if(rijBreed+wb>860&&rijK.length){regelsK.push(rijK);rijK=[];rijBreed=0;}
+            rijK.push(w); rijBreed+=wb;
+          }
+          if(rijK.length)regelsK.push(rijK);
+          let y=1490-(regelsK.length-1)*regelH;
+          const accent=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
+          for(const rij of regelsK){
+            const breed=rij.reduce((a,w)=>a+ctx.measureText(toon(w.w)+' ').width,0);
+            let x=540-breed/2;
+            if(om.achtergrond!=='geen'){
+              const wit=om.achtergrond==='wit', semi=om.achtergrond==='semi';
+              ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+              const pad=22;
+              ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
+              ctx.beginPath(); ctx.roundRect(x-pad,y-regelH*0.72,breed+pad*2,regelH*0.98,14); ctx.fill();
+              for(const w of rij){
+                const gezegd=t>=(w.t||0);
+                ctx.fillStyle = om.accent&&accent(w.w)
+                  ? '#c9a400'
+                  : (wit ? (gezegd?'#111111':'#8a8a8a') : (gezegd?'#ffffff':'#c9c9c9'));
+                ctx.fillText(toon(w.w),x,y); x+=ctx.measureText(toon(w.w)+' ').width;
+              }
+            }else{
+              ctSchaduw(ctx,f);
+              for(const w of rij){
+                const gezegd=t>=(w.t||0);
+                ctx.fillStyle = om.accent&&accent(w.w) ? '#FFE234' : '#ffffff';
+                ctx.globalAlpha = gezegd?1:0.55;
+                if(f.rand){ ctx.lineWidth=12; ctx.strokeStyle='#000000'; ctx.strokeText(toon(w.w),x,y); }
+                else { ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.strokeText(toon(w.w),x,y); }
+                ctx.fillText(toon(w.w),x,y);
+                x+=ctx.measureText(toon(w.w)+' ').width;
+              }
+              ctx.globalAlpha=1;
+            }
+            y+=regelH;
+          }
+          try{ ctx.letterSpacing='0px'; }catch(e){}
+        }
+      }
+  }
+
 async function voRender(alleenMuziek, metTekst){
   // metTekst bepaalt of hook, tijdscript en CTA in de video gebrand worden.
   // Zonder expliciete keuze geldt de vorige keuze (zodat een muziekwissel
@@ -5375,10 +5593,6 @@ async function voRender(alleenMuziek, metTekst){
     // (de bug waardoor alleen de laatste regel in beeld kwam). Met een stem
     // volgt hij bovendien de stemklok, die is exact.
     let start=performance.now();
-    // De effectieve opmaak = de gekozen stijlkaart (Strak wit / Tekstblok /
-    // Subtiel blok) plus het gekozen font en de grootte; identiek aan wat de
-    // preview toont. Voorheen keek de bak alleen naar de achtergrond-chips en
-    // week hij dus af van de gekozen variant.
     const stijlKaart=(typeof CT_STIJLEN!=='undefined'&&CT_STIJLEN.find(x=>x.key===CT.stijl))||null;
     const omEffectief=(()=>{
       if(!stijlKaart) return CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
@@ -5386,49 +5600,6 @@ async function voRender(alleenMuziek, metTekst){
       if(stijlKaart.key==='blok'&&CT_OPMAAK.achtergrond==='zwart') om.achtergrond='zwart';
       return om;
     })();
-    // Tekent een tekstblok in de gekozen opmaak (font, achtergrond, schaduw),
-    // met regelterugloop binnen 940px. Gebruikt voor de hook bovenin en het
-    // overlay-script in het midden, zodat de bak exact de preview volgt.
-    const blokTekenen=(tekst,yMid,grootte)=>{
-      const om=omEffectief;
-      const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
-      ctx.textAlign='left';
-      ctx.font=ctFontStr(f,grootte);
-      try{ ctx.letterSpacing=ctSpatiePx(f,grootte); }catch(e){}
-      const basisB=grootte*(f.schaal||1)*(CT_OPMAAK.maat||1);
-      // Met een achtergrondblok krijgt elke regel lucht, zoals de A-knop van
-      // de Instagram-editor; losse tekst houdt de regelafstand van het font.
-      const regelH=Math.round(basisB*(om.achtergrond!=='geen'?1.5:(f.regel||1.2)));
-      const toon=w=>f.caps?w.toUpperCase():w;
-      const woorden=String(tekst).split(/\s+/); const regels=[]; let r='';
-      for(const w of woorden){const kand=r?r+' '+toon(w):toon(w);
-        if(ctx.measureText(kand).width>940&&r){regels.push(r);r=toon(w);} else r=kand;}
-      if(r)regels.push(r);
-      let y=yMid-Math.round((regels.length-1)*regelH/2);
-      for(const regel of regels){
-        const breed=ctx.measureText(regel).width; const x=540-breed/2;
-        if(om.achtergrond!=='geen'){
-          const wit=om.achtergrond==='wit', semi=om.achtergrond==='semi';
-          // Zachte rand onder het blok, net als in de preview: anders leest
-          // een wit blok boven fel beeld als grijs.
-          ctx.shadowColor='rgba(0,0,0,.28)'; ctx.shadowBlur=10; ctx.shadowOffsetY=2;
-          ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
-          const padX=Math.round(basisB*0.5);
-          const hoog=Math.round(basisB*1.32);
-          ctx.beginPath(); ctx.roundRect(x-padX,y-Math.round(basisB*0.98),breed+padX*2,hoog,Math.round(basisB*0.3)); ctx.fill();
-          ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-          ctx.fillStyle=wit?'#111111':'#ffffff';
-        }else{
-          ctSchaduw(ctx,f);
-          if(f.rand){ ctx.lineWidth=11; ctx.strokeStyle='#000000'; ctx.strokeText(regel,x,y); }
-          else { ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.strokeText(regel,x,y); }
-          ctx.fillStyle='#ffffff';
-        }
-        ctx.fillText(regel,x,y); y+=regelH;
-      }
-      ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-      return y; // de basislijn onder het blok, voor wat eronder moet komen
-    };
     // De hook stond wel in de preview maar werd nooit meegebakken; dat is
     // precies de tekst waar de kijker op blijft hangen, dus hij gaat er nu
     // altijd in, bovenin, de hele reel lang.
@@ -5437,98 +5608,10 @@ async function voRender(alleenMuziek, metTekst){
       return String(hs[Math.min(CT.hookKeus||0,hs.length-1)]||''); })();
     const teken=()=>{
       const t=(metStem&&stem)?stem.currentTime:(performance.now()-start)/1000;
-      const bw=isVideo?bron.videoWidth:bron.naturalWidth, bh=isVideo?bron.videoHeight:bron.naturalHeight;
-      const sch=Math.max(1080/bw,1920/bh);
-      ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1920);
-      ctx.drawImage(bron,(1080-bw*sch)/2,(1920-bh*sch)/2,bw*sch,bh*sch);
-      let hookOnder=null;
-      if(hookTekst) hookOnder=blokTekenen(hookTekst, 380, 64);
-      if(ovl){
-        const actief=ovl.find(o=>t>=o.van&&t<=o.tot);
-        if(actief) blokTekenen(actief.tekst, 960, 58);
-      }
-      // De CTA in beeld: onder de hookzone, vanaf het gekozen moment tot het
-      // einde, zodat de kijker eerst de hook leest en dan de vervolgstap ziet.
-      if((metTekst||metStem)&&CT.ctaOverlay&&CT.ctaOverlay.tekst&&t>=(CT.ctaOverlay.na||0)){
-        const cs=CT.ctaOverlay.stijl||'zwartblok';
-        ctx.font=`${CT.ctaOverlay.vet?700:400} ${Math.round(42*((CT.ctaOverlay.maat)||1))}px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif`;
-        ctx.textAlign='left';
-        const ctaB=ctx.measureText(CT.ctaOverlay.tekst).width;
-        // Direct onder de hook, hoe hoog die ook uitvalt; zonder hook op de
-        // oude vaste plek.
-        const cx=540-ctaB/2, cy=(typeof hookOnder==='number'?hookOnder+8:510);
-        if(cs==='zwartblok'||cs==='witblok'){
-          ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-          ctx.fillStyle=cs==='zwartblok'?'rgba(0,0,0,.85)':'#ffffff';
-          ctx.beginPath(); ctx.roundRect(cx-18,cy-40,ctaB+36,58,12); ctx.fill();
-          ctx.fillStyle=cs==='zwartblok'?'#ffffff':'#111111';
-        }else{
-          if(cs==='wit'){ ctx.shadowColor='rgba(0,0,0,.6)'; ctx.fillStyle='#ffffff'; }
-          else { ctx.shadowColor='rgba(255,255,255,.55)'; ctx.fillStyle='#111111'; }
-          ctx.shadowBlur=8; ctx.shadowOffsetY=2;
-        }
-        ctx.fillText(CT.ctaOverlay.tekst,cx,cy);
-        ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-      }
-      const hit=brokVoor(t);
-      if(hit){
-        const woorden=hit.b, van=woorden[0].t||0;
-        const tot=(woorden[woorden.length-1].t??duur)+0.35;
-        if(t<=tot){
-          // in de opmaak die in de preview gekozen is: font, achtergrond,
-          // accent; de tekstkleur keert om met de achtergrond
-          const om=omEffectief;
-          const f=CT_FONTS.find(z=>z.key===om.font)||CT_FONTS[0];
-          ctx.font=ctFontStr(f,64);
-          try{ ctx.letterSpacing=ctSpatiePx(f,64); }catch(e){}
-          const toon=w=>{const k=kaalWoord(w);return f.caps?k.toUpperCase():k;};
-          // Lange brokken wikkelen naar meerdere gecentreerde regels in
-          // plaats van de volle breedte over; in de blok-stijl krijgt elke
-          // regel zijn eigen balk, zoals de A-knop van Instagram.
-          const regelH=Math.round(64*(f.schaal||1)*(CT_OPMAAK.maat||1)*(f.regel||1.2));
-          const regelsK=[]; let rijK=[]; let rijBreed=0;
-          for(const w of woorden){
-            const wb=ctx.measureText(toon(w.w)+' ').width;
-            if(rijBreed+wb>860&&rijK.length){regelsK.push(rijK);rijK=[];rijBreed=0;}
-            rijK.push(w); rijBreed+=wb;
-          }
-          if(rijK.length)regelsK.push(rijK);
-          let y=1490-(regelsK.length-1)*regelH;
-          const accent=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
-          for(const rij of regelsK){
-            const breed=rij.reduce((a,w)=>a+ctx.measureText(toon(w.w)+' ').width,0);
-            let x=540-breed/2;
-            if(om.achtergrond!=='geen'){
-              const wit=om.achtergrond==='wit', semi=om.achtergrond==='semi';
-              ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-              const pad=22;
-              ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
-              ctx.beginPath(); ctx.roundRect(x-pad,y-regelH*0.72,breed+pad*2,regelH*0.98,14); ctx.fill();
-              for(const w of rij){
-                const gezegd=t>=(w.t||0);
-                ctx.fillStyle = om.accent&&accent(w.w)
-                  ? '#c9a400'
-                  : (wit ? (gezegd?'#111111':'#8a8a8a') : (gezegd?'#ffffff':'#c9c9c9'));
-                ctx.fillText(toon(w.w),x,y); x+=ctx.measureText(toon(w.w)+' ').width;
-              }
-            }else{
-              ctSchaduw(ctx,f);
-              for(const w of rij){
-                const gezegd=t>=(w.t||0);
-                ctx.fillStyle = om.accent&&accent(w.w) ? '#FFE234' : '#ffffff';
-                ctx.globalAlpha = gezegd?1:0.55;
-                if(f.rand){ ctx.lineWidth=12; ctx.strokeStyle='#000000'; ctx.strokeText(toon(w.w),x,y); }
-                else { ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.strokeText(toon(w.w),x,y); }
-                ctx.fillText(toon(w.w),x,y);
-                x+=ctx.measureText(toon(w.w)+' ').width;
-              }
-              ctx.globalAlpha=1;
-            }
-            y+=regelH;
-          }
-          try{ ctx.letterSpacing='0px'; }catch(e){}
-        }
-      }
+      ctFramePainter(ctx,bron,isVideo,t,{
+        om:omEffectief, hookTekst, ovl, brokken, duur,
+        cta:((metTekst||metStem)&&CT.ctaOverlay&&CT.ctaOverlay.tekst)?CT.ctaOverlay:null,
+      });
       const prog=$('#vo_rprog'); if(prog) prog.textContent=Math.min(Math.round(t/duur*100),99);
       const balk=$('#vo_rbalk'); if(balk) balk.style.width=Math.min(Math.round(t/duur*100),99)+'%';
       if(t<duur+0.1) requestAnimationFrame(teken);
@@ -5590,6 +5673,7 @@ async function ctExporteer(voorApp){
   try{
     if(!VO.videoBlob||VO.bakVinger!==ctBakVinger()){
       toast('Ik bak eerst de definitieve video; duurt ongeveer zo lang als de clip zelf','ok');
+      VO.renderInAfronden=true; // de voortgang hoort bij de knop die je indrukte
       await voRender(!VO.url, true);
       if(!VO.url){ VO.stand='leeg'; voTekenen(); }
     }
@@ -5599,7 +5683,7 @@ async function ctExporteer(voorApp){
     const tags=CT.pakket?ctEersteReactie(CT.pakket):'';
     ctKopieer(cap+(tags?'\n\n--- eerste comment ---\n'+tags:''));
     toast('Video gedownload; caption en de eerste comment staan op je klembord','ok');
-  } finally { if(knop) knop.disabled=false; }
+  } finally { VO.renderInAfronden=false; if(knop) knop.disabled=false; }
 }
 /* Een tab met oude code bakt of post oude resultaten; dat blokkeren we hard. */
 async function ctVersieActueel(){
@@ -5631,7 +5715,8 @@ async function ctDirectPosten(){
     if(CT.soort==='reel'&&isVid){
       if(!VO.videoBlob||VO.bakVinger!==ctBakVinger()){
         toast('Ik bak eerst de definitieve video; duurt ongeveer zo lang als de clip zelf','ok');
-        await voRender(!VO.url, true);
+        VO.renderInAfronden=true; // de voortgang hoort bij de knop die je indrukte
+        try{ await voRender(!VO.url, true); } finally { VO.renderInAfronden=false; }
         if(!VO.url){ VO.stand='leeg'; voTekenen(); }
       }
       if(!VO.videoBlob||VO.bakVinger!==ctBakVinger()){toast('De video kon niet gemaakt worden','err');return;}
