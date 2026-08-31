@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-ig-pillen';
+const APP_VERSIE='2026-08-31-cta-onder-hook';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -5418,6 +5418,7 @@ async function voRender(alleenMuziek, metTekst){
         ctx.fillText(regel,x,y); y+=regelH;
       }
       ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+      return y; // de basislijn onder het blok, voor wat eronder moet komen
     };
     // De hook stond wel in de preview maar werd nooit meegebakken; dat is
     // precies de tekst waar de kijker op blijft hangen, dus hij gaat er nu
@@ -5431,7 +5432,8 @@ async function voRender(alleenMuziek, metTekst){
       const sch=Math.max(1080/bw,1920/bh);
       ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1920);
       ctx.drawImage(bron,(1080-bw*sch)/2,(1920-bh*sch)/2,bw*sch,bh*sch);
-      if(hookTekst) blokTekenen(hookTekst, 380, 64);
+      let hookOnder=null;
+      if(hookTekst) hookOnder=blokTekenen(hookTekst, 380, 64);
       if(ovl){
         const actief=ovl.find(o=>t>=o.van&&t<=o.tot);
         if(actief) blokTekenen(actief.tekst, 960, 58);
@@ -5443,7 +5445,9 @@ async function voRender(alleenMuziek, metTekst){
         ctx.font=`${CT.ctaOverlay.vet?700:400} ${Math.round(42*((CT.ctaOverlay.maat)||1))}px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif`;
         ctx.textAlign='left';
         const ctaB=ctx.measureText(CT.ctaOverlay.tekst).width;
-        const cx=540-ctaB/2, cy=510;
+        // Direct onder de hook, hoe hoog die ook uitvalt; zonder hook op de
+        // oude vaste plek.
+        const cx=540-ctaB/2, cy=(typeof hookOnder==='number'?hookOnder+8:510);
         if(cs==='zwartblok'||cs==='witblok'){
           ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
           ctx.fillStyle=cs==='zwartblok'?'rgba(0,0,0,.85)':'#ffffff';
