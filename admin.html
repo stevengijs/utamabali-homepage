@@ -1096,7 +1096,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-kleur-origineel';
+const APP_VERSIE='2026-08-31-4k-master';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -4436,16 +4436,15 @@ function ctTrimTekenen(){
 }
 
 /* ============== GROTE VIDEO'S VERKLEINEN ==============
-   iPhone-video's zijn 4K HEVC met bitrates van 50 Mbps en meer; een clip van
-   een paar minuten is dan honderden MB's. Instagram codeert alles toch terug
-   naar zo'n 1080p, dus we doen dat hier alvast: opnieuw coderen op 1080p met
-   10 Mbps. Visueel verliesvrij voor social (echt lossless verkleinen bestaat
-   niet), en een factor vijf a tien kleiner. Het duurt wel zo lang als de clip
-   zelf duurt: de browser speelt hem af en neemt het resultaat op, dezelfde
-   beproefde pijplijn als de voice-over-render. Audio gaat mee via de
-   AudioContext (het element zelf blijft stil).
-   Boven deze grens wordt automatisch verkleind: */
-const VIDEO_VERKLEIN_GRENS = 200*1048576;
+   Kwaliteit gaat voor: originele footage blijft origineel. Alleen bestanden
+   die anders niet in de opslag passen (bucketlimiet 2 GB) worden opnieuw
+   gecodeerd, en dan op 4K met 28 Mbps en 320 kbps audio in plaats van het
+   oude 1080p/10 Mbps/128 kbps, dat als bron voor de bak zichtbaar en hoorbaar
+   kwaliteit kostte. Het duurt zo lang als de clip zelf duurt: de browser
+   speelt hem af en neemt het resultaat op, dezelfde beproefde pijplijn als de
+   voice-over-render. Audio gaat mee via de AudioContext (het element zelf
+   blijft stil). Boven deze grens wordt automatisch verkleind: */
+const VIDEO_VERKLEIN_GRENS = 1500*1048576;
 
 async function videoVerkleinen(file, status){
   const url=URL.createObjectURL(file);
@@ -4456,8 +4455,8 @@ async function videoVerkleinen(file, status){
     if(!isFinite(duur)||duur<=0) throw new Error('videoduur onbekend');
     if(duur>15*60) throw new Error('langer dan 15 minuten; knip hem eerst');
 
-    // 1080 op de korte zijde, de verhouding blijft
-    const sch=Math.min(1, 1080/Math.min(v.videoWidth, v.videoHeight));
+    // 2160 op de korte zijde (4K), de verhouding blijft
+    const sch=Math.min(1, 2160/Math.min(v.videoWidth, v.videoHeight));
     const bw=Math.round(v.videoWidth*sch/2)*2, bh=Math.round(v.videoHeight*sch/2)*2;
     const canvas=document.createElement('canvas'); canvas.width=bw; canvas.height=bh;
     const ctx=canvas.getContext('2d');
@@ -4468,9 +4467,9 @@ async function videoVerkleinen(file, status){
 
     const beeld=canvas.captureStream(30);
     const sporen=[...beeld.getVideoTracks(),...bestem.stream.getAudioTracks()];
-    const mime=['video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm']
+    const mime=['video/mp4;codecs=avc1.640033,mp4a.40.2','video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm']
       .find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||'video/webm';
-    const uit=[]; const opn=new MediaRecorder(new MediaStream(sporen),{mimeType:mime,videoBitsPerSecond:10_000_000,audioBitsPerSecond:128_000});
+    const uit=[]; const opn=new MediaRecorder(new MediaStream(sporen),{mimeType:mime,videoBitsPerSecond:28_000_000,audioBitsPerSecond:320_000});
     opn.ondataavailable=e=>{if(e.data.size)uit.push(e.data);};
     const klaar=new Promise(ok=>{opn.onstop=ok;});
 
@@ -5631,7 +5630,13 @@ async function voRender(alleenMuziek, metTekst){
       }
     }
 
-    const canvas=document.createElement('canvas'); canvas.width=1080; canvas.height=1920;
+    // De bak is een 4K-master (2160x3840). De tekenfunctie werkt in de
+    // 1080x1920-ruimte; de vaste transform schaalt alles verliesvrij op, dus
+    // tekst wordt op 4K gerasterd (vlijmscherp) en de b-roll verliest niets
+    // extra's. Preview en export delen dezelfde tekenfunctie; alleen de
+    // uitvoerresolutie verschilt.
+    const S=2;
+    const canvas=document.createElement('canvas'); canvas.width=1080*S; canvas.height=1920*S;
     // Display-P3 waar het kan: iPhone-footage is vaak P3/HDR en zag er in het
     // standaard sRGB-canvas uitgewassen uit, alsof er een filter overheen lag.
     // Bewust gewoon sRGB. Het display-p3-experiment (tegen het "uitgewassen"
@@ -5640,6 +5645,7 @@ async function voRender(alleenMuziek, metTekst){
     // verschoven in het bestand. sRGB in = sRGB uit; het origineel blijft
     // het origineel.
     const ctx=canvas.getContext('2d');
+    ctx.setTransform(S,0,0,S,0,0);
     // live meekijken: het canvas waar op getekend wordt hangt klein in de UI
     const kijk=$('#vo_rcanvas');
     if(kijk){ canvas.style.cssText='width:150px;border-radius:10px;display:block;box-shadow:0 4px 16px rgba(0,0,0,.2)'; kijk.appendChild(canvas); }
@@ -5721,9 +5727,13 @@ async function voRender(alleenMuziek, metTekst){
 
     const beeldStroom=canvas.captureStream(30);
     const mix=new MediaStream([...beeldStroom.getVideoTracks(),...bestem.stream.getAudioTracks()]);
-    VO.mime=['video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm']
+    // High Level 5.1 voorop: dat H.264-profiel is nodig voor 4K; Level 4.0
+    // gaat maar tot ~1080p. Audio expliciet op 320 kbps AAC (transparant);
+    // zonder die instelling pakt de browser ~128 kbps en dat hoor je in de
+    // muziek terug.
+    VO.mime=['video/mp4;codecs=avc1.640033,mp4a.40.2','video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm']
       .find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||'video/webm';
-    const uit=[]; const opn=new MediaRecorder(mix,{mimeType:VO.mime,videoBitsPerSecond:6_000_000});
+    const uit=[]; const opn=new MediaRecorder(mix,{mimeType:VO.mime,videoBitsPerSecond:28_000_000,audioBitsPerSecond:320_000});
     opn.ondataavailable=e=>{if(e.data.size)uit.push(e.data);};
     const klaarBelofte=new Promise(ok=>{opn.onstop=ok;});
 
