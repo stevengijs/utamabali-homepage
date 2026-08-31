@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-stijl-en-stil';
+const APP_VERSIE='2026-08-31-ig-pillen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -5386,7 +5386,10 @@ async function voRender(alleenMuziek, metTekst){
       ctx.textAlign='left';
       ctx.font=ctFontStr(f,grootte);
       try{ ctx.letterSpacing=ctSpatiePx(f,grootte); }catch(e){}
-      const regelH=Math.round(grootte*(f.schaal||1)*(CT_OPMAAK.maat||1)*(f.regel||1.2));
+      const basisB=grootte*(f.schaal||1)*(CT_OPMAAK.maat||1);
+      // Met een achtergrondblok krijgt elke regel lucht, zoals de A-knop van
+      // de Instagram-editor; losse tekst houdt de regelafstand van het font.
+      const regelH=Math.round(basisB*(om.achtergrond!=='geen'?1.5:(f.regel||1.2)));
       const toon=w=>f.caps?w.toUpperCase():w;
       const woorden=String(tekst).split(/\s+/); const regels=[]; let r='';
       for(const w of woorden){const kand=r?r+' '+toon(w):toon(w);
@@ -5401,8 +5404,9 @@ async function voRender(alleenMuziek, metTekst){
           // een wit blok boven fel beeld als grijs.
           ctx.shadowColor='rgba(0,0,0,.28)'; ctx.shadowBlur=10; ctx.shadowOffsetY=2;
           ctx.fillStyle=wit?'#ffffff':(semi?'rgba(17,17,17,0.55)':'#111111');
-          const pad=Math.round(regelH*0.28);
-          ctx.beginPath(); ctx.roundRect(x-pad,y-regelH*0.78,breed+pad*2,regelH*1.05,Math.round(regelH*0.22)); ctx.fill();
+          const padX=Math.round(basisB*0.5);
+          const hoog=Math.round(basisB*1.32);
+          ctx.beginPath(); ctx.roundRect(x-padX,y-Math.round(basisB*0.98),breed+padX*2,hoog,Math.round(basisB*0.3)); ctx.fill();
           ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
           ctx.fillStyle=wit?'#111111':'#ffffff';
         }else{
