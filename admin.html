@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-afronden-simpel';
+const APP_VERSIE='2026-08-31-startknop-slim';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3134,7 +3134,7 @@ async function renderContent(){
   </div>`;
 
   document.querySelectorAll('[data-ctsoort]').forEach(b=>b.onclick=()=>{
-    CT.soort=b.dataset.ctsoort; CT.pakket=null; CT.postId=null; CT.mediaOrigineel=null; $('#ct_pakket').style.display='none';
+    CT.soort=b.dataset.ctsoort; CT.pakket=null; CT.postId=null; CT.mediaOrigineel=null; $('#ct_pakket').style.display='none'; if($('#ct_genereer'))$('#ct_genereer').style.display='';
     ctTeken();
   });
   // Reels zijn de standaard; carousel en post zitten achter het plusje zodat
@@ -3411,6 +3411,9 @@ async function ctGenereer(){
 }
 
 function ctPakketTekenen(){
+  // Ligt er al een pakket, dan is de losse genereerknop overbodig (herschrijven
+  // gaat via het feedbackveld); zonder pakket is hij de startknop.
+  const gkn=$('#ct_genereer'); if(gkn) gkn.style.display=CT.pakket?'none':'';
   const pk=CT.pakket; if(!pk) return;
   const vak=$('#ct_pakket'); vak.style.display='';
   const kop=(t,knopId,kopieTekst)=>`<div class="kopje">${t}${kopieTekst!==undefined?`<button class="bc-zoekactie" data-kopieer="${esc(knopId)}">Kopieer</button>`:''}</div>`;
@@ -4868,7 +4871,7 @@ async function wkTekenen(){
     ctTeken();
     const hint=p0.pakket&&p0.pakket.aanlevering;
     if(hint) toast('Uploaden: '+hint,'ok');
-    if(CT.pakket) ctPakketTekenen(); else $('#ct_pakket').style.display='none';
+    if(CT.pakket) ctPakketTekenen(); else $('#ct_pakket').style.display='none'; if($('#ct_genereer'))$('#ct_genereer').style.display='';
     $('#ct_media').scrollIntoView({behavior:'smooth',block:'center'});
   });
 }
@@ -5768,7 +5771,7 @@ async function ctLijstLaden(){
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
     ctTeken();
     if(CT.pakket){ ctPakketTekenen(); if(p.caption&&$('#ct_caption'))$('#ct_caption').value=p.caption; }
-    else $('#ct_pakket').style.display='none';
+    else $('#ct_pakket').style.display='none'; if($('#ct_genereer'))$('#ct_genereer').style.display='';
     window.scrollTo({top:0,behavior:'smooth'});
   });
 }
