@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-muziek-compact';
+const APP_VERSIE='2026-08-31-afronden-simpel';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3512,23 +3512,18 @@ function ctPakketTekenen(){
     </div>
 
     <div class="ct-vak" style="grid-column:1/-1">
-      ${kop('Waarom dit zo in elkaar zit')}
-      <div style="font-size:13.5px;line-height:1.6">${esc(pk.waarom||'')}</div>
-      <div class="bc-hint">${esc(pk.beste_moment||'')}${pk.alt_tekst?` · Alt-tekst: ${esc(pk.alt_tekst)}`:''}</div>
-      <div class="bc-acties" style="padding:10px 0 0">
-        <button class="btn btn-primary btn-sm" id="ct_klaar">✓ Klaar om te plaatsen</button>
-        <button class="btn btn-ghost btn-sm" id="ct_gepost">Gepost</button>
-        <button class="btn btn-ghost btn-sm" id="ct_opnieuw" title="Laat de AI het hele pakket (hooks, caption, hashtags) opnieuw bedenken">✨ Genereer nieuwe versie</button>
+      ${kop('Afronden: downloaden of plaatsen')}
+      <div class="vo-knoppen" style="margin:0 0 8px">
+        ${CT.soort==='reel'?`<button class="btn btn-primary btn-sm" id="ct_download">⬇ Download video</button>
+        <button class="btn btn-primary btn-sm" id="ct_posten">🚀 Direct posten</button>`:''}
+        <button class="btn btn-ghost btn-sm" id="ct_gepost" title="Markeer als geplaatst wanneer je via de Instagram-app hebt gepost">✓ Gepost</button>
         <button class="btn btn-ghost btn-sm" id="ct_ster">☆ Favoriet</button>
       </div>
-    </div>
-
-    <div class="ct-vak" style="grid-column:1/-1">
-      ${kop('Afronden: downloaden of plaatsen')}
-      ${CT.soort==='reel'?`<div class="vo-knoppen" style="margin:0 0 8px">
-        <button class="btn btn-primary btn-sm" id="ct_download">⬇ Download video</button>
-        <button class="btn btn-primary btn-sm" id="ct_posten">🚀 Direct posten</button>
-      </div>
+      ${pk.waarom?`<details style="margin:0 0 8px"><summary class="bc-zoekactie" style="cursor:pointer;padding:2px 0">Waarom dit zo in elkaar zit</summary>
+        <div style="font-size:13px;line-height:1.6;margin-top:6px">${esc(pk.waarom||'')}</div>
+        <div class="bc-hint">${esc(pk.beste_moment||'')}${pk.alt_tekst?` · Alt-tekst: ${esc(pk.alt_tekst)}`:''}</div>
+      </details>`:''}
+      ${CT.soort==='reel'?`
       <div class="bc-hint" style="margin:0 0 10px">Downloaden bakt eerst automatisch de definitieve video, precies zoals de preview hem toont, en zet meteen de caption plus hashtags op je klembord: in de Instagram-app alleen nog plakken (en eventueel IG-muziek kiezen). Duurt ongeveer zo lang als de clip zelf; de voortgang zie je bij Muziek en voice-over.</div>`:''}
       <div id="ct_plaats"><span class="muted" style="font-size:13px">Instagram-koppeling controleren…</span></div>
     </div>
@@ -3650,14 +3645,12 @@ function ctPakketTekenen(){
     }catch(e){ toast('Nieuwe hooks mislukte: '+String(e&&e.message||e),'err'); }
     hn.disabled=false; hn.textContent=oud;
   };
-  $('#ct_klaar').onclick=()=>ctOpslaan('klaar');
-  $('#ct_gepost').onclick=()=>ctOpslaan('gepost');
-  $('#ct_opnieuw').onclick=ctGenereer;
-  $('#ct_ster').onclick=async()=>{
+  const gepostKnop=$('#ct_gepost'); if(gepostKnop) gepostKnop.onclick=()=>ctOpslaan('gepost');
+  const sterKnop=$('#ct_ster'); if(sterKnop) sterKnop.onclick=async()=>{
     if(!CT.postId){await ctOpslaan(null);}
     await sb.rpc('content_post_opslaan',{p_id:CT.postId,p_soort:null,p_onderwerp:null,p_project:null,
       p_doel:null,p_media:null,p_pakket:null,p_caption:null,p_status:null,p_favoriet:true});
-    $('#ct_ster').textContent='⭐ Favoriet'; toast('Bewaard als favoriet','ok'); ctLijstLaden();
+    if($('#ct_ster')) $('#ct_ster').textContent='⭐ Favoriet'; toast('Bewaard als favoriet','ok'); ctLijstLaden();
   };
   $('#ct_verbeter').onclick=ctVerbeter;
   const ctaT=$('#ct_cta_tekst'), ctaN=$('#ct_cta_na');
