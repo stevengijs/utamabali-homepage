@@ -527,6 +527,9 @@
                      anders als grijs (simultaancontrast) */
                   box-shadow:0 1px 6px rgba(0,0,0,.22)}
   .ig-hooktekst b{color:#FFE234}
+  .ig-scriptregel{position:absolute;top:52%;left:12px;right:12px;transform:translateY(-50%);
+                  text-align:center;color:#fff;font-weight:700;font-size:11.5px;line-height:1.5;
+                  text-shadow:0 1px 6px rgba(0,0,0,.8);pointer-events:none}
   /* Mediabibliotheek */
   .bib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
   .bib-item{position:relative;aspect-ratio:4/5;border-radius:9px;overflow:hidden;cursor:pointer;
@@ -1082,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-tekst-is-keuze';
+const APP_VERSIE='2026-08-31-studio-herbouwd';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3364,7 +3367,7 @@ function ctPakketTekenen(){
       <textarea class="ct-caption" id="ct_caption" style="min-height:280px;overflow:hidden">${esc(pk.caption||'')}</textarea>
       <div style="display:flex;gap:8px;margin-top:8px">
         <input id="ct_feedback" class="ct-caption" style="min-height:0;flex:1;padding:8px 12px"
-               placeholder="Wat moet anders? Bijv: korter, minder verkoperig, meer spreektaal, begin met de prijs…">
+               placeholder="Wat moet anders? Bijv: korter, meer spreektaal, of: onderbouw met actuele cijfers over toerisme…">
         <button class="btn btn-ghost btn-sm" id="ct_verbeter" style="flex:none">✨ Pas aan</button>
       </div>
       <div class="bc-hint">De aanwijzing wordt op het hele pakket toegepast (ook hooks en slides), niet alleen de caption. Je eigen wijzigingen in het tekstvak blijven het uitgangspunt.</div>
@@ -3384,15 +3387,10 @@ function ctPakketTekenen(){
       <div class="bc-hint">Komt in de gebakken reel onder de hook in beeld vanaf het gekozen moment (3 a 4 seconden werkt het best: eerst leest de kijker de hook) en blijft tot het einde staan.</div>`:''}
     </div>
 
-    <div class="ct-vak">
-      ${kop('Preview, kies je variant')}
-      <div id="ct_preview"></div>
-      <div class="bc-hint" id="ct_previewhint"></div>
-      ${CT.soort==='reel'?`<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
-        ${kop('Audio: voice-over en muziek')}
-        <div id="ct_voice"></div>
-      </div>`:''}
-    </div>
+    ${CT.soort==='reel'?`<div class="ct-vak">
+      ${kop('Muziek en voice-over')}
+      <div id="ct_voice"></div>
+    </div>`:''}
 
 
     ${(pk.overlays&&pk.overlays.length)?`<div class="ct-vak">
@@ -3403,14 +3401,17 @@ function ctPakketTekenen(){
         <button class="bc-zoekactie" data-ovlweg="${i}" title="Regel verwijderen" style="flex:none;padding:0 4px">✕</button>
       </div>`).join('')}
       <div class="vo-knoppen" style="margin-top:4px"><button class="bc-zoekactie" id="ct_ovl_plus">＋ regel toevoegen</button></div>
-      <div class="bc-hint">Dit is een VOORSTEL: deze regels komen alleen in je video als je hieronder op <b>🎬 Bak deze tekst in de video</b> klikt. Regels aanpassen of weghalen kan gewoon. Wil je alleen muziek zonder tekst in beeld, gebruik dan <b>🎬 Video met alleen muziek (geen tekst)</b> in het audio-gedeelte. Wil je je eigen stem: <b>🎙 Neem voice-over op</b>; dan vervalt dit script en loopt je gesproken tekst als ondertiteling mee. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
-      <div class="vo-knoppen" style="margin-top:6px">
-        <button class="btn btn-primary btn-sm" id="ct_overlaybak">🎬 Bak deze tekst in de video</button>
-      </div>
+      <div class="bc-hint">Deze tekst staat LIVE in de preview hieronder: een regel aanpassen, weghalen of toevoegen zie je direct terug, en precies dit gaat automatisch mee in de video bij het downloaden of plaatsen (onderaan bij Afronden). Wil je je eigen stem: <b>🎙 Neem voice-over op</b> bij Muziek en voice-over; dan vervalt dit script en loopt je gesproken tekst als ondertiteling mee. Liever zelf in CapCut of de Instagram-editor? Gebruik Kopieer hierboven.</div>
       ${(CT.mediaOrigineel&&CT.mediaOrigineel.length&&JSON.stringify(CT.media.map(m=>m.path))!==JSON.stringify(CT.mediaOrigineel.map(m=>m.path)))?`
       <div class="bc-hint" style="color:#8a5a00;margin-top:4px">Let op: in je video staat nu de eerder gebakken tekst. Regels wijzigen of weghalen zie je pas terug na 🎬 opnieuw bakken; alle tekst eraf kan direct met de knop <b>🧽 tekst eraf</b> bij je media.</div>`:''}
       <div class="bc-hint" style="margin-top:4px">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>
     </div>`:''}
+
+    <div class="ct-vak">
+      ${kop('Preview, kies je variant')}
+      <div id="ct_preview"></div>
+      <div class="bc-hint" id="ct_previewhint"></div>
+    </div>
 
     ${(pk.slides&&pk.slides.length)?`<div class="ct-vak">
       ${kop('Slide-teksten, in volgorde van je afbeeldingen','slides','x')}
@@ -3437,18 +3438,6 @@ function ctPakketTekenen(){
       </div>
     </div>
 
-    <div class="ct-vak">
-      ${kop('Plaatsen')}
-      <div id="ct_plaats"><span class="muted" style="font-size:13px">Instagram-koppeling controleren…</span></div>
-    </div>
-
-
-    <div class="ct-vak" style="grid-column:1/-1">
-      ${kop('Actuele cijfers voor deze post')}
-      <div class="vo-knoppen" style="margin:0 0 6px"><button class="btn btn-ghost btn-sm" id="ct_feiten">🔎 Zoek actuele cijfers (met bron)</button></div>
-      <div id="ct_feitenvak"><span class="muted" style="font-size:13px">Verse marktdata voor value posts: toerisme, prijzen, regelgeving, NL-vergelijking. Elk cijfer komt met bron, jij beslist wat erin gaat.</span></div>
-    </div>
-
     <div class="ct-vak" style="grid-column:1/-1">
       ${kop('Waarom dit zo in elkaar zit')}
       <div style="font-size:13.5px;line-height:1.6">${esc(pk.waarom||'')}</div>
@@ -3459,6 +3448,16 @@ function ctPakketTekenen(){
         <button class="btn btn-ghost btn-sm" id="ct_opnieuw" title="Laat de AI het hele pakket (hooks, caption, hashtags) opnieuw bedenken">✨ Genereer nieuwe versie</button>
         <button class="btn btn-ghost btn-sm" id="ct_ster">☆ Favoriet</button>
       </div>
+    </div>
+
+    <div class="ct-vak" style="grid-column:1/-1">
+      ${kop('Afronden: downloaden of plaatsen')}
+      ${CT.soort==='reel'?`<div class="vo-knoppen" style="margin:0 0 8px">
+        <button class="btn btn-primary btn-sm" id="ct_download">⬇ Download video</button>
+        <button class="btn btn-ghost btn-sm" id="ct_voorapp" title="Video downloaden en caption plus hashtags op je klembord: in de app alleen nog IG-muziek kiezen en plakken">📲 Voor de app (met IG-muziek)</button>
+      </div>
+      <div class="bc-hint" style="margin:0 0 10px">Downloaden bakt eerst automatisch de definitieve video, precies zoals de preview hem toont (beeld, tekst, muziek en je stem als je die opnam). Dat duurt ongeveer zo lang als de clip zelf; de voortgang zie je bij Muziek en voice-over.</div>`:''}
+      <div id="ct_plaats"><span class="muted" style="font-size:13px">Instagram-koppeling controleren…</span></div>
     </div>
   </div>`;
 
@@ -3531,13 +3530,8 @@ function ctPakketTekenen(){
     const laatsteInp=[...document.querySelectorAll('[data-ovltekst]')].pop();
     if(laatsteInp) laatsteInp.focus();
   };
-  const ob=$('#ct_overlaybak');
-  if(ob) ob.onclick=async()=>{
-    if(!CT.media.length){toast('Kies eerst je b-roll','err');return;}
-    ob.disabled=true;
-    try{ await voRender(true,true); }
-    finally{ ob.disabled=false; }
-  };
+  const dlk=$('#ct_download'); if(dlk) dlk.onclick=()=>ctExporteer(false);
+  const vak2=$('#ct_voorapp'); if(vak2) vak2.onclick=()=>ctExporteer(true);
   // Verse hooks via de hook engine (dezelfde strategie als het hele pakket):
   // vijf nieuwe invalshoeken, de huidige opties gaan mee als niet-herhalen-lijst.
   const hn=$('#ct_hooks_nieuw');
@@ -3596,10 +3590,6 @@ function ctPakketTekenen(){
   }
   const bakKnop=$('#ct_slides_bakken');
   if(bakKnop) bakKnop.onclick=ctSlidesBakken;
-  $('#ct_feiten').onclick=()=>feitenOphalen(
-    $('#ct_onderwerp').value.trim()||CT.pakket.caption.slice(0,140),
-    $('#ct_feitenvak'),
-    f=>{ const ta=$('#ct_caption'); ta.value=ta.value.replace(/\n*$/,'\n\n')+f.feit; ctPreviewTekenen(); });
   if(CT.soort==='reel') voTekenen();
   $('#ct_feedback').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ctVerbeter();}});
   ctPreviewTekenen(); ctPlaatsTekenen();
@@ -3614,10 +3604,25 @@ async function ctVerbeter(){
   if(!CT.pakket){toast('Maak eerst een pakket','err');return;}
   const knop=$('#ct_verbeter'); knop.disabled=true; knop.textContent='Bezig…';
   try{
+    // Vraagt de feedback om cijfers of data, dan zoekt hij die eerst zelf op
+    // (met bron) en geeft ze mee aan de herschrijfronde. Geen apart blok meer.
+    let feedbackAI=feedback;
+    if(/(cijfer|data|bron|actue|statisti|marktdata|onderzoek|percentage|bezetting|toerisme|zoek\s+op)/i.test(feedback)){
+      knop.textContent='🔎 Cijfers zoeken…';
+      const feiten=await feitenAlsLijst(($('#ct_onderwerp').value.trim()||CT.pakket.caption.slice(0,140))+' | wens: '+feedback);
+      if(feiten.length){
+        feedbackAI=feedback+'\n\nZOJUIST OPGEZOCHTE ACTUELE CIJFERS MET BRON (verwerk wat relevant is, cijfers exact overnemen, geen bron-URL in de caption zelf):\n'
+          +feiten.map(f=>`- ${f.feit} (bron: ${f.bron_titel||f.bron_url}${f.datum?', '+f.datum:''})`).join('\n');
+        toast(`${feiten.length} actuele cijfers gevonden en meegenomen`,'ok');
+      } else {
+        toast('Geen actuele cijfers gevonden; ik pas alleen de tekst aan','err');
+      }
+      knop.textContent='Bezig…';
+    }
     const huidig={...CT.pakket, stijl:CT.stijl, opmaak:{...CT_OPMAAK}, caption:($('#ct_caption')&&$('#ct_caption').value)||CT.pakket.caption};
     const {data,error}=await sb.functions.invoke('content-maker',{body:{
       soort:CT.soort, onderwerp:$('#ct_onderwerp').value.trim(), project:CT.project||null,
-      doel:CT.doel, aantal_media:CT.media.length, feedback, huidig}});
+      doel:CT.doel, aantal_media:CT.media.length, feedback:feedbackAI, huidig}});
     if(error||!data||data.ok===false){
       toast((data&&data.reden)||(error&&error.message)||'Aanpassen mislukt','err');return;
     }
@@ -3715,7 +3720,8 @@ function ctPreviewTekenen(){
               const per={zwartblok:'color:#fff;text-shadow:none;',witblok:'color:#111;text-shadow:none;',wit:'color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.65);',zwart:'color:#111;text-shadow:0 1px 3px rgba(255,255,255,.55);'}[cs];
               const pill=cs==='zwartblok'?'<span style="background:rgba(0,0,0,.85);padding:3px 10px;border-radius:7px;display:inline-block">':cs==='witblok'?'<span style="background:#fff;padding:3px 10px;border-radius:7px;display:inline-block">':'<span>';
               return `<div style="${basis}${per}">${pill}${esc(CT.ctaOverlay.tekst)}</span></div>`;})():''}
-          </div>`}
+          </div>
+          <div class="ig-scriptregel" data-live-script style="display:none"></div>`}
           <div class="ig-reelhud">
             <div class="onder">
               <div class="wie"><span class="ig-avatar"><i>S</i></span> stevenbalivillas <span class="volg">Volgen</span></div>
@@ -3763,6 +3769,22 @@ function ctPreviewTekenen(){
     ? CT_STIJLEN.map((st,i)=>kaart(gekozenHook,i)).join('')
     : hooks.map((h,i)=>kaart(h,i)).join('')}</div>`+bewerkBalk;
   vak.querySelectorAll('video').forEach(ctTrimVolgen);
+  // Het tijdscript loopt live mee in de preview: elke kaart toont de regel
+  // die bij de huidige videotijd hoort, direct uit CT.pakket.overlays, dus
+  // typen in het script is meteen zichtbaar zonder herladen.
+  vak.querySelectorAll('.ig-kaart').forEach(k=>{
+    const v=k.querySelector('video'), el=k.querySelector('[data-live-script]');
+    if(!v||!el||v.dataset.scriptvolgt) return; v.dataset.scriptvolgt='1';
+    v.addEventListener('timeupdate',()=>{
+      const rows=(CT.pakket&&CT.pakket.overlays)||[];
+      const van=(CT.trim&&CT.trim.van)||0; const tt=Math.max(0,v.currentTime-van);
+      let act=null;
+      for(const o of rows){const m=String(o.tijd||'').match(/([\d.]+)\s*-\s*([\d.]+)/);
+        if(m&&tt>=+m[1]&&tt<=+m[2]){act=o;break;}}
+      if(act&&String(act.tekst||'').trim()){ el.textContent=act.tekst; el.style.display='block'; }
+      else el.style.display='none';
+    });
+  });
   const gel=$('#ct_geluid');
   if(gel) gel.onclick=()=>{ CT.geluid=!CT.geluid; ctPreviewTekenen(); };
   ctPreviewGeluid();
@@ -4580,6 +4602,24 @@ async function ctSlidesBakken(){
    Steven checkt de bron en klikt zelf in wat hij wil gebruiken. Zo blijft de
    regel overeind dat er nooit een onverifieerbaar getal onder zijn naam
    staat. Cache aan de serverkant: per onderwerp een dag. */
+/* Stille variant: haalt de feiten op (met dezelfde achtergrond-polling) en
+   geeft ze als lijst terug, voor gebruik in de feedbackronde. */
+async function feitenAlsLijst(onderwerp){
+  try{
+    const r=await sb.functions.invoke('content-maker',{body:{actie:'feiten',onderwerp}});
+    const d=r.data||{};
+    if(r.error||d.ok===false) return [];
+    if(Array.isArray(d.feiten)&&d.feiten.length) return d.feiten;
+    if(d.bezig&&d.sleutel){
+      for(let i=0;i<30;i++){
+        await new Promise(res=>setTimeout(res,5000));
+        const {data:rij}=await sb.from('markt_feiten').select('feiten').eq('id',d.sleutel).maybeSingle();
+        if(rij&&Array.isArray(rij.feiten)&&rij.feiten.length) return rij.feiten;
+      }
+    }
+  }catch(e){}
+  return [];
+}
 async function feitenOphalen(onderwerp, vak, invoeg){
   vak.innerHTML='<span class="muted" style="font-size:13px">🔎 Zoeken naar actuele cijfers, dit duurt zo’n halve minuut…</span>';
   let data;
@@ -4780,12 +4820,10 @@ function voTekenen(){
       <div class="bc-hint" style="margin:0 0 8px">Spreek de caption in als voice-over. Terwijl je leest loopt de tekst mee; daarna bakken we stem, tekst${VO.muziek?', muziek':''} en je b-roll tot een reel. Werkt het best in Chrome, met toestemming voor de microfoon.</div>
       <div class="vo-knoppen">
         <button class="btn btn-primary btn-sm" id="vo_start">🎙 Neem voice-over op</button>
-        ${VO.muziek?`<button class="btn btn-ghost btn-sm" id="vo_alleenmuziek" title="Alleen je beeld met muziek eronder; er wordt geen tekst in de video gebrand">🎬 Video met alleen muziek (geen tekst)</button>`:''}
+        
       </div>`;
     muziekKoppelen();
     $('#vo_start').onclick=voStart;
-    const am=$('#vo_alleenmuziek');
-    if(am) am.onclick=()=>{ if(!CT.media.length){toast('Upload eerst je b-roll','err');return;} voRender(true,false); };
   }else if(VO.stand==='opnemen'){
     vak.innerHTML=`
       <div class="bc-hint" style="margin:0 0 6px">De autocue hieronder is een geheugensteun; wat jij zegt is leidend. Improviseer gerust, de tekst in beeld volgt jouw woorden.</div>
@@ -4849,12 +4887,10 @@ function voTekenen(){
         <div id="vo_mzpaneel" style="flex:none;width:250px"></div>
       </div>
       <div class="vo-knoppen">
-        <a class="btn btn-primary btn-sm" href="${VO.video}" download="reel-voiceover">⬇ Download</a>
         <button class="btn btn-ghost btn-sm" id="vo_opnieuw2">✏️ Terug naar bewerken</button>
         <button class="btn btn-ghost btn-sm" id="vo_alsnog_stem">🎙 Alsnog voice-over inspreken</button>
-        <button class="btn btn-ghost btn-sm" id="vo_voor_app" title="Video downloaden en caption plus hashtags op je klembord: in de app alleen nog IG-muziek kiezen en plakken">📲 Voor de app (met IG-muziek)</button>
       </div>
-      <div class="bc-hint">${VO.mime.includes('mp4')?'Dit is automatisch je actieve reel-video: plaatsen en downloaden gebruiken precies dit bestand.':'Deze browser kan alleen webm opnemen en Instagram wil mp4: download hem en plaats via de app, of haal hem even door CapCut.'}</div>`;
+      <div class="bc-hint">${VO.mime.includes('mp4')?'De definitieve video staat klaar. Downloaden of plaatsen doe je helemaal onderaan, bij Afronden.':'Deze browser kan alleen webm opnemen en Instagram wil mp4: download hem en plaats via de app, of haal hem even door CapCut.'}</div>`;
     $('#vo_opnieuw2').onclick=()=>{VO={...VO,stand:VO.url?'klaar':'leeg'};voTekenen();};
     const alsnog=$('#vo_alsnog_stem');
     if(alsnog) alsnog.onclick=()=>{VO={...VO,stand:'leeg',blob:null,url:null,woorden:[]};voTekenen();};
@@ -5344,9 +5380,11 @@ async function voRender(alleenMuziek, metTekst){
     const vblob=new Blob(uit,{type:VO.mime.split(';')[0]});
     VO.videoBlob=vblob; VO.video=URL.createObjectURL(vblob);
     VO.stand='video';
-    // De gebakken video wordt direct de actieve reel-video: wat je ziet is wat
-    // er geplaatst en gedownload wordt. De losse "Gebruik als"-knop is daarmee weg.
-    await voGebruik();
+    // Je werkbestand blijft het schone origineel (alles blijft live te
+    // bewerken); de gebakken video is het exportresultaat. De vingerafdruk
+    // legt vast met welke instellingen er gebakken is, zodat Afronden weet
+    // of er opnieuw gebakken moet worden.
+    VO.bakVinger=ctBakVinger();
     voTekenen();
   }catch(e){
     VO.stand=VO.url?'klaar':'leeg'; voTekenen();
@@ -5354,6 +5392,39 @@ async function voRender(alleenMuziek, metTekst){
   }
 }
 
+/* De vingerafdruk van alles wat in de gebakken video terechtkomt. Wijkt de
+   huidige staat af van de laatste bak, dan bakt Afronden eerst opnieuw. */
+function ctBakVinger(){
+  const pk=CT.pakket||{};
+  return JSON.stringify({
+    m:(CT.mediaOrigineel&&CT.mediaOrigineel[0]&&CT.mediaOrigineel[0].path)||(CT.media[0]&&CT.media[0].path)||null,
+    hook:((pk.hooks||[])[Math.min(CT.hookKeus||0,Math.max((pk.hooks||[]).length-1,0))])||'',
+    ovl:pk.overlays||[], cta:CT.ctaOverlay||null, stijl:CT.stijl||null, om:CT_OPMAAK,
+    trim:CT.trim||null, mz:[VO.muziekUrl||null,VO.muziekStart||0,VO.muziekVol||0], stem:VO.url||null});
+}
+/* Afronden: download (of voor-de-app) met een verse bak als er iets wijzigde.
+   De preview is de waarheid; wat daar staat, komt in het bestand. */
+async function ctExporteer(voorApp){
+  if(!CT.media.length){toast('Voeg eerst je footage toe','err');return;}
+  const isVid=/\.(mp4|mov|webm|m4v)$/i.test(CT.media[0].path)||String(CT.media[0].type||'').startsWith('video');
+  if(!isVid){toast('Downloaden geldt voor reels; een foto of carousel plaats je direct of pak je uit de bibliotheek','err');return;}
+  const knop=$('#ct_download'); if(knop) knop.disabled=true;
+  try{
+    if(!VO.videoBlob||VO.bakVinger!==ctBakVinger()){
+      toast('Ik bak eerst de definitieve video; duurt ongeveer zo lang als de clip zelf','ok');
+      await voRender(!VO.url, true);
+      if(!VO.url){ VO.stand='leeg'; voTekenen(); }
+    }
+    if(!VO.videoBlob||VO.bakVinger!==ctBakVinger()){toast('De video kon niet gemaakt worden','err');return;}
+    const a=document.createElement('a'); a.href=VO.video; a.download='reel-'+Date.now(); a.click();
+    if(voorApp){
+      const cap=($('#ct_caption')&&$('#ct_caption').value)||(CT.pakket&&CT.pakket.caption)||'';
+      const tags=CT.pakket?ctHashtags(CT.pakket.eerste_reactie):'';
+      ctKopieer(cap+(tags?'\n\n'+tags:''));
+      toast('Video gedownload en caption plus hashtags op je klembord. In de app: nieuwe reel, deze video, muziek kiezen, caption plakken.','ok');
+    } else toast('Video gedownload','ok');
+  } finally { if(knop) knop.disabled=false; }
+}
 async function voGebruik(){
   if(!CT.mediaOrigineel||!CT.mediaOrigineel.length){
     CT.mediaOrigineel=[...CT.media];
