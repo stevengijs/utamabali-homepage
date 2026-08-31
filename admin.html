@@ -511,7 +511,9 @@
      tekst binnen het onderste deel, in plaats van kaal over de video te vallen. */
   .ig-reelhud.open{background:rgba(0,0,0,.6)}
   .ig-reelhud.open .onder{background:none}
-  .ig-reelhud.open .onder .cap{display:block;-webkit-line-clamp:unset;max-height:250px;overflow:auto;pointer-events:auto}
+  /* Uitgeklapt tonen we de echte witregels uit de caption (pre-line), precies
+     zoals Instagram; dichtgeklapt vloeit de tekst juist door, ook zoals daar. */
+  .ig-reelhud.open .onder .cap{display:block;-webkit-line-clamp:unset;max-height:250px;overflow:auto;pointer-events:auto;white-space:pre-line}
   .ig-reelhud .onder{margin-top:auto;padding:10px 54px 12px 10px;color:#fff;width:100%;
                      background:linear-gradient(transparent,rgba(0,0,0,.55))}
   .ig-reelhud .onder .wie{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;margin-bottom:6px}
@@ -1094,7 +1096,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-zelfmarkering';
+const APP_VERSIE='2026-08-31-caption-enters';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -4116,7 +4118,7 @@ function ctPreviewTekenen(){
         ${CT.soort==='carousel'&&CT.media.length>1?`<div class="ig-dots">${CT.media.map((_,d)=>`<i class="${d===0?'on':''}"></i>`).join('')}</div>`:''}
         <div class="ig-acties">${icHart}${icReactie}${icDeel}<span class="rechts">${icBewaar}</span></div>
         <div class="ig-likes">1.204 vind-ik-leuks</div>
-        <div class="ig-caption"><b>stevenbalivillas</b>${esc(kort)}${meerHtml}</div>
+        <div class="ig-caption"${CT.capOpen?' style="white-space:pre-line"':''}><b>stevenbalivillas</b> ${esc(kort)}${meerHtml}</div>
         <div class="ig-reacties">Alle 89 reacties bekijken</div>
         <div class="ig-tijd">1 uur geleden</div>
       </div>
