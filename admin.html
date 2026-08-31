@@ -1085,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-slimmer-zoeken';
+const APP_VERSIE='2026-08-31-cijfers-achtergrond';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3682,25 +3682,24 @@ async function ctVerbeter(){
   if(!CT.pakket){toast('Maak eerst een pakket','err');return;}
   const knop=$('#ct_verbeter'); knop.disabled=true; knop.textContent='Bezig…';
   try{
-    // Vraagt de feedback om cijfers of data, dan zoekt hij die eerst zelf op
-    // (met bron) en geeft ze mee aan de herschrijfronde. Geen apart blok meer.
-    let feedbackAI=feedback;
+    // Vraagt de feedback om cijfers, regelgeving of andere actuele info, dan
+    // start het zoeken (met bron) op de achtergrond: de tekstuele aanwijzing
+    // wordt DIRECT toegepast, en zodra de gevonden feiten binnen zijn volgt
+    // automatisch een tweede ronde die ze in de caption verwerkt.
     if(/(cijfer|data|bron|actue|statisti|marktdata|onderzoek|percentage|bezetting|toerisme|regelgeving|regels|wet|belasting|visum|leasehold|nieuwste|laatste stand|onderbouw|bewijs|zoek)/i.test(feedback)){
-      knop.textContent='🔎 Cijfers zoeken…';
-      const feiten=await feitenAlsLijst(($('#ct_onderwerp').value.trim()||CT.pakket.caption.slice(0,140))+' | wens: '+feedback);
-      if(feiten.length){
-        feedbackAI=feedback+'\n\nZOJUIST OPGEZOCHTE ACTUELE CIJFERS MET BRON (verwerk wat relevant is, cijfers exact overnemen, geen bron-URL in de caption zelf):\n'
+      const postVan=CT.postId, zoekterm=($('#ct_onderwerp').value.trim()||CT.pakket.caption.slice(0,140))+' | wens: '+feedback;
+      toast('Ik zoek er actuele cijfers bij (duurt 1 a 3 minuten); je aanwijzing pas ik alvast toe','ok');
+      (async()=>{
+        const feiten=await feitenAlsLijst(zoekterm);
+        if(CT.postId!==postVan) return; // hij is inmiddels met een andere post bezig
+        if(!feiten.length){ toast('Het zoeken leverde geen bruikbare cijfers op; de tekst is wel aangepast','err'); return; }
+        const extra='Verwerk deze zojuist opgezochte actuele cijfers in de caption waar ze het verhaal sterker maken. Cijfers exact overnemen, geen bron-URL in de caption zelf:\n'
           +feiten.map(f=>`- ${f.feit} (bron: ${f.bron_titel||f.bron_url}${f.datum?', '+f.datum:''})`).join('\n');
-        toast(`${feiten.length} actuele cijfers gevonden en meegenomen`,'ok');
-      } else {
-        toast('Zoeken leverde nu niets bruikbaars op; ik pas de tekst aan zonder verse cijfers','err');
-      }
-      knop.textContent='Bezig…';
+        await ctVerbeterUitvoeren(extra);
+        toast(`Cijfers binnen: de caption is aangevuld met ${feiten.length} onderbouwde cijfers`,'ok');
+      })();
     }
-    const huidig={...CT.pakket, stijl:CT.stijl, opmaak:{...CT_OPMAAK}, caption:($('#ct_caption')&&$('#ct_caption').value)||CT.pakket.caption};
-    const {data,error}=await sb.functions.invoke('content-maker',{body:{
-      soort:CT.soort, onderwerp:$('#ct_onderwerp').value.trim(), project:CT.project||null,
-      doel:CT.doel, aantal_media:CT.media.length, feedback:feedbackAI, huidig}});
+    const {data,error}=await ctVerbeterAanroep(feedback);
     if(error||!data||data.ok===false){
       toast((data&&data.reden)||(error&&error.message)||'Aanpassen mislukt','err');return;
     }
@@ -3709,6 +3708,22 @@ async function ctVerbeter(){
     await ctOpslaan(null);
     toast('Pakket aangepast','ok');
   } finally { knop.disabled=false; knop.textContent='✨ Pas aan'; }
+}
+/* De kale herschrijf-aanroep met het huidige pakket als uitgangspunt. */
+async function ctVerbeterAanroep(feedbackAI){
+  const huidig={...CT.pakket, stijl:CT.stijl, opmaak:{...CT_OPMAAK}, caption:($('#ct_caption')&&$('#ct_caption').value)||CT.pakket.caption};
+  return await sb.functions.invoke('content-maker',{body:{
+    soort:CT.soort, onderwerp:$('#ct_onderwerp')?$('#ct_onderwerp').value.trim():'', project:CT.project||null,
+    doel:CT.doel, aantal_media:CT.media.length, feedback:feedbackAI, huidig}});
+}
+/* Voert een herschrijfronde uit en past het resultaat direct toe. */
+async function ctVerbeterUitvoeren(feedbackAI){
+  const {data,error}=await ctVerbeterAanroep(feedbackAI);
+  if(error||!data||data.ok===false) return false;
+  CT.pakket=data.pakket;
+  ctPakketTekenen();
+  await ctOpslaan(null);
+  return true;
 }
 
 /* De preview toont wat er werkelijk op Instagram komt: jouw media zoals
@@ -4683,7 +4698,7 @@ async function feitenAlsLijst(onderwerp){
     if(r.error||d.ok===false) return [];
     if(Array.isArray(d.feiten)&&d.feiten.length) return d.feiten;
     if(d.bezig&&d.sleutel){
-      for(let i=0;i<12;i++){
+      for(let i=0;i<36;i++){
         await new Promise(res=>setTimeout(res,5000));
         const {data:rij}=await sb.from('markt_feiten').select('feiten').eq('id',d.sleutel).maybeSingle();
         if(rij&&Array.isArray(rij.feiten)) return rij.feiten; // ook leeg = klaar, niet blijven wachten
