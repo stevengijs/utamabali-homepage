@@ -1085,7 +1085,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-geluid-duidelijk';
+const APP_VERSIE='2026-08-31-script-zichtbaar';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3412,19 +3412,18 @@ function ctPakketTekenen(){
 
     ${CT.soort==='reel'?`<div class="ct-vak">
       ${kop('Tekst in beeld tijdens de reel','overlays','x')}
-      <div class="vo-knoppen" style="margin:2px 0 ${pk.tekst_in_beeld?'8px':'0'}">
-        <button class="bc-chip ${pk.tekst_in_beeld?'on':''}" id="ct_ovl_aan">${pk.tekst_in_beeld?'Aan':'Uit'}</button>
-        ${pk.tekst_in_beeld?'':`<span class="muted" style="font-size:12.5px">Er komt geen losse teksten in beeld. Zet aan om het script te tonen, live in de preview en mee in de video.</span>`}
+      <div class="vo-knoppen" style="margin:2px 0 8px">
+        <button class="bc-chip ${pk.tekst_in_beeld?'on':''}" id="ct_ovl_aan">${pk.tekst_in_beeld?'Tekst in beeld: AAN':'Tekst in beeld: uit'}</button>
+        ${pk.tekst_in_beeld?'':`<span class="muted" style="font-size:12.5px">De regels staan klaar maar komen NIET in beeld; zet aan en ze lopen live mee in de preview en de video.</span>`}
       </div>
-      ${pk.tekst_in_beeld?`
       ${(pk.overlays||[]).map((o,i)=>`<div class="ct-regel" style="align-items:center;gap:8px">
         <input data-ovltijd="${i}" value="${esc(o.tijd||'')}" style="flex:none;width:58px;border:1px solid var(--line);border-radius:6px;padding:3px 6px;font:inherit;font-size:12px;color:var(--terra,#8B5A3C);font-weight:700">
         <input data-ovltekst="${i}" value="${esc(o.tekst||'')}" style="flex:1;min-width:0;border:none;background:none;font:inherit;outline:none">
         <button class="bc-zoekactie" data-ovlweg="${i}" title="Regel verwijderen" style="flex:none;padding:0 4px">✕</button>
       </div>`).join('')}
       <div class="vo-knoppen" style="margin-top:4px"><button class="bc-zoekactie" id="ct_ovl_plus">＋ regel toevoegen</button></div>
-      <div class="bc-hint">Staat LIVE in de preview en gaat automatisch mee in de video bij Afronden. Eigen stem? <b>🎙 Neem voice-over op</b> bij Muziek en voice-over; dan vervalt dit script. Zelf in CapCut of de IG-editor? Gebruik Kopieer hierboven.</div>
-      <div class="bc-hint" style="margin-top:4px">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>`:''}
+      <div class="bc-hint">${pk.tekst_in_beeld?'Staat LIVE in de preview en gaat automatisch mee in de video bij Afronden.':'Pas gerust alvast aan; pas na aanzetten komt dit in de preview en de video.'} Eigen stem? <b>🎙 Neem voice-over op</b> bij Muziek en voice-over; dan vervalt dit script. Zelf in CapCut of de IG-editor? Gebruik Kopieer hierboven.</div>
+      <div class="bc-hint" style="margin-top:4px">Covertekst: <b>${esc(pk.cover_tekst||'')}</b></div>
     </div>`:''}
     ${CT.soort==='reel'?`<div class="ct-vak">
       ${kop('Muziek en voice-over')}
