@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-startknop-slim';
+const APP_VERSIE='2026-08-31-eerste-reactie-helder';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3500,15 +3500,12 @@ function ctPakketTekenen(){
     </div>`:''}
 
     <div class="ct-vak">
-      ${kop('Eerste reactie (hashtags)','hashtags','x')}
+      ${kop('Eerste reactie onder je post','hashtags','x')}
+      <div class="bc-hint" style="margin:0 0 6px">Plak dit als eerste comment onder je eigen post (Direct posten doet dit automatisch):</div>
       <div style="font-size:13px;line-height:1.6;color:var(--muted)" id="ct_hashtags">${esc(ctHashtags(pk.eerste_reactie))}</div>
-      <div style="margin-top:10px">
-        ${pk.comment_woord?`${kop('Comment-magneet')}
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px">
-          <span class="ct-magneet">${esc(pk.comment_woord)}</span>
-          <span class="bc-hint" style="margin:0">${esc(pk.dm_belofte||'')}</span>
-        </div>
-        <div class="bc-hint" style="margin-top:6px">Zet deze flow klaar in de DM-bot voordat je plaatst; anders is de belofte loos.</div>`
+      <div style="margin-top:12px">
+        ${pk.comment_woord?`${kop('Wat de DM-bot doet bij deze post')}
+        <div class="bc-hint" style="margin:4px 0 0">Je caption eindigt met de vraag om <span class="ct-magneet" style="font-size:11px;padding:1px 8px">${esc(pk.comment_woord)}</span> te reageren. Wie dat doet, krijgt automatisch deze DM van de bot: <i>"${esc(pk.dm_belofte||'')}"</i>. Jij hoeft hier niets te plaatsen; controleer alleen dat de bot dit ook echt kan waarmaken voordat je plaatst.</div>`
         :`${kop('Primaire CTA')}
         <div class="bc-hint" style="margin:4px 0 0">${esc({comment:'Comment: een volwassen vraag in de caption; reageer zelf op elke reactie.',save:'Save: dit is bewaar-content; de caption vraagt om hem op te slaan.',share:'Share: gemaakt om door te sturen naar een compagnon of partner.',follow:'Follow: de caption geeft een reden om te volgen (serie, visie).',dm:'DM: nodigt uit tot een priveberoep zonder magneetwoord.'}[pk.cta_type]||'Een natuurlijke CTA in de caption.')}</div>`}
       </div>
