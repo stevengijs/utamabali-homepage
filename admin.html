@@ -1088,7 +1088,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-cta-onder-hook';
+const APP_VERSIE='2026-08-31-nooit-meer-stale';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -5564,6 +5564,7 @@ async function voRender(alleenMuziek, metTekst){
 function ctBakVinger(){
   const pk=CT.pakket||{};
   return JSON.stringify({
+    versie:APP_VERSIE,
     m:(CT.mediaOrigineel&&CT.mediaOrigineel[0]&&CT.mediaOrigineel[0].path)||(CT.media[0]&&CT.media[0].path)||null,
     hook:((pk.hooks||[])[Math.min(CT.hookKeus||0,Math.max((pk.hooks||[]).length-1,0))])||'',
     ovl:pk.tekst_in_beeld?(pk.overlays||[]):[], ovlAan:!!pk.tekst_in_beeld, cta:CT.ctaOverlay||null, stijl:CT.stijl||null, om:CT_OPMAAK,
@@ -5573,6 +5574,16 @@ function ctBakVinger(){
    De preview is de waarheid; wat daar staat, komt in het bestand. */
 async function ctExporteer(voorApp){
   if(!CT.media.length){toast('Voeg eerst je footage toe','err');return;}
+  // Een tab met oude code bakt oude resultaten; dat blokkeren we hard.
+  try{
+    const r=await fetch(location.pathname+'?vc='+Date.now(),{cache:'no-store'});
+    const m=(await r.text()).match(/APP_VERSIE='([^']+)'/);
+    if(m&&m[1]!==APP_VERSIE){
+      versieCheck._laatst=0; versieCheck();
+      toast('Je tab draait een oudere versie van de studio. Ververs de pagina (Cmd+R) en download daarna opnieuw; anders wijkt de video af van de preview.','err');
+      return;
+    }
+  }catch(e){ /* geen netwerkcheck mogelijk: dan gewoon door */ }
   const isVid=/\.(mp4|mov|webm|m4v)$/i.test(CT.media[0].path)||String(CT.media[0].type||'').startsWith('video');
   if(!isVid){toast('Downloaden geldt voor reels; een foto of carousel plaats je direct of pak je uit de bibliotheek','err');return;}
   const knop=$('#ct_download'); if(knop) knop.disabled=true;
