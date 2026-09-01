@@ -50,6 +50,9 @@
   .btn{display:block;width:100%;padding:15px;border:none;border-radius:11px;background:var(--brand);color:#fff;font-weight:750;font-size:16px;cursor:pointer}
   .btn:hover{background:#0b573f}
   .btn:disabled{opacity:.5;cursor:not-allowed}
+  /* Tweede knop, rustiger dan de hoofdknop: het downloaden is een naslagactie. */
+  .btn-sec{width:auto;padding:11px 16px;font-size:14px;background:#fff;color:var(--brand);border:1px solid var(--line);font-weight:700}
+  .btn-sec:hover{background:#f2f8f5}
   .muted{color:var(--muted)}
   .note{font-size:12px;color:var(--muted);margin-top:12px;text-align:center}
   .err{background:#fbeeec;border:1px solid #f0d3ce;color:#a3271b;border-radius:10px;padding:12px 14px;font-size:13.5px;margin:12px 0}
@@ -238,6 +241,9 @@ function render(){
   }else{
     const reported=r.payment_status==="transfer_reported";
     h+=`<div style="margin:16px 0"><span class="ok-badge">✓ ITP ondertekend door ${esc(r.itp_signer_name||r.name||"")}${r.itp_signed_at?" op "+new Date(r.itp_signed_at).toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}):""}</span></div>`;
+    // De klant houdt zelf een exemplaar: het getekende bestand met handtekening,
+    // hetzelfde dat wij en de notaris zien.
+    h+=`<div style="margin:0 0 16px"><button class="btn btn-sec" id="dlItp">⬇ Download je getekende ITP (PDF)</button></div>`;
     h+=bankBlock(r);
     h+=`<div id="msg"></div>`;
     if(reported){
@@ -251,6 +257,7 @@ function render(){
   sigInit();
   const sb=$("#signBtn"); if(sb)sb.onclick=doSign;
   const pb=$("#paidBtn"); if(pb)pb.onclick=doMarkTransfer;
+  const dl=$("#dlItp"); if(dl)dl.onclick=doDownloadItp;
   document.querySelectorAll(".cp").forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);const t=b.textContent;b.textContent="Gekopieerd";setTimeout(()=>b.textContent=t,1200);}catch(e){}});
 }
 /* Het handtekeningveld. Tekent op een canvas op werkelijke schermresolutie,
@@ -350,6 +357,30 @@ function makePdf(r,signer,sigData){
     doc.setTextColor(30);
     return doc.output("datauristring").split(",")[1];
   }catch(e){return null;}
+}
+function itpBestandsnaam(r){
+  return ("ITP-"+((r&&r.project)||"UTAMA")+"-"+((r&&r.unit)||"")).replace(/[^A-Za-z0-9-]+/g,"-").replace(/-+$/,"")+".pdf";
+}
+function bewaarBestand(url){
+  const a=document.createElement("a");
+  a.href=url; a.download=itpBestandsnaam(RES); a.rel="noopener";
+  document.body.appendChild(a); a.click(); a.remove();
+}
+/* De getekende ITP downloaden. Eerst het exemplaar dat bij het ondertekenen is
+   vastgelegd (dat is wat de notaris krijgt); lukt dat niet, dan maken we het
+   document ter plekke opnieuw op, zodat de klant nooit met lege handen staat. */
+async function doDownloadItp(){
+  const btn=$("#dlItp"); const oud=btn.textContent;
+  btn.disabled=true; btn.textContent="Bezig…";
+  try{
+    const res=await api("pdf_url");
+    if(res&&res.ok&&res.url){ bewaarBestand(res.url+"&download="+encodeURIComponent(itpBestandsnaam(RES))); return; }
+  }catch(e){}
+  try{
+    const b64=makePdf(RES,RES.itp_signer_name||RES.name||"",RES.itp_signature||null);
+    if(b64) bewaarBestand("data:application/pdf;base64,"+b64);
+  }catch(e){}
+  finally{ btn.disabled=false; btn.textContent=oud; }
 }
 async function doSign(){
   const signer=($("#signer").value||"").trim();const agree=$("#agree").checked;const msg=$("#msg");

@@ -1096,7 +1096,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-01-itp-handtekening';
+const APP_VERSIE='2026-09-01-itp-download';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -8983,7 +8983,25 @@ async function openReservation(id){
     toast('Reservering verwijderd','ok');refreshNotifBadge();closeOverlay();
   });
 }
-function downloadItpPdf(r){
+/* Is de ITP getekend, dan is het opgeslagen exemplaar de bron: dat is precies
+   wat de klant zag en wat de notaris krijgt, inclusief handtekening. Alleen als
+   dat er niet is (of niet op te halen), maken we het document hier opnieuw op. */
+async function downloadItpPdf(r){
+  if(r.itp_signed_at&&r.token){
+    try{
+      const {data,error}=await sb.functions.invoke('reservation',{body:{token:r.token,action:'pdf_url'}});
+      if(!error&&data&&data.ok&&data.url){
+        const naam=('ITP-'+(r.project||'UTAMA')+'-'+(r.unit||'')).replace(/[^A-Za-z0-9-]+/g,'-').replace(/-+$/,'')+'.pdf';
+        const el=document.createElement('a');
+        el.href=data.url+'&download='+encodeURIComponent(naam); el.download=naam; el.rel='noopener';
+        document.body.appendChild(el); el.click(); el.remove();
+        return;
+      }
+    }catch(e){}
+  }
+  maakItpPdf(r);
+}
+function maakItpPdf(r){
   if(!window.jspdf){toast('PDF-bibliotheek nog aan het laden, probeer zo nog eens','err');return;}
   const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4'});
   const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
