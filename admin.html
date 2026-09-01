@@ -1096,7 +1096,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-01-golf-tekst-aanpassen';
+const APP_VERSIE='2026-09-01-itp-tekendatum';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -8817,6 +8817,11 @@ function itpDraft(r){
   // wanneer de verkoper de unit exclusief vasthoudt (de uitzondering onder
   // CONDITIONS). Eén bron, zodat ze nooit uit elkaar kunnen lopen.
   const geldig=datum(r.hold_expires_at?new Date(r.hold_expires_at):new Date(Date.now()+30*864e5));
+  // Uiterste tekendatum: standaard drie weken. Bewust een harde datum en geen
+  // "binnen X dagen": een datum is voor beide partijen ondubbelzinnig, ook als
+  // de ITP een paar dagen blijft liggen voordat hij wordt getekend. Vrij aan te
+  // passen in de editor, net als de rest van het document.
+  const tekenen=datum(new Date(Date.now()+21*864e5));
   const proj=esc(r.project||''),unit=esc(r.unit||''),naam=esc(r.name||'');
   // De entiteit komt uit projects.legal_entity en verschilt per project. Nooit
   // terugvallen op een echte PT-naam: dan staat er stilzwijgend de verkeerde
@@ -8834,7 +8839,8 @@ function itpDraft(r){
     +`<p><b>PAYMENT TERMS</b><br>The total Purchase Price shall be paid in instalments as follows:<br>– ${dep} deposit upon signing of this ITP;<br>– 60% payable upon signing of the notarial leasehold and construction agreements, minus the deposit;<br>– 20% payable after milestone 3 (as detailed in the notarised contracts);<br>– 10% payable after milestone 4 (as detailed in the notarised contracts);<br>– 10% payable upon final completion of the villa and key handover.<br>Notary costs amount to 1% of the transaction value and are payable by the Buyer, in addition to the Purchase Price.</p>`
     +`<p><b>FORMALISATION</b><br>The payment schedule, construction milestones, deliverables and timelines referred to in this Intent to Purchase are indicative only and shall be further detailed, formalised and become legally binding solely in the definitive leasehold agreement and construction contract.</p>`
     +`<p><b>SELLER REPRESENTATIONS</b><br>The Seller represents and warrants that:<br>– the land status and leasehold title are valid and undisputed;<br>– the lessor is fully authorized to grant and extend the leasehold;<br>– the land is correctly zoned for the intended development; and<br>– all applicable permits and approvals required for construction and delivery are in place or will be lawfully obtained.</p>`
-    +`<p><b>CONDITIONS</b><br>1. This Letter of Intent serves as a preliminary agreement. The formal purchase agreement will be drafted by the notary based on the details of the reservation contract.<br>2. If negotiations are terminated due to the fault or breach of ${pt}, the full reservation fee will be refunded to the Buyer.<br>3. The Buyer must sign the purchase agreement and complete the transaction within 14 days of signing this Letter of Intent, unless otherwise agreed in writing.<br>Exception: Regardless of the 14-day period, the Seller agrees to hold the unit exclusively for the Buyer until ${geldig}. If the Buyer has not completed the transaction by this date, the Seller may release the unit back to the market without refund of the reservation fee.</p>`
+    +`<p><b>SIGNING DEADLINE</b><br>The definitive leasehold and construction agreements for this unit must be signed by the Buyer no later than <b>${tekenen}</b>. Until that date the unit is reserved for the Buyer and will not be offered to other parties. If the Buyer has not signed by that date, and no extension has been agreed in writing, the Seller may either (i) continue on the basis of the purchase price applicable at that time, or (ii) cancel this reservation and release the unit back to the market, in which case the Deposit is forfeited and will not be refunded. This does not affect the Buyer\u2019s refund rights set out under DEPOSIT.</p>`
+    +`<p><b>CONDITIONS</b><br>1. This Letter of Intent serves as a preliminary agreement. The formal purchase agreement will be drafted by the notary based on the details of the reservation contract.<br>2. If negotiations are terminated due to the fault or breach of ${pt}, the full reservation fee will be refunded to the Buyer.<br>3. The Buyer must sign the purchase agreement and complete the transaction by ${tekenen} (see SIGNING DEADLINE), unless otherwise agreed in writing.<br>Exception: Regardless of that date, the Seller agrees to hold the unit exclusively for the Buyer until ${geldig}. If the Buyer has not completed the transaction by this date, the Seller may release the unit back to the market without refund of the reservation fee.</p>`
     +`<p><b>NEXT STEPS</b><br>1. Sign this ITP and transfer the ${dep} deposit. This reserves the unit for you.<br>Please transfer to:</p>`
     +ptBankHtml(ptRaw)
     +`<p>2. Drafting of the lease and construction contract. A notary will prepare the contract, detailing all terms, timelines, pricing, and responsibilities.<br>3. Review and sign the contracts digitally. After reviewing the contracts, signing will happen in a meeting with the notary.<br>4. Make the first payment &amp; start your villa journey. Once the contract is signed, complete the first payment as outlined in \u2018Payment Terms\u2019 and the villa is yours!<br>5. You will be added to a WhatsApp group for bi-weekly project updates, and our marketing team will coordinate the preparation for your villa\u2019s Airbnb launch.</p>`
