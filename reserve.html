@@ -39,6 +39,14 @@
   .field input:focus{border-color:var(--brand2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
   .check{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;margin:14px 0}
   .check input{width:20px;height:20px;margin-top:1px;accent-color:var(--brand)}
+  /* Handtekeningveld: de notaris wil een echte krabbel onder de ITP zien. */
+  .sig-wrap{border:1px solid var(--line);border-radius:10px;background:#fff;position:relative;overflow:hidden}
+  .sig-wrap canvas{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair}
+  .sig-lijn{position:absolute;left:18px;right:18px;bottom:38px;border-bottom:1px solid #d9e0dc;pointer-events:none}
+  .sig-hint{position:absolute;left:18px;bottom:14px;font-size:12px;color:#98a29d;pointer-events:none}
+  .sig-bar{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:10px}
+  .sig-clear{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:0}
+  .itp-sig{max-width:220px;max-height:80px;display:block;margin:2px 0 2px}
   .btn{display:block;width:100%;padding:15px;border:none;border-radius:11px;background:var(--brand);color:#fff;font-weight:750;font-size:16px;cursor:pointer}
   .btn:hover{background:#0b573f}
   .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -141,7 +149,10 @@ function itpFilled(r){
   if(r.itp_signed_at){
     const d=new Date(r.itp_signed_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
     const wie=r.itp_signer_name||r.name||"";
-    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: \u2713 Digitally signed by "+esc(wie)+br+"Date: "+esc(d));
+    // Is er een getekende handtekening, dan komt die in beeld; de naam blijft
+    // eronder staan zodat het document leesbaar blijft zonder afbeelding.
+    const krabbel=r.itp_signature?`<br><img class="itp-sig" src="${esc(r.itp_signature)}" alt="Handtekening ${esc(wie)}">`:"";
+    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: "+(r.itp_signature?"":"\u2713 ")+"Digitally signed by "+esc(wie)+krabbel+br+"Date: "+esc(d));
   }else{
     // Nog niet getekend: maak duidelijk dat dit vanzelf wordt ingevuld,
     // anders lijkt het alsof de koper hier zelf iets moet invullen.
@@ -216,6 +227,10 @@ function render(){
   h+=`<div class="itp" id="itpbox">${itpText(r)}</div>`;
   if(!signed){
     h+=`<div class="field" style="margin-top:18px"><label>Volledige naam (digitale handtekening)</label><input type="text" id="signer" placeholder="Voor- en achternaam" value="${esc(r.name||"")}"></div>
+      <div class="field" style="margin-top:14px"><label>Handtekening</label>
+        <div class="sig-wrap"><canvas id="sigpad"></canvas><div class="sig-lijn"></div><div class="sig-hint" id="sighint">Teken hier met je muis of vinger</div></div>
+        <div class="sig-bar"><span class="note" style="margin:0">De notaris heeft een echte handtekening nodig.</span><button type="button" class="sig-clear" id="sigclear">Opnieuw</button></div>
+      </div>
       <label class="check"><input type="checkbox" id="agree"><span>Ik heb de intentieverklaring gelezen en ga akkoord met de reservering en de aanbetaling van ${euro(r.deposit_amount)}.</span></label>
       <div id="msg"></div>
       <button class="btn" id="signBtn">Onderteken de ITP</button>
@@ -233,11 +248,45 @@ function render(){
     }
   }
   body.innerHTML=h;
+  sigInit();
   const sb=$("#signBtn"); if(sb)sb.onclick=doSign;
   const pb=$("#paidBtn"); if(pb)pb.onclick=doMarkTransfer;
   document.querySelectorAll(".cp").forEach(b=>b.onclick=()=>{try{navigator.clipboard.writeText(b.dataset.copy);const t=b.textContent;b.textContent="Gekopieerd";setTimeout(()=>b.textContent=t,1200);}catch(e){}});
 }
-function makePdf(r,signer){
+/* Het handtekeningveld. Tekent op een canvas op werkelijke schermresolutie,
+   zodat de krabbel scherp op papier komt en niet als blokkerige uitvergroting.
+   Werkt met muis, trackpad en vinger; pointer events dekken alle drie. */
+let SIG=null;
+function sigInit(){
+  const c=document.getElementById("sigpad"); if(!c) { SIG=null; return; }
+  const ctx=c.getContext("2d");
+  const schaal=()=>{
+    const r=c.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+    const beeld=c.width?ctx.getImageData(0,0,c.width,c.height):null;
+    c.width=Math.round(r.width*dpr); c.height=Math.round(r.height*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.lineWidth=2.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#12211c";
+    if(beeld&&SIG&&SIG.leeg===false){ try{ ctx.putImageData(beeld,0,0); }catch(e){} }
+  };
+  schaal();
+  window.addEventListener("resize",schaal);
+  let bezig=false,leeg=true;
+  const punt=e=>{const r=c.getBoundingClientRect();return [e.clientX-r.left, e.clientY-r.top];};
+  const hint=document.getElementById("sighint");
+  c.addEventListener("pointerdown",e=>{
+    bezig=true; c.setPointerCapture(e.pointerId);
+    const [x,y]=punt(e); ctx.beginPath(); ctx.moveTo(x,y);
+    if(leeg&&hint) hint.style.display="none";
+    leeg=false; SIG.leeg=false;
+  });
+  c.addEventListener("pointermove",e=>{ if(!bezig)return; const [x,y]=punt(e); ctx.lineTo(x,y); ctx.stroke(); });
+  const stop=()=>{bezig=false;};
+  c.addEventListener("pointerup",stop); c.addEventListener("pointercancel",stop); c.addEventListener("pointerleave",stop);
+  const wis=document.getElementById("sigclear");
+  if(wis) wis.onclick=()=>{ ctx.clearRect(0,0,c.width,c.height); leeg=true; SIG.leeg=true; if(hint) hint.style.display=""; };
+  SIG={ leeg:true, isLeeg:()=>leeg, dataUrl:()=>leeg?null:c.toDataURL("image/png") };
+}
+function makePdf(r,signer,sigData){
   try{
     const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"pt",format:"a4"});
     const M=56;let y=64;const W=doc.internal.pageSize.getWidth()-M*2;
@@ -248,7 +297,7 @@ function makePdf(r,signer){
       "Prepared on "+new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
       ...htmlToPlain(itpFilled(rr)).split("\n"),"",
       "SIGNATURES",
-      "Buyer: digitally signed by "+signer+" on "+new Date().toLocaleString("en-GB"),
+      "Buyer: signed by "+signer+" on "+new Date().toLocaleString("en-GB"),
       "Seller: digitally signed upon issuance of this ITP"
     ]:[
       "Prepared on "+new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
@@ -276,6 +325,20 @@ function makePdf(r,signer){
       doc.setFont("helvetica",kop?"bold":"normal");
       const wrapped=doc.splitTextToSize(t,W);wrapped.forEach(w=>{if(y>780){doc.addPage();y=64;}doc.text(w,M,y);y+=15;});
     });
+    // De getekende handtekening onder de tekst, met een lijn eronder en de
+    // naam eronder: zo staat er op papier wat de notaris wil zien.
+    if(sigData){
+      try{
+        if(y>700){doc.addPage();y=64;}
+        y+=6;
+        doc.addImage(sigData,"PNG",M,y,150,52,undefined,"FAST");
+        y+=58;
+        doc.setDrawColor(170); doc.line(M,y,M+220,y); y+=13;
+        doc.setFontSize(9.5); doc.setTextColor(90);
+        doc.text(signer+" \u00b7 "+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),M,y);
+        doc.setFontSize(10.5); doc.setTextColor(30); y+=16;
+      }catch(e){ /* zonder afbeelding blijft de tekstregel staan */ }
+    }
     // Watermerk op elke pagina: dit exemplaar is het getekende exemplaar.
     const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight();
     for(let i=1;i<=doc.getNumberOfPages();i++){
@@ -291,10 +354,14 @@ function makePdf(r,signer){
 async function doSign(){
   const signer=($("#signer").value||"").trim();const agree=$("#agree").checked;const msg=$("#msg");
   if(!signer){msg.innerHTML='<div class="err">Vul je volledige naam in.</div>';return;}
+  // De handtekening is verplicht: zonder krabbel heeft de notaris niets aan
+  // het document, en dat wil je merken vóór het tekenen, niet erna.
+  const sigData=SIG?SIG.dataUrl():null;
+  if(!sigData){msg.innerHTML='<div class="err">Zet je handtekening in het vak hierboven.</div>';return;}
   if(!agree){msg.innerHTML='<div class="err">Vink het akkoord aan om te ondertekenen.</div>';return;}
   const btn=$("#signBtn");btn.disabled=true;btn.textContent="Bezig…";
-  const pdf=makePdf(RES,signer);
-  const res=await api("sign",{signer_name:signer,pdf_base64:pdf});
+  const pdf=makePdf(RES,signer,sigData);
+  const res=await api("sign",{signer_name:signer,pdf_base64:pdf,signature:sigData});
   if(res&&res.ok){RES=await api("get");render();}
   else{btn.disabled=false;btn.textContent="Onderteken de ITP";msg.innerHTML='<div class="err">'+esc((res&&res.error)||"Er ging iets mis.")+'</div>';}
 }

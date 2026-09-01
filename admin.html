@@ -1096,7 +1096,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-01-itp-tekendatum';
+const APP_VERSIE='2026-09-01-itp-handtekening';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -8862,7 +8862,10 @@ function itpMetHandtekening(r){
   if(r.itp_signed_at){
     const d=new Date(r.itp_signed_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const wie=r.itp_signer_name||r.name||'';
-    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+'Signature: \u2713 Digitally signed by '+esc(wie)+br+'Date: '+esc(d));
+    // Is er echt getekend, dan staat de krabbel er onder; "digitally signed"
+    // zou dan onderverkopen wat er ligt.
+    const krabbel=r.itp_signature?`<br><img src="${esc(r.itp_signature)}" alt="Handtekening ${esc(wie)}" style="max-width:220px;max-height:80px;display:block;margin:2px 0">`:'';
+    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+'Signature: '+(r.itp_signature?'':'\u2713 ')+'Digitally signed by '+esc(wie)+krabbel+br+'Date: '+esc(d));
   }
   return b;
 }
@@ -8938,6 +8941,15 @@ async function openReservation(id){
       ${itpStatusLine(r)}
     </div>`;
   h+=_sec('ITP-tekst',`<div class="itp-view" style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.55;max-height:300px;overflow:auto">${itpToHtml(r.itp_body)||itpDraft(r)}</div>`);
+  // De getekende handtekening apart tonen: dit is wat de notaris wil zien, en
+  // in de lopende tekst zou hij er makkelijk overheen kijken.
+  if(r.itp_signature) h+=_sec('Handtekening koper',
+    `<div style="border:1px solid var(--line);border-radius:10px;padding:12px 16px;background:#fff">
+      <img src="${esc(r.itp_signature)}" alt="Handtekening ${esc(r.itp_signer_name||r.name||'')}" style="max-width:260px;max-height:110px;display:block">
+      <div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-size:12.5px;color:var(--muted)">
+        ${esc(r.itp_signer_name||r.name||'')}${r.itp_signed_at?' · '+fmtDateTime(r.itp_signed_at):''}${r.itp_signer_ip?' · IP '+esc(r.itp_signer_ip):''}
+      </div>
+    </div>`);
   h+=`<div class="row-actions" style="flex-wrap:wrap;justify-content:flex-start;gap:8px;margin-top:16px">
       <button class="btn btn-ghost btn-sm" data-dlpdf="${r.id}">⬇︎ Download PDF</button>
       ${manage?`<button class="btn btn-ghost btn-sm" data-editip2="${r.id}">ITP bewerken</button>`:''}
@@ -8979,7 +8991,7 @@ function downloadItpPdf(r){
   doc.setFontSize(10.5);doc.setTextColor(30);
   const body=htmlToPlain(itpMetHandtekening(r)||itpDraft(r));
   const lines=['Prepared on '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),'',...body.split('\n')];
-  if(r.itp_signed_at)lines.push('','SIGNATURES','Buyer: digitally signed by '+(r.itp_signer_name||'')+' on '+fmtDateTime(r.itp_signed_at),'Seller: digitally signed upon issuance of this ITP','Verification hash: '+(r.itp_hash||''));
+  if(r.itp_signed_at)lines.push('','SIGNATURES','Buyer: signed by '+(r.itp_signer_name||'')+' on '+fmtDateTime(r.itp_signed_at),'Seller: digitally signed upon issuance of this ITP','Verification hash: '+(r.itp_hash||''));
   lines.forEach(t=>{
     const kop=isHeadingLine(t);
     const m=!kop&&/^([A-Za-z][A-Za-z .]{0,24}:)\s(.+)$/.exec(t);
@@ -8994,6 +9006,19 @@ function downloadItpPdf(r){
     doc.setFont('helvetica',kop?'bold':'normal');
     const w=doc.splitTextToSize(t,W);w.forEach(x=>{if(y>790){doc.addPage();y=64;}doc.text(x,M,y);y+=15;});
   });
+  // De echte handtekening onder het document, met naam en datum eronder.
+  if(r.itp_signature){
+    try{
+      if(y>700){doc.addPage();y=64;}
+      y+=6;
+      doc.addImage(r.itp_signature,'PNG',M,y,150,52,undefined,'FAST');
+      y+=58;
+      doc.setDrawColor(170); doc.line(M,y,M+220,y); y+=13;
+      doc.setFontSize(9.5); doc.setTextColor(90);
+      doc.text((r.itp_signer_name||r.name||'')+(r.itp_signed_at?' · '+fmtDateTime(r.itp_signed_at):''),M,y);
+      doc.setFontSize(10.5); doc.setTextColor(30);
+    }catch(e){ /* zonder afbeelding blijft de tekstregel staan */ }
+  }
   if(r.itp_signed_at){
     const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight();
     for(let i=1;i<=doc.getNumberOfPages();i++){
