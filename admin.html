@@ -1094,7 +1094,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-01-veilige-zone';
+const APP_VERSIE='2026-09-01-hooks';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -5124,10 +5124,10 @@ async function wkTekenen(){
   const vak=$('#wk_strip'); if(!vak) return;
   const {data,error}=await sb.rpc('content_posts_lijst');
   if(error||!Array.isArray(data)){vak.innerHTML='<span class="muted" style="font-size:12px">Kon de ideeën niet laden.</span>';return;}
-  // Op volgorde waarin ze gepland zijn, maar de datum zelf tonen we niet meer.
+  // De nieuwste set van zeven. Een idee van de hookgenerator herken je aan
+  // hook_voorstel; de lijst komt al op aanmaakmoment binnen, nieuwste eerst.
   const ideeen=data
-    .filter(p=>p.gepland_voor&&p.status!=='gepost')
-    .sort((a,b)=>String(a.gepland_voor).localeCompare(String(b.gepland_voor)))
+    .filter(p=>p.pakket&&p.pakket.hook_voorstel&&p.status!=='gepost')
     .slice(0,7);
   if(!ideeen.length){
     vak.innerHTML='<span class="muted" style="font-size:12px;grid-column:1/-1">Nog geen hooks. Klik op <b>Nieuwe hooks</b>, dan staan hier zeven ideeën klaar om uit te kiezen.</span>';
