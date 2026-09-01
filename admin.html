@@ -1094,7 +1094,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-01-hooks';
+const APP_VERSIE='2026-09-01-captionteller';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3417,6 +3417,23 @@ function ctPreviewCfg(stijlKey){
     brokken:metStem?voLiveBrokken():[],
     cta:(CT.ctaOverlay&&CT.ctaOverlay.tekst)?CT.ctaOverlay:null, duur:1e9};
 }
+/* Instagram knipt een caption af op 2.200 tekens en vouwt hem al na ongeveer
+   125 tekens dicht achter "meer". Het veld laat er daarom niet meer dan 2.200
+   in en de teller laat zien hoeveel ruimte er nog is. Tellen doen we per
+   teken zoals een mens ze ziet, dus een emoji telt als een. */
+const CAP_MAX=2200, CAP_VOUW=125;
+function ctCapTeller(){
+  const ta=document.getElementById('ct_caption'), el=document.getElementById('ct_capteller');
+  if(!ta||!el) return;
+  const n=[...String(ta.value||'')].length;
+  const over=CAP_MAX-n;
+  const eerste=String(ta.value||'').split('\n')[0];
+  const vouwt=[...eerste].length>CAP_VOUW||String(ta.value||'').includes('\n');
+  el.innerHTML=`${n.toLocaleString('nl-NL')} van ${CAP_MAX.toLocaleString('nl-NL')} tekens`
+    +(over<=0?' <b style="color:#a3271b">, vol, Instagram knipt de rest weg</b>'
+      :over<200?` <b style="color:#8a6410">, nog ${over}</b>`:'')
+    +(vouwt?` · na ${CAP_VOUW} tekens klapt Instagram de rest weg achter "meer"`:'');
+}
 /* De veilige zone over de preview. Alleen hier, nooit in de bak: dit zijn
    hulplijnen voor jou, geen pixels voor Instagram. Gedempt is wat de app zelf
    bedekt; binnen de witte stippellijn blijft alles leesbaar. */
@@ -3721,7 +3738,8 @@ function ctPakketTekenen(){
 
     <div class="ct-vak">
       ${kop('Caption','caption','x')}
-      <textarea class="ct-caption" id="ct_caption" style="min-height:280px;overflow:hidden">${esc(pk.caption||'')}</textarea>
+      <textarea class="ct-caption" id="ct_caption" maxlength="2200" style="min-height:280px;overflow:hidden">${esc(pk.caption||'')}</textarea>
+      <div id="ct_capteller" class="muted" style="font-size:12.5px;margin-top:6px"></div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <input id="ct_feedback" class="ct-caption" style="min-height:0;flex:1;padding:8px 12px"
                placeholder="Wat moet anders? Bijv: korter, meer spreektaal, of: onderbouw met actuele cijfers over toerisme…">
@@ -3824,7 +3842,7 @@ function ctPakketTekenen(){
       CT.pakket.hooks[i]=inp.value;
       if(i===CT.hookKeus){
         const ta=$('#ct_caption');
-        if(ta){const regels=ta.value.split('\n');regels[0]=inp.value;ta.value=regels.join('\n');}
+        if(ta){const regels=ta.value.split('\n');regels[0]=inp.value;ta.value=regels.join('\n');ctCapTeller();}
       }
       clearTimeout(t); t=setTimeout(()=>{ctPreviewTekenen();ctOpslaan(null);},600);
     });
@@ -3835,7 +3853,7 @@ function ctPakketTekenen(){
     // De gekozen hook wordt regel 1 van de caption, de rest schuift mee.
     const ta=$('#ct_caption'); const regels=ta.value.split('\n');
     regels[0]=CT.pakket.hooks[CT.hookKeus]||regels[0];
-    ta.value=regels.join('\n');
+    ta.value=regels.join('\n'); ctCapTeller();
     vak.querySelectorAll('[data-hook]').forEach(x=>{
       const aan=Number(x.dataset.hook)===CT.hookKeus;
       x.classList.toggle('on',aan);
@@ -3997,7 +4015,7 @@ async function ctHookFavsTekenen(){
     let i=CT.pakket.hooks.indexOf(f.hook);
     if(i<0){ CT.pakket.hooks.unshift(f.hook); i=0; }
     CT.hookKeus=i;
-    if(f.caption){ CT.pakket.caption=f.caption; const ta=$('#ct_caption'); if(ta) ta.value=f.caption; }
+    if(f.caption){ CT.pakket.caption=f.caption; const ta=$('#ct_caption'); if(ta){ ta.value=f.caption; ctCapTeller(); } }
     ctPakketTekenen(); ctOpslaan(null);
     toast('Hook en bijbehorende caption staan klaar','ok');
   });
@@ -4234,6 +4252,7 @@ function ctPreviewTekenen(){
     capTa.dataset.groei='1';
     const groei=()=>{capTa.style.height='auto';capTa.style.height=Math.max(capTa.scrollHeight+4,280)+'px';};
     capTa.addEventListener('input',groei); setTimeout(groei,0);
+    capTa.addEventListener('input',ctCapTeller); ctCapTeller();
   }
   vak.querySelectorAll('[data-meer]').forEach(m=>m.onclick=e=>{
     e.stopPropagation(); CT.capOpen=!CT.capOpen; ctPreviewTekenen();
@@ -4282,7 +4301,7 @@ function ctPreviewTekenen(){
   vak.querySelectorAll('[data-igkeuze]').forEach(k=>k.onclick=()=>{
     CT.hookKeus=Number(k.dataset.igkeuze);
     const ta=$('#ct_caption');
-    if(ta){const regels=ta.value.split('\n');regels[0]=hooks[CT.hookKeus]||regels[0];ta.value=regels.join('\n');}
+    if(ta){const regels=ta.value.split('\n');regels[0]=hooks[CT.hookKeus]||regels[0];ta.value=regels.join('\n');ctCapTeller();}
     document.querySelectorAll('[data-hook]').forEach(b=>b.classList.toggle('on',Number(b.dataset.hook)===CT.hookKeus));
     ctPreviewTekenen();
   });
@@ -6129,7 +6148,7 @@ async function ctLijstLaden(){
     document.querySelectorAll('[data-ctproject]').forEach(x=>x.classList.toggle('on',x.dataset.ctproject===CT.project));
     document.querySelectorAll('[data-ctdoel]').forEach(x=>x.classList.toggle('on',x.dataset.ctdoel===CT.doel));
     ctTeken();
-    if(CT.pakket){ ctPakketTekenen(); if(p.caption&&$('#ct_caption'))$('#ct_caption').value=p.caption; }
+    if(CT.pakket){ ctPakketTekenen(); if(p.caption&&$('#ct_caption')){$('#ct_caption').value=p.caption; ctCapTeller();} }
     else $('#ct_pakket').style.display='none'; if($('#ct_genereer'))$('#ct_genereer').style.display='';
     window.scrollTo({top:0,behavior:'smooth'});
   });
