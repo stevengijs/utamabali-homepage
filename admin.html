@@ -1096,7 +1096,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-08-31-4k-master';
+const APP_VERSIE='2026-09-01-reel-lead-naam';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -6614,6 +6614,15 @@ function bestName(contactName,displayName){
   const a=(contactName||'').trim(),b=(displayName||'').trim();
   if(a&&a.includes(' '))return a; if(b&&b.includes(' '))return b; return a||b||'';
 }
+/* De naam die boven een gesprek staat. Een lead die alleen op een reel
+   reageerde heeft nog nooit zelf een DM gestuurd; ManyChat kent dan nog geen
+   naam of handle, en "Onbekend" is dan misleidend: we weten precies waar hij
+   vandaan komt. Zodra hij antwoordt vullen naam en foto zichzelf aan. */
+function inboxNaam(c){
+  const n=bestName(c&&c.contact_name,c&&c.display_name)||(c&&c.handle)||'';
+  if(n) return n;
+  return (c&&c.last_direction==='out') ? 'Reageerde op een reel' : 'Onbekend';
+}
 const INBOX_CH={
   instagram:{label:'Instagram',icon:CH_ICON.instagram,color:'#c13584',bg:'#fdf2f8',bd:'#f9d6e8'},
   whatsapp:{label:'WhatsApp',icon:CH_ICON.whatsapp,color:'#128c7e',bg:'#f0fdf4',bd:'#bbf7d0'},
@@ -6761,7 +6770,7 @@ async function inboxLoad(){
   if(!list.length){box.innerHTML=bar+`<div class="empty" style="padding:20px 16px">${INBOX.unreadOnly?'Geen ongelezen berichten. 🎉':INBOX.onbeantwoord?'Iedereen heeft antwoord gehad. 🎉':'Geen gesprekken in deze weergave.'}</div>`;
     const ab0=box.querySelector('[data-showauto]');if(ab0)ab0.onclick=()=>{INBOX.showAuto=ab0.dataset.showauto==='1';renderInbox();};return;}
   box.innerHTML=bar+list.map(c=>{
-    const ch=INBOX_CH[c.channel]||INBOX_CH.instagram;const nm=bestName(c.contact_name,c.display_name)||c.handle||'Onbekend';
+    const ch=INBOX_CH[c.channel]||INBOX_CH.instagram;const nm=inboxNaam(c);
     const unread=c.unread_count>0;
     const chans=Array.isArray(c.channels)?c.channels:[c.channel];
     const chIcons=chans.length>1?`<span class="ibx-rchans">${chans.map(x=>`<span title="${esc((INBOX_CH[x]||{}).label||x)}">${(INBOX_CH[x]||INBOX_CH.instagram).icon}</span>`).join('')}</span>`:'';
@@ -6815,7 +6824,7 @@ function inboxSetSendCh(k){
 function inboxDrawThread(data,keepDraft){
   const cv=data.conversation,msgs=data.messages||[];const gid=data.group_id||cv.group_id||INBOX.sel;
   const ch=INBOX_CH[cv.channel]||INBOX_CH.instagram;
-  const nm=bestName(cv.contact_name,cv.display_name)||cv.handle||'Onbekend';
+  const nm=inboxNaam(cv);
   INBOX.cur={avatar:cv.avatar_url,name:nm,ch,channel:cv.channel};
   const edit=canEdit('inbox');
   const aiOn=cv.ai_enabled;
@@ -6976,7 +6985,7 @@ function inboxDrawInfo(ctx){
   const cv=ctx.conversation||{},ct=ctx.contact||null,chans=ctx.channels||[],timeline=ctx.timeline||[];
   const gid=cv.group_id||INBOX.sel;
   const ch=INBOX_CH[cv.channel]||INBOX_CH.instagram;
-  const nm=cv.display_name||(ct&&ct.name)||cv.handle||'Onbekend';
+  const nm=cv.display_name||(ct&&ct.name)||cv.handle||inboxNaam(cv);
   const edit=canEdit('inbox');
   const phone=(ct&&ct.phone)||(cv.channel==='whatsapp'?cv.handle:'')||'';
   const email=(ct&&ct.email)||'';
@@ -9402,7 +9411,7 @@ async function pipeChatPopup(contactId){
     const {data,error}=await sb.rpc('inbox_thread',{p_id:gid});
     if(error||!data||!data.conversation){q('#ibx_msgs').innerHTML='<div class="muted" style="padding:20px">Kon de chat niet laden.</div>';q('#chatpop_title').textContent='Chat';return;}
     const cv=data.conversation||{};
-    INBOX.cur={avatar:cv.avatar_url,name:bestName(cv.contact_name,cv.display_name)||cv.handle||'Onbekend',ch:INBOX_CH[cv.channel]||INBOX_CH.instagram,channel:cv.channel};
+    INBOX.cur={avatar:cv.avatar_url,name:inboxNaam(cv),ch:INBOX_CH[cv.channel]||INBOX_CH.instagram,channel:cv.channel};
     q('#chatpop_title').innerHTML=`${esc(INBOX.cur.name)} <span class="muted" style="font-weight:500;font-size:12px">${(data.channels||[]).map(b=>(INBOX_CH[b.channel]||INBOX_CH.instagram).icon).join(' ')}</span>`;
     inboxRenderMsgs(data.messages||[]);
     // Ook vanuit het CRM geopende chats tellen als gelezen, anders komt de
