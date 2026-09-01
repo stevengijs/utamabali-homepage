@@ -560,22 +560,20 @@
                   background:rgba(15,46,34,.55);color:#fff;font-weight:800;font-size:13px}
   .bib-item:hover .kies{display:flex}
 
-  /* Weekagenda: elke dag een post, vandaag uitgelicht */
-  .wk-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:4px 0 10px}
-  @media(max-width:900px){.wk-strip{grid-template-columns:repeat(2,1fr)}}
-  .wk-dag{border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;
-          font-size:12px;display:flex;flex-direction:column;gap:4px;min-height:140px}
-  .wk-dag .onderwerp{-webkit-line-clamp:5}
-  .wk-dag.vandaag{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand);background:var(--olive-soft,#eef5f0)}
-  .wk-dag .kop{display:flex;justify-content:space-between;font-weight:700;text-transform:uppercase;
+  /* Zeven losse hooks om uit te kiezen, niet aan een dag gebonden */
+  .wk-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:4px 0 10px}
+  .wk-dag{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;
+          font-size:12px;display:flex;flex-direction:column;gap:6px;min-height:170px}
+  .wk-dag .kop{display:flex;justify-content:space-between;gap:8px;font-weight:700;text-transform:uppercase;
                letter-spacing:.04em;font-size:10.5px;color:var(--muted)}
-  .wk-dag.vandaag .kop{color:var(--brand)}
-  .wk-dag .rubriek{font-weight:700;font-size:12.5px}
-  .wk-dag .onderwerp{color:var(--muted);line-height:1.35;overflow:hidden;display:-webkit-box;
-                     -webkit-line-clamp:3;-webkit-box-orient:vertical;flex:1}
+  .wk-dag .hook{font-weight:700;font-size:13.5px;line-height:1.35;color:var(--ink,#12211c);
+                overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+  .wk-dag .cap{color:var(--muted);line-height:1.4;overflow:hidden;display:-webkit-box;
+               -webkit-line-clamp:4;-webkit-box-orient:vertical;flex:1;
+               border-left:2px solid var(--line);padding-left:8px}
   .wk-dag .st{font-size:10.5px;font-weight:700}
   .wk-dag .st.gepost{color:var(--ok)}
-  .wk-dag button{margin-top:auto}
+  .wk-dag .acties{display:flex;gap:8px;align-items:center;margin-top:auto}
 
   /* Voice-over-opname en karaoke-render */
   .vo-tele{background:#111;color:#fff;border-radius:10px;padding:18px 20px;font-size:16px;
@@ -1096,7 +1094,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-01-itp-download';
+const APP_VERSIE='2026-09-01-veilige-zone';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3172,7 +3170,16 @@ const ctFontStr=(f,px)=>`${f.schuin?'italic ':''}${f.dik} ${Math.round(px*(f.sch
 const ctSpatiePx=(f,px)=>((f.spatieEm||0)*px*(f.schaal||1)).toFixed(1)+'px';
 // De losse opmaakknoppen kunnen van een preset afwijken; dit is de werkelijke
 // stand die preview en render allebei gebruiken.
-let CT_OPMAAK={achtergrond:'geen', accent:false, font:'klassiek', maat:1};
+let CT_OPMAAK={achtergrond:'geen', accent:false, font:'klassiek', maat:1, hookY:470};
+/* De veilige zone van een reel, op de 1080x1920 van de export. Instagram legt
+   zijn eigen laag over je video: bovenin de balk, onderin je naam, caption en
+   audio, rechts de actieknoppen. Alles wat daarin valt wordt in de app bedekt.
+   Maten volgen de Instagram sizing guide; de rail rechts is opgemeten op de
+   reels-speler. subY is de laatste regel van de ondertiteling, die lag eerst
+   op 1490 en dus middenin het naam- en captionblok. */
+const CT_ZONE={top:220, bodem:450, zij:35, railB:170, railVan:1040, subY:1390};
+let CT_ZONE_AAN=(function(){try{return localStorage.getItem('ct_zone')!=='0';}catch(e){return true;}})();
+let CT_TEKST_BOUNDS={hookTop:null, subBot:null};
 
 const ctPubliek=pad=>{try{return sb.storage.from(CT_BUCKET).getPublicUrl(pad).data.publicUrl;}catch(e){return '';}};
 
@@ -3223,8 +3230,8 @@ async function renderContent(){
     </div>
 
     <div class="field bc-buiten">
-      <label style="display:flex;align-items:center;gap:10px">Deze week, elke dag een post
-        <button class="bc-zoekactie" id="wk_plan" style="text-transform:none">Plan de week</button></label>
+      <label style="display:flex;align-items:center;gap:10px">Zeven hooks om uit te kiezen
+        <button class="bc-zoekactie" id="wk_plan" style="text-transform:none">Nieuwe hooks</button></label>
       <div class="wk-strip" id="wk_strip"><span class="muted" style="font-size:12px">Laden…</span></div>
     </div>
 
@@ -3236,7 +3243,7 @@ async function renderContent(){
         <button class="btn btn-ghost" id="ct_eigen_maak" style="padding:11px 18px">🎬 Maak deze reel</button>
       </div>
       <span class="muted" id="ct_verras_status" style="font-size:13px"></span>
-      <div class="bc-hint" style="margin-top:6px">Een klik: de AI verzint een geheel nieuw idee (los van de weekplanning, en gestuurd door wat op je account werkt zodra Instagram gekoppeld is), kiest zelf de beelden uit je bibliotheek en bakt de teksten erop. Jij checkt en plaatst. De post van de dag maak je via de weekkaart hierboven; een geplande dag regenereer je daar met ↻.</div>
+      <div class="bc-hint" style="margin-top:6px">Een klik: de AI verzint een geheel nieuw idee (los van de hooks hierboven, en gestuurd door wat op je account werkt zodra Instagram gekoppeld is), kiest zelf de beelden uit je bibliotheek en bakt de teksten erop. Jij checkt en plaatst. Wil je er juist eentje uit het rijtje hierboven, klik dan daar op ➜ Maak deze; met ↻ krijg je een ander idee binnen dezelfde rubriek.</div>
     </div>
 
     <div class="field bc-buiten">
@@ -3355,9 +3362,9 @@ async function renderContent(){
     try{
       const {data,error}=await sb.functions.invoke('content-maker',{body:{actie:'weekplan'}});
       if(error||!data||data.ok===false){toast((data&&data.reden)||(error&&error.message)||'Plannen mislukte','err');}
-      else toast(data.gepland?`${data.gepland} dagen gepland`:data.reden||'De week stond al klaar','ok');
+      else toast(data.gepland?`${data.gepland} nieuwe hooks klaar`:data.reden||'De hooks stonden al klaar','ok');
       wkTekenen();
-    } finally { b.disabled=false; b.textContent='Plan de week'; }
+    } finally { b.disabled=false; b.textContent='Nieuwe hooks'; }
   };
   wkTekenen();
   document.querySelector(`[data-ctdoel="${CT.doel}"]`).classList.add('on');
@@ -3396,7 +3403,8 @@ function ctPreviewCfg(stijlKey){
   const pk=CT.pakket;
   const gebakken=CT.mediaOrigineel&&CT.mediaOrigineel.length&&CT.media[0]&&CT.media[0].path!==CT.mediaOrigineel[0].path;
   // In een gebakken video zit alle tekst al in de pixels: kaal frame tonen.
-  if(gebakken||!pk) return {om:ctOmEffectief(stijlKey),hookTekst:'',ovl:null,brokken:[],cta:null,duur:1e9};
+  const meten=stijlKey===CT.stijl;
+  if(gebakken||!pk) return {om:ctOmEffectief(stijlKey),hookTekst:'',ovl:null,brokken:[],cta:null,duur:1e9,meten};
   const metStem=!!(typeof VO!=='undefined'&&VO&&VO.url&&(VO.woorden||[]).length);
   const hs=pk.hooks||[];
   const hookTekst=hs.length?String(hs[Math.min(CT.hookKeus||0,hs.length-1)]||''):'';
@@ -3405,9 +3413,53 @@ function ctPreviewCfg(stijlKey){
     ovl=pk.overlays.map(o=>{const m=String(o.tijd||'').match(/([\d.]+)\s*-\s*([\d.]+)/);
       return {van:m?parseFloat(m[1]):0,tot:m?parseFloat(m[2]):1e9,tekst:String(o.tekst||'')};}).filter(o=>o.tekst);
   }
-  return {om:ctOmEffectief(stijlKey), hookTekst, ovl,
+  return {om:ctOmEffectief(stijlKey), hookTekst, ovl, meten,
     brokken:metStem?voLiveBrokken():[],
     cta:(CT.ctaOverlay&&CT.ctaOverlay.tekst)?CT.ctaOverlay:null, duur:1e9};
+}
+/* De veilige zone over de preview. Alleen hier, nooit in de bak: dit zijn
+   hulplijnen voor jou, geen pixels voor Instagram. Gedempt is wat de app zelf
+   bedekt; binnen de witte stippellijn blijft alles leesbaar. */
+function ctZoneTekenen(ctx){
+  if(!CT_ZONE_AAN) return;
+  const B=1080,H=1920,z=CT_ZONE;
+  ctx.save();
+  // Gedempt in plaats van gekleurd: zo blijft de kleur van je beeld
+  // beoordeelbaar en springt de veilige zone er toch uit.
+  ctx.fillStyle='rgba(0,0,0,.55)';
+  ctx.fillRect(0,0,B,z.top);
+  ctx.fillRect(0,H-z.bodem,B,z.bodem);
+  // De actieknoppen rechts lopen door tot ver boven het captionblok.
+  ctx.fillStyle='rgba(0,0,0,.38)';
+  ctx.fillRect(B-z.railB,z.railVan,z.railB,H-z.bodem-z.railVan);
+  ctx.fillRect(0,z.top,z.zij,H-z.top-z.bodem);
+  ctx.fillRect(B-z.zij,z.top,z.zij,z.railVan-z.top);
+  ctx.setLineDash([20,16]); ctx.lineWidth=5; ctx.strokeStyle='rgba(255,255,255,.9)';
+  ctx.strokeRect(z.zij,z.top,B-z.zij*2,H-z.top-z.bodem);
+  ctx.setLineDash([]);
+  ctx.font='700 36px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+  ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.fillText('balk van Instagram',B/2,z.top-62);
+  ctx.fillText('naam, caption en knoppen',B/2,H-z.bodem+66);
+  ctx.save();
+  ctx.translate(B-z.railB/2,z.railVan+(H-z.bodem-z.railVan)/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.font='700 30px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+  ctx.fillText('knoppen',0,10);
+  ctx.restore();
+  ctx.restore();
+}
+/* Wat de zone betekent voor wat er nu in beeld staat: alleen melden als er
+   echt iets onder de laag van Instagram verdwijnt. */
+function ctZoneMelding(){
+  const el=document.getElementById('ct_zone_melding'); if(!el) return;
+  if(!CT_ZONE_AAN){ el.textContent=''; el.style.display='none'; return; }
+  const b=CT_TEKST_BOUNDS, uit=[];
+  if(b.hookTop!=null&&b.hookTop<CT_ZONE.top) uit.push('de hook valt achter de balk bovenin');
+  if(b.subBot!=null&&b.subBot>1920-CT_ZONE.bodem) uit.push('de ondertiteling valt achter je naam en caption');
+  if(!uit.length){ el.textContent=''; el.style.display='none'; return; }
+  el.style.display='block';
+  el.textContent='⚠ '+uit.join(' en ')+'. Zet de hook lager of maak de tekst kleiner.';
 }
 /* Elke previewkaart tekent zichzelf per frame via ctFramePainter, dezelfde
    functie die de export tekent. Wordt de preview hertekend, dan verdwijnen de
@@ -3437,11 +3489,15 @@ function ctPreviewCanvasStart(){
         const sch=cv.width/1080;
         cx.setTransform(sch,0,0,sch,0,0);
         try{ ctFramePainter(cx,bron,isVid,t,ctPreviewCfg(cv.dataset.stijl)); }catch(e){}
+        try{ ctZoneTekenen(cx); }catch(e){}
       }
       requestAnimationFrame(stap);
     };
     requestAnimationFrame(stap);
   });
+  if(!ctPreviewCanvasStart._melder){
+    ctPreviewCanvasStart._melder=setInterval(()=>{ try{ ctZoneMelding(); }catch(e){} },250);
+  }
 }
 /* Geluid bij de previews. Op een gebakken video zetten we simpelweg het echte
    geluid van de eerste kaart aan. Vóór het bakken spelen muziek EN je
@@ -4139,7 +4195,13 @@ function ctPreviewTekenen(){
       <button class="bc-chip" data-igmaat="1">+</button>
       <span class="muted" style="font-size:12px;font-weight:700;margin-left:10px">ACHTERGROND</span>
       ${[['geen','Geen'],['wit','Wit'],['zwart','Zwart'],['semi','Subtiel']].map(([k,n])=>`<button class="bc-chip ${CT_OPMAAK.achtergrond===k?'on':''}" data-igbg="${k}">${n}</button>`).join('')}
-    </div>`;
+      <span class="muted" style="font-size:12px;font-weight:700;margin-left:10px">HOOK HOOGTE</span>
+      <button class="bc-chip" data-ighooky="-1" title="Hook omhoog">↑</button>
+      <span class="muted" id="ig_hooky" style="font-size:12.5px;min-width:52px;text-align:center">${Math.round(((CT_OPMAAK.hookY||470)/1920)*100)}%</span>
+      <button class="bc-chip" data-ighooky="1" title="Hook omlaag">↓</button>
+      <button class="bc-chip ${CT_ZONE_AAN?'on':''}" id="ig_zone" title="Toont waar Instagram zijn eigen balk, naam, caption en knoppen overheen legt">Veilige zone</button>
+    </div>
+    <div id="ct_zone_melding" class="muted" style="display:none;margin-top:6px;font-size:12.5px;color:#a3271b;font-weight:600"></div>`;
   vak.innerHTML=`<div class="ig-rij">${CT.soort==='reel'
     ? CT_STIJLEN.map((st,i)=>kaart(gekozenHook,i)).join('')
     : hooks.map((h,i)=>kaart(h,i)).join('')}</div>`+bewerkBalk;
@@ -4200,6 +4262,23 @@ function ctPreviewTekenen(){
     if(CT.pakket)CT.pakket.opmaak={...CT_OPMAAK};
     ctPreviewTekenen();
   });
+  // De hook hoger of lager zetten, binnen de veilige zone. Onder de hook
+  // schuift de CTA vanzelf mee, die hangt eraan vast.
+  vak.querySelectorAll('[data-ighooky]').forEach(k=>k.onclick=()=>{
+    const nu=CT_OPMAAK.hookY||470;
+    CT_OPMAAK.hookY=Math.min(Math.max(nu+Number(k.dataset.ighooky)*40,CT_ZONE.top+120),1200);
+    if(CT.pakket)CT.pakket.opmaak={...CT_OPMAAK};
+    const pct=document.getElementById('ig_hooky');
+    if(pct)pct.textContent=Math.round((CT_OPMAAK.hookY/1920)*100)+'%';
+  });
+  // De hulplijnen zelf: puur voor de preview, ze gaan nooit mee in de bak.
+  const zoneKnop=vak.querySelector('#ig_zone');
+  if(zoneKnop)zoneKnop.onclick=()=>{
+    CT_ZONE_AAN=!CT_ZONE_AAN;
+    try{ localStorage.setItem('ct_zone',CT_ZONE_AAN?'1':'0'); }catch(e){}
+    zoneKnop.classList.toggle('on',CT_ZONE_AAN);
+    ctZoneMelding();
+  };
   vak.querySelectorAll('[data-igkeuze]').forEach(k=>k.onclick=()=>{
     CT.hookKeus=Number(k.dataset.igkeuze);
     const ta=$('#ct_caption');
@@ -4753,7 +4832,7 @@ async function bibKiezer(){
 }
 
 /* ============== DE AUTOMAAT ==============
-   Een klik en de hele post ligt klaar: onderwerp uit de weekplanning van
+   Een klik en de hele post ligt klaar: onderwerp uit de hooklijst van
    vandaag, pakket van de generator (die de accountlessen al meeneemt zodra
    Instagram gekoppeld is), beelden automatisch uit de bibliotheek gekozen met
    dezelfde scoring als de kiezer, teksten erop gebakken (carousel) of het
@@ -5037,40 +5116,35 @@ async function feitenOphalen(onderwerp, vak, invoeg){
   });
 }
 
-/* De weekstrip: zeven dagen, elke dag zijn rubriek en onderwerp uit de
-   planner. Vandaag is uitgelicht met een maakknop die alles voorinvult; de
-   enige beslissingen die overblijven zijn media uploaden en op maken klikken.
-   Dat is waar de 10 minuten per dag vandaan komen. */
-const WK_DAGEN=['zo','ma','di','wo','do','vr','za'];
+/* Zeven hooks om uit te kiezen. Bewust niet aan een dag gekoppeld: het is een
+   voorraadje ideeën waar je er eentje uit pakt, of waar je inspiratie uit
+   haalt. Elke kaart toont de hook zelf en waar de caption heen gaat, en elke
+   kaart is direct te maken. */
 async function wkTekenen(){
   const vak=$('#wk_strip'); if(!vak) return;
   const {data,error}=await sb.rpc('content_posts_lijst');
-  if(error||!Array.isArray(data)){vak.innerHTML='<span class="muted" style="font-size:12px">Kon de planning niet laden.</span>';return;}
-  const vandaag=new Date(); vandaag.setHours(0,0,0,0);
-  const dagen=[]; for(let i=0;i<7;i++){const d=new Date(vandaag.getTime()+i*864e5);dagen.push(d);}
-  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const perDag=new Map();
-  data.forEach(p0=>{ if(p0.gepland_voor) perDag.set(p0.gepland_voor, p0); });
-  if(!perDag.size){
-    vak.innerHTML='<span class="muted" style="font-size:12px;grid-column:1/-1">Nog geen weekplanning. Klik op <b>Plan de week</b>; daarna staat hier elke dag klaar wat je maakt (vanaf maandag plant hij zichzelf).</span>';
+  if(error||!Array.isArray(data)){vak.innerHTML='<span class="muted" style="font-size:12px">Kon de ideeën niet laden.</span>';return;}
+  // Op volgorde waarin ze gepland zijn, maar de datum zelf tonen we niet meer.
+  const ideeen=data
+    .filter(p=>p.gepland_voor&&p.status!=='gepost')
+    .sort((a,b)=>String(a.gepland_voor).localeCompare(String(b.gepland_voor)))
+    .slice(0,7);
+  if(!ideeen.length){
+    vak.innerHTML='<span class="muted" style="font-size:12px;grid-column:1/-1">Nog geen hooks. Klik op <b>Nieuwe hooks</b>, dan staan hier zeven ideeën klaar om uit te kiezen.</span>';
     return;
   }
-  vak.innerHTML=dagen.map((d,i)=>{
-    const p0=perDag.get(iso(d));
-    const isVandaag=i===0;
-    return `<div class="wk-dag ${isVandaag?'vandaag':''}">
-      <div class="kop"><span>${WK_DAGEN[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}</span><span>${p0?esc(p0.soort):''}</span></div>
-      ${p0?`
-        <div class="rubriek">${esc((p0.pakket&&p0.pakket.hook_voorstel)||p0.rubriek||'')}</div>
-        <div class="onderwerp">${esc(p0.onderwerp||'')}${p0.pakket&&p0.pakket.caption_richting?`<br><span style="font-style:italic;opacity:.85">Caption: ${esc(p0.pakket.caption_richting)}</span>`:''}</div>
-        ${p0.status==='gepost'?'<span class="st gepost">✓ gepost</span>':
-          p0.status!=='gepland'?`<span class="st">${esc(p0.status)}</span>`:''}
-        ${p0.status!=='gepost'?`<div style="display:flex;gap:8px;align-items:center;margin-top:auto">
-            ${isVandaag?`<button class="btn btn-primary btn-sm" data-wkmaak="${p0.id}" style="flex:1">➜ Maak deze</button>`
-                       :`<button class="bc-zoekactie" data-wkmaak="${p0.id}" style="padding:0">openen</button>`}
-            <button class="bc-zoekactie" data-wkregen="${p0.id}" title="Nieuw onderwerp voor deze dag (zelfde rubriek)" style="padding:0">↻</button>
-          </div>`:''}
-      `:`<div class="onderwerp">Niets gepland</div>`}
+  vak.innerHTML=ideeen.map(p0=>{
+    const hook=(p0.pakket&&(p0.pakket.hook_voorstel||p0.pakket.hookrichting))||p0.onderwerp||'';
+    const cap=(p0.pakket&&(p0.pakket.caption||p0.pakket.caption_richting))||p0.onderwerp||'';
+    return `<div class="wk-dag">
+      <div class="kop"><span>${esc(p0.rubriek||'idee')}</span><span>${esc(p0.soort||'')}</span></div>
+      <div class="hook">${esc(hook)}</div>
+      <div class="cap">${esc(cap)}</div>
+      ${p0.status&&p0.status!=='gepland'?`<span class="st">${esc(p0.status)}</span>`:''}
+      <div class="acties">
+        <button class="btn btn-primary btn-sm" data-wkmaak="${p0.id}" style="flex:1">➜ Maak deze</button>
+        <button class="bc-zoekactie" data-wkregen="${p0.id}" title="Ander idee binnen dezelfde rubriek" style="padding:0">↻</button>
+      </div>
     </div>`;
   }).join('');
   vak.querySelectorAll('[data-wkregen]').forEach(b=>b.onclick=async()=>{
@@ -5440,7 +5514,7 @@ function voTijdenAanvullen(){
 function ctOmEffectief(stijlKey){
   const kaart=(typeof CT_STIJLEN!=='undefined'&&CT_STIJLEN.find(x=>x.key===(stijlKey||CT.stijl)))||null;
   if(!kaart) return CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
-  const om={...kaart.opmaak, font:CT_OPMAAK.font, maat:CT_OPMAAK.maat};
+  const om={...kaart.opmaak, font:CT_OPMAAK.font, maat:CT_OPMAAK.maat, hookY:CT_OPMAAK.hookY};
   if(kaart.key==='blok'&&CT_OPMAAK.achtergrond==='zwart') om.achtergrond='zwart';
   return om;
 }
@@ -5468,6 +5542,9 @@ function ctFramePainter(ctx,bron,isVideo,t,cfg){
         if(ctx.measureText(kand).width>940&&r){regels.push(r);r=toon(w);} else r=kand;}
       if(r)regels.push(r);
       let y=yMid-Math.round((regels.length-1)*regelH/2);
+      // Bovenkant van het blok bewaren: daarmee kan de preview waarschuwen
+      // dat de tekst achter de Instagram-balk valt.
+      blokTekenen.laatsteTop=y-Math.round(basisB*0.98);
       for(const regel of regels){
         const breed=ctx.measureText(regel).width; const x=540-breed/2;
         if(om.achtergrond!=='geen'){
@@ -5497,7 +5574,11 @@ function ctFramePainter(ctx,bron,isVideo,t,cfg){
       ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1920);
       ctx.drawImage(bron,(1080-bw*sch)/2,(1920-bh*sch)/2,bw*sch,bh*sch);
       let hookOnder=null;
-      if(cfg.hookTekst) hookOnder=blokTekenen(cfg.hookTekst, 380, 64);
+      if(cfg.meten) CT_TEKST_BOUNDS={hookTop:null, subBot:null};
+      if(cfg.hookTekst){
+        hookOnder=blokTekenen(cfg.hookTekst, Math.round(cfg.om.hookY||470), 64);
+        if(cfg.meten) CT_TEKST_BOUNDS.hookTop=blokTekenen.laatsteTop;
+      }
       if(cfg.ovl){
         const actief=cfg.ovl.find(o=>t>=o.van&&t<=o.tot);
         if(actief) blokTekenen(actief.tekst, 960, 58);
@@ -5548,7 +5629,9 @@ function ctFramePainter(ctx,bron,isVideo,t,cfg){
             rijK.push(w); rijBreed+=wb;
           }
           if(rijK.length)regelsK.push(rijK);
-          let y=1490-(regelsK.length-1)*regelH;
+          // Stond op 1490 en viel daarmee achter je naam, caption en audio.
+          let y=CT_ZONE.subY-(regelsK.length-1)*regelH;
+          if(cfg.meten) CT_TEKST_BOUNDS.subBot=CT_ZONE.subY+Math.round(regelH*0.3);
           const accent=w=>/\d|%|euro|bali|passief|rendement|cash|verkocht|laatste/i.test(w);
           for(const rij of regelsK){
             const breed=rij.reduce((a,w)=>a+ctx.measureText(toon(w.w)+' ').width,0);
@@ -5773,7 +5856,7 @@ async function voRender(alleenMuziek, metTekst){
     const stijlKaart=(typeof CT_STIJLEN!=='undefined'&&CT_STIJLEN.find(x=>x.key===CT.stijl))||null;
     const omEffectief=(()=>{
       if(!stijlKaart) return CT_OPMAAK||{achtergrond:'geen',accent:false,font:'klassiek'};
-      const om={...stijlKaart.opmaak, font:CT_OPMAAK.font, maat:CT_OPMAAK.maat};
+      const om={...stijlKaart.opmaak, font:CT_OPMAAK.font, maat:CT_OPMAAK.maat, hookY:CT_OPMAAK.hookY};
       if(stijlKaart.key==='blok'&&CT_OPMAAK.achtergrond==='zwart') om.achtergrond='zwart';
       return om;
     })();
