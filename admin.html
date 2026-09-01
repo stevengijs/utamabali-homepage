@@ -1096,7 +1096,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-01-reel-lead-naam';
+const APP_VERSIE='2026-09-01-golf-tekst-aanpassen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2751,12 +2751,19 @@ function bcWaVarsTekenen(){
               placeholder="${v.bron==='link'?'https://invest.utamabali.com/moka':'Vaste tekst'}"
               style="${(v.bron==='tekst'||v.bron==='link')?'':'display:none'}">
      </div>`).join('');
+  // Variabelen aanpassen betekent normaal: dit wordt een andere campagne, dus
+  // de koppeling met de vorige los. Maar bij een campagne die LOOPT wil je juist
+  // in diezelfde campagne de tekst bijschaven voor de volgende golf; de
+  // koppeling loslaten zou de server een nieuwe campagne laten weigeren
+  // ("je bent nog niet klaar met ..."). De ontvangerslijst blijft hoe dan ook
+  // bevroren, dus niemand krijgt hierdoor twee berichten.
+  const koppelingLosbreken=()=>{ if(!(BC.camp&&BC.waGolven>0)) BC.camp=null; };
   vak.querySelectorAll('[data-varbron]').forEach(sel=>sel.onchange=()=>{
     const i=Number(sel.dataset.varbron);
-    BC.waVars[i].bron=sel.value; BC.camp=null; bcWaVarsTekenen();
+    BC.waVars[i].bron=sel.value; koppelingLosbreken(); bcWaVarsTekenen();
   });
   vak.querySelectorAll('[data-varwaarde]').forEach(inp=>inp.oninput=()=>{
-    BC.waVars[Number(inp.dataset.varwaarde)].waarde=inp.value; BC.camp=null; bcWaVoorbeeld();
+    BC.waVars[Number(inp.dataset.varwaarde)].waarde=inp.value; koppelingLosbreken(); bcWaVoorbeeld();
   });
   bcWaVoorbeeld();
 }
@@ -3027,23 +3034,17 @@ async function bcVerstuurWa(test){
 
   st.textContent = test ? 'Proefbericht versturen…' : 'Golf versturen…';
 
-  // Opslaan legt de ontvangerslijst vast. Dat mag maar één keer: bij elke golf
-  // opnieuw opslaan zou de lijst herberekenen uit de huidige filters, en dan
-  // verschuift halverwege de campagne wie er nog aan de beurt is. De kop belooft
-  // dat de lijst vastligt; dit maakt dat waar. Verander je het template of een
-  // variabele, dan zet die code BC.camp op null en begin je met een nieuwe
-  // campagne, dus dan klopt het opnieuw vastleggen wel.
-  let bewaard;
-  if(BC.waGolven > 0 && BC.camp){
-    const r=await sb.from('broadcast_campagnes').select('aantal_doel').eq('id',BC.camp).maybeSingle();
-    bewaard={id:BC.camp, ontvangers:(r.data&&r.data.aantal_doel)||0};
-  }else{
-    bewaard=await bcBewaar();
-    if(bewaard.fout){
-      if(bewaard.lopend) bcToonLopend(st, bewaard.lopend);
-      else st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;
-      return;
-    }
+  // Altijd opslaan, ook tussen twee golven door: dan gaat een bijgeschaafde
+  // tekst of variabele echt mee in de volgende golf. De ontvangerslijst loopt
+  // daarbij geen gevaar; zodra er iets verstuurd is bewaart de server die lijst
+  // ongewijzigd (hij antwoordt met bevroren) en werkt hij alleen de inhoud bij.
+  // Eerder sloeg dit pad helemaal niets op, waardoor een aanpassing stil
+  // verdween en golf 4 alsnog de oude tekst kreeg.
+  const bewaard=await bcBewaar();
+  if(bewaard.fout){
+    if(bewaard.lopend) bcToonLopend(st, bewaard.lopend);
+    else st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;
+    return;
   }
 
   if(test){
