@@ -6188,6 +6188,7 @@ async function renderDashboard(){
   if(!stats.length)html='<div class="panel"><div class="lock-note">Welcome! You don’t have any pages assigned yet. Ask an admin to grant you access.</div></div><div class="cards" style="display:none">';
   stats.forEach(s=>{html+=`<div class="stat" data-go="${s[3]||''}"${s[3]?' style="cursor:pointer"':''}><div class="k">${s[0]}</div><div class="v">${s[1]}</div><div class="s">${s[2]}</div></div>`;});
   html+='</div>';
+  if(canView('leads'))html+=`<div class="panel"><div class="panel-head"><div><h3>📈 Funnel per week</h3><div class="desc">Leads met een echt inkomend bericht, gekwalificeerd, intro-calls en deals (ITP getekend en aanbetaling binnen). Broadcasts zonder antwoord tellen niet mee. Weken lopen van maandag t/m zondag.</div></div></div><div id="funnel_week_body"><div class="muted" style="font-size:13px;padding:18px">Laden…</div></div></div>`;
   html+=`<div class="panel"><div class="panel-head"><div><h3>Welcome, ${esc((ME.full_name||ME.email).split(' ')[0])} 👋</h3><div class="desc">${isAdmin()?'You have full admin access. This is your live UTAMA data — the same database your site & portal use.':'Use the sidebar to open the areas you have access to.'}</div></div></div>
     <div style="padding:18px"><div class="muted" style="font-size:13px">Your access:</div><div style="margin-top:8px">${accessSummaryHTML()}</div></div></div>`;
   html+=`<div class="panel"><div class="panel-head"><div><h3>📅 Google Agenda</h3><div class="desc">Koppel je agenda zodat de AI-assistent je beschikbaarheid kan zien en meetings kan inplannen. Alleen jij koppelt je eigen agenda.</div></div></div><div style="padding:18px" id="gcal_body"><div class="muted" style="font-size:13px">Laden…</div></div></div>`;
@@ -6201,6 +6202,44 @@ async function renderDashboard(){
   gcalRender();
   mscalRender();
   introRender();
+  funnelWeekRender();
+}
+// Funnel per week op het dashboard. De cijfers komen uit funnel_weekoverzicht()
+// in de database, zodat de definities (wat is een lead, wat is een deal) op één
+// plek staan en de maandagcijfers van Steven overal hetzelfde zijn.
+async function funnelWeekRender(){
+  const box=$('#funnel_week_body');if(!box)return;
+  const {data,error}=await sb.rpc('funnel_weekoverzicht',{p_weken:8});
+  if(!$('#funnel_week_body'))return;
+  if(error){box.innerHTML=`<div class="muted" style="font-size:13px;padding:18px">Niet beschikbaar: ${esc(error.message)}</div>`;return;}
+  const rows=Array.isArray(data)?data:[];
+  if(!rows.length){box.innerHTML='<div class="muted" style="font-size:13px;padding:18px">Nog geen gegevens.</div>';return;}
+  const n=x=>Number(x)||0;
+  const isoWeek=d=>{const x=new Date(Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)));const day=x.getUTCDay()||7;x.setUTCDate(x.getUTCDate()+4-day);const y=new Date(Date.UTC(x.getUTCFullYear(),0,1));return Math.ceil(((x-y)/864e5+1)/7);};
+  const span=d=>{const a=new Date(d+'T00:00:00');const b=new Date(a);b.setDate(b.getDate()+6);const f=x=>x.toLocaleDateString('nl-NL',{day:'numeric',month:'short'});return f(a)+' t/m '+f(b);};
+  const tot={leads:0,gekwalificeerd:0,calls:0,calls_no_show:0,itp_getekend:0,deals:0,site_aanvragen:0};
+  rows.forEach(r=>{Object.keys(tot).forEach(k=>tot[k]+=n(r[k]));});
+  const cel=(v,sub)=>`<td style="text-align:right"><b>${anInt(v)}</b>${sub?`<div class="muted" style="font-size:11px;font-weight:400">${sub}</div>`:''}</td>`;
+  let h='<div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Week</th><th style="text-align:right">Leads</th><th style="text-align:right">Gekwalificeerd</th><th style="text-align:right">Intro-calls</th><th style="text-align:right">ITP getekend</th><th style="text-align:right">Deals</th><th style="text-align:right">Site-aanvragen</th></tr></thead><tbody>';
+  rows.forEach((r,i)=>{
+    h+=`<tr><td><b>W${isoWeek(r.week_start)}</b>${i===0?' <span class="muted" style="font-size:11px">(lopend)</span>':''}<div class="muted" style="font-size:11px">${esc(span(r.week_start))}</div></td>`
+      +cel(r.leads,`IG ${anInt(n(r.leads_ig))} · WA ${anInt(n(r.leads_wa))} · mail ${anInt(n(r.leads_mail))}`)
+      +cel(r.gekwalificeerd,n(r.leads)?anPct(n(r.gekwalificeerd)/n(r.leads))+' van leads':'')
+      +cel(r.calls,n(r.calls_no_show)?anInt(n(r.calls_no_show))+' no-show':'')
+      +cel(r.itp_getekend,'')
+      +cel(r.deals,'')
+      +cel(r.site_aanvragen,'')+'</tr>';
+  });
+  h+=`<tr style="background:#fafbfa"><td><b>Totaal ${rows.length} weken</b></td>`
+    +cel(tot.leads,'')
+    +cel(tot.gekwalificeerd,tot.leads?anPct(tot.gekwalificeerd/tot.leads)+' van leads':'')
+    +cel(tot.calls,tot.gekwalificeerd?anPct(tot.calls/tot.gekwalificeerd)+' van gekwalificeerd':'')
+    +cel(tot.itp_getekend,'')
+    +cel(tot.deals,tot.calls?anPct(tot.deals/tot.calls)+' van calls':'')
+    +cel(tot.site_aanvragen,'')+'</tr>';
+  h+='</tbody></table></div>';
+  h+='<div class="muted" style="font-size:12px;padding:12px 18px 16px">Intro-calls zijn de afspraken in /admin. Calls die alleen via Calendly zijn geboekt staan hier nog niet in. Een deal is een ITP met de aanbetaling binnen; ITP getekend telt ook de reserveringen waar de aanbetaling nog open staat.</div>';
+  box.innerHTML=h;
 }
 async function mscalConnect(btn){
   const label=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='Even geduld…';}
