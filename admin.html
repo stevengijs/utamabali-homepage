@@ -267,6 +267,21 @@
   a.ibx-proflink:hover .ibx-ext{opacity:.8}
   .ibx-tsub{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
   .ibx-chtag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid}
+  /* Ads: één opmaak voor alle vier de stappen. Velden in een rustige kolom,
+     de knoppen altijd onderaan in een eigen balk, zodat elke stap er hetzelfde
+     uitziet en de primaire actie niet tegen het laatste veld aan plakt. */
+  .ads-stappen{display:flex;gap:22px;padding:16px 18px 0;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  .ads-stap{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);padding-bottom:12px;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .ads-stap i{display:grid;place-items:center;width:22px;height:22px;border-radius:999px;background:#eef1ef;color:var(--muted);font-size:11px;font-weight:700;font-style:normal}
+  .ads-stap.done i{background:#dcefe6;color:var(--brand)}
+  .ads-stap.on{color:var(--ink);border-bottom-color:var(--brand)}
+  .ads-stap.on i{background:var(--brand);color:#fff}
+  .ads-vak{padding:20px 18px 4px;max-width:760px}
+  .ads-vak .field{margin-bottom:18px}
+  .ads-keuze{display:flex;gap:8px;flex-wrap:wrap}
+  .ads-hulp{font-size:12px;color:var(--muted);margin-top:6px}
+  .ads-acties{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--line);background:#fafbfa;margin-top:14px;flex-wrap:wrap}
+  .ads-acties .ads-links{margin-right:auto;font-size:12px;color:var(--muted)}
   .ads-rij{display:flex;gap:10px;align-items:flex-start;padding:6px 0}
   .field .ads-rij input[type=checkbox],.field .ads-rij input[type=radio]{width:auto;flex:none;margin-top:10px}
   .field .ads-rij input[type=text]{flex:1;min-width:0;padding:8px 12px}
@@ -1692,7 +1707,20 @@ async function adsFoutTekst(error){
 }
 function adsStappenbalk(){
   const s=[['1','Project'],['2','Teksten'],['3','Creatives'],['4','Publiceren']];
-  return `<div style="display:flex;gap:6px;padding:14px 18px 0;flex-wrap:wrap">${s.map(([n,l])=>`<span class="ibx-chip ${ADS.stap==Number(n)?'on':''}" style="cursor:default">${n}. ${l}</span>`).join('')}</div>`;
+  return `<div class="ads-stappen">${s.map(([n,l])=>{const nr=Number(n);const kl=ADS.stap===nr?'on':(ADS.stap>nr?'done':'');
+    return `<div class="ads-stap ${kl}"><i>${ADS.stap>nr?'✓':n}</i>${l}</div>`;}).join('')}</div>`;
+}
+// Onderbalk met de knoppen. Links een korte toelichting, rechts terug en verder.
+function adsSamenvatting(){
+  if(!ADS.project) return '';
+  const hoek=(ADS_INVALSHOEKEN.find(h=>h[0]===ADS.invalshoek)||[])[1]||'';
+  const best=ADS.bestemming.type==='leadform'?'leadformulier':'projectpagina';
+  return `${esc(ADS.project.name)} · ${esc(hoek)} · ${best}`;
+}
+function adsActies(opts){
+  const l=opts.links?`<div class="ads-links">${opts.links}</div>`:'<div class="ads-links"></div>';
+  const t=opts.terug?`<button class="btn" id="${opts.terug}">Terug</button>`:'';
+  return `<div class="ads-acties">${l}${t}<button class="btn btn-primary" id="${opts.verder}">${esc(opts.verderLabel)}</button></div>`;
 }
 async function adsNieuw(){
   if(!canEdit('ads')){$('#ads_body').innerHTML='<div class="lock-note" style="padding:18px">Alleen kijken: campagnes maken vraagt bewerkrechten op Ads.</div>';return;}
@@ -1709,14 +1737,15 @@ async function adsNieuw(){
 function adsProjectUrl(p){ return (p&&p.portal_url)||(p&&p.slug?`https://invest.utamabali.com/${p.slug}`:'https://invest.utamabali.com'); }
 async function adsStap1(){
   const b=$('#ads_body');
-  b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px;max-width:720px">
-    <div class="field"><label>Project</label><select id="ads_project">${ADS.projecten.map(p=>`<option value="${p.id}" ${ADS.project&&ADS.project.id===p.id?'selected':''}>${esc(p.name)}${p.location?' · '+esc(p.location):''}</option>`).join('')}</select></div>
-    <div class="field"><label>Invalshoek</label><div style="display:flex;gap:6px;flex-wrap:wrap">${ADS_INVALSHOEKEN.map(([k,l])=>`<button class="ibx-chip ${ADS.invalshoek===k?'on':''}" data-hoek="${k}">${l}</button>`).join('')}</div></div>
-    <div class="field"><label>Bestemming</label><div style="display:flex;gap:6px;flex-wrap:wrap">
+  b.innerHTML=adsStappenbalk()+`<div class="ads-vak">
+    <div class="field"><label>Project</label><select id="ads_project">${ADS.projecten.map(p=>`<option value="${p.id}" ${ADS.project&&ADS.project.id===p.id?'selected':''}>${esc(p.name)}${p.location?' · '+esc(p.location):''}</option>`).join('')}</select>
+      <div class="ads-hulp">De cijfers in de advertentie komen uit dit project.</div></div>
+    <div class="field"><label>Invalshoek</label><div class="ads-keuze">${ADS_INVALSHOEKEN.map(([k,l])=>`<button class="ibx-chip ${ADS.invalshoek===k?'on':''}" data-hoek="${k}">${l}</button>`).join('')}</div></div>
+    <div class="field"><label>Bestemming</label><div class="ads-keuze">
       <button class="ibx-chip ${ADS.bestemming.type==='website'?'on':''}" data-best="website">Projectpagina op invest</button>
       <button class="ibx-chip ${ADS.bestemming.type==='leadform'?'on':''}" data-best="leadform">Meta-leadformulier</button></div>
-      <div id="ads_form_keuze" style="margin-top:8px"></div></div>
-    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-primary" id="ads_naar2">Teksten schrijven</button></div></div>`;
+      <div id="ads_form_keuze"></div></div>
+    </div>`+adsActies({verder:'ads_naar2', verderLabel:'Teksten schrijven'});
   const sel=b.querySelector('#ads_project');
   const kies=()=>{ADS.project=ADS.projecten.find(p=>p.id===sel.value)||null; if(ADS.bestemming.type==='website')ADS.bestemming.url=adsProjectUrl(ADS.project);};
   sel.onchange=kies; kies();
@@ -1726,9 +1755,9 @@ async function adsStap1(){
     ADS.bestemming={type:'leadform',form_id:''}; adsStap1();
   });
   if(ADS.bestemming.type==='leadform'){
-    const k=b.querySelector('#ads_form_keuze'); k.innerHTML='<span class="muted" style="font-size:12px">Formulieren laden…</span>';
+    const k=b.querySelector('#ads_form_keuze'); k.innerHTML='<div class="ads-hulp">Formulieren laden…</div>';
     if(!ADS.formulieren.length){const {data}=await sb.functions.invoke('meta-ads',{body:{actie:'lead_forms'}}); ADS.formulieren=(data&&data.formulieren)||[]; if(data&&data.error)toast(data.error,'err');}
-    k.innerHTML=ADS.formulieren.length?`<select id="ads_form">${ADS.formulieren.map(f=>`<option value="${f.id}" ${ADS.bestemming.form_id===f.id?'selected':''}>${esc(f.naam)}</option>`).join('')}</select>`:'<span class="muted" style="font-size:12px">Geen actieve leadformulieren gevonden op de pagina.</span>';
+    k.innerHTML=ADS.formulieren.length?`<div style="margin-top:10px"><select id="ads_form">${ADS.formulieren.map(f=>`<option value="${f.id}" ${ADS.bestemming.form_id===f.id?'selected':''}>${esc(f.naam)}</option>`).join('')}</select></div>`:'<div class="ads-hulp">Geen actieve leadformulieren gevonden op de pagina.</div>';
     const fs=k.querySelector('#ads_form'); if(fs){ADS.bestemming.form_id=fs.value; fs.onchange=()=>ADS.bestemming.form_id=fs.value;}
   }
   b.querySelector('#ads_naar2').onclick=()=>{
@@ -1753,13 +1782,13 @@ async function adsStap2(){
     if(!(await adsCopyHalen())){ADS.stap=1;return adsNieuw();}
   }
   const c=ADS.copy;
-  b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px;max-width:760px">
+  b.innerHTML=adsStappenbalk()+`<div class="ads-vak">
     <div class="field"><label style="display:flex;justify-content:space-between;align-items:center">Koppen, kies 1 tot 4 <button class="bc-zoekactie" id="ads_opnieuw" style="text-transform:none">Opnieuw schrijven</button></label>
       <div id="ads_koppen">${c.koppen.map((k,i)=>`<div class="ads-rij"><input type="checkbox" data-kop="${i}" ${ADS.koppen.includes(k)?'checked':''}><input type="text" data-kopt="${i}" value="${esc(k)}" maxlength="45"><span class="ads-teller" data-teller="${i}">${k.length}/40</span></div>`).join('')}</div></div>
     <div class="field"><label>Primaire tekst, kies er één</label>
       ${c.teksten.map((t,i)=>`<div class="ads-rij"><input type="radio" name="ads_tekst" data-tekst="${i}" ${ADS.tekst===t?'checked':''}><textarea data-tekstt="${i}">${esc(t)}</textarea></div>`).join('')}</div>
     <div class="field"><label>Beschrijving onder de kop</label><input type="text" id="ads_beschrijving" value="${esc(ADS.beschrijving)}" maxlength="30"></div>
-    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="ads_terug1">Terug</button><button class="btn btn-primary" id="ads_naar3">Foto's kiezen</button></div></div>`;
+    </div>`+adsActies({links:adsSamenvatting(), terug:'ads_terug1', verder:'ads_naar3', verderLabel:"Foto's kiezen"});
   const lees=()=>{
     const koppen=[]; b.querySelectorAll('[data-kop]').forEach(cb=>{if(cb.checked){const v=b.querySelector(`[data-kopt="${cb.dataset.kop}"]`).value.trim(); if(v)koppen.push(v);}});
     ADS.koppen=koppen;
@@ -1832,14 +1861,14 @@ async function adsStap3(){
   const b=$('#ads_body');
   if(!ADS.fotos.length){b.innerHTML=adsStappenbalk()+'<div class="muted" style="padding:18px">Foto\'s laden…</div>'; await adsFotosLaden(); await ctFontsLaden();}
   const aantal=ADS.koppen.length*ADS.gekozenFotos.length;
-  b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px">
+  b.innerHTML=adsStappenbalk()+`<div class="ads-vak" style="max-width:900px">
     <div class="field"><label>Foto's, kies 1 tot 4 (${ADS.fotos.filter(f=>f.bron==='project').length} renders van dit project, ${ADS.fotos.filter(f=>f.bron==='bibliotheek').length} uit de bibliotheek)</label>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:320px;overflow:auto">
       ${ADS.fotos.map(f=>`<div data-foto="${f.id}" title="${esc(f.label)}" style="aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;outline:${ADS.gekozenFotos.includes(f.id)?'3px solid #0f2e22':'1px solid var(--line)'}"><img src="${f.thumb}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>`).join('')}</div></div>
     <div class="field"><label>Stijl</label><div style="display:flex;gap:6px"><button class="ibx-chip ${ADS.stijl==='balk'?'on':''}" data-stijl="balk">Witte balk</button><button class="ibx-chip ${ADS.stijl==='overlay'?'on':''}" data-stijl="overlay">Overlay</button></div></div>
     <div class="field"><label>Preview, ${aantal} advertentie${aantal===1?'':'s'} (${ADS.koppen.length} kop${ADS.koppen.length===1?'':'pen'} × ${ADS.gekozenFotos.length} foto${ADS.gekozenFotos.length===1?'':'\'s'})</label>
       <div id="ads_previews" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div></div>
-    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="ads_terug2">Terug</button><button class="btn btn-primary" id="ads_naar4">Naar publiceren</button></div></div>`;
+    </div>`+adsActies({links:adsSamenvatting(), terug:'ads_terug2', verder:'ads_naar4', verderLabel:'Naar publiceren'});
   b.querySelectorAll('[data-foto]').forEach(x=>x.onclick=()=>{const id=x.dataset.foto; const i=ADS.gekozenFotos.indexOf(id); if(i>=0)ADS.gekozenFotos.splice(i,1); else if(ADS.gekozenFotos.length<4)ADS.gekozenFotos.push(id); else toast('Maximaal 4 foto\'s','err'); adsStap3();});
   b.querySelectorAll('[data-stijl]').forEach(x=>x.onclick=()=>{ADS.stijl=x.dataset.stijl;adsStap3();});
   b.querySelector('#ads_terug2').onclick=()=>{ADS.stap=2;adsNieuw();};
@@ -1875,12 +1904,12 @@ function adsStandaardNaam(){
 }
 async function adsStap4(){
   const b=$('#ads_body'); if(!ADS.naam)ADS.naam=adsStandaardNaam();
-  b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px;max-width:720px">
+  b.innerHTML=adsStappenbalk()+`<div class="ads-vak">
     <div class="field"><label>Campagnenaam</label><input type="text" id="ads_naam" value="${esc(ADS.naam)}"></div>
     <div class="field"><label>Dagbudget in euro</label><input type="number" min="5" step="5" id="ads_budget" value="${ADS.dagbudget}" style="width:120px"></div>
     <div class="bc-hint" style="margin:10px 0">${ADS.creatives.length} advertentie${ADS.creatives.length===1?'':'s'} in één ad set. Targeting uit het playbook: Nederland, Nederlandstalig, 30 tot 65 jaar, feed op Facebook en Instagram plus Instagram stories, Advantage-audience uit. Alles gaat gepauzeerd naar Meta; jij zet hem aan in Ads Manager.</div>
     <div id="ads_publ_uit"></div>
-    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="ads_terug3">Terug</button><button class="btn btn-primary" id="ads_publiceer">Publiceren naar Meta (gepauzeerd)</button></div></div>`;
+    </div>`+adsActies({links:adsSamenvatting(), terug:'ads_terug3', verder:'ads_publiceer', verderLabel:'Publiceren naar Meta'});
   b.querySelector('#ads_terug3').onclick=()=>{ADS.stap=3;adsNieuw();};
   b.querySelector('#ads_publiceer').onclick=adsPubliceer;
 }
