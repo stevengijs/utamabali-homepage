@@ -267,6 +267,11 @@
   a.ibx-proflink:hover .ibx-ext{opacity:.8}
   .ibx-tsub{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
   .ibx-chtag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid}
+  .ads-rij{display:flex;gap:10px;align-items:flex-start;padding:6px 0}
+  .field .ads-rij input[type=checkbox],.field .ads-rij input[type=radio]{width:auto;flex:none;margin-top:10px}
+  .field .ads-rij input[type=text]{flex:1;min-width:0;padding:8px 12px}
+  .field .ads-rij textarea{flex:1;min-width:0;min-height:74px;padding:8px 12px;resize:vertical}
+  .ads-teller{font-size:11px;color:var(--muted);width:40px;text-align:right;margin-top:11px}
   .ibx-thead-r{display:flex;align-items:center;gap:8px;flex:none}
   .ibx-facts{display:flex;gap:8px;flex-wrap:wrap;padding:9px 16px;background:#f8faf9;border-bottom:1px solid var(--line)}
   .ibx-fact{font-size:12px;color:var(--muted)}.ibx-fact b{color:var(--ink)}
@@ -1750,10 +1755,10 @@ async function adsStap2(){
   const c=ADS.copy;
   b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px;max-width:760px">
     <div class="field"><label style="display:flex;justify-content:space-between;align-items:center">Koppen, kies 1 tot 4 <button class="bc-zoekactie" id="ads_opnieuw" style="text-transform:none">Opnieuw schrijven</button></label>
-      <div id="ads_koppen">${c.koppen.map((k,i)=>`<label style="display:flex;gap:10px;align-items:center;padding:6px 0"><input type="checkbox" data-kop="${i}" ${ADS.koppen.includes(k)?'checked':''}><input class="ct-caption" style="min-height:0;flex:1;padding:8px 12px" data-kopt="${i}" value="${esc(k)}" maxlength="40"><span class="muted" style="font-size:11px;width:34px;text-align:right">${k.length}/40</span></label>`).join('')}</div></div>
+      <div id="ads_koppen">${c.koppen.map((k,i)=>`<div class="ads-rij"><input type="checkbox" data-kop="${i}" ${ADS.koppen.includes(k)?'checked':''}><input type="text" data-kopt="${i}" value="${esc(k)}" maxlength="45"><span class="ads-teller" data-teller="${i}">${k.length}/40</span></div>`).join('')}</div></div>
     <div class="field"><label>Primaire tekst, kies er één</label>
-      ${c.teksten.map((t,i)=>`<label style="display:flex;gap:10px;align-items:flex-start;padding:6px 0"><input type="radio" name="ads_tekst" data-tekst="${i}" ${ADS.tekst===t?'checked':''} style="margin-top:8px"><textarea class="ct-caption" style="flex:1;min-height:70px" data-tekstt="${i}">${esc(t)}</textarea></label>`).join('')}</div>
-    <div class="field"><label>Beschrijving onder de kop</label><input class="ct-caption" style="min-height:0;padding:8px 12px" id="ads_beschrijving" value="${esc(ADS.beschrijving)}" maxlength="30"></div>
+      ${c.teksten.map((t,i)=>`<div class="ads-rij"><input type="radio" name="ads_tekst" data-tekst="${i}" ${ADS.tekst===t?'checked':''}><textarea data-tekstt="${i}">${esc(t)}</textarea></div>`).join('')}</div>
+    <div class="field"><label>Beschrijving onder de kop</label><input type="text" id="ads_beschrijving" value="${esc(ADS.beschrijving)}" maxlength="30"></div>
     <div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="ads_terug1">Terug</button><button class="btn btn-primary" id="ads_naar3">Foto's kiezen</button></div></div>`;
   const lees=()=>{
     const koppen=[]; b.querySelectorAll('[data-kop]').forEach(cb=>{if(cb.checked){const v=b.querySelector(`[data-kopt="${cb.dataset.kop}"]`).value.trim(); if(v)koppen.push(v);}});
@@ -1761,6 +1766,7 @@ async function adsStap2(){
     const r=b.querySelector('input[name="ads_tekst"]:checked'); ADS.tekst=r?b.querySelector(`[data-tekstt="${r.dataset.tekst}"]`).value.trim():'';
     ADS.beschrijving=b.querySelector('#ads_beschrijving').value.trim();
   };
+  b.querySelectorAll('[data-kopt]').forEach(inp=>inp.oninput=()=>{const t=b.querySelector(`[data-teller="${inp.dataset.kopt}"]`); if(t)t.textContent=inp.value.length+'/40';});
   b.querySelector('#ads_opnieuw').onclick=async()=>{ADS.copy=null;adsStap2();};
   b.querySelector('#ads_terug1').onclick=()=>{ADS.stap=1;adsNieuw();};
   b.querySelector('#ads_naar3').onclick=()=>{
@@ -1870,7 +1876,7 @@ function adsStandaardNaam(){
 async function adsStap4(){
   const b=$('#ads_body'); if(!ADS.naam)ADS.naam=adsStandaardNaam();
   b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px;max-width:720px">
-    <div class="field"><label>Campagnenaam</label><input class="ct-caption" style="min-height:0;padding:8px 12px" id="ads_naam" value="${esc(ADS.naam)}"></div>
+    <div class="field"><label>Campagnenaam</label><input type="text" id="ads_naam" value="${esc(ADS.naam)}"></div>
     <div class="field"><label>Dagbudget in euro</label><input type="number" min="5" step="5" id="ads_budget" value="${ADS.dagbudget}" style="width:120px"></div>
     <div class="bc-hint" style="margin:10px 0">${ADS.creatives.length} advertentie${ADS.creatives.length===1?'':'s'} in één ad set. Targeting uit het playbook: Nederland, Nederlandstalig, 30 tot 65 jaar, feed op Facebook en Instagram plus Instagram stories, Advantage-audience uit. Alles gaat gepauzeerd naar Meta; jij zet hem aan in Ads Manager.</div>
     <div id="ads_publ_uit"></div>
