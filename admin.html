@@ -289,6 +289,12 @@
   .ads-foto.on{outline:3px solid var(--brand);outline-offset:-3px}
   .ads-foto img{width:100%;height:100%;object-fit:cover;display:block}
   .ads-previews{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+  .ads-foto.video{position:relative;background:#14201b;min-height:64px}
+  .ads-foto.video .ads-vidbadge{position:absolute;left:5px;bottom:5px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;letter-spacing:.04em}
+  .ads-foto.video .ads-vidnaam{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:6px;color:#cfe3d8;font-size:10px;line-height:1.25;text-align:center;overflow:hidden}
+  .ads-vidprev{width:100%;max-height:240px;border-radius:8px;display:block;background:#000}
+  .ads-vidkop{margin-top:8px;font-weight:700;font-size:13px;line-height:1.3}
+  .ads-vidsub{color:var(--muted);font-size:12px;margin-top:2px}
   .ads-kaart{border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff}
   .ads-rij{display:flex;gap:10px;align-items:flex-start;padding:6px 0}
   .field .ads-rij input[type=checkbox],.field .ads-rij input[type=radio]{width:auto;flex:none;margin-top:10px}
@@ -1127,7 +1133,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-03-zoeken';
+const APP_VERSIE='2026-09-03-video';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1818,7 +1824,7 @@ async function adsStap2(){
     await adsFotosLaden(); await ctFontsLaden();
   }
   const c=ADS.copy;
-  const renders=ADS.fotos.filter(f=>f.bron==='project').length, bib=ADS.fotos.length-renders;
+  const renders=ADS.fotos.filter(f=>f.bron==='project').length, videos=ADS.fotos.filter(f=>f.video).length, bib=ADS.fotos.length-renders-videos;
   b.innerHTML=adsStappenbalk()+`<div class="ads-vak" style="max-width:1180px"><div class="ads-twee">
     <div>
       <div class="field"><label style="display:flex;justify-content:space-between;align-items:center">Koppen, kies 1 tot 4 <button class="bc-zoekactie" id="ads_opnieuw" style="text-transform:none">Opnieuw schrijven</button></label>
@@ -1829,8 +1835,11 @@ async function adsStap2(){
     </div>
     <div>
       <div class="field"><label>Foto's, kies 1 tot 4</label>
-        <div class="ads-fotos">${ADS.fotos.map(f=>`<div class="ads-foto ${ADS.gekozenFotos.includes(f.id)?'on':''}" data-foto="${f.id}" title="${esc(f.label)}"><img src="${f.thumb}" loading="lazy"></div>`).join('')}</div>
+        <div class="ads-fotos">${ADS.fotos.filter(f=>!f.video).map(f=>`<div class="ads-foto ${ADS.gekozenFotos.includes(f.id)?'on':''}" data-foto="${f.id}" title="${esc(f.label)}"><img src="${f.thumb}" loading="lazy"></div>`).join('')}</div>
         <div class="ads-hulp">${renders} render${renders===1?'':'s'} van dit project, ${bib} uit de bibliotheek.</div></div>
+      <div class="field"><label>Video's, samen met de foto's maximaal 4</label>
+        <div class="ads-fotos">${ADS.fotos.filter(f=>f.video).map(f=>`<div class="ads-foto video ${ADS.gekozenFotos.includes(f.id)?'on':''}" data-foto="${f.id}" title="${esc(f.label)}">${f.thumb?`<img src="${f.thumb}" loading="lazy">`:`<span class="ads-vidnaam">${esc(f.label.slice(0,40))}</span>`}<span class="ads-vidbadge">VIDEO</span></div>`).join('')||'<div class="muted" style="padding:6px;font-size:12px">Geen video\'s in de bibliotheek.</div>'}</div>
+        <div class="ads-hulp">${videos} video${videos===1?'':'\'s'} uit de bibliotheek. De kop en tekst komen bij een video naast het beeld te staan, niet erin.</div></div>
       <div class="field"><label>Stijl</label><div class="ads-keuze">
         <button class="ibx-chip ${ADS.stijl==='balk'?'on':''}" data-stijl="balk">Witte balk</button>
         <button class="ibx-chip ${ADS.stijl==='overlay'?'on':''}" data-stijl="overlay">Overlay</button></div></div>
@@ -1866,7 +1875,7 @@ async function adsStap2(){
     const id=x.dataset.foto, i=ADS.gekozenFotos.indexOf(id);
     if(i>=0)ADS.gekozenFotos.splice(i,1);
     else if(ADS.gekozenFotos.length<4)ADS.gekozenFotos.push(id);
-    else return toast("Maximaal 4 foto's",'err');
+    else return toast("Maximaal 4 foto's en video's samen",'err');
     x.classList.toggle('on', ADS.gekozenFotos.includes(id));
     herteken();
   });
@@ -1882,7 +1891,7 @@ async function adsStap2(){
     if(!ADS.koppen.length||ADS.koppen.length>4){toast('Kies 1 tot 4 koppen','err');return;}
     if(!ADS.tekst){toast('Kies een primaire tekst','err');return;}
     if(/—/.test(ADS.koppen.join(' ')+ADS.tekst+ADS.beschrijving)){toast('Geen lang streepje in de teksten','err');return;}
-    if(!ADS.gekozenFotos.length){toast('Kies minstens één foto','err');return;}
+    if(!ADS.gekozenFotos.length){toast('Kies minstens één foto of video','err');return;}
     if(ADS.koppen.length*ADS.gekozenFotos.length>ADS_MAX_ADS){toast(`Maximaal ${ADS_MAX_ADS} advertenties per campagne`,'err');return;}
     ADS.stap=3; adsNieuw();
   };
@@ -1895,6 +1904,11 @@ async function adsFotosLaden(){
   (pm||[]).forEach(r=>uit.push({id:'pm:'+r.id, url:pmPublicUrl(r.path), thumb:pmPublicUrl(r.path), label:r.caption||'Render', bron:'project'}));
   const {data:cb}=await sb.from('content_bibliotheek').select('id,path,thumb_path,soort,beschrijving').neq('soort','video').order('opname_datum',{ascending:false,nullsFirst:false}).limit(120);
   (cb||[]).filter(r=>/\.(jpe?g|png|webp)$/i.test(r.path||'')).forEach(r=>uit.push({id:'cb:'+r.id, url:ctPubliek(r.path), thumb:ctPubliek(r.thumb_path||r.path), label:r.beschrijving||'Foto', bron:'bibliotheek'}));
+  // Video's uit dezelfde bibliotheek. Zonder thumbnail krijgt de tegel de
+  // beschrijving; Meta maakt bij publiceren zelf een voorbeeldbeeld als wij er
+  // geen frame uit kunnen halen.
+  const {data:vids}=await sb.from('content_bibliotheek').select('id,path,thumb_path,soort,beschrijving').eq('soort','video').order('opname_datum',{ascending:false,nullsFirst:false}).limit(120);
+  (vids||[]).forEach(r=>uit.push({id:'cb:'+r.id, url:ctPubliek(r.path), thumb:r.thumb_path?ctPubliek(r.thumb_path):'', label:r.beschrijving||'Video', bron:'bibliotheek', video:true}));
   ADS.fotos=uit;
 }
 
@@ -1937,6 +1951,17 @@ function adsTeken(canvas,o){
     ctx.font=`500 28px ${f.css}`; ctx.fillStyle='rgba(255,255,255,.9)'; ctx.textAlign='center'; ctx.fillText('UTAMA · You own it. We run it.',W/2,bodem+56);
   }
 }
+/* Eén frame uit de video als voorbeeldbeeld voor Meta. Lukt dat niet (HEVC
+   die Chrome niet afspeelt, geen CORS), dan geeft dit null en valt de function
+   terug op de bibliotheekthumbnail of op de thumbnail die Meta zelf maakt. */
+function adsVideoFrame(url){ return new Promise(ok=>{
+  const v=document.createElement('video'); v.crossOrigin='anonymous'; v.muted=true; v.playsInline=true; v.preload='auto';
+  let af=false; const klaar=b=>{ if(af)return; af=true; clearTimeout(t); ok(b); };
+  const t=setTimeout(()=>klaar(null),15000);
+  v.onloadeddata=()=>{ try{ v.currentTime=Math.min(1.5,(v.duration||3)/2); }catch(e){ klaar(null); } };
+  v.onseeked=()=>{ try{ const c=document.createElement('canvas'); const sc=Math.min(1,1080/(v.videoWidth||1080)); c.width=Math.round((v.videoWidth||1080)*sc); c.height=Math.round((v.videoHeight||1080)*sc); c.getContext('2d').drawImage(v,0,0,c.width,c.height); klaar(c.toDataURL('image/jpeg',0.85)); }catch(e){ klaar(null); } };
+  v.onerror=()=>klaar(null); v.src=url;
+}); }
 function adsLaadBeeld(url){ return new Promise((ok,nee)=>{const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>ok(im); im.onerror=()=>nee(new Error('beeld laden mislukt')); im.src=url;}); }
 
 async function adsPreviews(){
@@ -1944,6 +1969,18 @@ async function adsPreviews(){
   ADS.creatives=[];
   for(const fid of ADS.gekozenFotos){
     const foto=ADS.fotos.find(f=>f.id===fid); if(!foto)continue;
+    if(foto.video){
+      for(const kop of ADS.koppen){
+        const kaart=el('div'); kaart.style.cssText='border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff';
+        const v=el('video'); v.className='ads-vidprev'; v.controls=true; v.muted=true; v.playsInline=true; v.preload='metadata'; if(foto.thumb)v.poster=foto.thumb; v.src=foto.url;
+        const k=el('div'); k.className='ads-vidkop'; k.textContent=kop;
+        const sub=el('div'); sub.className='ads-vidsub'; sub.textContent=ADS.beschrijving||'invest.utamabali.com';
+        kaart.append(v,k,sub); box.append(kaart);
+        const naam=`${ADS.project.name} | ${kop.slice(0,30)} | ${foto.label.slice(0,20)}`;
+        ADS.creatives.push({naam, kop, video:true, url:foto.url, thumb:foto.thumb||''});
+      }
+      continue;
+    }
     let img; try{img=await adsLaadBeeld(foto.url);}catch(e){toast('Foto laden mislukt: '+foto.label,'err');continue;}
     for(const kop of ADS.koppen){
       const kaart=el('div'); kaart.style.cssText='border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff';
@@ -1960,14 +1997,16 @@ async function adsPreviews(){
 
 function adsStandaardNaam(){
   const hoek=(ADS_INVALSHOEKEN.find(h=>h[0]===ADS.invalshoek)||[])[1]||ADS.invalshoek;
-  return `${ADS.project.name} | ${hoek} | statisch | ${ADS.bestemming.type==='leadform'?'leadformulier':'invest'}`;
+  const gekozen=ADS.gekozenFotos.map(id=>ADS.fotos.find(f=>f.id===id)).filter(Boolean);
+  const nVideo=gekozen.filter(f=>f.video).length, soort=nVideo&&nVideo<gekozen.length?'mix':nVideo?'video':'statisch';
+  return `${ADS.project.name} | ${hoek} | ${soort} | ${ADS.bestemming.type==='leadform'?'leadformulier':'invest'}`;
 }
 async function adsStapPubliceren(){
   const b=$('#ads_body'); if(!ADS.naam)ADS.naam=adsStandaardNaam();
   b.innerHTML=adsStappenbalk()+`<div class="ads-vak">
     <div class="field"><label>Campagnenaam</label><input type="text" id="ads_naam" value="${esc(ADS.naam)}"></div>
     <div class="field"><label>Dagbudget in euro</label><input type="number" min="5" step="5" id="ads_budget" value="${ADS.dagbudget}" style="width:120px"></div>
-    <div class="bc-hint" style="margin:10px 0">${ADS.creatives.length} advertentie${ADS.creatives.length===1?'':'s'} in één ad set. Targeting uit het playbook: Nederland, Nederlandstalig, 30 tot 65 jaar, feed op Facebook en Instagram plus Instagram stories, Advantage-audience uit. Alles gaat gepauzeerd naar Meta; jij zet hem aan in Ads Manager.</div>
+    <div class="bc-hint" style="margin:10px 0">${ADS.creatives.length} advertentie${ADS.creatives.length===1?'':'s'} in één ad set. Targeting uit het playbook: Nederland, Nederlandstalig, 30 tot 65 jaar, feed op Facebook en Instagram plus Instagram stories, Advantage-audience uit. Alles gaat gepauzeerd naar Meta; jij zet hem aan in Ads Manager.${ADS.creatives.some(c=>c.video)?' Video\'s gaan eerst naar Meta en worden daar verwerkt, dat duurt meestal een tot drie minuten.':''}</div>
     <div id="ads_publ_uit"></div>
     </div>`+adsActies({links:adsSamenvatting(), terug:'ads_terug3', verder:'ads_publiceer', verderLabel:'Publiceren naar Meta'});
   b.querySelector('#ads_terug3').onclick=()=>{ADS.stap=2;adsNieuw();};
@@ -1982,7 +2021,29 @@ async function adsPubliceer(){
   const uit=$('#ads_publ_uit'); uit.innerHTML='<div class="muted">Beelden exporteren en campagne aanmaken…</div>';
   ADS.bezig=true; $('#ads_publiceer').disabled=true;
   try{
-    const creatives=ADS.creatives.map(c=>({naam:c.naam, kop:c.kop, tekst:ADS.tekst, beschrijving:ADS.beschrijving, jpeg_base64:c.canvas.toDataURL('image/jpeg',0.9)}));
+    const videoUrls=[...new Set(ADS.creatives.filter(c=>c.video).map(c=>c.url))], videoIds={}, frames={};
+    for(let i=0;i<videoUrls.length;i++){
+      const url=videoUrls[i];
+      uit.innerHTML=`<div class="muted">Video ${i+1} van ${videoUrls.length} naar Meta sturen…</div>`;
+      const {data,error}=await sb.functions.invoke('meta-ads',{body:{actie:'upload_video', url, naam:ADS.naam}});
+      if(error||!data||!data.ok)throw new Error('video uploaden: '+((data&&(data.fout||data.error))||(error&&error.message)||'geen antwoord'));
+      videoIds[url]=data.video_id;
+      frames[url]=await adsVideoFrame(url);
+    }
+    for(let i=0;i<videoUrls.length;i++){
+      const url=videoUrls[i]; let klaar=false;
+      for(let poging=0;poging<60&&!klaar;poging++){
+        const {data}=await sb.functions.invoke('meta-ads',{body:{actie:'video_status', video_id:videoIds[url]}});
+        if(data&&data.fout)throw new Error(data.fout);
+        klaar=!!(data&&data.klaar);
+        if(!klaar){ uit.innerHTML=`<div class="muted">Meta verwerkt video ${i+1} van ${videoUrls.length}${data&&data.voortgang!=null?' ('+data.voortgang+'%)':''}…</div>`; await new Promise(r=>setTimeout(r,4000)); }
+      }
+      if(!klaar)throw new Error('Meta is na vier minuten nog bezig met de video; probeer het straks opnieuw');
+    }
+    uit.innerHTML='<div class="muted">Campagne aanmaken…</div>';
+    const creatives=ADS.creatives.map(c=>c.video
+      ? {type:'video', naam:c.naam, kop:c.kop, tekst:ADS.tekst, beschrijving:ADS.beschrijving, video_id:videoIds[c.url], thumb_jpeg_base64:frames[c.url]||undefined, thumb_url:c.thumb||undefined}
+      : {type:'image', naam:c.naam, kop:c.kop, tekst:ADS.tekst, beschrijving:ADS.beschrijving, jpeg_base64:c.canvas.toDataURL('image/jpeg',0.9)});
     const {data,error}=await sb.functions.invoke('meta-ads',{body:{actie:'publish', naam:ADS.naam, dagbudget_eur:ADS.dagbudget, bestemming:ADS.bestemming,
       creatives, project_id:ADS.project.id, invalshoek:ADS.invalshoek, koppen:ADS.koppen, primaire_tekst:ADS.tekst, beschrijving:ADS.beschrijving}});
     if(error||!data){throw new Error((error&&error.message)||'geen antwoord');}
