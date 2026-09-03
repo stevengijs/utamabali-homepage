@@ -7274,7 +7274,12 @@ function inboxDrawThread(data,keepDraft){
   const nm=inboxNaam(cv);
   INBOX.cur={avatar:cv.avatar_url,name:nm,ch,channel:cv.channel};
   const edit=canEdit('inbox');
-  const aiOn=cv.ai_enabled;
+  /* De bot zwijgt niet alleen als de schakelaar uit staat, maar ook zodra het
+     gesprek op overname staat, gesloten is of de lead zich afmeldde. Dat stond
+     hier niet, dus na een noodrem-overname bleef er "de AI beantwoordt dit
+     gesprek automatisch" staan terwijl er niets meer werd verstuurd. */
+  const aiStil=['needs_human','closed','opted_out'].includes(cv.status);
+  const aiOn=cv.ai_enabled && !aiStil;
   // Which channels can we reply on? Existing bindings + email/WhatsApp when we
   // know the contact's address/number (a binding gets created on first send).
   const binds=data.channels||[];const have=new Set(binds.map(b=>b.channel));
@@ -7302,7 +7307,8 @@ function inboxDrawThread(data,keepDraft){
     </div>
     <div class="ibx-msgs" id="ibx_msgs"></div>
     <div class="ibx-compose">
-      ${aiOn?`<div class="ibx-aihint">🤖 De AI beantwoordt dit gesprek automatisch. Zodra jij een bericht stuurt, neem je het over en pauzeert de AI.</div>`:''}
+      ${aiOn?`<div class="ibx-aihint">🤖 De AI beantwoordt dit gesprek automatisch. Zodra jij een bericht stuurt, neem je het over en pauzeert de AI.</div>`
+        :(cv.ai_enabled&&aiStil?`<div class="ibx-aihint">✋ Dit gesprek staat op overname. De AI antwoordt hier niet meer, jij of een collega pakt het op.</div>`:'')}
       ${edit?`
         <div class="ibx-modetabs" id="ibx_modetabs">
           <button data-mode="msg" class="on">Bericht</button>
