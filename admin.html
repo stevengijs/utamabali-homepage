@@ -1099,7 +1099,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-01-captionteller';
+const APP_VERSIE='2026-09-03-ads';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1127,6 +1127,7 @@ const PAGES = [
   {key:'sequences',label:'Bericht flows',          icon:'📤'},
   {key:'broadcast',label:'Broadcast',              icon:'📣'},
   {key:'content',  label:'Content',                icon:'🎬'},
+  {key:'ads',      label:'Ads',                    icon:'📢'},
   {key:'webinars', label:'Webinar',                icon:'🎥'},
   {key:'projects', label:'Projects',               icon:'🏗️'},
   {key:'portal',   label:'Portal & Investors',     icon:'🏝️'},
@@ -1632,7 +1633,7 @@ function gzInit(){
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users'};
+  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users',ads:'Ads'};
   $('#pageTitle').textContent=titles[k]||k;
   versieCheck();
   if(k==='dashboard')return renderDashboard();
@@ -1647,8 +1648,293 @@ function go(k){
   if(k==='sequences')return renderSequences();
   if(k==='broadcast')return renderBroadcast();
   if(k==='content')return renderContent();
+  if(k==='ads')return renderAds();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
+}
+
+/* ================= ADS =================
+   Meta-advertenties vanuit /admin: teksten via ads-copy, creatives in de
+   browser (canvas) uit eigen foto's en renders, publiceren als gepauzeerde
+   campagne via meta-ads, en per campagne besteding, leads en kosten per lead.
+   Bewust klein gehouden: geen AI-beelden, geen CRM-koppeling. Spec:
+   docs/superpowers/specs/2026-09-02-ads-in-admin-design.md in utama-platform. */
+const ADS_INVALSHOEKEN=[['waardegroei','Waardegroei'],['rendement','Rendement'],['garantie','Zekerheid'],['schaarste','Schaarste'],['eigen_gebruik','Eigen gebruik']];
+const ADS_CPL_GRENS={groen:50, oranje:100}; // euro per lead; eerste aanname, zie spec
+const ADS_MAX_ADS=16;
+let ADS={tab:'nieuw', stap:1, projecten:[], project:null, invalshoek:'rendement', bestemming:{type:'website',url:''}, formulieren:[],
+  copy:null, koppen:[], tekst:'', beschrijving:'', fotos:[], gekozenFotos:[], stijl:'balk', creatives:[], naam:'', dagbudget:25, periode:30, bezig:false};
+
+async function renderAds(){
+  const v=$('#view');
+  v.innerHTML=`<div class="panel">
+    <div class="panel-head"><div><h3>📢 Ads</h3><div class="desc">Meta-campagnes uit eigen foto's: tekst, creatives, publiceren als gepauzeerd, en de resultaten.</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="ibx-chip ${ADS.tab==='nieuw'?'on':''}" data-adstab="nieuw">Nieuwe campagne</button>
+        <button class="ibx-chip ${ADS.tab==='resultaten'?'on':''}" data-adstab="resultaten">Resultaten</button>
+      </div></div>
+    <div id="ads_body"></div></div>`;
+  v.querySelectorAll('[data-adstab]').forEach(b=>b.onclick=()=>{ADS.tab=b.dataset.adstab;renderAds();});
+  if(ADS.tab==='resultaten') return adsResultaten();
+  return adsNieuw();
+}
+
+function adsStappenbalk(){
+  const s=[['1','Project'],['2','Teksten'],['3','Creatives'],['4','Publiceren']];
+  return `<div style="display:flex;gap:6px;padding:14px 18px 0;flex-wrap:wrap">${s.map(([n,l])=>`<span class="ibx-chip ${ADS.stap==Number(n)?'on':''}" style="cursor:default">${n}. ${l}</span>`).join('')}</div>`;
+}
+async function adsNieuw(){
+  if(!canEdit('ads')){$('#ads_body').innerHTML='<div class="lock-note" style="padding:18px">Alleen kijken: campagnes maken vraagt bewerkrechten op Ads.</div>';return;}
+  if(!ADS.projecten.length){
+    const {data}=await sb.from('projects').select('id,name,slug,location,units_total,units_available,price_current,yield_min,yield_max,portal_url').order('sort_order');
+    ADS.projecten=data||[];
+  }
+  if(ADS.stap===1) return adsStap1();
+  if(ADS.stap===2) return adsStap2();
+  if(ADS.stap===3) return adsStap3();
+  return adsStap4();
+}
+
+function adsProjectUrl(p){ return (p&&p.portal_url)||(p&&p.slug?`https://invest.utamabali.com/${p.slug}`:'https://invest.utamabali.com'); }
+async function adsStap1(){
+  const b=$('#ads_body');
+  b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px;max-width:720px">
+    <div class="field"><label>Project</label><select id="ads_project">${ADS.projecten.map(p=>`<option value="${p.id}" ${ADS.project&&ADS.project.id===p.id?'selected':''}>${esc(p.name)}${p.location?' · '+esc(p.location):''}</option>`).join('')}</select></div>
+    <div class="field"><label>Invalshoek</label><div style="display:flex;gap:6px;flex-wrap:wrap">${ADS_INVALSHOEKEN.map(([k,l])=>`<button class="ibx-chip ${ADS.invalshoek===k?'on':''}" data-hoek="${k}">${l}</button>`).join('')}</div></div>
+    <div class="field"><label>Bestemming</label><div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="ibx-chip ${ADS.bestemming.type==='website'?'on':''}" data-best="website">Projectpagina op invest</button>
+      <button class="ibx-chip ${ADS.bestemming.type==='leadform'?'on':''}" data-best="leadform">Meta-leadformulier</button></div>
+      <div id="ads_form_keuze" style="margin-top:8px"></div></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-primary" id="ads_naar2">Teksten schrijven</button></div></div>`;
+  const sel=b.querySelector('#ads_project');
+  const kies=()=>{ADS.project=ADS.projecten.find(p=>p.id===sel.value)||null; if(ADS.bestemming.type==='website')ADS.bestemming.url=adsProjectUrl(ADS.project);};
+  sel.onchange=kies; kies();
+  b.querySelectorAll('[data-hoek]').forEach(x=>x.onclick=()=>{ADS.invalshoek=x.dataset.hoek;adsStap1();});
+  b.querySelectorAll('[data-best]').forEach(x=>x.onclick=async()=>{
+    if(x.dataset.best==='website'){ADS.bestemming={type:'website',url:adsProjectUrl(ADS.project)};adsStap1();return;}
+    ADS.bestemming={type:'leadform',form_id:''}; adsStap1();
+  });
+  if(ADS.bestemming.type==='leadform'){
+    const k=b.querySelector('#ads_form_keuze'); k.innerHTML='<span class="muted" style="font-size:12px">Formulieren laden…</span>';
+    if(!ADS.formulieren.length){const {data}=await sb.functions.invoke('meta-ads',{body:{actie:'lead_forms'}}); ADS.formulieren=(data&&data.formulieren)||[]; if(data&&data.error)toast(data.error,'err');}
+    k.innerHTML=ADS.formulieren.length?`<select id="ads_form">${ADS.formulieren.map(f=>`<option value="${f.id}" ${ADS.bestemming.form_id===f.id?'selected':''}>${esc(f.naam)}</option>`).join('')}</select>`:'<span class="muted" style="font-size:12px">Geen actieve leadformulieren gevonden op de pagina.</span>';
+    const fs=k.querySelector('#ads_form'); if(fs){ADS.bestemming.form_id=fs.value; fs.onchange=()=>ADS.bestemming.form_id=fs.value;}
+  }
+  b.querySelector('#ads_naar2').onclick=()=>{
+    if(!ADS.project){toast('Kies een project','err');return;}
+    if(ADS.bestemming.type==='leadform'&&!ADS.bestemming.form_id){toast('Kies een leadformulier','err');return;}
+    ADS.stap=2; ADS.copy=null; adsNieuw();
+  };
+}
+
+async function adsCopyHalen(){
+  ADS.bezig=true;
+  const {data,error}=await sb.functions.invoke('ads-copy',{body:{project_id:ADS.project.id, invalshoek:ADS.invalshoek, bestemming:ADS.bestemming.type}});
+  ADS.bezig=false;
+  if(error||!data||!data.ok){toast((data&&data.error)||(error&&error.message)||'Teksten schrijven mislukt','err');return false;}
+  ADS.copy=data; ADS.koppen=data.koppen.slice(0,2); ADS.tekst=data.teksten[0]||''; ADS.beschrijving=data.beschrijving||'';
+  return true;
+}
+async function adsStap2(){
+  const b=$('#ads_body');
+  if(!ADS.copy){
+    b.innerHTML=adsStappenbalk()+'<div class="muted" style="padding:18px">Claude schrijft de koppen en teksten…</div>';
+    if(!(await adsCopyHalen())){ADS.stap=1;return adsNieuw();}
+  }
+  const c=ADS.copy;
+  b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px;max-width:760px">
+    <div class="field"><label style="display:flex;justify-content:space-between;align-items:center">Koppen, kies 1 tot 4 <button class="bc-zoekactie" id="ads_opnieuw" style="text-transform:none">Opnieuw schrijven</button></label>
+      <div id="ads_koppen">${c.koppen.map((k,i)=>`<label style="display:flex;gap:10px;align-items:center;padding:6px 0"><input type="checkbox" data-kop="${i}" ${ADS.koppen.includes(k)?'checked':''}><input class="ct-caption" style="min-height:0;flex:1;padding:8px 12px" data-kopt="${i}" value="${esc(k)}" maxlength="40"><span class="muted" style="font-size:11px;width:34px;text-align:right">${k.length}/40</span></label>`).join('')}</div></div>
+    <div class="field"><label>Primaire tekst, kies er één</label>
+      ${c.teksten.map((t,i)=>`<label style="display:flex;gap:10px;align-items:flex-start;padding:6px 0"><input type="radio" name="ads_tekst" data-tekst="${i}" ${ADS.tekst===t?'checked':''} style="margin-top:8px"><textarea class="ct-caption" style="flex:1;min-height:70px" data-tekstt="${i}">${esc(t)}</textarea></label>`).join('')}</div>
+    <div class="field"><label>Beschrijving onder de kop</label><input class="ct-caption" style="min-height:0;padding:8px 12px" id="ads_beschrijving" value="${esc(ADS.beschrijving)}" maxlength="30"></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="ads_terug1">Terug</button><button class="btn btn-primary" id="ads_naar3">Foto's kiezen</button></div></div>`;
+  const lees=()=>{
+    const koppen=[]; b.querySelectorAll('[data-kop]').forEach(cb=>{if(cb.checked){const v=b.querySelector(`[data-kopt="${cb.dataset.kop}"]`).value.trim(); if(v)koppen.push(v);}});
+    ADS.koppen=koppen;
+    const r=b.querySelector('input[name="ads_tekst"]:checked'); ADS.tekst=r?b.querySelector(`[data-tekstt="${r.dataset.tekst}"]`).value.trim():'';
+    ADS.beschrijving=b.querySelector('#ads_beschrijving').value.trim();
+  };
+  b.querySelector('#ads_opnieuw').onclick=async()=>{ADS.copy=null;adsStap2();};
+  b.querySelector('#ads_terug1').onclick=()=>{ADS.stap=1;adsNieuw();};
+  b.querySelector('#ads_naar3').onclick=()=>{
+    lees();
+    if(!ADS.koppen.length||ADS.koppen.length>4){toast('Kies 1 tot 4 koppen','err');return;}
+    if(!ADS.tekst){toast('Kies een primaire tekst','err');return;}
+    if(/—/.test(ADS.koppen.join(' ')+ADS.tekst+ADS.beschrijving)){toast('Geen lang streepje in de teksten','err');return;}
+    ADS.stap=3; adsNieuw();
+  };
+}
+
+async function adsFotosLaden(){
+  const uit=[];
+  const {data:pm}=await sb.from('project_media').select('id,path,caption,kind').eq('project_id',ADS.project.id).eq('kind','render').order('sort_order');
+  (pm||[]).forEach(r=>uit.push({id:'pm:'+r.id, url:pmPublicUrl(r.path), thumb:pmPublicUrl(r.path), label:r.caption||'Render', bron:'project'}));
+  const {data:cb}=await sb.from('content_bibliotheek').select('id,path,thumb_path,soort,beschrijving').neq('soort','video').order('opname_datum',{ascending:false,nullsFirst:false}).limit(120);
+  (cb||[]).filter(r=>/\.(jpe?g|png|webp)$/i.test(r.path||'')).forEach(r=>uit.push({id:'cb:'+r.id, url:ctPubliek(r.path), thumb:ctPubliek(r.thumb_path||r.path), label:r.beschrijving||'Foto', bron:'bibliotheek'}));
+  ADS.fotos=uit;
+}
+
+/* Tekent één creative. Twee stijlen uit de generator: 'balk' (witte tekstbalk
+   boven, foto eronder) en 'overlay' (foto vol, donker verloop onderaan, kop in
+   witte tekstpillen). ratio '1:1' is 1080x1080, '9:16' is 1080x1920. */
+function adsFontVoor(){ return CT_FONTS.find(f=>f.key==='klassiek')||CT_FONTS[0]; }
+function adsRegels(ctx,tekst,maxB){
+  const w=tekst.split(/\s+/), regels=[]; let r='';
+  w.forEach(x=>{const t=r?r+' '+x:x; if(ctx.measureText(t).width>maxB&&r){regels.push(r);r=x;}else r=t;});
+  if(r)regels.push(r); return regels;
+}
+function adsCover(ctx,img,x,y,w,h){
+  const s=Math.max(w/img.naturalWidth,h/img.naturalHeight), dw=img.naturalWidth*s, dh=img.naturalHeight*s;
+  ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
+}
+function adsTeken(canvas,o){
+  const W=1080, H=o.ratio==='9:16'?1920:1080; canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d'); const f=adsFontVoor();
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  if(o.stijl==='balk'){
+    const balk=o.ratio==='9:16'?420:300;
+    ctx.font=`${f.dik} 64px ${f.css}`; const regels=adsRegels(ctx,o.kop,W-140);
+    const lh=76, top=(balk-regels.length*lh)/2+58;
+    ctx.fillStyle='#0f2e22'; ctx.textAlign='center';
+    regels.forEach((r,i)=>ctx.fillText(r,W/2,top+i*lh));
+    ctx.font=`500 30px ${f.css}`; ctx.fillStyle='#4b5f58'; ctx.fillText('UTAMA · You own it. We run it.',W/2,balk-34);
+    adsCover(ctx,o.img,0,balk,W,H-balk);
+  }else{
+    adsCover(ctx,o.img,0,0,W,H);
+    const g=ctx.createLinearGradient(0,H*0.45,0,H); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.72)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.font=`${f.dik} 60px ${f.css}`; const regels=adsRegels(ctx,o.kop,W-180);
+    const lh=84, padX=26, bodem=o.ratio==='9:16'?H-330:H-110, top=bodem-regels.length*lh;
+    regels.forEach((r,i)=>{
+      const tw=ctx.measureText(r).width, x=(W-tw)/2-padX, y=top+i*lh;
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.roundRect(x,y-52,tw+2*padX,lh-6,18); ctx.fill();
+      ctx.fillStyle='#0f2e22'; ctx.textAlign='left'; ctx.fillText(r,x+padX,y);
+    });
+    ctx.font=`500 28px ${f.css}`; ctx.fillStyle='rgba(255,255,255,.9)'; ctx.textAlign='center'; ctx.fillText('UTAMA · You own it. We run it.',W/2,bodem+56);
+  }
+}
+function adsLaadBeeld(url){ return new Promise((ok,nee)=>{const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>ok(im); im.onerror=()=>nee(new Error('beeld laden mislukt')); im.src=url;}); }
+
+async function adsStap3(){
+  const b=$('#ads_body');
+  if(!ADS.fotos.length){b.innerHTML=adsStappenbalk()+'<div class="muted" style="padding:18px">Foto\'s laden…</div>'; await adsFotosLaden(); await ctFontsLaden();}
+  const aantal=ADS.koppen.length*ADS.gekozenFotos.length;
+  b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px">
+    <div class="field"><label>Foto's, kies 1 tot 4 (${ADS.fotos.filter(f=>f.bron==='project').length} renders van dit project, ${ADS.fotos.filter(f=>f.bron==='bibliotheek').length} uit de bibliotheek)</label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:320px;overflow:auto">
+      ${ADS.fotos.map(f=>`<div data-foto="${f.id}" title="${esc(f.label)}" style="aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;outline:${ADS.gekozenFotos.includes(f.id)?'3px solid #0f2e22':'1px solid var(--line)'}"><img src="${f.thumb}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>`).join('')}</div></div>
+    <div class="field"><label>Stijl</label><div style="display:flex;gap:6px"><button class="ibx-chip ${ADS.stijl==='balk'?'on':''}" data-stijl="balk">Witte balk</button><button class="ibx-chip ${ADS.stijl==='overlay'?'on':''}" data-stijl="overlay">Overlay</button></div></div>
+    <div class="field"><label>Preview, ${aantal} advertentie${aantal===1?'':'s'} (${ADS.koppen.length} kop${ADS.koppen.length===1?'':'pen'} × ${ADS.gekozenFotos.length} foto${ADS.gekozenFotos.length===1?'':'\'s'})</label>
+      <div id="ads_previews" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="ads_terug2">Terug</button><button class="btn btn-primary" id="ads_naar4">Naar publiceren</button></div></div>`;
+  b.querySelectorAll('[data-foto]').forEach(x=>x.onclick=()=>{const id=x.dataset.foto; const i=ADS.gekozenFotos.indexOf(id); if(i>=0)ADS.gekozenFotos.splice(i,1); else if(ADS.gekozenFotos.length<4)ADS.gekozenFotos.push(id); else toast('Maximaal 4 foto\'s','err'); adsStap3();});
+  b.querySelectorAll('[data-stijl]').forEach(x=>x.onclick=()=>{ADS.stijl=x.dataset.stijl;adsStap3();});
+  b.querySelector('#ads_terug2').onclick=()=>{ADS.stap=2;adsNieuw();};
+  b.querySelector('#ads_naar4').onclick=()=>{
+    if(!ADS.gekozenFotos.length){toast('Kies minstens één foto','err');return;}
+    if(aantal>ADS_MAX_ADS){toast(`Maximaal ${ADS_MAX_ADS} advertenties per campagne`,'err');return;}
+    ADS.stap=4; adsNieuw();
+  };
+  await adsPreviews();
+}
+async function adsPreviews(){
+  const box=$('#ads_previews'); if(!box)return; box.innerHTML='';
+  ADS.creatives=[];
+  for(const fid of ADS.gekozenFotos){
+    const foto=ADS.fotos.find(f=>f.id===fid); if(!foto)continue;
+    let img; try{img=await adsLaadBeeld(foto.url);}catch(e){toast('Foto laden mislukt: '+foto.label,'err');continue;}
+    for(const kop of ADS.koppen){
+      const kaart=el('div'); kaart.style.cssText='border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff';
+      const c1=el('canvas'); adsTeken(c1,{img,kop,stijl:ADS.stijl,ratio:'1:1'}); c1.style.cssText='width:100%;border-radius:8px;display:block';
+      const c2=el('canvas'); adsTeken(c2,{img,kop,stijl:ADS.stijl,ratio:'9:16'}); c2.style.cssText='width:46%;border-radius:8px;display:block;margin-top:8px';
+      const naam=`${ADS.project.name} | ${kop.slice(0,30)} | ${foto.label.slice(0,20)}`;
+      const dl=el('div'); dl.style.cssText='display:flex;gap:6px;margin-top:8px;flex-wrap:wrap';
+      [['1:1',c1],['9:16',c2]].forEach(([r,c])=>{const a=el('a'); a.className='bc-zoekactie'; a.style.textTransform='none'; a.textContent='Download '+r; a.href='#'; a.onclick=e=>{e.preventDefault(); const l=document.createElement('a'); l.download=`${naam.replace(/[^a-z0-9]+/gi,'-')}-${r.replace(':','x')}.jpg`; l.href=c.toDataURL('image/jpeg',0.9); l.click();}; dl.append(a);});
+      kaart.append(c1,c2,dl); box.append(kaart);
+      ADS.creatives.push({naam, kop, canvas:c1});
+    }
+  }
+}
+
+function adsStandaardNaam(){
+  const hoek=(ADS_INVALSHOEKEN.find(h=>h[0]===ADS.invalshoek)||[])[1]||ADS.invalshoek;
+  return `${ADS.project.name} | ${hoek} | statisch | ${ADS.bestemming.type==='leadform'?'leadformulier':'invest'}`;
+}
+async function adsStap4(){
+  const b=$('#ads_body'); if(!ADS.naam)ADS.naam=adsStandaardNaam();
+  b.innerHTML=adsStappenbalk()+`<div class="bc-buiten" style="padding-top:14px;max-width:720px">
+    <div class="field"><label>Campagnenaam</label><input class="ct-caption" style="min-height:0;padding:8px 12px" id="ads_naam" value="${esc(ADS.naam)}"></div>
+    <div class="field"><label>Dagbudget in euro</label><input type="number" min="5" step="5" id="ads_budget" value="${ADS.dagbudget}" style="width:120px"></div>
+    <div class="bc-hint" style="margin:10px 0">${ADS.creatives.length} advertentie${ADS.creatives.length===1?'':'s'} in één ad set. Targeting uit het playbook: Nederland, Nederlandstalig, 30 tot 65 jaar, feed op Facebook en Instagram plus Instagram stories, Advantage-audience uit. Alles gaat gepauzeerd naar Meta; jij zet hem aan in Ads Manager.</div>
+    <div id="ads_publ_uit"></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn" id="ads_terug3">Terug</button><button class="btn btn-primary" id="ads_publiceer">Publiceren naar Meta (gepauzeerd)</button></div></div>`;
+  b.querySelector('#ads_terug3').onclick=()=>{ADS.stap=3;adsNieuw();};
+  b.querySelector('#ads_publiceer').onclick=adsPubliceer;
+}
+async function adsPubliceer(){
+  if(ADS.bezig)return;
+  ADS.naam=$('#ads_naam').value.trim(); ADS.dagbudget=Number($('#ads_budget').value)||0;
+  if(!ADS.naam){toast('Geef een campagnenaam','err');return;}
+  if(ADS.dagbudget<5){toast('Dagbudget minimaal 5 euro','err');return;}
+  if(!ADS.creatives.length){toast('Geen creatives; ga terug naar stap 3','err');return;}
+  const uit=$('#ads_publ_uit'); uit.innerHTML='<div class="muted">Beelden exporteren en campagne aanmaken…</div>';
+  ADS.bezig=true; $('#ads_publiceer').disabled=true;
+  try{
+    const creatives=ADS.creatives.map(c=>({naam:c.naam, kop:c.kop, tekst:ADS.tekst, beschrijving:ADS.beschrijving, jpeg_base64:c.canvas.toDataURL('image/jpeg',0.9)}));
+    const {data,error}=await sb.functions.invoke('meta-ads',{body:{actie:'publish', naam:ADS.naam, dagbudget_eur:ADS.dagbudget, bestemming:ADS.bestemming,
+      creatives, project_id:ADS.project.id, invalshoek:ADS.invalshoek, koppen:ADS.koppen, primaire_tekst:ADS.tekst, beschrijving:ADS.beschrijving}});
+    if(error||!data){throw new Error((error&&error.message)||'geen antwoord');}
+    if(!data.ok){
+      uit.innerHTML=`<div class="bc-hint err">Mislukt bij stap <b>${esc(data.stap||'?')}</b>: ${esc(data.fout||data.error||'onbekend')}.${data.campaign_id?' Wat al is aangemaakt staat gepauzeerd in Meta (campagne '+esc(data.campaign_id)+').':''}</div>`;
+      return;
+    }
+    uit.innerHTML=`<div class="bc-hint" style="border-color:#bbf7d0;background:#f0fdf4">Gepubliceerd als gepauzeerde campagne met ${data.ad_ids.length} advertentie${data.ad_ids.length===1?'':'s'}. <a href="${esc(data.ads_manager_url)}" target="_blank" rel="noopener">Open in Ads Manager</a> om te controleren en aan te zetten.</div>`;
+    toast('Campagne staat gepauseerd in Meta','ok');
+    ADS.stap=1; ADS.copy=null; ADS.koppen=[]; ADS.gekozenFotos=[]; ADS.creatives=[]; ADS.naam='';
+  }catch(e){ uit.innerHTML=`<div class="bc-hint err">Publiceren mislukt: ${esc(e.message||e)}</div>`; }
+  finally{ ADS.bezig=false; const k=$('#ads_publiceer'); if(k)k.disabled=false; }
+}
+
+const adsEuro=n=>n==null?'—':'€ '+Number(n).toLocaleString('nl-NL',{minimumFractionDigits:0,maximumFractionDigits:0});
+function adsCplKleur(cpl){ if(cpl==null)return ''; return cpl<ADS_CPL_GRENS.groen?'color:#15803d;font-weight:700':cpl<ADS_CPL_GRENS.oranje?'color:#b45309;font-weight:700':'color:#b91c1c;font-weight:700'; }
+async function adsResultaten(){
+  const b=$('#ads_body');
+  b.innerHTML=`<div style="display:flex;gap:6px;padding:14px 18px 0">${[7,30,90].map(p=>`<button class="ibx-chip ${ADS.periode===p?'on':''}" data-per="${p}">${p} dagen</button>`).join('')}</div><div id="ads_tabel"><div class="muted" style="padding:18px">Cijfers ophalen bij Meta…</div></div>`;
+  b.querySelectorAll('[data-per]').forEach(x=>x.onclick=()=>{ADS.periode=Number(x.dataset.per);adsResultaten();});
+  const [{data,error},{data:eigen}]=await Promise.all([
+    sb.functions.invoke('meta-ads',{body:{actie:'insights',periode:ADS.periode}}),
+    sb.from('ads_campagnes').select('meta_campaign_id,koppen,project_id,status').limit(200),
+  ]);
+  const t=$('#ads_tabel'); if(!t)return;
+  if(error||!data||!data.ok){t.innerHTML=`<div class="bc-hint err" style="margin:14px 18px">Niet beschikbaar: ${esc((data&&(data.fout||data.error))||(error&&error.message)||'onbekend')}</div>`;return;}
+  const rijen=data.rijen||[]; const eigenMap=new Map((eigen||[]).map(r=>[r.meta_campaign_id,r]));
+  if(!rijen.length){t.innerHTML='<div class="muted" style="padding:18px">Geen campagnes met verkeer in deze periode.</div>';return;}
+  const tot=rijen.reduce((a,r)=>({besteding:a.besteding+r.besteding,bereik:a.bereik+r.bereik,klikken:a.klikken+r.klikken,leads:a.leads+r.leads}),{besteding:0,bereik:0,klikken:0,leads:0});
+  const totCpl=tot.leads?tot.besteding/tot.leads:null;
+  const mag=canEdit('ads');
+  t.innerHTML=`<div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Campagne</th><th>Status</th><th style="text-align:right">Dagbudget</th><th style="text-align:right">Besteding</th><th style="text-align:right">Bereik</th><th style="text-align:right">Klikken</th><th style="text-align:right">Leads</th><th style="text-align:right">Per lead</th>${mag?'<th></th>':''}</tr></thead><tbody>
+    ${rijen.map(r=>{const e=eigenMap.get(r.campaign_id); const actief=r.status==='ACTIVE'; return `<tr>
+      <td><b>${esc(r.naam)}</b>${e&&e.koppen&&e.koppen.length?`<div class="muted" style="font-size:11px;white-space:normal;max-width:360px">${esc(e.koppen.join(' · '))}</div>`:''}</td>
+      <td><span class="ibx-chtag" style="color:${actief?'#15803d':'#64748b'};background:${actief?'#f0fdf4':'#f1f5f9'};border-color:${actief?'#bbf7d0':'#e2e8f0'}">${esc(r.status)}</span></td>
+      <td style="text-align:right">${mag?`<input type="number" min="5" step="5" value="${r.dagbudget_eur==null?'':Math.round(r.dagbudget_eur)}" data-budget="${r.campaign_id}" style="width:74px;text-align:right">`:adsEuro(r.dagbudget_eur)}</td>
+      <td style="text-align:right">${adsEuro(r.besteding)}</td><td style="text-align:right">${anInt(r.bereik)}</td><td style="text-align:right">${anInt(r.klikken)}</td><td style="text-align:right"><b>${anInt(r.leads)}</b></td>
+      <td style="text-align:right;${adsCplKleur(r.cpl)}">${adsEuro(r.cpl)}</td>
+      ${mag?`<td><button class="bc-zoekactie" style="text-transform:none" data-status="${r.campaign_id}" data-naar="${actief?'PAUSED':'ACTIVE'}">${actief?'Pauzeren':'Aanzetten'}</button></td>`:''}</tr>`;}).join('')}
+    <tr style="background:#fafbfa"><td><b>Totaal</b></td><td></td><td></td><td style="text-align:right"><b>${adsEuro(tot.besteding)}</b></td><td style="text-align:right">${anInt(tot.bereik)}</td><td style="text-align:right">${anInt(tot.klikken)}</td><td style="text-align:right"><b>${anInt(tot.leads)}</b></td><td style="text-align:right;${adsCplKleur(totCpl)}">${adsEuro(totCpl)}</td>${mag?'<td></td>':''}</tr>
+  </tbody></table></div>
+  <div class="muted" style="font-size:12px;padding:12px 18px 16px">Leads zijn wat Meta telt (formulieren en leadgebeurtenissen van de site). Per lead: groen onder ${ADS_CPL_GRENS.groen} euro, oranje tot ${ADS_CPL_GRENS.oranje}, rood daarboven. Kosten per afspraak volgen zodra DM-leads aan campagnes zijn te koppelen.</div>`;
+  t.querySelectorAll('[data-status]').forEach(x=>x.onclick=async()=>{
+    x.disabled=true; const {data:d}=await sb.functions.invoke('meta-ads',{body:{actie:'status',campaign_id:x.dataset.status,status:x.dataset.naar}});
+    if(!d||!d.ok){toast((d&&(d.fout||d.error))||'Status wijzigen mislukt','err');x.disabled=false;return;}
+    toast(x.dataset.naar==='ACTIVE'?'Campagne aangezet':'Campagne gepauzeerd','ok'); adsResultaten();
+  });
+  t.querySelectorAll('[data-budget]').forEach(x=>x.onchange=async()=>{
+    const v=Number(x.value)||0; if(v<5){toast('Dagbudget minimaal 5 euro','err');return;}
+    const {data:d}=await sb.functions.invoke('meta-ads',{body:{actie:'budget',campaign_id:x.dataset.budget,dagbudget_eur:v}});
+    if(!d||!d.ok){toast((d&&(d.fout||d.error))||'Budget wijzigen mislukt','err');return;}
+    toast('Dagbudget aangepast','ok');
+  });
 }
 
 /* ================= BROADCAST =================
