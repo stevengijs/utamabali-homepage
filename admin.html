@@ -1679,6 +1679,12 @@ async function renderAds(){
   return adsNieuw();
 }
 
+/* supabase-js geeft bij een non-2xx alleen "Edge Function returned a non-2xx
+   status code"; de echte reden staat in de body van error.context. */
+async function adsFoutTekst(error){
+  try{ if(error&&error.context&&typeof error.context.json==='function'){const j=await error.context.json(); return j.error||j.fout||JSON.stringify(j).slice(0,200);} }catch(e){}
+  return error&&error.message||'';
+}
 function adsStappenbalk(){
   const s=[['1','Project'],['2','Teksten'],['3','Creatives'],['4','Publiceren']];
   return `<div style="display:flex;gap:6px;padding:14px 18px 0;flex-wrap:wrap">${s.map(([n,l])=>`<span class="ibx-chip ${ADS.stap==Number(n)?'on':''}" style="cursor:default">${n}. ${l}</span>`).join('')}</div>`;
@@ -1731,7 +1737,7 @@ async function adsCopyHalen(){
   ADS.bezig=true;
   const {data,error}=await sb.functions.invoke('ads-copy',{body:{project_id:ADS.project.id, invalshoek:ADS.invalshoek, bestemming:ADS.bestemming.type}});
   ADS.bezig=false;
-  if(error||!data||!data.ok){toast((data&&data.error)||(error&&error.message)||'Teksten schrijven mislukt','err');return false;}
+  if(error||!data||!data.ok){toast((data&&data.error)||(await adsFoutTekst(error))||'Teksten schrijven mislukt','err');return false;}
   ADS.copy=data; ADS.koppen=data.koppen.slice(0,2); ADS.tekst=data.teksten[0]||''; ADS.beschrijving=data.beschrijving||'';
   return true;
 }
