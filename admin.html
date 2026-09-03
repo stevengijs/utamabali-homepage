@@ -1737,7 +1737,7 @@ async function adsCopyHalen(){
   ADS.bezig=true;
   const {data,error}=await sb.functions.invoke('ads-copy',{body:{project_id:ADS.project.id, invalshoek:ADS.invalshoek, bestemming:ADS.bestemming.type}});
   ADS.bezig=false;
-  if(error||!data||!data.ok){toast((data&&data.error)||(await adsFoutTekst(error))||'Teksten schrijven mislukt','err');return false;}
+  if(error||!data||!data.ok){toast(((data&&data.error)||(await adsFoutTekst(error))||'Teksten schrijven mislukt')+(data&&data.ruw?' · '+String(data.ruw).slice(0,140):''),'err');return false;}
   ADS.copy=data; ADS.koppen=data.koppen.slice(0,2); ADS.tekst=data.teksten[0]||''; ADS.beschrijving=data.beschrijving||'';
   return true;
 }
