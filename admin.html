@@ -1127,7 +1127,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-03-ads-2';
+const APP_VERSIE='2026-09-03-zoeken';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1614,6 +1614,15 @@ function gzTeken(items,q){
     const pipes=(it.pipelines||[]).map(p=>`<span class="gz-pipe">${esc(p.pipeline)} · ${esc(p.fase)}</span>`).join('');
     const kan=(it.kanalen||[]).filter(Boolean).map(x=>(INBOX_CH[x]||{}).label||x).join(', ');
     const sub=[it.telefoon,it.email,kan].filter(Boolean).join(' · ');
+    // Een regel die alleen in de geimporteerde lijst staat heeft nog geen
+    // contact. Die tonen we als zodanig; klikken maakt er alsnog een contact van.
+    if(it.alleen_import){
+      return `<button class="gz-item${i===0?' sel':''}" data-import="${esc(it.import_id)}" data-i="${i}">
+        <div class="gz-naam">${esc(it.naam)} <span class="gz-pipe" style="background:#fff7ed;border-color:#fed7aa;color:#b45309">alleen in importlijst</span></div>
+        ${sub?`<div class="gz-sub">${esc(sub)}</div>`:''}
+        <span class="gz-pipe">${esc(it.bron||'import')} · klik om er een contact van te maken</span>
+      </button>`;
+    }
     return `<button class="gz-item${i===0?' sel':''}" data-gz="${esc(it.contact_id)}" data-i="${i}">
       <div class="gz-naam">${esc(it.naam)}</div>
       ${sub?`<div class="gz-sub">${esc(sub)}</div>`:''}
@@ -1622,6 +1631,16 @@ function gzTeken(items,q){
   }).join('');
   r.hidden=false;
   r.querySelectorAll('[data-gz]').forEach(b=>b.onclick=()=>gzOpen(b.dataset.gz));
+  r.querySelectorAll('[data-import]').forEach(b=>b.onclick=()=>gzOpenImport(b.dataset.import));
+}
+/* Een importregel wordt pas een contact als je hem daadwerkelijk oppakt. Zo
+   blijft de pijplijn schoon en kloppen de funnelcijfers, terwijl je de lead wel
+   gewoon kunt vinden en openen. */
+async function gzOpenImport(importId){
+  const {data,error}=await sb.rpc('contact_uit_import',{p_import_id:importId});
+  if(error||!data){toast(error&&error.message||'Contact aanmaken mislukt','err');return;}
+  toast('Contact aangemaakt uit de importlijst','ok');
+  gzOpen(data);
 }
 async function gzOpen(id){
   gzSluit();const inp=$('#gz_q');if(inp)inp.value='';
@@ -1651,7 +1670,8 @@ function gzInit(){
       GZ.sel=(GZ.sel+(e.key==='ArrowDown'?1:-1)+GZ.items.length)%GZ.items.length;
       const r=$('#gz_res');if(r)r.querySelectorAll('.gz-item').forEach((b,i)=>b.classList.toggle('sel',i===GZ.sel));
     }
-    if(e.key==='Enter'&&GZ.sel>=0){e.preventDefault();gzOpen(GZ.items[GZ.sel].contact_id);}
+    if(e.key==='Enter'&&GZ.sel>=0){e.preventDefault();const it=GZ.items[GZ.sel];
+      if(it.alleen_import)gzOpenImport(it.import_id);else gzOpen(it.contact_id);}
   };
   document.addEventListener('click',e=>{const w=e.target.closest('.gz-wrap');if(!w)gzSluit();});
   document.addEventListener('keydown',e=>{
