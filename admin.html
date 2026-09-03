@@ -282,6 +282,14 @@
   .ads-hulp{font-size:12px;color:var(--muted);margin-top:6px}
   .ads-acties{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--line);background:#fafbfa;margin-top:14px;flex-wrap:wrap}
   .ads-acties .ads-links{margin-right:auto;font-size:12px;color:var(--muted)}
+  .ads-twee{display:grid;grid-template-columns:minmax(320px,1fr) minmax(320px,1.05fr);gap:28px;align-items:start}
+  @media (max-width:1100px){.ads-twee{grid-template-columns:1fr}}
+  .ads-fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;max-height:240px;overflow:auto;padding:3px}
+  .ads-foto{aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;outline:1px solid var(--line);outline-offset:-1px}
+  .ads-foto.on{outline:3px solid var(--brand);outline-offset:-3px}
+  .ads-foto img{width:100%;height:100%;object-fit:cover;display:block}
+  .ads-previews{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+  .ads-kaart{border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff}
   .ads-rij{display:flex;gap:10px;align-items:flex-start;padding:6px 0}
   .field .ads-rij input[type=checkbox],.field .ads-rij input[type=radio]{width:auto;flex:none;margin-top:10px}
   .field .ads-rij input[type=text]{flex:1;min-width:0;padding:8px 12px}
@@ -1119,7 +1127,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-03-ads';
+const APP_VERSIE='2026-09-03-ads-2';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1706,7 +1714,7 @@ async function adsFoutTekst(error){
   return error&&error.message||'';
 }
 function adsStappenbalk(){
-  const s=[['1','Project'],['2','Teksten'],['3','Creatives'],['4','Publiceren']];
+  const s=[['1','Project'],['2','Tekst en beeld'],['3','Publiceren']];
   return `<div class="ads-stappen">${s.map(([n,l])=>{const nr=Number(n);const kl=ADS.stap===nr?'on':(ADS.stap>nr?'done':'');
     return `<div class="ads-stap ${kl}"><i>${ADS.stap>nr?'✓':n}</i>${l}</div>`;}).join('')}</div>`;
 }
@@ -1730,8 +1738,7 @@ async function adsNieuw(){
   }
   if(ADS.stap===1) return adsStap1();
   if(ADS.stap===2) return adsStap2();
-  if(ADS.stap===3) return adsStap3();
-  return adsStap4();
+  return adsStapPubliceren();
 }
 
 function adsProjectUrl(p){ return (p&&p.portal_url)||(p&&p.slug?`https://invest.utamabali.com/${p.slug}`:'https://invest.utamabali.com'); }
@@ -1775,36 +1782,91 @@ async function adsCopyHalen(){
   ADS.copy=data; ADS.koppen=data.koppen.slice(0,2); ADS.tekst=data.teksten[0]||''; ADS.beschrijving=data.beschrijving||'';
   return true;
 }
+/* Stap 2: tekst en beeld naast elkaar. Links kies en bewerk je de koppen, de
+   primaire tekst en de beschrijving, rechts de foto's en de previews. Elke
+   wijziging tekent de previews opnieuw, zodat je meteen ziet of een kop op het
+   beeld past. Alleen de previewkolom wordt hertekend, anders spring je uit het
+   tekstveld waar je in typt. */
 async function adsStap2(){
   const b=$('#ads_body');
   if(!ADS.copy){
     b.innerHTML=adsStappenbalk()+'<div class="muted" style="padding:18px">Claude schrijft de koppen en teksten…</div>';
     if(!(await adsCopyHalen())){ADS.stap=1;return adsNieuw();}
   }
+  if(!ADS.fotos.length){
+    b.innerHTML=adsStappenbalk()+'<div class="muted" style="padding:18px">Foto\'s laden…</div>';
+    await adsFotosLaden(); await ctFontsLaden();
+  }
   const c=ADS.copy;
-  b.innerHTML=adsStappenbalk()+`<div class="ads-vak">
-    <div class="field"><label style="display:flex;justify-content:space-between;align-items:center">Koppen, kies 1 tot 4 <button class="bc-zoekactie" id="ads_opnieuw" style="text-transform:none">Opnieuw schrijven</button></label>
-      <div id="ads_koppen">${c.koppen.map((k,i)=>`<div class="ads-rij"><input type="checkbox" data-kop="${i}" ${ADS.koppen.includes(k)?'checked':''}><input type="text" data-kopt="${i}" value="${esc(k)}" maxlength="45"><span class="ads-teller" data-teller="${i}">${k.length}/40</span></div>`).join('')}</div></div>
-    <div class="field"><label>Primaire tekst, kies er één</label>
-      ${c.teksten.map((t,i)=>`<div class="ads-rij"><input type="radio" name="ads_tekst" data-tekst="${i}" ${ADS.tekst===t?'checked':''}><textarea data-tekstt="${i}">${esc(t)}</textarea></div>`).join('')}</div>
-    <div class="field"><label>Beschrijving onder de kop</label><input type="text" id="ads_beschrijving" value="${esc(ADS.beschrijving)}" maxlength="30"></div>
-    </div>`+adsActies({links:adsSamenvatting(), terug:'ads_terug1', verder:'ads_naar3', verderLabel:"Foto's kiezen"});
+  const renders=ADS.fotos.filter(f=>f.bron==='project').length, bib=ADS.fotos.length-renders;
+  b.innerHTML=adsStappenbalk()+`<div class="ads-vak" style="max-width:1180px"><div class="ads-twee">
+    <div>
+      <div class="field"><label style="display:flex;justify-content:space-between;align-items:center">Koppen, kies 1 tot 4 <button class="bc-zoekactie" id="ads_opnieuw" style="text-transform:none">Opnieuw schrijven</button></label>
+        <div id="ads_koppen">${c.koppen.map((k,i)=>`<div class="ads-rij"><input type="checkbox" data-kop="${i}" ${ADS.koppen.includes(k)?'checked':''}><input type="text" data-kopt="${i}" value="${esc(k)}" maxlength="45"><span class="ads-teller" data-teller="${i}">${k.length}/40</span></div>`).join('')}</div></div>
+      <div class="field"><label>Primaire tekst, kies er één</label>
+        ${c.teksten.map((t,i)=>`<div class="ads-rij"><input type="radio" name="ads_tekst" data-tekst="${i}" ${ADS.tekst===t?'checked':''}><textarea data-tekstt="${i}">${esc(t)}</textarea></div>`).join('')}</div>
+      <div class="field"><label>Beschrijving onder de kop</label><input type="text" id="ads_beschrijving" value="${esc(ADS.beschrijving)}" maxlength="30"></div>
+    </div>
+    <div>
+      <div class="field"><label>Foto's, kies 1 tot 4</label>
+        <div class="ads-fotos">${ADS.fotos.map(f=>`<div class="ads-foto ${ADS.gekozenFotos.includes(f.id)?'on':''}" data-foto="${f.id}" title="${esc(f.label)}"><img src="${f.thumb}" loading="lazy"></div>`).join('')}</div>
+        <div class="ads-hulp">${renders} render${renders===1?'':'s'} van dit project, ${bib} uit de bibliotheek.</div></div>
+      <div class="field"><label>Stijl</label><div class="ads-keuze">
+        <button class="ibx-chip ${ADS.stijl==='balk'?'on':''}" data-stijl="balk">Witte balk</button>
+        <button class="ibx-chip ${ADS.stijl==='overlay'?'on':''}" data-stijl="overlay">Overlay</button></div></div>
+      <div class="field"><label id="ads_prevlabel">Preview</label>
+        <div class="ads-previews" id="ads_previews"></div>
+        <div class="ads-hulp" id="ads_prevleeg">Kies een kop en een foto, dan verschijnt de advertentie hier.</div></div>
+    </div>
+  </div></div>`+adsActies({links:adsSamenvatting(), terug:'ads_terug1', verder:'ads_naar3', verderLabel:'Naar publiceren'});
+
   const lees=()=>{
     const koppen=[]; b.querySelectorAll('[data-kop]').forEach(cb=>{if(cb.checked){const v=b.querySelector(`[data-kopt="${cb.dataset.kop}"]`).value.trim(); if(v)koppen.push(v);}});
     ADS.koppen=koppen;
     const r=b.querySelector('input[name="ads_tekst"]:checked'); ADS.tekst=r?b.querySelector(`[data-tekstt="${r.dataset.tekst}"]`).value.trim():'';
     ADS.beschrijving=b.querySelector('#ads_beschrijving').value.trim();
   };
-  b.querySelectorAll('[data-kopt]').forEach(inp=>inp.oninput=()=>{const t=b.querySelector(`[data-teller="${inp.dataset.kopt}"]`); if(t)t.textContent=inp.value.length+'/40';});
-  b.querySelector('#ads_opnieuw').onclick=async()=>{ADS.copy=null;adsStap2();};
-  b.querySelector('#ads_terug1').onclick=()=>{ADS.stap=1;adsNieuw();};
+  let bezig=null;
+  const herteken=()=>{ lees(); clearTimeout(bezig); bezig=setTimeout(async()=>{
+    const n=ADS.koppen.length*ADS.gekozenFotos.length;
+    const lab=$('#ads_prevlabel'); if(lab)lab.textContent=n?`Preview, ${n} advertentie${n===1?'':'s'}`:'Preview';
+    const leeg=$('#ads_prevleeg'); if(leeg)leeg.style.display=n?'none':'';
+    await adsPreviews();
+  },350); };
+
+  b.querySelectorAll('[data-kopt]').forEach(inp=>inp.oninput=()=>{
+    const t=b.querySelector(`[data-teller="${inp.dataset.kopt}"]`); if(t)t.textContent=inp.value.length+'/40';
+    const cb=b.querySelector(`[data-kop="${inp.dataset.kopt}"]`); if(cb&&cb.checked)herteken();
+  });
+  b.querySelectorAll('[data-kop]').forEach(cb=>cb.onchange=herteken);
+  b.querySelectorAll('input[name="ads_tekst"]').forEach(r=>r.onchange=()=>lees());
+  b.querySelectorAll('[data-tekstt]').forEach(t=>t.oninput=()=>lees());
+  b.querySelector('#ads_beschrijving').oninput=()=>lees();
+  b.querySelectorAll('[data-foto]').forEach(x=>x.onclick=()=>{
+    const id=x.dataset.foto, i=ADS.gekozenFotos.indexOf(id);
+    if(i>=0)ADS.gekozenFotos.splice(i,1);
+    else if(ADS.gekozenFotos.length<4)ADS.gekozenFotos.push(id);
+    else return toast("Maximaal 4 foto's",'err');
+    x.classList.toggle('on', ADS.gekozenFotos.includes(id));
+    herteken();
+  });
+  b.querySelectorAll('[data-stijl]').forEach(x=>x.onclick=()=>{
+    ADS.stijl=x.dataset.stijl;
+    b.querySelectorAll('[data-stijl]').forEach(y=>y.classList.toggle('on', y.dataset.stijl===ADS.stijl));
+    herteken();
+  });
+  b.querySelector('#ads_opnieuw').onclick=()=>{ADS.copy=null;ADS.koppen=[];adsStap2();};
+  b.querySelector('#ads_terug1').onclick=()=>{lees();ADS.stap=1;adsNieuw();};
   b.querySelector('#ads_naar3').onclick=()=>{
     lees();
     if(!ADS.koppen.length||ADS.koppen.length>4){toast('Kies 1 tot 4 koppen','err');return;}
     if(!ADS.tekst){toast('Kies een primaire tekst','err');return;}
     if(/—/.test(ADS.koppen.join(' ')+ADS.tekst+ADS.beschrijving)){toast('Geen lang streepje in de teksten','err');return;}
+    if(!ADS.gekozenFotos.length){toast('Kies minstens één foto','err');return;}
+    if(ADS.koppen.length*ADS.gekozenFotos.length>ADS_MAX_ADS){toast(`Maximaal ${ADS_MAX_ADS} advertenties per campagne`,'err');return;}
     ADS.stap=3; adsNieuw();
   };
+  herteken();
 }
 
 async function adsFotosLaden(){
@@ -1857,28 +1919,6 @@ function adsTeken(canvas,o){
 }
 function adsLaadBeeld(url){ return new Promise((ok,nee)=>{const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>ok(im); im.onerror=()=>nee(new Error('beeld laden mislukt')); im.src=url;}); }
 
-async function adsStap3(){
-  const b=$('#ads_body');
-  if(!ADS.fotos.length){b.innerHTML=adsStappenbalk()+'<div class="muted" style="padding:18px">Foto\'s laden…</div>'; await adsFotosLaden(); await ctFontsLaden();}
-  const aantal=ADS.koppen.length*ADS.gekozenFotos.length;
-  b.innerHTML=adsStappenbalk()+`<div class="ads-vak" style="max-width:900px">
-    <div class="field"><label>Foto's, kies 1 tot 4 (${ADS.fotos.filter(f=>f.bron==='project').length} renders van dit project, ${ADS.fotos.filter(f=>f.bron==='bibliotheek').length} uit de bibliotheek)</label>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:320px;overflow:auto">
-      ${ADS.fotos.map(f=>`<div data-foto="${f.id}" title="${esc(f.label)}" style="aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;outline:${ADS.gekozenFotos.includes(f.id)?'3px solid #0f2e22':'1px solid var(--line)'}"><img src="${f.thumb}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>`).join('')}</div></div>
-    <div class="field"><label>Stijl</label><div style="display:flex;gap:6px"><button class="ibx-chip ${ADS.stijl==='balk'?'on':''}" data-stijl="balk">Witte balk</button><button class="ibx-chip ${ADS.stijl==='overlay'?'on':''}" data-stijl="overlay">Overlay</button></div></div>
-    <div class="field"><label>Preview, ${aantal} advertentie${aantal===1?'':'s'} (${ADS.koppen.length} kop${ADS.koppen.length===1?'':'pen'} × ${ADS.gekozenFotos.length} foto${ADS.gekozenFotos.length===1?'':'\'s'})</label>
-      <div id="ads_previews" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div></div>
-    </div>`+adsActies({links:adsSamenvatting(), terug:'ads_terug2', verder:'ads_naar4', verderLabel:'Naar publiceren'});
-  b.querySelectorAll('[data-foto]').forEach(x=>x.onclick=()=>{const id=x.dataset.foto; const i=ADS.gekozenFotos.indexOf(id); if(i>=0)ADS.gekozenFotos.splice(i,1); else if(ADS.gekozenFotos.length<4)ADS.gekozenFotos.push(id); else toast('Maximaal 4 foto\'s','err'); adsStap3();});
-  b.querySelectorAll('[data-stijl]').forEach(x=>x.onclick=()=>{ADS.stijl=x.dataset.stijl;adsStap3();});
-  b.querySelector('#ads_terug2').onclick=()=>{ADS.stap=2;adsNieuw();};
-  b.querySelector('#ads_naar4').onclick=()=>{
-    if(!ADS.gekozenFotos.length){toast('Kies minstens één foto','err');return;}
-    if(aantal>ADS_MAX_ADS){toast(`Maximaal ${ADS_MAX_ADS} advertenties per campagne`,'err');return;}
-    ADS.stap=4; adsNieuw();
-  };
-  await adsPreviews();
-}
 async function adsPreviews(){
   const box=$('#ads_previews'); if(!box)return; box.innerHTML='';
   ADS.creatives=[];
@@ -1902,7 +1942,7 @@ function adsStandaardNaam(){
   const hoek=(ADS_INVALSHOEKEN.find(h=>h[0]===ADS.invalshoek)||[])[1]||ADS.invalshoek;
   return `${ADS.project.name} | ${hoek} | statisch | ${ADS.bestemming.type==='leadform'?'leadformulier':'invest'}`;
 }
-async function adsStap4(){
+async function adsStapPubliceren(){
   const b=$('#ads_body'); if(!ADS.naam)ADS.naam=adsStandaardNaam();
   b.innerHTML=adsStappenbalk()+`<div class="ads-vak">
     <div class="field"><label>Campagnenaam</label><input type="text" id="ads_naam" value="${esc(ADS.naam)}"></div>
@@ -1910,7 +1950,7 @@ async function adsStap4(){
     <div class="bc-hint" style="margin:10px 0">${ADS.creatives.length} advertentie${ADS.creatives.length===1?'':'s'} in één ad set. Targeting uit het playbook: Nederland, Nederlandstalig, 30 tot 65 jaar, feed op Facebook en Instagram plus Instagram stories, Advantage-audience uit. Alles gaat gepauzeerd naar Meta; jij zet hem aan in Ads Manager.</div>
     <div id="ads_publ_uit"></div>
     </div>`+adsActies({links:adsSamenvatting(), terug:'ads_terug3', verder:'ads_publiceer', verderLabel:'Publiceren naar Meta'});
-  b.querySelector('#ads_terug3').onclick=()=>{ADS.stap=3;adsNieuw();};
+  b.querySelector('#ads_terug3').onclick=()=>{ADS.stap=2;adsNieuw();};
   b.querySelector('#ads_publiceer').onclick=adsPubliceer;
 }
 async function adsPubliceer(){
