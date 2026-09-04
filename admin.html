@@ -1139,7 +1139,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-04-pipeline';
+const APP_VERSIE='2026-09-04-blokkeren';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -7365,6 +7365,9 @@ function inboxProfileUrl(cv){
 function inboxStatusPill(c){
   const map={active:['AI actief','#065f46','#ecfdf5','#a7f3d0'],booked:['Afspraak','#1e40af','#eff6ff','#bfdbfe'],
     needs_human:['Overname','#9a3412','#fff7ed','#fed7aa'],closed:['Gesloten','#475569','#f1f5f9','#e2e8f0'],opted_out:['Afgemeld','#7f1d1d','#fef2f2','#fecaca']};
+  // Geblokkeerd overstemt alles: dat moet je in de lijst meteen zien, zodat
+  // niemand er per ongeluk toch op antwoordt.
+  if(c.geblokkeerd) return '<span class="ibx-pill" style="color:#fff;background:#b91c1c;border-color:#991b1b;letter-spacing:.04em">ACCESS BLOCKED</span>';
   // "AI actief" is alleen waar als de AI voor dit gesprek ook echt aanstaat;
   // status 'active' betekent verder alleen dat het gesprek open is.
   let m=map[c.status]||map.active;
@@ -7692,6 +7695,14 @@ function inboxDrawInfo(ctx){
   const geenAntwCtrl=edit?(afgehandeld
     ?`<button class="btn btn-sm ibx-rel" id="ibx_antw_terug" title="Zet dit gesprek terug op onbeantwoord">↩︎ Toch beantwoorden</button>`
     :`<button class="btn btn-sm ibx-rel" id="ibx_geen_antw" title="Haal dit gesprek uit Onbeantwoord. Schrijft de lead daarna opnieuw, dan komt het vanzelf terug.">✓ Geen antwoord nodig</button>`):'';
+  // Buitensluiten. Trekt in een keer de dataroom, de e-mailsequenties, de
+  // geplande opvolging en alle kanalen dicht. Het gesprek blijft staan: bij
+  // bedreigingen of ongevraagde beelden is dat bewijs.
+  const geblokkeerd=!!cv.geblokkeerd;
+  const blokCtrl=edit?(geblokkeerd
+    ?`<button class="btn btn-sm ibx-rel" id="ibx_deblok" title="Toegang weer toestaan. Het gesprek blijft op overname staan.">🔓 Deblokkeren</button>`
+    :`<button class="btn btn-sm ibx-rel" id="ibx_blok" title="Sluit dit contact volledig buiten: geen berichten meer in of uit, dataroom ingetrokken, e-mailsequenties gestopt.">🚫 Blokkeren</button>`):'';
+  const blokNoot=geblokkeerd?`<div class="ibx-ip-note" style="color:#b91c1c;font-weight:600">🚫 ACCESS BLOCKED${cv.geblokkeerd_reden?' · '+esc(cv.geblokkeerd_reden):''}</div>`:'';
   const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
   const leadRows=[['Interesse',cv.interest],['Timing',tlmap[cv.timeline]||cv.timeline],['Budget',cv.budget_band],
     ['Geld beschikbaar',cv.funds],
@@ -7725,7 +7736,8 @@ function inboxDrawInfo(ctx){
       ${cv.warmth!=null?warmthBadge(cv.warmth,{big:true}):''}
     </div>
     <div class="ibx-ip-actions">${actsHtml}</div>
-    ${(aiCtrl||relCtrl||geenAntwCtrl)?`<div class="ibx-ip-ai">${aiCtrl}${relCtrl}${geenAntwCtrl}</div>`:''}
+    ${blokNoot}
+    ${(aiCtrl||relCtrl||geenAntwCtrl||blokCtrl)?`<div class="ibx-ip-ai">${aiCtrl}${relCtrl}${geenAntwCtrl}${blokCtrl}</div>`:''}
     <div class="ibx-ip-scroll">
       <div class="ibx-ip-sec"><div class="ibx-ip-h" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button class="ibx-sum-btn" id="ibx_sum_btn">${ctx.summary&&ctx.summary.summary?'↻ Vernieuwen':'✨ Genereren'}</button>`:''}</div><div id="ibx_sum_body">${inboxSummaryHtml(ctx.summary)}</div></div>
       <div class="ibx-ip-sec"><div class="ibx-ip-h">Leadgegevens</div>${leadRows.length?leadRows.map(([k,val])=>`<div class="ibx-kv"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join(''):'<div class="ibx-ip-note">Nog geen kwalificatie vastgelegd.</div>'}${winRow}</div>
@@ -7748,9 +7760,27 @@ function inboxDrawInfo(ctx){
     const rlt=$('#ibx_relatie_terug');if(rlt)rlt.onclick=()=>inboxRelatie(INBOX.sel,false);
     const ga=$('#ibx_geen_antw');if(ga)ga.onclick=()=>inboxGeenAntwoord(INBOX.sel,true);
     const gat=$('#ibx_antw_terug');if(gat)gat.onclick=()=>inboxGeenAntwoord(INBOX.sel,false);
+    const bl=$('#ibx_blok');if(bl)bl.onclick=()=>inboxBlokkeer(cv.contact_id,true);
+    const dbl=$('#ibx_deblok');if(dbl)dbl.onclick=()=>inboxBlokkeer(cv.contact_id,false);
     const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(gid);
     const sm=$('#ibx_sum_btn');if(sm)sm.onclick=()=>inboxGenSummary(gid);
   }
+}
+async function inboxBlokkeer(contactId,aan){
+  if(!contactId){toast('Geen contact aan dit gesprek gekoppeld','err');return;}
+  let reden=null;
+  if(aan){
+    reden=prompt('Waarom wordt dit contact geblokkeerd? (komt in het dossier)','');
+    if(reden===null)return;
+  } else if(!confirm('Toegang weer toestaan voor dit contact?')) return;
+  const {data,error}=await sb.rpc('contact_blokkeer',{p_contact:contactId,p_aan:aan,p_reden:reden});
+  if(error||!data||data.ok===false){
+    toast((aan?'Blokkeren':'Deblokkeren')+' mislukt: '+((data&&data.fout)||(error&&error.message)||'onbekend'),'err');
+    return;
+  }
+  toast(aan?('Geblokkeerd. '+(data.sequenties_gestopt||0)+' e-mailsequentie(s) gestopt, '+(data.dataroom_ingetrokken||0)+' dataroomtoegang ingetrokken.'):'Toegang weer toegestaan','ok');
+  inboxLoad();
+  if(INBOX.sel)inboxOpen(INBOX.sel);
 }
 async function inboxSetPipeline(id){
   const sel=$('#ibx_pipe_sel');if(!sel)return;const stage=sel.value;
