@@ -1139,7 +1139,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-04-media';
+const APP_VERSIE='2026-09-04-pipeline';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -9231,8 +9231,13 @@ async function openPerson(p){
   {
     const kanPipe=canEdit('pipeline');
     let ph='';
+    // Ook een lead die nog nergens in staat kun je hier in een pipeline zetten.
+    const lijnOpties=(huidig)=>pLines.map(x=>`<option value="${esc(x.id)}"${x.id===huidig?' selected':''}>${esc(x.name)}</option>`).join('');
     if(!pCards.length){
-      ph = `<div class="muted" style="font-size:13px">Staat in geen enkele pipeline.</div>`;
+      ph = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="muted" style="font-size:13px">Staat in geen enkele pipeline.</span>
+        ${kanPipe&&pLines.length?`<select class="pc-in pd-pipe-zet" title="Zet deze lead in een pipeline" style="width:auto;padding:5px 8px;font-size:12.5px"><option value="">Zet in pipeline…</option>${lijnOpties(null)}</select>`:''}
+      </div>`;
     } else {
       ph = `<div style="display:flex;flex-direction:column;gap:8px">` + pCards.map(c=>{
         const lijn=pLines.find(x=>x.id===c.pipeline_id);
@@ -9249,6 +9254,7 @@ async function openPerson(p){
           <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px"><span style="width:8px;height:8px;border-radius:50%;background:${esc(kleur)}"></span>${esc((st&&st.label)||c.stage||'—')}</span>
           ${sinds}${wie}
           <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+            ${kanPipe&&pLines.length>1?`<select class="pc-in pd-pipe-lijn" data-card="${esc(c.id)}" data-nu="${esc(c.pipeline_id)}" title="Verplaats deze lead naar een andere pipeline" style="width:auto;padding:5px 8px;font-size:12.5px">${lijnOpties(c.pipeline_id)}</select>`:''}
             ${kanPipe&&opts?`<select class="pc-in pd-pipe-sel" data-card="${esc(c.id)}" style="width:auto;padding:5px 8px;font-size:12.5px">${opts}</select>`:''}
             <button class="btn btn-ghost btn-sm" data-pd-openpipe="${esc(c.pipeline_id)}">Open bord ↗</button>
           </span>
@@ -9404,6 +9410,34 @@ async function openPerson(p){
         .update({stage:sel.value,stage_changed_at:new Date().toISOString()}).eq('id',sel.dataset.card);
       if(error){toast('Verplaatsen mislukt: '+error.message,'err');return;}
       toast('Verplaatst','ok');openPerson(p);
+    });
+    // Naar een ANDERE pipeline verplaatsen loopt via een functie in de database.
+    // Twee redenen: de fasesleutels verschillen per pipeline (blijft de oude
+    // staan, dan valt de kaart uit elke kolom), en Discovery synchroniseert
+    // automatisch, dus daar moet worden vastgelegd dat de lead weg is.
+    const pipeVerplaats=async(doel,kaart)=>{
+      const {data,error}=await sb.rpc('pipeline_kaart_verplaats',{p_pipeline:doel,p_card:kaart||null,p_contact:kaart?null:p.id,p_stage:null});
+      if(error||!data||data.ok===false){
+        toast('Verplaatsen mislukt: '+((data&&data.fout)||(error&&error.message)||'onbekend'),'err');
+        return false;
+      }
+      toast(data.ongewijzigd?'Stond daar al':'Verplaatst naar '+(data.pipeline||'de andere pipeline'),'ok');
+      if(typeof PIPE!=='undefined'&&PIPE.cur&&CURRENT==='pipeline')loadPipelineData();
+      return true;
+    };
+    mb.querySelectorAll('.pd-pipe-lijn').forEach(sel=>sel.onchange=async()=>{
+      const doel=sel.value;
+      if(!doel||doel===sel.dataset.nu)return;
+      sel.disabled=true;
+      if(!(await pipeVerplaats(doel,sel.dataset.card))){sel.value=sel.dataset.nu;sel.disabled=false;return;}
+      openPerson(p);
+    });
+    mb.querySelectorAll('.pd-pipe-zet').forEach(sel=>sel.onchange=async()=>{
+      const doel=sel.value;
+      if(!doel)return;
+      sel.disabled=true;
+      if(!(await pipeVerplaats(doel,null))){sel.value='';sel.disabled=false;return;}
+      openPerson(p);
     });
     mb.querySelectorAll('[data-pd-openpipe]').forEach(b=>b.onclick=()=>{
       PENDING_PIPE=b.dataset.pdOpenpipe;
