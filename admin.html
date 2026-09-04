@@ -1042,6 +1042,11 @@
   .otpl-field [hidden]{display:none}   /* .pc-in zet display:block en won anders van het hidden-attribuut */
   .otpl-rte a{color:inherit}
   .otpl-field .seq-rte-tools{align-items:center}
+  .otpl-sec.sec-sms .otpl-sec-h{background:#f5f3ff;border-color:#ddd6fe}
+  .otpl-aan{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;margin-bottom:8px}
+  .otpl-aan input{width:auto;flex:none;margin:0}
+  .otpl-smsteller{margin-top:6px;font-size:11.5px;color:var(--muted)}
+  .otpl-smsteller.waarschuwing{color:#b45309;font-weight:600}
   .otpl-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px -22px 0;padding:14px 22px 0;border-top:1px solid var(--line)}
   .seq-design{display:flex;gap:4px}
   .seq-dbtn{font-size:11.5px;font-weight:600;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);cursor:pointer}
@@ -1139,7 +1144,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-04-blokkeren';
+const APP_VERSIE='2026-09-04-sms';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -10704,6 +10709,11 @@ function otplPanel(){
           <section class="otpl-sec sec-ig"><header class="otpl-sec-h"><span class="otpl-sec-ic">📸</span><div><h4>WhatsApp vanuit Instagram</h4><p>Als de lead zijn nummer deelt in de Instagram-chat met de bot.</p></div><label class="otpl-wait"><b>na</b><input type="number" min="0" max="10080" data-f="delay_wa_ig_min" value="${Number(t.delay_wa_ig_min)||0}" ${edit?'':'disabled'}>min.</label></header><div class="otpl-sec-b">
             <textarea class="pc-in" data-f="wa_text_ig" rows="6" ${edit?'':'disabled'}>${esc(t.wa_text_ig||'')}</textarea>
           </div></section>
+          <section class="otpl-sec sec-sms"><header class="otpl-sec-h"><span class="otpl-sec-ic">📱</span><div><h4>SMS</h4><p>Alleen als de lead een mobiel nummer achterliet. Kost per bericht geld, dus staat standaard uit.</p></div><label class="otpl-wait"><b>na</b><input type="number" min="0" max="10080" data-f="delay_sms_min" value="${Number(t.delay_sms_min)||0}" ${edit?'':'disabled'}>min.</label></header><div class="otpl-sec-b">
+            <label class="otpl-aan"><input type="checkbox" data-f="sms_aan" ${t.sms_aan?'checked':''} ${edit?'':'disabled'}> SMS versturen</label>
+            <textarea class="pc-in otpl-sms" data-f="sms_text" rows="5" ${edit?'':'disabled'} placeholder="Korte tekst, gebruik {naam}, {project} en {link}">${esc(t.sms_text||'')}</textarea>
+            <div class="otpl-smsteller" data-smsteller></div>
+          </div></section>
         </div>
       </div>
       ${edit?`<div class="otpl-foot"><span class="muted" style="font-size:11.5px">WhatsApp gaat via ${esc(BIZ_ACCOUNTS.whatsapp||'het bedrijfsnummer')} · 0 minuten betekent direct versturen</span><button class="btn" data-otpl-save="${k}">Opslaan</button></div>`:''}
@@ -10713,7 +10723,42 @@ function otplPanel(){
     <div class="muted" style="font-size:12px;margin-top:2px;max-width:70ch">Deze berichten gaan automatisch naar elke nieuwe lead. Pas de tekst aan, of stel in hoeveel minuten na aanmelding ze verstuurd worden.</div>
     ${cards}</div>`;
 }
+/* Wat een SMS kost, hangt aan de tekens. Een SMS draagt 160 gewone tekens;
+   een emoji, een lang streepje of een krul-aanhalingsteken zet het hele bericht
+   om naar het andere alfabet en dan passen er nog maar 70 in. Het euroteken
+   telt voor twee. Vandaar dit tellertje: anders verdrievoudigt de rekening
+   zonder dat je het ziet. */
+const SMS_GSM7="@\u00a3$\u00a5\u00e8\u00e9\u00f9\u00ec\u00f2\u00c7\n\u00d8\u00f8\r\u00c5\u00e5\u0394_\u03a6\u0393\u039b\u03a9\u03a0\u03a8\u03a3\u0398\u039e\u00c6\u00e6\u00df\u00c9 !\"#\u00a4%&'()*+,-./0123456789:;<=>?\u00a1ABCDEFGHIJKLMNOPQRSTUVWXYZ\u00c4\u00d6\u00d1\u00dc\u00a7\u00bfabcdefghijklmnopqrstuvwxyz\u00e4\u00f6\u00f1\u00fc\u00e0";
+const SMS_GSM7_EXT="\f^{}\\[~]|\u20ac";
+function smsMeting(tekst){
+  let tekens=0, gsm7=true;
+  for(const ch of String(tekst||'')){
+    if(SMS_GSM7.includes(ch)) tekens+=1;
+    else if(SMS_GSM7_EXT.includes(ch)) tekens+=2;
+    else { gsm7=false; break; }
+  }
+  if(!gsm7){
+    const units=[...String(tekst||'')].reduce((n,ch)=>n+(ch.codePointAt(0)>0xffff?2:1),0);
+    return {gsm7:false,tekens:units,delen:units<=70?1:Math.ceil(units/67)};
+  }
+  return {gsm7:true,tekens,delen:tekens<=160?1:Math.ceil(tekens/153)};
+}
 function otplBind(){
+  // Tellertje onder het SMS-veld, bij elke toetsaanslag.
+  document.querySelectorAll('.otpl-sms').forEach(ta=>{
+    const uit=ta.parentElement.querySelector('[data-smsteller]');
+    if(!uit)return;
+    const toon=()=>{
+      const m=smsMeting(ta.value);
+      const veel=m.delen>1||!m.gsm7;
+      uit.className='otpl-smsteller'+(veel?' waarschuwing':'');
+      uit.textContent=`${m.tekens} tekens \u00b7 ${m.delen} bericht${m.delen===1?'':'en'}`
+        +(m.gsm7?'':' \u00b7 bevat een emoji of lang streepje, daardoor nog maar 70 tekens per bericht')
+        +(m.delen>1?' \u00b7 je betaalt per bericht':'')
+        +' \u00b7 de afmeldtekst komt er nog achter';
+    };
+    ta.addEventListener('input',toon); toon();
+  });
   // WYSIWYG per kaart: opmaakknoppen en de wissel naar ruwe HTML.
   document.querySelectorAll('[data-otpl]').forEach(card=>{
     const rte=card.querySelector('.otpl-rte'), code=card.querySelector('.otpl-code');
@@ -10735,8 +10780,9 @@ function otplBind(){
     const upd={updated_at:new Date().toISOString()};
     card.querySelectorAll('[data-f]').forEach(el=>{
       const f=el.dataset.f;
-      const isMinuten=f==='delay_email_min'||f==='delay_wa_min'||f==='delay_wa_ig_min';
-      upd[f]=isMinuten?Math.max(0,Math.min(10080,parseInt(el.value,10)||0)):el.value;
+      const isMinuten=f==='delay_email_min'||f==='delay_wa_min'||f==='delay_wa_ig_min'||f==='delay_sms_min';
+      if(el.type==='checkbox') upd[f]=el.checked;
+      else upd[f]=isMinuten?Math.max(0,Math.min(10080,parseInt(el.value,10)||0)):el.value;
     });
     // E-mailinhoud uit de actieve weergave: WYSIWYG als die zichtbaar is, anders de HTML-bron.
     const rte=card.querySelector('.otpl-rte');
