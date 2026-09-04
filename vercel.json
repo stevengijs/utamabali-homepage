@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/stop/:code",
+      "destination": "/stop/index.html"
+    },
+    {
       "source": "/r/:code",
       "destination": "https://gcpachivrwalsneuvlsa.supabase.co/functions/v1/klik?c=:code"
     },
