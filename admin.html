@@ -337,6 +337,12 @@
   .ibx-img{display:block;max-width:260px;max-height:320px;width:auto;border-radius:10px;margin:2px 0;cursor:zoom-in;background:#e9edeb}
   .ibx-img-wrap{display:flex;flex-direction:column;gap:5px}
   .ibx-img-fail{font-size:11.5px;opacity:.75}
+  /* Video, spraakberichten en documenten in dezelfde maat als de foto's. */
+  .ibx-vid{display:block;max-width:260px;max-height:320px;border-radius:10px;margin:2px 0;background:#000}
+  .ibx-aud{display:block;width:250px;max-width:100%;margin:2px 0}
+  .ibx-file{display:flex;align-items:center;gap:8px;max-width:260px;padding:9px 11px;margin:2px 0;border:1px solid var(--line);border-radius:12px;background:#fff;color:inherit;text-decoration:none;font-size:12.5px}
+  .ibx-file:hover{background:#f4f7f5}
+  .ibx-file b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ibx-lightbox{position:fixed;inset:0;background:rgba(8,20,16,.88);display:grid;place-items:center;z-index:9999;cursor:zoom-out;padding:24px}
   .ibx-lightbox img{max-width:96vw;max-height:92vh;border-radius:12px}
   .ibx-btime{font-size:10.5px;opacity:.55;padding:0 2px}
@@ -1133,7 +1139,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-03-upload';
+const APP_VERSIE='2026-09-04-media';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1467,18 +1473,55 @@ function isImgUrl(u){
   if(!/^https?:\/\/\S+$/i.test(u))return false;
   return /lookaside\.fbsbx\.com|ig_messaging_cdn|\/inbox-media\/|\.(jpe?g|png|webp|gif)(\?|$)/i.test(u);
 }
+/* Een bijlage kan een foto zijn, maar ook een video, een spraakbericht of een
+   document. Hiervoor keek deze code alleen naar de URL en liet alles wat geen
+   foto was stilletjes vallen: in het gesprek stond dan enkel "[video]". */
 function msgMedia(m){
-  const uit=[];
-  const att=m.attachments;
-  if(Array.isArray(att))att.forEach(a=>{const u=(a&&(a.url||a.href))||(typeof a==='string'?a:'');if(isImgUrl(u))uit.push(u);});
   const b=String(m.body||'').trim();
-  if(isImgUrl(b)&&!uit.length)uit.push(b);
-  return uit;
+  return (isImgUrl(b)&&!bijlLijst(m).length)?[b]:[];
+}
+function bijlLijst(m){
+  const att=m&&m.attachments;
+  if(!Array.isArray(att))return [];
+  return att.map(a=>{
+    if(typeof a==='string')return {url:a,type:'',mime:'',naam:''};
+    if(!a||typeof a!=='object')return null;
+    return {url:String(a.url||a.href||''),type:String(a.type||''),mime:String(a.mime||a.mime_type||''),naam:String(a.name||a.filename||'')};
+  }).filter(a=>a&&/^https:\/\//i.test(a.url));
+}
+function bijlSoort(a){
+  const t=(a.type||'').toLowerCase(), mt=(a.mime||'').toLowerCase(), u=a.url;
+  if(t==='video'||mt.startsWith('video/')||/\.(mp4|mov|m4v|webm|3gp)(\?|$)/i.test(u))return 'video';
+  if(t==='audio'||t==='voice'||mt.startsWith('audio/')||/\.(mp3|m4a|ogg|oga|opus|wav|amr|weba)(\?|$)/i.test(u))return 'audio';
+  if(t==='image'||t==='sticker'||mt.startsWith('image/'))return 'image';
+  // Staat het type of het mimetype er, dan wint dat: een pdf in de mediamap is
+  // geen foto, ook al lijkt de URL erop.
+  if(t||mt)return 'file';
+  return isImgUrl(u)?'image':'file';
+}
+function bijlNaam(a){
+  if(a.naam)return a.naam;
+  try{return decodeURIComponent(new URL(a.url).pathname.split('/').pop()||'')||'Bijlage';}catch(e){return 'Bijlage';}
+}
+/* De oude foutmelding was zelf stuk: de aanhalingstekens in de onerror sloten
+   de string te vroeg af, dus een verlopen foto liet niets zien. */
+const FOTO_FOUT="this.outerHTML='&lt;div class=&quot;ibx-img-fail&quot;&gt;\u{1F4F7} Foto niet meer beschikbaar&lt;/div&gt;'";
+function imgTag(u){
+  return `<img class="ibx-img" src="${esc(u)}" alt="Gedeelde foto" loading="lazy" referrerpolicy="no-referrer" data-zoom="${esc(u)}" onerror="${FOTO_FOUT}">`;
 }
 function imgHtml(urls){
-  return `<div class="ibx-img-wrap">${urls.map(u=>
-    `<img class="ibx-img" src="${esc(u)}" alt="Gedeelde foto" loading="lazy" referrerpolicy="no-referrer" data-zoom="${esc(u)}" onerror="this.outerHTML='<div class=\'ibx-img-fail\'>\u{1F4F7} Foto niet meer beschikbaar</div>'">`
-  ).join('')}</div>`;
+  return `<div class="ibx-img-wrap">${urls.map(imgTag).join('')}</div>`;
+}
+function bijlHtml(list){
+  return `<div class="ibx-img-wrap">${list.map(a=>{
+    const u=esc(a.url);
+    switch(bijlSoort(a)){
+      case 'image': return imgTag(a.url);
+      case 'video': return `<video class="ibx-vid" src="${u}" controls preload="metadata" playsinline></video>`;
+      case 'audio': return `<audio class="ibx-aud" src="${u}" controls preload="metadata"></audio>`;
+      default: return `<a class="ibx-file" href="${u}" target="_blank" rel="noopener noreferrer"><span>\u{1F4CE}</span><b>${esc(bijlNaam(a))}</b></a>`;
+    }
+  }).join('')}</div>`;
 }
 function chanClass(c){c=String(c||'').toLowerCase();return ['direct','organic','social','paid','referral','campaign','email','internal'].includes(c)?c:'other';}
 function money(v){if(v==null||v==='')return '—';return '€'+Number(v).toLocaleString('nl-NL');}
@@ -7802,15 +7845,19 @@ function inboxRenderMsgs(msgs){
     // the same "23:44" under every bubble.
     // Foto's apart tonen; is de tekst alleen de fotolink, dan die niet herhalen.
     const media=msgMedia(m);
+    const bijl=bijlLijst(m);
     const rawBody=String(m.body||'').trim();
-    const bodyTxt=(media.length===1&&rawBody===media[0])?'':rawBody;
+    // Staat het bestand er nu bij, dan is het label ("[video]") ruis; een
+    // bijschrift of een uitgetypt spraakbericht blijft wel staan.
+    const zonderLabel=bijl.length?rawBody.replace(/^\[(foto|afbeelding|image|video|document|sticker|spraakbericht|audiobestand|audio)\]\s*/i,''):rawBody;
+    const bodyTxt=(media.length===1&&rawBody===media[0])?'':zonderLabel;
     const nx=list[i+1];
     const showTime=!nx||inboxClock(nx.created_at)!==inboxClock(m.created_at)||inboxDayKey(nx.created_at)!==day;
     // Meta line under each bubble: the message's medium icon always (so it's
     // clear which channel it came via), plus the time once per minute-cluster.
     const metaHtml=`<div class="ibx-btime"><span class="ibx-medico" title="${esc(med.label)}">${med.icon}${gemengd?' '+esc(med.label):''}</span>${showTime?' '+esc(inboxClock(m.created_at)):''}</div>`;
     return `${sep}<div class="ibx-mrow ${out?'out':'in'}">
-      <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}${chCls}">${tag}${media.length?imgHtml(media):''}${bodyTxt?`<div class="ibx-btext">${esc(bodyTxt)}</div>`:''}${undelNote}</div></div>
+      <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}${chCls}">${tag}${bijl.length?bijlHtml(bijl):''}${media.length?imgHtml(media):''}${bodyTxt?`<div class="ibx-btext">${esc(bodyTxt)}</div>`:''}${undelNote}</div></div>
       ${metaHtml}</div>`;
   }).join('');
   // Foto op ware grootte bekijken.
