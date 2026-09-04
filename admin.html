@@ -1145,7 +1145,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-04-sms2';
+const APP_VERSIE='2026-09-04-broadcastsms';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2305,7 +2305,17 @@ function bcNepNummer(t){
       || d.includes('111111') || d.includes('654321');
 }
 const bcAppbaar = () => bcGekozen().filter(r=>!bcNepNummer(r.telefoon));
-const bcOntvangers = () => BC.verzendKanaal==='whatsapp' ? bcAppbaar() : bcMailbaar();
+/* Voor sms telt alleen een mobiel nummer. Een vast nummer kost je geld en komt
+   nooit aan, dus die vallen hier af. */
+const bcSmsbaar = () => bcAppbaar().filter(r=>{
+  const d=String(r.telefoon||'').replace(/[^0-9]/g,'');
+  return d.startsWith('316') || d.startsWith('06') || /^6\d{8}$/.test(d);
+});
+const SMS_PRIJS = 0.07;
+const bcOntvangers = () =>
+  BC.verzendKanaal==='whatsapp' ? bcAppbaar()
+  : BC.verzendKanaal==='sms' ? bcSmsbaar()
+  : bcMailbaar();
 
 /* Een facet uit broadcast_facetten omzetten naar keuzes voor een dropdown. De
    volgorde die de database geeft blijft staan: koopmoment komt chronologisch
@@ -2893,7 +2903,7 @@ const bcPsReferral = () =>
 
 /* ---------------- nieuwsbrief opstellen en versturen ---------------- */
 function bcOpstellen(hervatCamp){
-  const m=bcMailbaar(), w=bcAppbaar();
+  const m=bcMailbaar(), w=bcAppbaar(), sm=bcSmsbaar();
   // Bij een hervatte campagne ligt de ontvangerslijst al vast in de database,
   // dus of de huidige filters nu iemand opleveren doet er niet toe.
   if(!hervatCamp && !m.length && !w.length){toast('Niemand in deze selectie is bereikbaar','err');return;}
@@ -2922,8 +2932,17 @@ function bcOpstellen(hervatCamp){
       <div class="bc-rij">
         <button class="seq-dbtn" data-kanaal="email">&#9993; E-mail <span class="bc-kn">${m.length}</span></button>
         <button class="seq-dbtn" data-kanaal="whatsapp">&#128172; WhatsApp <span class="bc-kn">${w.length}</span></button>
+        <button class="seq-dbtn" data-kanaal="sms">&#128241; SMS <span class="bc-kn">${sm.length}</span></button>
       </div>
       <div class="bc-hint" id="bc_kanaalhint"></div>
+    </div>
+
+    <div id="bc_sms" style="display:none">
+      <div class="field bc-buiten">
+        <label>SMS-tekst</label>
+        <textarea class="pc-in" id="bc_smstekst" rows="5" placeholder="Korte tekst. {{voornaam}} en {{project}} worden ingevuld."></textarea>
+        <div class="otpl-smsteller" id="bc_smsteller"></div>
+      </div>
     </div>
 
     <div id="bc_wa" style="display:none">
@@ -3112,6 +3131,7 @@ function bcOpstellen(hervatCamp){
     bcKanaalTekenen();
   });
   $('#bc_golf').oninput=e=>{ BC.golf=Math.max(1,Math.min(200,Number(e.target.value)||40)); };
+  if($('#bc_smstekst')) $('#bc_smstekst').addEventListener('input', bcSmsTeller);
   $('#bc_annuleer').onclick=async()=>{
     $('#bc_opstel').innerHTML='';
     // De opsteller sluiten laat geen halve toestand achter: geen vastgelegde
@@ -3139,12 +3159,15 @@ function bcOpstellen(hervatCamp){
    kanaal hoort gaat uit beeld, want half ingevulde velden die nergens heen gaan
    zijn erger dan een scherm dat verandert. */
 function bcKanaalTekenen(){
-  const wa = BC.verzendKanaal==='whatsapp';
-  const n  = bcOntvangers().length;
+  const wa  = BC.verzendKanaal==='whatsapp';
+  const sms = BC.verzendKanaal==='sms';
+  const n   = bcOntvangers().length;
   document.querySelectorAll('[data-kanaal]').forEach(b=>
     b.classList.toggle('on', b.dataset.kanaal===BC.verzendKanaal));
-  document.querySelectorAll('.bc-emailonly').forEach(e=>e.style.display = wa?'none':'');
+  document.querySelectorAll('.bc-emailonly').forEach(e=>e.style.display = (wa||sms)?'none':'');
   const waVak=$('#bc_wa'); if(waVak) waVak.style.display = wa?'':'none';
+  const smsVak=$('#bc_sms'); if(smsVak) smsVak.style.display = sms?'':'none';
+  if(sms) bcSmsTeller();
 
   // Drie situaties, drie eerlijke kopregels. De belangrijkste is de hervatte
   // campagne: daar ligt de lijst al vast en zegt "gaat naar N" over de filters
@@ -3153,14 +3176,17 @@ function bcKanaalTekenen(){
   $('#bc_kop').innerHTML = vast
     ? `Verder met <b>${esc(BC.vast.naam||'deze campagne')}</b>. De ontvangerslijst is <b>vastgelegd bij de eerste verzending: ${BC.vast.doel}</b> ${wa?'nummers':'ontvangers'}, waarvan nog <b>${BC.vast.resterend}</b> te gaan; wie al iets kreeg wordt overgeslagen. <span class="bc-let-inline">Je filters hieronder (nu ${n}) veranderen hier niets aan.</span> Contacten die er sindsdien bij kwamen bereik je na afloop met "📬 Stuur naar wie hem nog niet kreeg" op de afgeronde campagne.`
     : n
-    ? `Gaat naar <b>${n}</b> ${wa?'telefoonnummer':'ontvanger'}${n===1?'':'s'}. Deze lijst ligt vast zodra je verstuurt, ook als je daarna de filters aanpast.`
+    ? `Gaat naar <b>${n}</b> ${(wa||sms)?'telefoonnummer':'ontvanger'}${n===1?'':'s'}${sms?`, samen ongeveer <b>\u20ac ${(n*SMS_PRIJS).toFixed(2).replace('.',',')}</b>`:''}. Deze lijst ligt vast zodra je verstuurt, ook als je daarna de filters aanpast.`
       +(BC.vervolgVan?` Dit is een <b>vervolg op "${esc(BC.vervolgVan.naam)}"</b>: wie die al kreeg is uitgesloten.`:'')
     : `<span class="err">Niemand in deze selectie is via dit kanaal bereikbaar${BC.vervolgVan?' (iedereen kreeg de vorige campagne al)':''}.</span>`;
   // Let op de wisselwerking met het filter "Bereikbaar via" bovenaan: staat dat
   // op "heeft e-mail", dan blijven mensen zonder e-mailadres ook hier buiten de
   // selectie, hoe goed hun telefoonnummer ook is.
   const kanaalfilterKnelt = wa && BC.kanaal==='email';
-  $('#bc_kanaalhint').innerHTML = wa
+  $('#bc_kanaalhint').innerHTML = sms
+    ? `Elk bericht kost ongeveer \u20ac ${SMS_PRIJS.toFixed(2).replace('.',',')}, dus een ronde naar ${n} mensen komt op zo'n \u20ac ${(n*SMS_PRIJS).toFixed(2).replace('.',',')}. De afmeldlink wordt automatisch onder elk bericht gezet; wie zich afmeldt blijft wel gewoon de nieuwsbrief ontvangen.`
+      + (BC.kanaal==='email' ? ' <b>Let op:</b> het filter <b>Bereikbaar via</b> staat op "heeft e-mail", dus mensen met alleen een nummer zitten er nu niet bij.' : '')
+    : wa
     ? 'Mag alleen met een door Meta goedgekeurd template en in golven. Antwoordt iemand met STOP, dan is hij meteen ook uit de e-maillijst.'
       + (kanaalfilterKnelt
          ? ' <b>Let op:</b> het filter <b>Bereikbaar via</b> staat op "heeft e-mail", dus mensen met alleen een nummer zitten er nu niet bij. Zet het op "heeft telefoonnummer" voor je volledige WhatsApp-bereik.'
@@ -3184,7 +3210,7 @@ function bcKanaalTekenen(){
   }
 
   const test=$('#bc_test'), verstuur=$('#bc_verstuur');
-  test.textContent = wa ? '📲 Proefbericht naar mijn nummer' : '📨 Proefmail naar mezelf';
+  test.textContent = (wa||sms) ? '📲 Proefbericht naar mijn nummer' : '📨 Proefmail naar mezelf';
   // De verstuurknop telt bij een vastgelegde lijst met de rest van dié lijst,
   // nooit met de losse filterselectie.
   verstuur.textContent = vast
@@ -3200,7 +3226,7 @@ function bcKanaalTekenen(){
   // opnieuw op slot gooit.
   const loopt = (BC.camp && BC.waGolven > 0) || BC.getest;
   verstuur.disabled = !loopt;
-  verstuur.title = loopt ? '' : (wa ? 'Stuur eerst een proefbericht' : 'Stuur eerst een proefmail');
+  verstuur.title = loopt ? '' : ((wa||sms) ? 'Stuur eerst een proefbericht' : 'Stuur eerst een proefmail');
 
   if(wa) bcWaLaden();
 }
@@ -3415,24 +3441,41 @@ function bcCampHervatten(){
   }catch(e){ return null; }
 }
 
+/* Tellertje onder het sms-veld: zelfde rekensom als in Bericht flows, inclusief
+   de afmeldlink die er serverkant nog onder komt. */
+function bcSmsTeller(){
+  const ta=$('#bc_smstekst'), uit=$('#bc_smsteller');
+  if(!ta||!uit)return;
+  const m=smsMeting(ta.value+(ta.value.trim()?' Stop: https://utamabali.com/stop/0e3b201488fe':''));
+  const n=bcOntvangers().length;
+  uit.className='otpl-smsteller'+(m.delen>3?' fout':(m.delen>1||!m.gsm7?' waarschuwing':''));
+  uit.textContent=`${m.tekens} tekens \u00b7 ${m.delen} bericht${m.delen===1?'':'en'} per lead \u00b7 samen ongeveer \u20ac ${(n*m.delen*SMS_PRIJS).toFixed(2).replace('.',',')}`
+    +' \u00b7 inclusief de afmeldlink'
+    +(m.gsm7?'':' \u00b7 bevat een emoji of lang streepje, daardoor nog maar 70 tekens per bericht')
+    +(m.delen>3?' \u00b7 TE LANG, meer dan 3 berichten wordt geweigerd':'');
+}
+
 async function bcBewaar(){
   const wa = BC.verzendKanaal==='whatsapp';
+  const sms = BC.verzendKanaal==='sms';
   const ids=bcOntvangers().map(x=>x.id);
   const {data,error}=await sb.rpc('broadcast_campagne_opslaan',{
     p_id:BC.camp, p_naam:$('#bc_naam').value.trim()||null,
     // Bij WhatsApp bestaat er geen onderwerp. De interne naam of de
     // templatenaam vult dat gat, puur zodat de campagne herkenbaar is in de lijst.
     p_onderwerp: wa ? ($('#bc_naam').value.trim() || (BC.waTpl&&BC.waTpl.naam) || 'WhatsApp-bericht')
+                    : sms ? ($('#bc_naam').value.trim() || 'SMS-bericht')
                     : $('#bc_onderwerp').value.trim(),
-    p_preheader: wa ? null : ($('#bc_pre').value.trim()||null),
-    p_body_html: wa ? null : $('#bc_body').innerHTML,
+    p_preheader: (wa||sms) ? null : ($('#bc_pre').value.trim()||null),
+    // Bij sms staat de tekst in body_html; er is geen aparte kolom voor.
+    p_body_html: wa ? null : sms ? ($('#bc_smstekst').value.trim()) : $('#bc_body').innerHTML,
     // De vervolg-relatie reist mee in de filters: wordt deze campagne later
     // hervat (bijvoorbeeld na alleen een proefmail), dan herstelt het scherm
     // de uitsluiting in plaats van stilletjes de volle selectie te pakken.
     p_ontvangers:ids,
     p_filters:{...bcFilters(), ...(BC.vervolgVan?{vervolg_van:BC.vervolgVan.id, vervolg_naam:BC.vervolgVan.naam}:{})},
     p_layout:BC.layout,
-    p_kanaal: wa?'whatsapp':'email',
+    p_kanaal: wa?'whatsapp':sms?'sms':'email',
     p_wa_template: wa&&BC.waTpl ? BC.waTpl.naam : null,
     p_wa_template_taal: wa&&BC.waTpl ? BC.waTpl.taal : null,
     p_wa_variabelen: wa ? BC.waVars : null,
@@ -3453,6 +3496,7 @@ async function bcBewaar(){
 
 async function bcVerstuur(test){
   if(BC.verzendKanaal==='whatsapp') return bcVerstuurWa(test);
+  if(BC.verzendKanaal==='sms') return bcVerstuurSms(test);
   const st=$('#bc_status'); st.style.display='';
   if(!$('#bc_onderwerp').value.trim()){toast('Vul een onderwerp in','err');return;}
   if(!$('#bc_body').innerHTML.trim()){toast('Schrijf eerst een bericht','err');return;}
@@ -3559,6 +3603,76 @@ function bcToonLopend(st, lopend){
     st.innerHTML='Afgesloten. Je kunt nu een nieuwe campagne beginnen.';
     bcCampagnesLaden();
   };
+}
+
+/* Een sms-campagne versturen. Zelfde ritme als e-mail: eerst een proefbericht
+   naar je eigen nummer, dan pas de lijst, en de functie wordt net zo vaak
+   opnieuw aangeroepen tot er niets meer te doen is. */
+async function bcVerstuurSms(test){
+  const st=$('#bc_status'); st.style.display='';
+  const tekst=($('#bc_smstekst').value||'').trim();
+  if(!tekst){toast('Schrijf eerst een tekst','err');return;}
+  const meting=smsMeting(tekst+' Stop: https://utamabali.com/stop/0e3b201488fe');
+  if(meting.delen>3){toast('De tekst is te lang, meer dan 3 berichten wordt geweigerd','err');return;}
+
+  if(test){
+    // Naar welk nummer? Eenmaal invullen is genoeg; daarna onthoudt de browser het.
+    let nr=localStorage.getItem('bc_smstest')||'';
+    nr=prompt('Naar welk nummer sturen we het proefbericht?', nr||'+31');
+    if(!nr) return;
+    nr=nr.trim(); localStorage.setItem('bc_smstest', nr);
+    st.textContent='Proefbericht versturen…';
+    const bewaard=await bcBewaar();
+    if(bewaard.fout){ st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`; return; }
+    const {data,error}=await sb.functions.invoke('sms-send',{body:{
+      to:nr, body:tekst.replace(/\{\{\s*voornaam\s*\}\}/gi,'Steven').replace(/\{\{\s*project\s*\}\}/gi,'The Maison'),
+      context:'broadcast-test', template_key:'broadcast_test', category:'marketing'}});
+    if(error||!data||data.ok!==true){
+      st.innerHTML=`<span class="err">Proefbericht mislukt: ${esc((data&&(data.fout||data.overgeslagen))||(error&&error.message)||'onbekend')}</span>`;
+      return;
+    }
+    // Pas na een geslaagd proefbericht mag de echte lijst; broadcast-sms
+    // weigert zonder deze markering.
+    await sb.from('broadcast_campagnes').update({test_at:new Date().toISOString()}).eq('id',BC.camp);
+    BC.getest=true;
+    st.innerHTML=`Proefbericht verstuurd naar ${esc(nr)}. Controleer hem, dan kun je de campagne versturen.`;
+    bcKanaalTekenen();
+    return;
+  }
+
+  const n=bcOntvangers().length;
+  const kosten=(n*meting.delen*SMS_PRIJS).toFixed(2).replace('.',',');
+  if(!confirm(`Nu ${n} sms versturen. Dit kost ongeveer \u20ac ${kosten} en is niet terug te draaien.\n\nDoorgaan?`)) return;
+
+  st.textContent='Campagne versturen, dit kan even duren…';
+  const bewaard=await bcBewaar();
+  if(bewaard.fout){
+    if(bewaard.lopend) bcToonLopend(st, bewaard.lopend);
+    else st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;
+    return;
+  }
+  const knop=$('#bc_verstuur'); if(knop) knop.disabled=true;
+  let totV=0, totM=0, totO=0, rondes=0;
+  try{
+    let resterend=1;
+    while(resterend>0 && rondes<40){
+      rondes++;
+      const {data,error}=await sb.functions.invoke('broadcast-sms',{body:{campagne_id:BC.camp}});
+      if(error||!data||data.ok!==true){
+        st.innerHTML=`<span class="err">Versturen mislukt: ${esc((data&&data.reden)||(error&&error.message)||'onbekend')}</span>`;
+        break;
+      }
+      totV+=data.verzonden||0; totM+=data.mislukt||0; totO+=data.overgeslagen||0;
+      resterend=data.resterend||0;
+      st.textContent=`${totV} verstuurd, ${totO} overgeslagen, ${totM} mislukt`+(resterend?` \u00b7 nog ${resterend} te gaan…`:'');
+    }
+    if(rondes>0){
+      st.innerHTML=`Klaar: <b>${totV}</b> verstuurd, ${totO} overgeslagen, ${totM} mislukt. `
+        +`Kosten ongeveer <b>\u20ac ${(totV*meting.delen*SMS_PRIJS).toFixed(2).replace('.',',')}</b>.`;
+      toast('SMS-campagne verstuurd','ok');
+      bcCampagnesLaden();
+    }
+  } finally { if(knop) knop.disabled=false; }
 }
 
 async function bcVerstuurWa(test){
