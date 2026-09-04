@@ -1133,7 +1133,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-03-video';
+const APP_VERSIE='2026-09-03-upload';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1834,10 +1834,10 @@ async function adsStap2(){
       <div class="field"><label>Beschrijving onder de kop</label><input type="text" id="ads_beschrijving" value="${esc(ADS.beschrijving)}" maxlength="30"></div>
     </div>
     <div>
-      <div class="field"><label>Foto's, kies 1 tot 4</label>
+      <div class="field"><label style="display:flex;justify-content:space-between;align-items:center">Foto's, kies 1 tot 4 <button class="bc-zoekactie" id="ads_upload_foto" style="text-transform:none">Eigen foto uploaden</button></label>
         <div class="ads-fotos">${ADS.fotos.filter(f=>!f.video).map(f=>`<div class="ads-foto ${ADS.gekozenFotos.includes(f.id)?'on':''}" data-foto="${f.id}" title="${esc(f.label)}"><img src="${f.thumb}" loading="lazy"></div>`).join('')}</div>
         <div class="ads-hulp">${renders} render${renders===1?'':'s'} van dit project, ${bib} uit de bibliotheek.</div></div>
-      <div class="field"><label>Video's, samen met de foto's maximaal 4</label>
+      <div class="field"><label style="display:flex;justify-content:space-between;align-items:center">Video's, samen met de foto's maximaal 4 <button class="bc-zoekactie" id="ads_upload_video" style="text-transform:none">Eigen video uploaden</button></label>
         <div class="ads-fotos">${ADS.fotos.filter(f=>f.video).map(f=>`<div class="ads-foto video ${ADS.gekozenFotos.includes(f.id)?'on':''}" data-foto="${f.id}" title="${esc(f.label)}">${f.thumb?`<img src="${f.thumb}" loading="lazy">`:`<span class="ads-vidnaam">${esc(f.label.slice(0,40))}</span>`}<span class="ads-vidbadge">VIDEO</span></div>`).join('')||'<div class="muted" style="padding:6px;font-size:12px">Geen video\'s in de bibliotheek.</div>'}</div>
         <div class="ads-hulp">${videos} video${videos===1?'':'\'s'} uit de bibliotheek. De kop en tekst komen bij een video naast het beeld te staan, niet erin.</div></div>
       <div class="field"><label>Stijl</label><div class="ads-keuze">
@@ -1885,6 +1885,8 @@ async function adsStap2(){
     herteken();
   });
   b.querySelector('#ads_opnieuw').onclick=()=>{ADS.copy=null;ADS.koppen=[];adsStap2();};
+  b.querySelector('#ads_upload_foto').onclick=()=>{lees(); adsEigenUpload('image/*');};
+  b.querySelector('#ads_upload_video').onclick=()=>{lees(); adsEigenUpload('video/*');};
   b.querySelector('#ads_terug1').onclick=()=>{lees();ADS.stap=1;adsNieuw();};
   b.querySelector('#ads_naar3').onclick=()=>{
     lees();
@@ -1951,6 +1953,43 @@ function adsTeken(canvas,o){
     ctx.font=`500 28px ${f.css}`; ctx.fillStyle='rgba(255,255,255,.9)'; ctx.textAlign='center'; ctx.fillText('UTAMA · You own it. We run it.',W/2,bodem+56);
   }
 }
+/* Eigen foto of video van de computer: gaat de mediabibliotheek in (zelfde
+   pad en tabel als de content studio, dus later herbruikbaar) en staat daarna
+   direct geselecteerd in de kiezer. */
+async function adsEigenUpload(accept){
+  const k=document.createElement('input'); k.type='file'; k.accept=accept; k.multiple=true;
+  k.onchange=async()=>{
+    const files=Array.from(k.files||[]); if(!files.length)return;
+    const hulp=$('#ads_prevleeg'); const zeg=t=>{ if(hulp){hulp.style.display='';hulp.textContent=t;} };
+    let n=0;
+    for(const f of files){
+      n++; zeg(`Uploaden ${n} van ${files.length}: ${f.name}…`);
+      const isVideo=/^video\//.test(f.type)||/\.(mov|mp4|m4v|webm)$/i.test(f.name);
+      if(!isVideo&&!/^image\//.test(f.type)){ toast(`${f.name}: geen foto of video`,'err'); continue; }
+      let blob=f, extOverride=null, typeOverride=null;
+      if(!isVideo){ try{ blob=(await pmCompress(f)).blob; }catch(e){} }
+      if(isVideo&&typeof VIDEO_VERKLEIN_GRENS!=='undefined'&&f.size>VIDEO_VERKLEIN_GRENS){
+        try{ const kv=await videoVerkleinen(f, t=>zeg(`${f.name}: ${t}`)); blob=kv.blob; extOverride=kv.ext; typeOverride=kv.type; }
+        catch(e){ toast(`${f.name}: verkleinen mislukte (${e.message}), origineel wordt geprobeerd`,'err'); }
+      }
+      const ext=extOverride||(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';
+      const pad=`bibliotheek/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
+      const up=await sb.storage.from(CT_BUCKET).upload(pad,blob,{contentType:typeOverride||f.type||'application/octet-stream'});
+      if(up.error){ toast(`${f.name}: ${up.error.message}`,'err'); continue; }
+      let thumb=null;
+      if(isVideo){ try{ thumb=await bibVideoThumb(URL.createObjectURL(f)); }catch(e){} }
+      const naam=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').slice(0,80);
+      const {data:rij,error}=await sb.from('content_bibliotheek').insert({path:pad, soort:isVideo?'video':'foto', thumb_path:thumb, beschrijving:naam, opname_datum:new Date().toISOString()}).select('id').single();
+      if(error){ toast(`${f.name}: opslaan in bibliotheek mislukt (${error.message})`,'err'); continue; }
+      const item={id:'cb:'+rij.id, url:ctPubliek(pad), thumb:thumb?ctPubliek(thumb):(isVideo?'':ctPubliek(pad)), label:naam||(isVideo?'Video':'Foto'), bron:'bibliotheek', video:isVideo};
+      ADS.fotos.unshift(item);
+      if(ADS.gekozenFotos.length<4)ADS.gekozenFotos.push(item.id); else toast('Geüpload, maar er zijn al 4 gekozen; haal er eerst één weg','err');
+    }
+    adsStap2();
+  };
+  k.click();
+}
+
 /* Eén frame uit de video als voorbeeldbeeld voor Meta. Lukt dat niet (HEVC
    die Chrome niet afspeelt, geen CORS), dan geeft dit null en valt de function
    terug op de bibliotheekthumbnail of op de thumbnail die Meta zelf maakt. */
