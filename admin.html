@@ -1047,6 +1047,7 @@
   .otpl-aan input{width:auto;flex:none;margin:0}
   .otpl-smsteller{margin-top:6px;font-size:11.5px;color:var(--muted)}
   .otpl-smsteller.waarschuwing{color:#b45309;font-weight:600}
+  .otpl-smsteller.fout{color:#b91c1c;font-weight:700}
   .otpl-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px -22px 0;padding:14px 22px 0;border-top:1px solid var(--line)}
   .seq-design{display:flex;gap:4px}
   .seq-dbtn{font-size:11.5px;font-weight:600;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);cursor:pointer}
@@ -1144,7 +1145,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-04-sms';
+const APP_VERSIE='2026-09-04-sms2';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -10748,14 +10749,21 @@ function otplBind(){
   document.querySelectorAll('.otpl-sms').forEach(ta=>{
     const uit=ta.parentElement.querySelector('[data-smsteller]');
     if(!uit)return;
+    // De afmeldlink wordt serverkant onder elk bericht geplakt, dus die telt
+    // mee. Zonder dat stond de teller er structureel zo'n 45 tekens naast en
+    // leek een bericht van 1 deel er nog net in te passen, terwijl sms-send
+    // hem daarna alsnog weigert boven 3 delen.
+    const AFMELD_VOORBEELD=' Stop: https://utamabali.com/stop/0e3b201488fe';
+    const PRIJS_PER_DEEL=0.07;
     const toon=()=>{
-      const m=smsMeting(ta.value);
+      const m=smsMeting(ta.value+(ta.value.trim()?AFMELD_VOORBEELD:''));
       const veel=m.delen>1||!m.gsm7;
-      uit.className='otpl-smsteller'+(veel?' waarschuwing':'');
-      uit.textContent=`${m.tekens} tekens \u00b7 ${m.delen} bericht${m.delen===1?'':'en'}`
+      const teveel=m.delen>3;
+      uit.className='otpl-smsteller'+(teveel?' fout':(veel?' waarschuwing':''));
+      uit.textContent=`${m.tekens} tekens \u00b7 ${m.delen} bericht${m.delen===1?'':'en'} \u00b7 ongeveer \u20ac ${(m.delen*PRIJS_PER_DEEL).toFixed(2).replace('.',',')} per lead`
+        +' \u00b7 inclusief de afmeldlink'
         +(m.gsm7?'':' \u00b7 bevat een emoji of lang streepje, daardoor nog maar 70 tekens per bericht')
-        +(m.delen>1?' \u00b7 je betaalt per bericht':'')
-        +' \u00b7 de afmeldtekst komt er nog achter';
+        +(teveel?' \u00b7 TE LANG, meer dan 3 berichten wordt geweigerd':'');
     };
     ta.addEventListener('input',toon); toon();
   });
