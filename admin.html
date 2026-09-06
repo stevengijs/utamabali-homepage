@@ -45,6 +45,9 @@
   .btn-sm{padding:6px 10px;font-size:13px;border-radius:8px}
   .btn-block{width:100%}
   .login-err{color:var(--danger);font-size:13px;min-height:18px;margin-top:4px}
+  .login-hint{color:var(--muted);font-size:12.5px;margin-top:6px;line-height:1.45}
+  .login-switch{margin-top:14px;text-align:center;font-size:13px}
+  .login-switch a{color:var(--brand);font-weight:600;text-decoration:none}
 
   #app{display:none;height:100%}
   .shell{display:grid;grid-template-columns:240px 1fr;height:100vh}
@@ -1107,6 +1110,22 @@
       <button class="btn btn-primary btn-block" type="submit" id="loginBtn">Sign in</button>
       <div class="login-err" id="loginErr"></div>
     </form>
+    <!-- Inloggen met een link (of code) per e-mail. Alleen voor bestaande
+         teamaccounts (shouldCreateUser:false): een onbekend adres krijgt geen
+         mail en geen account, en ziet dezelfde melding als een bekend adres.
+         Handig op de telefoon, waar een wachtwoordbeheerder vaak niet bij de
+         admin kan. -->
+    <form id="otpForm" style="display:none" novalidate>
+      <div class="field"><label>Email</label><input id="otpEmail" type="email" autocomplete="username" required></div>
+      <div class="field" id="otpCodeField" style="display:none"><label>Got a code instead of a link? Enter it here</label><input id="otpCode" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="8"></div>
+      <button class="btn btn-primary btn-block" type="submit" id="otpBtn">Send sign-in link</button>
+      <div class="login-err" id="otpErr"></div>
+      <div class="login-hint" id="otpHint"></div>
+    </form>
+    <div class="login-switch">
+      <a href="#" id="toOtp">Sign in with a link by email</a>
+      <a href="#" id="toPw" style="display:none">Sign in with password</a>
+    </div>
   </div>
 </div>
 
@@ -1145,7 +1164,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-04-broadcastsms';
+const APP_VERSIE='2026-09-06-maillink-login';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1577,6 +1596,52 @@ $('#loginForm').addEventListener('submit',async e=>{
   const {error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPass').value});
   btn.disabled=false;btn.textContent='Sign in';
   if(error){$('#loginErr').textContent=error.message;return;}
+  await boot();
+});
+/* Link (of code) per e-mail. Stap 1 vraagt de mail aan; de magic link brengt
+   de gebruiker terug op /admin, waar supabase-js de sessie uit de URL leest
+   en boot() de rest doet. Bevat het mailsjabloon {{ .Token }}, dan kan de
+   code hier ook worden ingevuld (stap 2). */
+let otpStage='email';
+function showOtp(on){
+  $('#loginForm').style.display=on?'none':'';
+  $('#otpForm').style.display=on?'':'none';
+  $('#toOtp').style.display=on?'none':'';
+  $('#toPw').style.display=on?'':'none';
+  $('#loginErr').textContent='';$('#otpErr').textContent='';
+  if(on){if(!$('#otpEmail').value)$('#otpEmail').value=$('#loginEmail').value.trim();$('#otpEmail').focus();}
+}
+$('#toOtp').addEventListener('click',e=>{e.preventDefault();showOtp(true);});
+$('#toPw').addEventListener('click',e=>{e.preventDefault();showOtp(false);});
+$('#otpForm').addEventListener('submit',async e=>{
+  e.preventDefault();$('#otpErr').textContent='';
+  const email=$('#otpEmail').value.trim();const btn=$('#otpBtn');
+  if(!email){$('#otpErr').textContent='Enter your email address.';return;}
+  if(otpStage==='email'){
+    btn.disabled=true;btn.textContent='Sending…';
+    const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+'/admin'}});
+    btn.disabled=false;
+    // shouldCreateUser:false: een adres zonder teamaccount krijgt van Supabase
+    // "signups not allowed". Dat tonen we niet, anders is het loginscherm een
+    // lijstje om teamadressen te raden; de melding is voor beide gevallen gelijk.
+    if(error&&!/signups? not allowed/i.test(error.message)){
+      btn.textContent='Send sign-in link';
+      $('#otpErr').textContent=/rate limit|too many/i.test(error.message)?'Too many requests. Wait a minute and try again.':error.message;
+      return;
+    }
+    otpStage='code';$('#otpEmail').readOnly=true;
+    $('#otpCodeField').style.display='';$('#otpCode').value='';
+    btn.textContent='Sign in with code';
+    $('#otpHint').innerHTML=`If <b>${esc(email)}</b> has a team account, an email with a sign-in link is on its way. Open the link on this device and you are signed in. Check your spam folder too. <a href="#" id="otpAgain">Send again</a>`;
+    const again=$('#otpAgain');if(again)again.onclick=ev=>{ev.preventDefault();otpStage='email';$('#otpEmail').readOnly=false;$('#otpCodeField').style.display='none';btn.textContent='Send sign-in link';$('#otpHint').textContent='';};
+    return;
+  }
+  const token=$('#otpCode').value.replace(/\D/g,'');
+  if(token.length<6){$('#otpErr').textContent='Open the link in the email, or enter the code if the email contains one.';return;}
+  btn.disabled=true;btn.textContent='Signing in…';
+  const {error}=await sb.auth.verifyOtp({email,token,type:'email'});
+  btn.disabled=false;btn.textContent='Sign in with code';
+  if(error){$('#otpErr').textContent=/expired|invalid/i.test(error.message)?'That code is invalid or expired. Request a new one.':error.message;return;}
   await boot();
 });
 $('#logoutBtn').addEventListener('click',async()=>{await sb.auth.signOut();location.reload();});
