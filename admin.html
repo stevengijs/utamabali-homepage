@@ -1164,7 +1164,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-06-maillink-login';
+const APP_VERSIE='2026-09-06-flows';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -11130,15 +11130,17 @@ async function seqOpen(id){
     seq=data.sequence;steps=(data.steps&&data.steps.length)?data.steps:steps;enrollments=data.enrollments||[];
   }
   if(!SEQ.opts){
-    const [bR,tR,pR]=await Promise.all([
+    const [bR,tR,pR,wR]=await Promise.all([
       sb.from('leads').select('budget').not('budget','is',null).limit(2000),
       sb.from('leads').select('timeline').not('timeline','is',null).limit(2000),
-      sb.from('projects').select('name').order('sort_order',{ascending:true})
+      sb.from('projects').select('name').order('sort_order',{ascending:true}),
+      sb.from('webinar_sessions').select('id,title').order('created_at',{ascending:false})
     ]);
     SEQ.opts={
       budget:['Tot €200K','€200K–€250K','€250K–€400K','€400K+','Onbekend'],
       timeline:[...new Set((tR.data||[]).map(x=>x.timeline).filter(Boolean))],
-      projects:(pR.data||[]).map(x=>x.name).filter(Boolean)
+      projects:(pR.data||[]).map(x=>x.name).filter(Boolean),
+      webinars:(wR.data||[]).map(x=>({id:x.id,titel:x.title})).filter(x=>x.titel)
     };
   }
   SEQ.cur={id:id||null,seq,steps,enrollments};
@@ -11148,11 +11150,22 @@ function seqOptSelect(id,list,cur,allLabel){
   const opts=`<option value="">${esc(allLabel)}</option>`+(list||[]).map(v=>`<option value="${esc(v)}"${v===cur?' selected':''}>${esc(v)}</option>`).join('');
   return `<select id="${id}" class="pc-in">${opts}</select>`;
 }
+const SEQ_KANALEN=[['email','\u2709 E-mail'],['sms','\ud83d\udcf1 SMS'],['whatsapp','\ud83d\udcac WhatsApp']];
+const SEQ_VOORWAARDEN=[
+  ['altijd','Altijd versturen'],
+  ['heeft_telefoon','Alleen met telefoonnummer'],
+  ['niet_aanwezig','Alleen als hij niet kwam'],
+  ['wel_aanwezig','Alleen als hij er wel was'],
+  ['geen_call','Alleen als er nog geen call staat']];
 function seqStepCard(st,i){
   const design=st.design==='newsletter'?'newsletter':'plain';
-  return `<div class="seq-step" data-step data-design="${design}">
+  const kanaal=['sms','whatsapp'].includes(st.kanaal)?st.kanaal:'email';
+  const voorwaarde=st.voorwaarde||'altijd';
+  return `<div class="seq-step" data-step data-design="${design}" data-kanaal="${kanaal}">
     <div class="seq-step-head">
-      <span class="seq-step-n">E-mail ${i+1}</span>
+      <span class="seq-step-n">Stap ${i+1}</span>
+      <select class="seq-kanaal pc-in" style="width:auto;padding:4px 8px;font-size:12px" title="Via welk kanaal gaat deze stap?">${SEQ_KANALEN.map(([k,l])=>`<option value="${k}"${k===kanaal?' selected':''}>${l}</option>`).join('')}</select>
+      <select class="seq-voorwaarde pc-in" style="width:auto;padding:4px 8px;font-size:12px" title="Wanneer mag deze stap de deur uit?">${SEQ_VOORWAARDEN.map(([k,l])=>`<option value="${k}"${k===voorwaarde?' selected':''}>${l}</option>`).join('')}</select>
       <label class="seq-daywrap">Dag <input class="seq-day" type="number" min="0" step="1" value="${st.day_offset!=null?st.day_offset:0}"> <span title="Extra uren bovenop de dag. Dag 0 + 2 uur = 2 uur na inschrijving.">+ <input class="seq-hour" type="number" min="0" max="23" step="1" value="${st.hour_offset!=null?st.hour_offset:0}"> uur</span></label>
       <div class="seq-design">
         <button type="button" class="seq-dbtn ${design==='plain'?'on':''}" data-design="plain">✍️ Plat</button>
@@ -11162,8 +11175,13 @@ function seqStepCard(st,i){
       <button type="button" class="btn btn-ghost btn-sm seq-prev">Preview</button>
       <button type="button" class="seq-del" title="Verwijderen">×</button>
     </div>
-    <input class="seq-subj pc-in" placeholder="Onderwerp" value="${esc(st.subject||'')}">
-    <div class="seq-rte-tools">
+    <input class="seq-subj pc-in seq-mailonly" placeholder="Onderwerp" value="${esc(st.subject||'')}">
+    <div class="seq-watpl seq-waonly" style="${kanaal==='whatsapp'?'':'display:none'}">
+      <input class="seq-watpl-in pc-in" placeholder="Naam van het goedgekeurde WhatsApp-template" value="${esc(st.wa_template||'')}">
+      <div class="bc-hint">Buiten het venster van 24 uur mag WhatsApp alleen met een goedgekeurd template. Staat hier niets, dan slaat de flow die stap over voor iedereen die ons niet net heeft geappt.</div>
+    </div>
+    <textarea class="seq-kort pc-in seq-kortonly" rows="4" placeholder="Korte tekst, gebruik {naam} en {project}" style="${kanaal==='email'?'display:none':''}">${esc(seqPlat(st.body))}</textarea>
+    <div class="seq-rte-tools seq-mailonly">
       <button type="button" data-cmd="bold" title="Vet"><b>B</b></button>
       <button type="button" data-cmd="italic" title="Cursief"><i>I</i></button>
       <button type="button" data-cmd="insertUnorderedList" title="Opsomming">• Lijst</button>
@@ -11171,8 +11189,26 @@ function seqStepCard(st,i){
       <button type="button" data-cmd="createLink" title="Link invoegen">🔗</button>
       <button type="button" data-cmd="removeFormat" title="Opmaak wissen">✕</button>
     </div>
-    <div class="seq-body seq-rte" contenteditable="true" data-ph="E-mailinhoud… gebruik {naam} en {project} voor personalisatie">${seqBodyToEditorHtml(st.body)}</div>
+    <div class="seq-body seq-rte seq-mailonly" contenteditable="true" data-ph="E-mailinhoud… gebruik {naam} en {project} voor personalisatie">${seqBodyToEditorHtml(st.body)}</div>
   </div>`;
+}
+/* Voor sms en WhatsApp is de inhoud platte tekst; een bestaande e-mailtekst
+   met opmaak wordt daarvoor uitgekleed. */
+function seqPlat(b){
+  const t=String(b||'');
+  if(!/<[a-z][^>]*>/i.test(t))return t;
+  return t.replace(/<\/(p|div|li|h[1-6])>/gi,'\n').replace(/<br\s*\/?>/gi,'\n')
+          .replace(/<[^>]+>/g,'').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&')
+          .replace(/\n{3,}/g,'\n\n').trim();
+}
+/* Toont per stap alleen wat bij het gekozen kanaal hoort. */
+function seqKanaalTonen(node){
+  const k=node.dataset.kanaal||'email';
+  node.querySelectorAll('.seq-mailonly').forEach(e=>e.style.display = k==='email'?'':'none');
+  node.querySelectorAll('.seq-kortonly').forEach(e=>e.style.display = k==='email'?'none':'');
+  node.querySelectorAll('.seq-waonly').forEach(e=>e.style.display = k==='whatsapp'?'':'none');
+  const n=node.querySelector('.seq-step-n');
+  if(n)n.textContent='Stap '+([...document.querySelectorAll('#seq_steps .seq-step')].indexOf(node)+1);
 }
 function seqEditorView(){
   const v=$('#view');const edit=canEdit('sequences');const c=SEQ.cur;const s=c.seq;
@@ -11185,11 +11221,16 @@ function seqEditorView(){
     <div class="seq-edit">
       <div class="seq-grid2">
         <div><label class="pdr-label">Naam van de sequence</label><input id="seq_name" class="pc-in" value="${esc(s.name||'')}" placeholder="bijv. Nurture – brochure aangevraagd"></div>
-        <div><label class="pdr-label">Instroom</label><select id="seq_trigger" class="pc-in"><option value="manual"${s.trigger==='manual'?' selected':''}>Handmatig toevoegen</option><option value="new_lead"${s.trigger==='new_lead'?' selected':''}>Automatisch bij nieuwe lead</option></select></div>
+        <div><label class="pdr-label">Instroom</label><select id="seq_trigger" class="pc-in"><option value="manual"${s.trigger==='manual'?' selected':''}>Handmatig toevoegen</option><option value="new_lead"${s.trigger==='new_lead'?' selected':''}>Automatisch bij nieuwe lead</option><option value="webinar"${s.trigger==='webinar'?' selected':''}>Automatisch bij webinaraanmelding</option></select></div>
       </div>
       <div class="seq-flags">
         <button type="button" id="seq_enabled_btn" class="seq-toggle ${s.enabled?'on':'off'}" data-on="${s.enabled?'1':'0'}" title="Klik om aan/uit te zetten"><span class="seq-toggle-dot"></span>${s.enabled?'Actief':'Inactief'}</button>
         <label class="seq-check"><input type="checkbox" id="seq_stop" ${s.stop_on_reply!==false?'checked':''}> Stop zodra de lead reageert</label>
+      </div>
+      <div id="seq_webinar" class="seq-audience" style="${s.trigger==='webinar'?'':'display:none'}">
+        <div class="seq-h" style="margin-bottom:8px">Voor welk webinar?</div>
+        <div class="muted" style="font-size:11.5px;margin-bottom:8px">Iedereen die zich aanmeldt stroomt hier automatisch in. Laat leeg voor elk webinar.</div>
+        <select id="seq_f_webinar" class="pc-in"><option value="">Elk webinar</option>${(SEQ.opts.webinars||[]).map(w=>`<option value="${esc(w.id)}"${s.filter_webinar===w.id?' selected':''}>${esc(w.titel)}</option>`).join('')}</select>
       </div>
       <div id="seq_audience" class="seq-audience" style="${s.trigger==='new_lead'?'':'display:none'}">
         <div class="seq-h" style="margin-bottom:8px">Wie stroomt automatisch in?</div>
@@ -11200,17 +11241,20 @@ function seqEditorView(){
           <div><label class="pdr-label">Timing</label>${seqOptSelect('seq_f_timeline',SEQ.opts.timeline,s.filter_timeline||'','Alle timings')}</div>
         </div>
       </div>
-      <div class="seq-h">E-mails in de reeks</div>
+      <div class="seq-h">Stappen in deze flow</div>
       <div id="seq_steps">${stepsHtml}</div>
-      ${edit?`<button class="btn btn-ghost btn-sm" id="seq_addstep" style="margin-top:8px">＋ E-mail toevoegen</button>`:''}
-      <div class="seq-h" style="margin-top:20px">Leads in deze sequence</div>
+      ${edit?`<button class="btn btn-ghost btn-sm" id="seq_addstep" style="margin-top:8px">＋ Stap toevoegen</button>`:''}
+      <div class="seq-h" style="margin-top:20px">Leads in deze flow</div>
       ${edit?`<div class="seq-enroll-add"><input id="seq_enr_email" class="pc-in" placeholder="E-mailadres van bestaand contact…" style="flex:1"><button class="btn btn-ghost btn-sm" id="seq_enr_btn">Toevoegen</button></div>`:''}
       <div id="seq_enr_list" class="seq-enr-list">${enrHtml}</div>
     </div>
   </div>`;
   $('#seq_back').onclick=()=>renderSequences();
   if(edit){
-    const tg=$('#seq_trigger');if(tg)tg.onchange=()=>{const a=$('#seq_audience');if(a)a.style.display=(tg.value==='new_lead')?'':'none';};
+    const tg=$('#seq_trigger');if(tg)tg.onchange=()=>{
+      const a=$('#seq_audience');if(a)a.style.display=(tg.value==='new_lead')?'':'none';
+      const w=$('#seq_webinar');if(w)w.style.display=(tg.value==='webinar')?'':'none';
+    };
     const enb=$('#seq_enabled_btn');if(enb)enb.onclick=()=>{const on=enb.dataset.on!=='1';enb.dataset.on=on?'1':'0';enb.classList.toggle('on',on);enb.classList.toggle('off',!on);enb.innerHTML='<span class="seq-toggle-dot"></span>'+(on?'Actief':'Inactief');};
     $('#seq_addstep').onclick=()=>{const wrap=$('#seq_steps');const div=document.createElement('div');div.innerHTML=seqStepCard({day_offset:seqNextDay(),hour_offset:0,subject:'',body:'',design:'plain'},wrap.children.length);const node=div.firstElementChild;wrap.appendChild(node);seqWireStep(node);};
     $('#seq_save').onclick=seqSaveCurrent;
@@ -11224,6 +11268,17 @@ function seqEditorView(){
 function seqNextDay(){const days=[...document.querySelectorAll('#seq_steps .seq-day')].map(i=>Number(i.value)||0);return days.length?Math.max(...days)+2:0;}
 function seqWireStep(node){
   node.querySelector('.seq-del').onclick=()=>{node.remove();};
+  // Kanaal wisselen: alleen tonen wat bij dat kanaal hoort. De tekst blijft
+  // staan, zodat je van e-mail naar sms kunt schakelen zonder opnieuw te typen.
+  const kn=node.querySelector('.seq-kanaal');
+  if(kn)kn.onchange=()=>{
+    const vorig=node.dataset.kanaal||'email';
+    node.dataset.kanaal=kn.value;
+    const kort=node.querySelector('.seq-kort'), rte=node.querySelector('.seq-rte');
+    if(vorig==='email'&&kn.value!=='email'&&kort&&rte&&!kort.value.trim())kort.value=seqPlat(rte.innerHTML);
+    seqKanaalTonen(node);
+  };
+  seqKanaalTonen(node);
   node.querySelectorAll('.seq-dbtn').forEach(b=>b.onclick=()=>{node.dataset.design=b.dataset.design;node.querySelectorAll('.seq-dbtn').forEach(x=>x.classList.toggle('on',x.dataset.design===b.dataset.design));});
   const rte=node.querySelector('.seq-rte');
   node.querySelectorAll('.seq-rte-tools button').forEach(btn=>{
@@ -11243,15 +11298,21 @@ function seqCollectSteps(){
       day_offset:String(Number(node.querySelector('.seq-day').value)||0),
       hour_offset:String(Math.max(0,Math.min(23,Number(node.querySelector('.seq-hour').value)||0))),
       subject:node.querySelector('.seq-subj').value,
-      body:html,
-      design:node.dataset.design==='newsletter'?'newsletter':'plain'
+      // Bij sms en WhatsApp komt de tekst uit het korte veld, niet uit de
+      // opmaakeditor: daar hoort geen HTML in.
+      body:(node.dataset.kanaal==='email')?html:(node.querySelector('.seq-kort')||{}).value||'',
+      design:node.dataset.design==='newsletter'?'newsletter':'plain',
+      kanaal:node.dataset.kanaal||'email',
+      voorwaarde:(node.querySelector('.seq-voorwaarde')||{}).value||'altijd',
+      wa_template:(node.querySelector('.seq-watpl-in')||{}).value||''
     };
   });
 }
 async function seqSaveCurrent(){
   const c=SEQ.cur;const btn=$('#seq_save');if(btn){btn.disabled=true;btn.textContent='Opslaan…';}
   const payload={p_id:c.id,p_name:$('#seq_name').value.trim(),p_trigger:$('#seq_trigger').value,p_enabled:($('#seq_enabled_btn')&&$('#seq_enabled_btn').dataset.on==='1'),p_stop_on_reply:$('#seq_stop').checked,p_from_name:'UTAMA Bali',p_from_email:'info@utamabali.com',p_steps:seqCollectSteps(),
-    p_filter_project:($('#seq_f_project')&&$('#seq_f_project').value)||'',p_filter_budget:($('#seq_f_budget')&&$('#seq_f_budget').value)||'',p_filter_timeline:($('#seq_f_timeline')&&$('#seq_f_timeline').value)||''};
+    p_filter_project:($('#seq_f_project')&&$('#seq_f_project').value)||'',p_filter_budget:($('#seq_f_budget')&&$('#seq_f_budget').value)||'',p_filter_timeline:($('#seq_f_timeline')&&$('#seq_f_timeline').value)||'',
+    p_filter_webinar:(($('#seq_f_webinar')&&$('#seq_f_webinar').value)||null)};
   const {data,error}=await sb.rpc('seq_save',payload);
   if(btn){btn.disabled=false;btn.textContent='Opslaan';}
   if(error||(data&&data.error)){toast('Opslaan mislukt: '+esc((error&&error.message)||data.error),'err');return;}
