@@ -1164,7 +1164,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-07-herkomst-bericht';
+const APP_VERSIE='2026-09-07-pipelinekiezer';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -7906,18 +7906,14 @@ function inboxDrawInfo(ctx){
   // Discovery. Anders leek een contact in "Relaties & overig" nergens te staan
   // en maakte "Toevoegen" een tweede kaart aan.
   const pipe=ctx.pipeline||{};const pcur=pipe.current_stage||'';
-  const alleP=(pipe.alle||[]).filter(p=>(p.stages||[]).length);
+  const alleP=(pipe.alle||[]).filter(x=>(x.stages||[]).length);
   const pipeId=pipe.pipeline_id||'';
-  const pstages=(alleP.find(p=>p.id===pipeId)||{}).stages||pipe.stages||[];
   let pipeHtml='';
-  if(pstages.length){
-    const popts=alleP.map(p=>`<option value="${esc(p.id)}"${p.id===pipeId?' selected':''}>${esc(p.name)}</option>`).join('');
-    const opts=pstages.map(s=>`<option value="${esc(s.key)}"${s.key===pcur?' selected':''}>${esc(s.label)}</option>`).join('');
-    const curLabel=(pstages.find(s=>s.key===pcur)||{}).label;
+  if(alleP.length){
     pipeHtml=`<div class="ibx-ip-sec"><div class="ibx-ip-h">Pipeline</div>
-      <div class="ibx-ip-note" style="margin-bottom:8px">${pcur?`Staat in <b>${esc(pipe.pipeline_name||'')}</b> op <b>${esc(curLabel||pcur)}</b>.`:'Nog niet in een pipeline. Kies een pipeline en een kolom om dit contact toe te voegen.'}</div>
-      ${edit?`<div class="ibx-pipe-row" style="flex-wrap:wrap;gap:6px">${alleP.length>1?`<select id="ibx_pipe_pipe" class="ibx-pipe-sel">${popts}</select>`:''}<select id="ibx_pipe_sel" class="ibx-pipe-sel">${opts}</select><button class="btn btn-sm" id="ibx_pipe_set">${pcur?'Verplaats':'Toevoegen'}</button></div>`:''}</div>`;
+      ${pipeKiezerHtml({prefix:'ibx_pipe',lijnen:alleP,pipelineId:pipeId,stage:pcur,edit,kop:false})}</div>`;
   }
+
   const chansHtml=chans.length?chans.map(o=>{const oc=INBOX_CH[o.channel]||INBOX_CH.instagram;return `<div class="ibx-oth"><span>${oc.icon} ${oc.label}${o.handle?' · '+esc(o.handle):''}</span><span class="muted">${o.ai_enabled?'AI actief':inboxStatusText(o.status)} · ${inboxRel(o.last_message_at)}</span></div>`;}).join(''):'';
   const tlicon={lead:'📩',reservation:'📝',purchase:'💰',dataroom:'📂',pipeline:'🧭',webinar:'🎥'};
   const tlHtml=timeline.length?timeline.map(it=>`<div class="ibx-tl"><span class="ibx-tl-ic">${tlicon[it.kind]||'•'}</span><div class="ibx-tl-b"><div class="ibx-tl-t">${esc(it.title)}${it.project?' · '+esc(it.project):''}</div><div class="ibx-tl-m">${it.ts?new Date(it.ts).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'}):''}${it.meta?' · '+esc(it.meta):''}</div></div></div>`).join(''):`<div class="ibx-ip-note">Nog geen eerdere activiteit vastgelegd.</div>`;
@@ -7954,13 +7950,15 @@ function inboxDrawInfo(ctx){
     const gat=$('#ibx_antw_terug');if(gat)gat.onclick=()=>inboxGeenAntwoord(INBOX.sel,false);
     const bl=$('#ibx_blok');if(bl)bl.onclick=()=>inboxBlokkeer(cv.contact_id,true);
     const dbl=$('#ibx_deblok');if(dbl)dbl.onclick=()=>inboxBlokkeer(cv.contact_id,false);
-    const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(gid);
-    // Andere pipeline gekozen? Dan horen daar andere kolommen bij.
-    const pp=$('#ibx_pipe_pipe');if(pp)pp.onchange=()=>{
-      const doel=(alleP.find(p=>p.id===pp.value)||{}).stages||[];
-      const ss=$('#ibx_pipe_sel');if(!ss)return;
-      ss.innerHTML=doel.map(s=>`<option value="${esc(s.key)}"${(pp.value===pipeId&&s.key===pcur)?' selected':''}>${esc(s.label)}</option>`).join('');
-    };
+    pipeKiezerBind({prefix:'ibx_pipe',lijnen:alleP,pipelineId:pipeId,stage:pcur,
+      verplaats:async(doel,st)=>{
+        const {data,error}=await sb.rpc('inbox_set_pipeline',{p_conversation:gid,p_stage:st,p_pipeline:doel||null});
+        if(error){toast('Pipeline bijwerken mislukt: '+esc(error.message),'err');return;}
+        if(data&&data.ok===false){toast(esc(data.fout||'Pipeline bijwerken mislukt'),'err');return;}
+        toast('Pipeline bijgewerkt','ok');
+        await inboxOpen(gid,true);
+      }});
+
     const sm=$('#ibx_sum_btn');if(sm)sm.onclick=()=>inboxGenSummary(gid);
   }
 }
@@ -7980,21 +7978,51 @@ async function inboxBlokkeer(contactId,aan){
   inboxLoad();
   if(INBOX.sel)inboxOpen(INBOX.sel);
 }
-async function inboxSetPipeline(id){
-  const sel=$('#ibx_pipe_sel');if(!sel)return;const stage=sel.value;
-  const psel=$('#ibx_pipe_pipe');const pipeline=psel?psel.value:null;
-  const btn=$('#ibx_pipe_set');const oudLabel=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.textContent='…';}
-  try{
-    const {data,error}=await sb.rpc('inbox_set_pipeline',{p_conversation:id,p_stage:stage,p_pipeline:pipeline||null});
-    if(error){toast('Pipeline bijwerken mislukt: '+esc(error.message),'err');return;}
-    // De functie geeft zelf een nette reden terug (bijv. "staat al in ..."),
-    // die hoort de gebruiker te zien in plaats van een stille mislukking.
-    if(data&&data.ok===false){toast(esc(data.fout||'Pipeline bijwerken mislukt'),'err');return;}
-    toast('Pipeline bijgewerkt','ok');
-    await inboxOpen(id,true);
-  }catch(e){toast('Pipeline bijwerken mislukt','err');}
-  finally{const b=$('#ibx_pipe_set');if(b){b.disabled=false;if(b.textContent==='…')b.textContent=oudLabel;}}
+// EEN pipelinekiezer voor de hele admin. Het zijpaneel in de inbox, de
+// contactmodal en de kaartlade op het bord toonden hetzelfde ding op drie
+// plekken in drie vormen, en met drie verschillende mechanieken eronder: twee
+// ervan schreven rechtstreeks in pipeline_cards en liepen daarmee om de
+// databasefunctie heen die de handoff-log bijhoudt en controleert of de
+// kolomsleutel in de doelpipeline bestaat. Blijft die oude sleutel staan, dan
+// valt de kaart uit elke kolom.
+//
+// Vorm en volgorde zijn overal gelijk: eerst in woorden waar de kaart staat,
+// dan pipeline, kolom en een knop. Verplaatsen gebeurt pas op die knop, niet
+// stiekem bij het uitklappen van een lijstje.
+function pipeKiezerHtml({prefix,lijnen,pipelineId,stage,edit,kop}){
+  const ls=(lijnen||[]).filter(l=>(l.stages||[]).length);
+  if(!ls.length)return '';
+  const nu=ls.find(l=>l.id===pipelineId)||ls[0];
+  const stages=(nu&&nu.stages)||[];
+  const label=(stages.find(s=>s.key===stage)||{}).label;
+  const popts=ls.map(l=>`<option value="${esc(l.id)}"${l.id===nu.id?' selected':''}>${esc(l.name)}</option>`).join('');
+  const sopts=stages.map(s=>`<option value="${esc(s.key)}"${s.key===stage?' selected':''}>${esc(s.label)}</option>`).join('');
+  return `${kop?'<div class="pdr-label">Pipeline</div>':''}
+    <div class="muted" style="font-size:12px;margin-bottom:8px">${stage?`Staat in <b>${esc(nu.name)}</b> op <b>${esc(label||stage)}</b>.`:'Nog niet in een pipeline. Kies een pipeline en een kolom.'}</div>
+    ${edit?`<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      ${ls.length>1?`<select id="${prefix}_pipe" style="width:auto;min-width:130px">${popts}</select>`:''}
+      <select id="${prefix}_stage" style="width:auto;min-width:130px">${sopts}</select>
+      <button class="btn btn-sm" id="${prefix}_go">${stage?'Verplaats':'Toevoegen'}</button>
+    </div>`:''}`;
+}
+// verplaats(pipelineId, stage) doet het echte werk en verschilt per plek:
+// de inbox mag via inbox_set_pipeline (die ook inbox-rechten accepteert), de
+// rest via pipeline_kaart_verplaats. Allebei komen ze in de database uit op
+// dezelfde kern.
+function pipeKiezerBind({prefix,lijnen,pipelineId,stage,verplaats}){
+  const ls=(lijnen||[]).filter(l=>(l.stages||[]).length);
+  const pp=$('#'+prefix+'_pipe'),ss=$('#'+prefix+'_stage'),go=$('#'+prefix+'_go');
+  if(!ss||!go)return;
+  if(pp)pp.onchange=()=>{
+    const doel=(ls.find(l=>l.id===pp.value)||{}).stages||[];
+    ss.innerHTML=doel.map(x=>`<option value="${esc(x.key)}"${(pp.value===pipelineId&&x.key===stage)?' selected':''}>${esc(x.label)}</option>`).join('');
+  };
+  go.onclick=async()=>{
+    const oud=go.textContent;go.disabled=true;go.textContent='…';
+    try{await verplaats(pp?pp.value:pipelineId,ss.value);}
+    catch(e){toast('Verplaatsen mislukt','err');}
+    finally{if(go.isConnected){go.disabled=false;if(go.textContent==='…')go.textContent=oud;}}
+  };
 }
 function inboxRenderMsgs(msgs){
   const box=$('#ibx_msgs');if(!box)return;
@@ -9467,13 +9495,10 @@ async function openPerson(p){
   {
     const kanPipe=canEdit('pipeline');
     let ph='';
-    // Ook een lead die nog nergens in staat kun je hier in een pipeline zetten.
-    const lijnOpties=(huidig)=>pLines.map(x=>`<option value="${esc(x.id)}"${x.id===huidig?' selected':''}>${esc(x.name)}</option>`).join('');
+    // Ook een lead die nog nergens in staat kun je hier in een pipeline zetten,
+    // met dezelfde kiezer als overal: pipeline, kolom, knop.
     if(!pCards.length){
-      ph = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span class="muted" style="font-size:13px">Staat in geen enkele pipeline.</span>
-        ${kanPipe&&pLines.length?`<select class="pc-in pd-pipe-zet" title="Zet deze lead in een pipeline" style="width:auto;padding:5px 8px;font-size:12.5px"><option value="">Zet in pipeline…</option>${lijnOpties(null)}</select>`:''}
-      </div>`;
+      ph = pipeKiezerHtml({prefix:'pdp_nieuw',lijnen:pLines,pipelineId:'',stage:'',edit:kanPipe,kop:false});
     } else {
       ph = `<div style="display:flex;flex-direction:column;gap:8px">` + pCards.map(c=>{
         const lijn=pLines.find(x=>x.id===c.pipeline_id);
@@ -9485,15 +9510,14 @@ async function openPerson(p){
         const wieNaam=c.assignee?pipeTeamName(c.assignee):'';
         const wie=wieNaam?`<span class="muted" style="font-size:11.5px">· ${esc(wieNaam)}</span>`:'';
         const opts=stages.map(x=>`<option value="${esc(x.key)}"${x.key===c.stage?' selected':''}>${esc(x.label)}</option>`).join('');
-        return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:9px 12px">
-          <span style="font-size:13px;font-weight:600">${esc((lijn&&lijn.name)||'Pipeline')}</span>
-          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px"><span style="width:8px;height:8px;border-radius:50%;background:${esc(kleur)}"></span>${esc((st&&st.label)||c.stage||'—')}</span>
-          ${sinds}${wie}
-          <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
-            ${kanPipe&&pLines.length>1?`<select class="pc-in pd-pipe-lijn" data-card="${esc(c.id)}" data-nu="${esc(c.pipeline_id)}" title="Verplaats deze lead naar een andere pipeline" style="width:auto;padding:5px 8px;font-size:12.5px">${lijnOpties(c.pipeline_id)}</select>`:''}
-            ${kanPipe&&opts?`<select class="pc-in pd-pipe-sel" data-card="${esc(c.id)}" style="width:auto;padding:5px 8px;font-size:12.5px">${opts}</select>`:''}
-            <button class="btn btn-ghost btn-sm" data-pd-openpipe="${esc(c.pipeline_id)}">Open bord ↗</button>
-          </span>
+        return `<div style="border:1px solid var(--line);border-radius:10px;padding:9px 12px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:600">${esc((lijn&&lijn.name)||'Pipeline')}</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px"><span style="width:8px;height:8px;border-radius:50%;background:${esc(kleur)}"></span>${esc((st&&st.label)||c.stage||'—')}</span>
+            ${sinds}${wie}
+            <span style="margin-left:auto"><button class="btn btn-ghost btn-sm" data-pd-openpipe="${esc(c.pipeline_id)}">Open bord ↗</button></span>
+          </div>
+          <div style="margin-top:8px">${pipeKiezerHtml({prefix:'pdp_'+c.id,lijnen:pLines,pipelineId:c.pipeline_id,stage:c.stage,edit:kanPipe,kop:false})}</div>
         </div>`;
       }).join('') + `</div>`;
     }
@@ -9640,19 +9664,11 @@ async function openPerson(p){
     });
     mb.querySelectorAll('[data-mkitp]').forEach(b=>b.onclick=()=>openReservationForm(p,projList,{project:b.dataset.mkproj,unit:b.dataset.mkunit,leadId:b.dataset.mkitp}));
     mb.querySelectorAll('[data-ldone]').forEach(b=>b.onclick=async()=>{await markLeadHandled(b.dataset.ldone);toast('Afgerond','ok');openPerson(p);});
-    // Pipelinesectie: fase wijzigen en doorklikken naar het bord.
-    mb.querySelectorAll('.pd-pipe-sel').forEach(sel=>sel.onchange=async()=>{
-      const {error}=await sb.from('pipeline_cards')
-        .update({stage:sel.value,stage_changed_at:new Date().toISOString()}).eq('id',sel.dataset.card);
-      if(error){toast('Verplaatsen mislukt: '+error.message,'err');return;}
-      toast('Verplaatst','ok');openPerson(p);
-    });
-    // Naar een ANDERE pipeline verplaatsen loopt via een functie in de database.
-    // Twee redenen: de fasesleutels verschillen per pipeline (blijft de oude
-    // staan, dan valt de kaart uit elke kolom), en Discovery synchroniseert
-    // automatisch, dus daar moet worden vastgelegd dat de lead weg is.
-    const pipeVerplaats=async(doel,kaart)=>{
-      const {data,error}=await sb.rpc('pipeline_kaart_verplaats',{p_pipeline:doel,p_card:kaart||null,p_contact:kaart?null:p.id,p_stage:null});
+    // Pipelinesectie: overal dezelfde kiezer, en verplaatsen loopt altijd via
+    // de databasefunctie. De losse fase-select schreef hier rechtstreeks in
+    // pipeline_cards, langs de handoff-log en de kolomcontrole heen.
+    const pipeVerplaats=async(doel,kaart,st)=>{
+      const {data,error}=await sb.rpc('pipeline_kaart_verplaats',{p_pipeline:doel,p_card:kaart||null,p_contact:kaart?null:p.id,p_stage:st||null});
       if(error||!data||data.ok===false){
         toast('Verplaatsen mislukt: '+((data&&data.fout)||(error&&error.message)||'onbekend'),'err');
         return false;
@@ -9661,20 +9677,11 @@ async function openPerson(p){
       if(typeof PIPE!=='undefined'&&PIPE.cur&&CURRENT==='pipeline')loadPipelineData();
       return true;
     };
-    mb.querySelectorAll('.pd-pipe-lijn').forEach(sel=>sel.onchange=async()=>{
-      const doel=sel.value;
-      if(!doel||doel===sel.dataset.nu)return;
-      sel.disabled=true;
-      if(!(await pipeVerplaats(doel,sel.dataset.card))){sel.value=sel.dataset.nu;sel.disabled=false;return;}
-      openPerson(p);
-    });
-    mb.querySelectorAll('.pd-pipe-zet').forEach(sel=>sel.onchange=async()=>{
-      const doel=sel.value;
-      if(!doel)return;
-      sel.disabled=true;
-      if(!(await pipeVerplaats(doel,null))){sel.value='';sel.disabled=false;return;}
-      openPerson(p);
-    });
+    (pCards||[]).forEach(c=>pipeKiezerBind({prefix:'pdp_'+c.id,lijnen:pLines,pipelineId:c.pipeline_id,stage:c.stage,
+      verplaats:async(doel,st)=>{if(await pipeVerplaats(doel,c.id,st))openPerson(p);}}));
+    if(!(pCards||[]).length)pipeKiezerBind({prefix:'pdp_nieuw',lijnen:pLines,pipelineId:'',stage:'',
+      verplaats:async(doel,st)=>{if(await pipeVerplaats(doel,null,st))openPerson(p);}});
+
     mb.querySelectorAll('[data-pd-openpipe]').forEach(b=>b.onclick=()=>{
       PENDING_PIPE=b.dataset.pdOpenpipe;
       const pl=(PIPE.list||[]).find(x=>x.id===PENDING_PIPE);
@@ -10434,7 +10441,6 @@ function pipeCardDrawer(card){
   const stages=PIPE.cur.stages||[];
   const projOpts=`<option value="">— geen —</option>`+PIPE.projects.map(n=>`<option value="${esc(n)}"${card.project===n?' selected':''}>${esc(n)}</option>`).join('');
   const teamOpts=`<option value="">— niemand —</option>`+PIPE.team.map(t=>`<option value="${t.id}"${card.assignee===t.id?' selected':''}>${esc(t.full_name||t.email)}</option>`).join('');
-  const stageOpts=stages.map(s=>`<option value="${esc(s.key)}"${s.key===card.stage?' selected':''}>${esc(s.label)}</option>`).join('');
   const phone=en.phone||'',email=en.email||'';
   const _pdDate=v=>{try{return new Date(v).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});}catch(e){return '—';}};
   const inAt=en.first_seen_at||en.leadFirst||card.created_at||null;
@@ -10455,10 +10461,10 @@ function pipeCardDrawer(card){
         <button id="pdr_x" title="Sluiten" style="font-size:22px;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted)">×</button>
       </div>
       ${card.contact_id&&warmthBadge(WARMTH[card.contact_id],{big:true})?`<div style="margin-top:10px;display:flex;align-items:center;gap:8px"><span class="pdr-label" style="margin:0">Koopbereidheid</span>${warmthBadge(WARMTH[card.contact_id],{big:true})}</div>`:''}
-      <div class="pdr-field" style="margin-top:12px"><div class="pdr-label">Fase / kolom wijzigen</div><select id="pdr_stage" ${edit?'':'disabled'}>${stageOpts}</select></div>
     </div>
     <div class="pdrawer-body">
       ${actsHtml?`<div class="pdr-actions">${actsHtml}</div>`:''}
+      <div class="pdr-field">${pipeKiezerHtml({prefix:'pdr_pipe',lijnen:PIPE.list,pipelineId:card.pipeline_id,stage:card.stage,edit,kop:true})}</div>
       ${card.contact_id?`<div class="pdr-field pdr-sum-top"><div class="pdr-label" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button type="button" class="ibx-sum-btn" id="pdr_sum_btn">✨ Genereren</button>`:''}</div><div id="pdr_sum_body">${inboxSummaryHtml(null)}</div></div>`:''}
       <div class="pdr-facts">${facts.map(f=>`<div class="pdr-fact"><div class="k">${f[0]}</div><div class="v">${f[1]}</div></div>`).join('')}</div>
       <div class="pdr-grid2">
@@ -10506,7 +10512,15 @@ function pipeCardDrawer(card){
     q('#pdr_value').addEventListener('blur',e=>{const v=e.target.value===''?null:Number(e.target.value);if(v!==card.value)save({value:v});});
     q('#pdr_proj').addEventListener('change',e=>save({project:e.target.value||null}));
     q('#pdr_ass').addEventListener('change',e=>save({assignee:e.target.value||null}));
-    q('#pdr_stage').addEventListener('change',async e=>{const k=e.target.value;if(k===card.stage)return;const mx=Math.max(0,...PIPE.cards.filter(c=>c.stage===k).map(c=>c.position||0));await save({stage:k,position:mx+1});});
+    // Verplaatsen loopt via de database, niet via een rechtstreekse update op
+    // pipeline_cards: die sloeg de handoff-log over en controleerde niet of de
+    // kolomsleutel in de doelpipeline bestaat.
+    pipeKiezerBind({prefix:'pdr_pipe',lijnen:PIPE.list,pipelineId:card.pipeline_id,stage:card.stage,
+      verplaats:async(doel,st)=>{
+        const {data,error}=await sb.rpc('pipeline_kaart_verplaats',{p_pipeline:doel,p_card:card.id,p_contact:null,p_stage:st});
+        if(error||!data||data.ok===false){toast('Verplaatsen mislukt: '+((data&&data.fout)||(error&&error.message)||'onbekend'),'err');return;}
+        toast('Verplaatst','ok');close();loadPipelineData();
+      }});
     q('#pdr_del').onclick=async()=>{if(!confirm('Deze kaart verwijderen?'))return;const {error}=await sb.from('pipeline_cards').delete().eq('id',card.id);if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}close();toast('Verwijderd','ok');loadPipelineData();};
   }
   if(q('#pdr_wa'))q('#pdr_wa').onclick=e=>{e.preventDefault();pipeWhatsapp(card.id);};
