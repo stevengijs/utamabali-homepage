@@ -729,10 +729,18 @@
   .ibx-kv{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;padding:3px 0}
   .ibx-kv span{color:var(--muted);flex:none}
   .ibx-kv b{text-align:right;word-break:break-word}
-  .ibx-pipe-row{display:flex;gap:7px;align-items:center}
-  .ibx-pipe-sel{flex:1;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;background:#fff;outline:none}
-  .ibx-pipe-sel:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
-  .ibx-pipe-row .btn{flex:none;background:var(--brand);color:#fff}
+  /* Pipelinekiezer. Dezelfde vorm in het inbox-zijpaneel, de contactmodal en de
+     kaartlade op het bord. De twee lijstjes staan naast elkaar zolang er ruimte
+     is en vallen onder elkaar in een smalle kolom, zodat het nergens stapelt
+     tot drie losse regels. */
+  .pipe-kiezer{display:flex;flex-direction:column;gap:9px}
+  .pipe-kiezer .pk-nu{font-size:12.5px;color:var(--muted);line-height:1.5}
+  .pipe-kiezer .pk-nu b{color:var(--ink);font-weight:650}
+  .pipe-kiezer .pk-velden{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:7px}
+  .pipe-kiezer select{width:100%;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:8px;
+                      font-size:12.5px;background:#fff;color:var(--ink);outline:none}
+  .pipe-kiezer select:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
+  .pipe-kiezer .btn{align-self:flex-start;background:var(--brand);color:#fff;border-color:var(--brand)}
   .ibx-sum-btn{font-size:11px;font-weight:700;padding:3px 9px;border:1px solid #cfe8dd;border-radius:999px;background:#eaf4ef;color:#0f6b4f;cursor:pointer}
   .ibx-sum-btn:hover{background:#dceee6}
   .ibx-sum-btn:disabled{opacity:.6;cursor:default}
@@ -7997,13 +8005,14 @@ function pipeKiezerHtml({prefix,lijnen,pipelineId,stage,edit,kop}){
   const label=(stages.find(s=>s.key===stage)||{}).label;
   const popts=ls.map(l=>`<option value="${esc(l.id)}"${l.id===nu.id?' selected':''}>${esc(l.name)}</option>`).join('');
   const sopts=stages.map(s=>`<option value="${esc(s.key)}"${s.key===stage?' selected':''}>${esc(s.label)}</option>`).join('');
-  return `${kop?'<div class="pdr-label">Pipeline</div>':''}
-    <div class="muted" style="font-size:12px;margin-bottom:8px">${stage?`Staat in <b>${esc(nu.name)}</b> op <b>${esc(label||stage)}</b>.`:'Nog niet in een pipeline. Kies een pipeline en een kolom.'}</div>
-    ${edit?`<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-      ${ls.length>1?`<select id="${prefix}_pipe" style="width:auto;min-width:130px">${popts}</select>`:''}
-      <select id="${prefix}_stage" style="width:auto;min-width:130px">${sopts}</select>
-      <button class="btn btn-sm" id="${prefix}_go">${stage?'Verplaats':'Toevoegen'}</button>
-    </div>`:''}`;
+  return `${kop?'<div class="pdr-label">Pipeline</div>':''}<div class="pipe-kiezer">
+    <div class="pk-nu">${stage?`Staat op <b>${esc(label||stage)}</b> in ${esc(nu.name)}.`:'Staat nog in geen enkele pipeline.'}</div>
+    ${edit?`<div class="pk-velden">
+      ${ls.length>1?`<select id="${prefix}_pipe" aria-label="Pipeline">${popts}</select>`:''}
+      <select id="${prefix}_stage" aria-label="Kolom">${sopts}</select>
+    </div>
+    <button class="btn btn-sm" id="${prefix}_go">${stage?'Verplaats':'Toevoegen'}</button>`:''}
+  </div>`;
 }
 // verplaats(pipelineId, stage) doet het echte werk en verschilt per plek:
 // de inbox mag via inbox_set_pipeline (die ook inbox-rechten accepteert), de
