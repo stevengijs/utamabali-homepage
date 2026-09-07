@@ -895,6 +895,12 @@
   .chatpop-title{font-weight:700;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   /* E-mail sequences */
   .seq-top{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  /* De kop van de lijst, niet de bewerkbalk: knop onder de tekst en links
+     uitgelijnd. Op een brede kolom dreef hij anders zo ver naar rechts dat
+     "Bericht flows" een kop van de lijst eronder leek in plaats van van deze
+     sectie, met de knop als los element ernaast. */
+  .seq-kop{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .seq-kop .muted{max-width:74ch}
   .seq-list{display:flex;flex-direction:column}
   .seq-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer}
   .seq-row:hover{background:#f6f8f7}
@@ -11167,7 +11173,7 @@ function seqListView(){
       <span class="muted" style="font-size:12px">Bewerken →</span>
     </div>`).join('');
   v.innerHTML=fsPanel()+`<div class="panel" style="padding:0">
-    <div class="seq-top"><div><b>Bericht flows</b><div class="muted" style="font-size:12px">Warm leads op met een reeks berichten via e-mail, sms of WhatsApp. Per stap kies je het kanaal; e-mail gaat via info@utamabali.com. Een flow stopt zodra een lead reageert of zich afmeldt.</div></div>${edit?`<button class="btn" id="seq_new">＋ Nieuwe flow</button>`:''}</div>
+    <div class="seq-kop"><div><b>Bericht flows</b><div class="muted" style="font-size:12px">Warm leads op met een reeks berichten via e-mail, sms of WhatsApp. Per stap kies je het kanaal; e-mail gaat via info@utamabali.com. Een flow stopt zodra een lead reageert of zich afmeldt.</div></div>${edit?`<button class="btn" id="seq_new">＋ Nieuwe flow</button>`:''}</div>
     <div class="seq-list">${rows||'<div class="empty" style="padding:24px">Nog geen flows. Maak er een om leads automatisch op te warmen.</div>'}</div>
   </div>${otplPanel()}`;
   const nw=$('#seq_new');if(nw)nw.onclick=()=>seqOpen(null);
