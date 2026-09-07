@@ -1164,7 +1164,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-07-pipelinekeuze';
+const APP_VERSIE='2026-09-07-herkomst-bericht';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -8052,7 +8052,10 @@ function inboxRenderMsgs(msgs){
     let tag='';
     if(out&&(who==='ai'||who==='human')){
       const wie=who==='ai'?'UTAMA-bot':esc(teamName(m.sender_name));
-      const hoe=who==='ai'?'automatisch':'handmatig via portal';
+      // m.via is gevuld als het bericht NIET langs de gewone weg ging. Zonder dat
+      // kreeg zo'n bericht "handmatig via portal" plus de naam van een teamlid
+      // onder zich, ook als die persoon het niet had getypt.
+      const hoe=m.via?esc(m.via):(who==='ai'?'automatisch':'handmatig via portal');
       const acct=biz?`<span class="ibx-acct">UTAMA-account · ${esc(med.label)} ${esc(biz)}</span>`:'';
       tag=`<div class="ibx-bhead">${gemengd?kanaalChip(med)+' ':''}<span class="ibx-who">${wie}</span><span class="ibx-how">${hoe}</span>${acct}</div>`;
     }
