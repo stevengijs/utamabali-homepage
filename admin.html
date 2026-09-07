@@ -1164,7 +1164,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-06-flows';
+const APP_VERSIE='2026-09-07-pipelinekeuze';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -7902,14 +7902,21 @@ function inboxDrawInfo(ctx){
   }else{
     contactHtml=`<div class="ibx-ip-note">Nog niet gekoppeld aan een CRM-contact. Zodra de lead een e-mail of telefoonnummer deelt (bijv. het WhatsApp-nummer), koppelt dit automatisch en verschijnt de volledige historie hier.</div>`;
   }
-  const pipe=ctx.pipeline||{};const pstages=pipe.stages||[];const pcur=pipe.current_stage||'';
+  // Het zijpaneel toont de pipeline waar de kaart ECHT in staat, niet altijd
+  // Discovery. Anders leek een contact in "Relaties & overig" nergens te staan
+  // en maakte "Toevoegen" een tweede kaart aan.
+  const pipe=ctx.pipeline||{};const pcur=pipe.current_stage||'';
+  const alleP=(pipe.alle||[]).filter(p=>(p.stages||[]).length);
+  const pipeId=pipe.pipeline_id||'';
+  const pstages=(alleP.find(p=>p.id===pipeId)||{}).stages||pipe.stages||[];
   let pipeHtml='';
   if(pstages.length){
+    const popts=alleP.map(p=>`<option value="${esc(p.id)}"${p.id===pipeId?' selected':''}>${esc(p.name)}</option>`).join('');
     const opts=pstages.map(s=>`<option value="${esc(s.key)}"${s.key===pcur?' selected':''}>${esc(s.label)}</option>`).join('');
     const curLabel=(pstages.find(s=>s.key===pcur)||{}).label;
     pipeHtml=`<div class="ibx-ip-sec"><div class="ibx-ip-h">Pipeline</div>
-      <div class="ibx-ip-note" style="margin-bottom:8px">${pcur?`Staat nu op <b>${esc(curLabel||pcur)}</b>.`:'Nog niet in de sales-pipeline. Kies een status om dit contact toe te voegen.'}</div>
-      ${edit?`<div class="ibx-pipe-row"><select id="ibx_pipe_sel" class="ibx-pipe-sel">${opts}</select><button class="btn btn-sm" id="ibx_pipe_set">${pcur?'Verplaats':'Toevoegen'}</button></div>`:''}</div>`;
+      <div class="ibx-ip-note" style="margin-bottom:8px">${pcur?`Staat in <b>${esc(pipe.pipeline_name||'')}</b> op <b>${esc(curLabel||pcur)}</b>.`:'Nog niet in een pipeline. Kies een pipeline en een kolom om dit contact toe te voegen.'}</div>
+      ${edit?`<div class="ibx-pipe-row" style="flex-wrap:wrap;gap:6px">${alleP.length>1?`<select id="ibx_pipe_pipe" class="ibx-pipe-sel">${popts}</select>`:''}<select id="ibx_pipe_sel" class="ibx-pipe-sel">${opts}</select><button class="btn btn-sm" id="ibx_pipe_set">${pcur?'Verplaats':'Toevoegen'}</button></div>`:''}</div>`;
   }
   const chansHtml=chans.length?chans.map(o=>{const oc=INBOX_CH[o.channel]||INBOX_CH.instagram;return `<div class="ibx-oth"><span>${oc.icon} ${oc.label}${o.handle?' · '+esc(o.handle):''}</span><span class="muted">${o.ai_enabled?'AI actief':inboxStatusText(o.status)} · ${inboxRel(o.last_message_at)}</span></div>`;}).join(''):'';
   const tlicon={lead:'📩',reservation:'📝',purchase:'💰',dataroom:'📂',pipeline:'🧭',webinar:'🎥'};
@@ -7948,6 +7955,12 @@ function inboxDrawInfo(ctx){
     const bl=$('#ibx_blok');if(bl)bl.onclick=()=>inboxBlokkeer(cv.contact_id,true);
     const dbl=$('#ibx_deblok');if(dbl)dbl.onclick=()=>inboxBlokkeer(cv.contact_id,false);
     const ps=$('#ibx_pipe_set');if(ps)ps.onclick=()=>inboxSetPipeline(gid);
+    // Andere pipeline gekozen? Dan horen daar andere kolommen bij.
+    const pp=$('#ibx_pipe_pipe');if(pp)pp.onchange=()=>{
+      const doel=(alleP.find(p=>p.id===pp.value)||{}).stages||[];
+      const ss=$('#ibx_pipe_sel');if(!ss)return;
+      ss.innerHTML=doel.map(s=>`<option value="${esc(s.key)}"${(pp.value===pipeId&&s.key===pcur)?' selected':''}>${esc(s.label)}</option>`).join('');
+    };
     const sm=$('#ibx_sum_btn');if(sm)sm.onclick=()=>inboxGenSummary(gid);
   }
 }
@@ -7969,14 +7982,19 @@ async function inboxBlokkeer(contactId,aan){
 }
 async function inboxSetPipeline(id){
   const sel=$('#ibx_pipe_sel');if(!sel)return;const stage=sel.value;
-  const btn=$('#ibx_pipe_set');if(btn){btn.disabled=true;btn.textContent='…';}
+  const psel=$('#ibx_pipe_pipe');const pipeline=psel?psel.value:null;
+  const btn=$('#ibx_pipe_set');const oudLabel=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
   try{
-    const {data,error}=await sb.rpc('inbox_set_pipeline',{p_conversation:id,p_stage:stage});
-    if(error||(data&&data.error)){toast('Pipeline bijwerken mislukt: '+esc((error&&error.message)||data.error),'err');return;}
-    toast('Toegevoegd aan pipeline','ok');
+    const {data,error}=await sb.rpc('inbox_set_pipeline',{p_conversation:id,p_stage:stage,p_pipeline:pipeline||null});
+    if(error){toast('Pipeline bijwerken mislukt: '+esc(error.message),'err');return;}
+    // De functie geeft zelf een nette reden terug (bijv. "staat al in ..."),
+    // die hoort de gebruiker te zien in plaats van een stille mislukking.
+    if(data&&data.ok===false){toast(esc(data.fout||'Pipeline bijwerken mislukt'),'err');return;}
+    toast('Pipeline bijgewerkt','ok');
     await inboxOpen(id,true);
   }catch(e){toast('Pipeline bijwerken mislukt','err');}
-  finally{const b=$('#ibx_pipe_set');if(b)b.disabled=false;}
+  finally{const b=$('#ibx_pipe_set');if(b){b.disabled=false;if(b.textContent==='…')b.textContent=oudLabel;}}
 }
 function inboxRenderMsgs(msgs){
   const box=$('#ibx_msgs');if(!box)return;
