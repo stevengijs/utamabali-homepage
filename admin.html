@@ -1178,7 +1178,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-07-bericht-flows';
+const APP_VERSIE='2026-09-08-eigenaar-kleur';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -10170,6 +10170,22 @@ async function pipeLoadEnrichment(){
   (chR.data||[]).forEach(cv=>{if(!cv.contact_id)return;const e=PIPE.enrich[cv.contact_id]||(PIPE.enrich[cv.contact_id]={});const ch=e.chat||(e.chat={at:null,channels:[]});if(cv.channel&&!ch.channels.includes(cv.channel))ch.channels.push(cv.channel);if(cv.last_message_at&&(!ch.at||cv.last_message_at>ch.at))ch.at=cv.last_message_at;});
 }
 function pipeTeamName(id){const t=PIPE.team.find(x=>x.id===id);return t?(t.full_name||t.email||'—'):'';}
+// Alle avatars waren hetzelfde groen, dus je zag pas aan de lettertjes van wie
+// een kaart was. Ashley is de vaste eigenaar van Discovery en Sales en heeft
+// daar bijna alles; juist de uitzondering, een kaart die op iemand anders komt
+// te staan, viel daardoor niet op.
+//
+// Daarom: de vaste eigenaar van het bord houdt het rustige groen, iedereen
+// anders krijgt een accentkleur. Geen naam in de code, dus het klopt ook als
+// het bord een andere vaste eigenaar krijgt of er iemand bij komt.
+const PIPE_AV_STANDAARD='#0f6b4f';
+const PIPE_AV_ACCENT=['#b45309','#7c3aed','#0369a1','#be123c','#4d7c0f','#0f766e','#a21caf'];
+function pipeAvKleur(id){
+  const vast=(PIPE.cur&&PIPE.cur.default_assignee)||null;
+  if(vast&&id===vast)return PIPE_AV_STANDAARD;
+  const i=(PIPE.team||[]).findIndex(t=>t.id===id);
+  return PIPE_AV_ACCENT[(i<0?0:i)%PIPE_AV_ACCENT.length];
+}
 function pipeInitials(id){const n=pipeTeamName(id);if(!n)return '?';return n.split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();}
 // De kaarttitel wordt gezet op het moment dat de kaart ontstaat, vaak nog voor
 // de naam bekend is. Dan blijft er 'Lead', '{{first_name}}' of een kale handle
@@ -10227,7 +10243,7 @@ function pipeCardHtml(c){
   const crm=c.contact_id?`<span class="pipe-chip crm" data-crm="${esc(c.contact_id)}" title="Open in CRM">CRM ↗</span>`:'';
   const chat=(c.contact_id&&en.chat&&en.chat.at)?`<span class="pipe-chat" data-chat="${esc(c.contact_id)}" title="Laatste chat: ${esc(inboxRel(en.chat.at))}${(en.chat.channels||[]).length?' · '+en.chat.channels.map(x=>(INBOX_CH[x]||{}).label||x).join(', '):''} — klik om te openen">💬 ${esc(inboxRel(en.chat.at))}</span>`:'';
   const wa=_waDigits(en.phone)?`<a class="pipe-wa" data-wa="${esc(c.id)}" title="Stuur WhatsApp-bericht">${WA_SVG}</a>`:'';
-  const who=c.assignee?`<span class="pipe-av" title="Eigenaar: ${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
+  const who=c.assignee?`<span class="pipe-av" style="background:${esc(pipeAvKleur(c.assignee))}" title="Eigenaar: ${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
   const warm=c.contact_id?warmthBadge(WARMTH[c.contact_id]):'';
   const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(pipeCardName(c,en))}</div>${warm}</div>`;
   const chips=`${proj}${budget}${tl}${task}`;
