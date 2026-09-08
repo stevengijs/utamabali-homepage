@@ -189,6 +189,8 @@
   .wl-kpi .v{font-size:22px;font-weight:800;line-height:1.1;margin-top:2px}
   .wl-sec{margin-bottom:16px}
   .wl-acts{white-space:nowrap}.wl-acts .btn{margin-right:6px}
+  .wl-naam{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--brand);cursor:pointer;text-align:left}
+  .wl-naam:hover{text-decoration:underline}
   .wl-uit{padding:12px 18px;border-top:1px solid var(--line);font-size:12.5px}
   .wl-uit table td,.wl-uit table th{padding:6px 10px}
   .wl-num{text-align:right}
@@ -1194,7 +1196,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-08-werklijst';
+const APP_VERSIE='2026-09-08-werklijst-2';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2325,8 +2327,8 @@ function wlLaatste(r){
 }
 function wlAfspraak(a){if(!a)return '<span class="muted">geen</span>';return `${esc(a.titel)}<div class="muted" style="font-size:11px">${wlDT(a.starts_at)} · ${esc(a.status)}</div>`;}
 function wlRes(r){if(!r)return '<span class="muted">geen</span>';return `<span class="badge amber">${esc(r.project)} ${esc(r.unit||'')}</span><div class="muted" style="font-size:11px">${esc(r.status)}</div>`;}
-function wlActs(ref,openbaar){
-  return `<td class="wl-acts">${openbaar?`<button class="btn btn-ghost btn-sm" data-wl-open="${ref}" title="Open in inbox of contactkaart">Open</button>`:''}<button class="btn btn-sm" data-wl-log="${ref}" title="Leg de belpoging vast en zet de kaart op de juiste fase">📞 Bel gelogd</button><button class="btn btn-ghost btn-sm" data-wl-fout="${ref}" title="Klopt deze rij niet? Zet er een opmerking bij, dan passen we de regels aan.">Klopt niet</button></td>`;
+function wlActs(ref,openbaar,extra){
+  return `<td class="wl-acts">${openbaar?`<button class="btn btn-ghost btn-sm" data-wl-open="${ref}" title="Open het gesprek in de inbox">Inbox</button>`:''}<button class="btn btn-sm" data-wl-log="${ref}" title="Leg de belpoging vast en zet de kaart op de juiste fase">📞 Bel gelogd</button>${extra||''}<button class="btn btn-ghost btn-sm" data-wl-fout="${ref}" title="Klopt deze rij niet? Zet er een opmerking bij, dan passen we de regels aan.">Klopt niet</button></td>`;
 }
 // "sectie:index", of "uit:project-index:index" voor een uitgesloten rij
 function wlRij(ref){
@@ -2353,20 +2355,22 @@ function drawWerklijst(){
   const perGroep=g=>open.filter(r=>r.groep===g);
   const rijen1=perGroep(WL.tab);
   const rij1=r=>`<tr>
-    <td><b>${esc(r.naam||'(naamloos)')}</b>${r.is_customer?' <span class="badge green">klant</span>':''}</td>
+    <td><button class="wl-naam" data-wl-crm="wacht:${r._i}" title="Open de CRM-kaart">${esc(r.naam||'(naamloos)')}</button>${r.is_customer?' <span class="badge green">klant</span>':''}</td>
     <td class="muted">${esc(r.bereikbaar||'')}</td>
     <td>${wlKanaal(r.kanaal)}${esc(r.kanalen||r.kanaal||'')}</td>
     <td>${wlLaatste(r)}</td>
     <td>${r.reden==='bot droeg over'?'<span class="badge amber">bot droeg over</span>':'<span class="badge">lead wacht</span>'}${r.afgevinkt_op?`<div class="muted" style="font-size:11px">afgevinkt ${wlRel(r.afgevinkt_op)}</div>`:''}</td>
     <td>${wlKaart(r.kaart)}<div style="font-size:12px">${wlWie(r.kaart)}</div></td>
     <td>${r.afspraak||r.reservering?`${r.afspraak?wlAfspraak(r.afspraak):''}${r.reservering?wlRes(r.reservering):''}`:'<span class="muted">geen</span>'}</td>
-    ${wlActs('wacht:'+r._i,true)}
+    ${wlActs('wacht:'+r._i,true,r.afgevinkt_op
+      ?`<button class="btn btn-ghost btn-sm" data-wl-geenantw="${r._i}:0" title="Zet dit gesprek terug op wachtend">↩︎ Toch beantwoorden</button>`
+      :`<button class="btn btn-ghost btn-sm" data-wl-geenantw="${r._i}:1" title="Haal deze lead uit de lijst. Schrijft de lead daarna opnieuw, dan komt hij vanzelf terug.">✓ Geen antwoord nodig</button>`)}
   </tr>`;
   const kop1='<tr><th>Naam</th><th>Bereikbaar</th><th>Kanaal</th><th>Laatste bericht</th><th>Reden</th><th>Kaart / fase / van wie</th><th>Afspraak / reservering</th><th></th></tr>';
 
   const bel=d.belbaar||[];const bi=Math.max(0,bel.findIndex(b=>b.project===WL.proj));const blok=bel[bi]||null;
   const rij2=(r,i)=>`<tr>
-    <td><b>${esc(r.naam||'(naamloos)')}</b></td>
+    <td><button class="wl-naam" data-wl-crm="belbaar:${bi}:${i}" title="Open de CRM-kaart (maakt het contact aan als het nog niet bestaat)">${esc(r.naam||'(naamloos)')}</button></td>
     <td class="muted">${esc(r.telefoon||'')}${r.email?`<div style="font-size:11px">${esc(r.email)}</div>`:''}</td>
     <td>${r.budget_min!=null?esc(r.budget_min)+' tot '+(r.budget_max!=null?esc(r.budget_max):'…')+'K':esc(r.budget_band||'')}</td>
     <td>${esc(r.project||'')}${r.timing?`<div class="muted" style="font-size:11px">${esc(r.timing)}</div>`:''}</td>
@@ -2378,7 +2382,7 @@ function drawWerklijst(){
   const uitTot=blok?blok.uitsluitingen.filter(u=>u.reden!=='geen nummer'&&u.reden!=='afgemeld').reduce((n,u)=>n+u.n,0):0;
   const sluit=blok?(blok.begin===uitTot+blok.rijen.length):true;
   const uitRij=(r,i)=>`<tr>
-    <td>${esc(r.naam||'(naamloos)')}</td><td class="muted">${esc(r.telefoon||'')}</td>
+    <td><button class="wl-naam" data-wl-crm="uit:${bi}:${i}" title="Open de CRM-kaart (maakt het contact aan als het nog niet bestaat)">${esc(r.naam||'(naamloos)')}</button></td><td class="muted">${esc(r.telefoon||'')}</td>
     <td><span class="badge">${esc(r.reden)}</span></td><td class="muted">${esc(r.detail||'')}</td>
     <td class="muted">${wlDag(r.laatste_gezien)}</td>
     <td class="wl-acts"><button class="btn btn-ghost btn-sm" data-wl-fout="uit:${bi}:${i}" title="Hoort deze persoon wél gebeld te worden? Zet er een opmerking bij.">Klopt niet</button></td>
@@ -2387,13 +2391,13 @@ function drawWerklijst(){
   const nieuw=d.nieuw||[];
   const rij3=(r,i)=>`<tr>
     <td>${wlDT(r.created_at)}<div class="muted" style="font-size:11px">${wlRel(r.created_at)}</div></td>
-    <td><b>${esc(r.naam||'(naamloos)')}</b><div class="muted" style="font-size:11px">${esc(r.phone||'')}${r.phone&&r.email?' · ':''}${esc(r.email||'')}</div></td>
+    <td><button class="wl-naam" data-wl-crm="nieuw:${i}" title="Open de CRM-kaart">${esc(r.naam||'(naamloos)')}</button><div class="muted" style="font-size:11px">${esc(r.phone||'')}${r.phone&&r.email?' · ':''}${esc(r.email||'')}</div></td>
     <td><span class="badge ${r.type==='reservation'?'amber':r.type==='dataroom_request'?'blue':''}">${esc(r.type||'')}</span></td>
     <td>${esc(r.project||'')}${r.unit?' '+esc(r.unit):''}${r.budget?`<div class="muted" style="font-size:11px">${esc(r.budget)}${r.timeline?' · '+esc(r.timeline):''}</div>`:''}</td>
     <td class="muted">${esc(r.source_page||'')}${r.lang?' · '+esc(r.lang):''}</td>
     <td>${wlKaart(r.kaart)}<div style="font-size:12px">${wlWie(r.kaart)}</div></td>
     <td>${r.gesprek?`${wlKanaal(r.gesprek.channel)}${esc(r.gesprek.channel)} · ${esc(inboxStatusText(r.gesprek.status))}<div class="muted" style="font-size:11px">${wlRel(r.gesprek.last_message_at)}</div>`:'<span class="muted">geen</span>'}</td>
-    ${wlActs('nieuw:'+i,true)}
+    ${wlActs('nieuw:'+i,!!r.gesprek)}
   </tr>`;
 
   const opm=d.opmerkingen||[];const opmOpen=opm.filter(o=>o.status==='open'),opmDone=opm.filter(o=>o.status!=='open');
@@ -2451,19 +2455,49 @@ function drawWerklijst(){
   v.querySelectorAll('[data-wl-proj]').forEach(b=>b.onclick=()=>{WL.proj=b.dataset.wlProj;drawWerklijst();});
   v.querySelectorAll('[data-wl-toggle]').forEach(b=>b.onclick=()=>{const k=b.dataset.wlToggle;if(k==='uit')WL.uitOpen=!WL.uitOpen;if(k==='afgevinkt')WL.afgevinktOpen=!WL.afgevinktOpen;if(k==='verwerkt')WL.verwerktOpen=!WL.verwerktOpen;drawWerklijst();});
   v.querySelectorAll('[data-wl-open]').forEach(b=>b.onclick=()=>wlOpen(b.dataset.wlOpen));
+  v.querySelectorAll('[data-wl-crm]').forEach(b=>b.onclick=()=>wlOpenCrm(b.dataset.wlCrm));
+  v.querySelectorAll('[data-wl-geenantw]').forEach(b=>b.onclick=()=>wlGeenAntwoord(b.dataset.wlGeenantw));
   v.querySelectorAll('[data-wl-log]').forEach(b=>b.onclick=()=>wlLogPopup(b.dataset.wlLog));
   v.querySelectorAll('[data-wl-fout]').forEach(b=>b.onclick=()=>wlFoutPopup(b.dataset.wlFout));
   v.querySelectorAll('[data-wl-verwerk]').forEach(b=>b.onclick=()=>wlVerwerk(b.dataset.wlVerwerk));
   const alg=$('#wl_opm_alg');if(alg)alg.onclick=()=>wlFoutPopup(null);
   const rf=$('#wl_refresh');if(rf)rf.onclick=()=>renderWerklijst();
 }
-async function wlOpen(ref){
+// "Inbox": het gesprek van deze rij openen.
+function wlOpen(ref){
   const {sectie,row}=wlRij(ref);if(!row)return;
   const conv=sectie==='wacht'?row.conversation_id:(row.gesprek&&row.gesprek.id);
-  if(sectie==='wacht'&&conv){openInboxThread(conv);return;}
-  if(row.contact_id){const {data:c}=await sb.from('contacts').select('*').eq('id',row.contact_id).maybeSingle();if(c){openPerson(c);return;}}
   if(conv){openInboxThread(conv);return;}
-  toast('Geen contactkaart of gesprek om te openen','err');
+  toast('Geen gesprek bekend voor deze rij','err');
+}
+// Klik op de naam: de CRM-kaart van de lead. Een rij uit de adressenlijst heeft
+// vaak nog geen contact; dan maakt werklijst_contact_voor_broadcast het aan
+// (zonder kaart, dus de rij blijft belbaar tot er echt gebeld is).
+async function wlOpenCrm(ref){
+  const {sectie,row}=wlRij(ref);if(!row)return;
+  let cid=row.contact_id||null;
+  if(!cid&&row.broadcast_id){
+    const {data,error}=await sb.rpc('werklijst_contact_voor_broadcast',{p_broadcast:row.broadcast_id});
+    if(error){toast('Kon geen CRM-contact maken: '+error.message,'err');return;}
+    cid=data;
+  }
+  if(!cid){
+    if(row.conversation_id){openInboxThread(row.conversation_id);return;}
+    toast('Geen contact bekend voor deze rij','err');return;
+  }
+  const {data:c,error}=await sb.from('contacts').select('*').eq('id',cid).maybeSingle();
+  if(error||!c){toast('Contact niet gevonden'+(error?': '+error.message:''),'err');return;}
+  openPerson(c);
+}
+// "Geen antwoord nodig": dezelfde afvinking als in de inbox (afgehandeld_tot),
+// voor alle gesprekken van dit contact. Een nieuw bericht van de lead maakt
+// hem vanzelf weer open.
+async function wlGeenAntwoord(ref){
+  const [i,aan]=String(ref).split(':');const row=((WL.data||{}).wacht||[])[parseInt(i,10)];
+  if(!row||!row.conversation_id){toast('Geen gesprek om af te vinken','err');return;}
+  const {data,error}=await sb.rpc('inbox_geen_antwoord_nodig',{p_conversation:row.conversation_id,p_aan:aan==='1'});
+  if(error||!data||!data.ok){toast('Afvinken mislukt: '+((error&&error.message)||(data&&data.reden)||'onbekend'),'err');return;}
+  toast(aan==='1'?'Afgevinkt: geen antwoord nodig':'Staat weer op wachtend','ok');renderWerklijst();
 }
 async function wlLogPopup(ref){
   const {sectie,row}=wlRij(ref);if(!row)return;
