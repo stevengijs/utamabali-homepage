@@ -181,6 +181,22 @@
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
   .seg button{border:none;background:#fff;padding:7px 14px;font-weight:600;font-size:13px;color:var(--muted)}
   .seg button.on{background:var(--brand);color:#fff}
+  /* Werklijst */
+  .wl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .wl-kpis{display:flex;gap:10px;flex-wrap:wrap}
+  .wl-kpi{border:1px solid var(--line);border-radius:11px;padding:10px 14px;background:#fff;min-width:150px}
+  .wl-kpi .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .wl-kpi .v{font-size:22px;font-weight:800;line-height:1.1;margin-top:2px}
+  .wl-sec{margin-bottom:16px}
+  .wl-acts{white-space:nowrap}.wl-acts .btn{margin-right:6px}
+  .wl-uit{padding:12px 18px;border-top:1px solid var(--line);font-size:12.5px}
+  .wl-uit table td,.wl-uit table th{padding:6px 10px}
+  .wl-num{text-align:right}
+  .wl-opm{padding:12px 18px;border-top:1px solid var(--line)}
+  .wl-opm .t{font-size:13px;margin-top:4px;white-space:pre-wrap}
+  .wl-leer{display:flex;gap:8px;margin-top:8px;align-items:center}
+  .wl-leer .pc-in{flex:1}
+  #view .seg .count-pill{margin-left:4px}
   .an-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   @media(max-width:900px){.an-grid{grid-template-columns:1fr}}
   .anbars{display:flex;flex-direction:column;gap:10px;padding:16px 18px}
@@ -1178,7 +1194,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-08-eigenaar-kleur';
+const APP_VERSIE='2026-09-08-werklijst';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1197,6 +1213,7 @@ async function versieCheck(){
 }
 
 const PAGES = [
+  {key:'werklijst',label:'Werklijst',              icon:'☀️'},
   {key:'inbox',    label:'Inbox',                  icon:'💬'},
   {key:'pipeline', label:'Pipeline',               icon:'🧭'},
   {key:'agenda',   label:'Agenda',                 icon:'📅'},
@@ -1815,7 +1832,7 @@ function gzInit(){
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users',ads:'Ads'};
+  const titles={dashboard:'Dashboard',werklijst:'Werklijst',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users',ads:'Ads'};
   $('#pageTitle').textContent=titles[k]||k;
   versieCheck();
   if(k==='dashboard')return renderDashboard();
@@ -1823,6 +1840,7 @@ function go(k){
   if(k==='revenue')return renderRevenue();
   if(k==='users')return renderUsers();
   if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;}
+  if(k==='werklijst')return renderWerklijst();
   if(k==='leads')return renderPeople();
   if(k==='inbox')return renderInbox();
   if(k==='pipeline')return renderPipeline();
@@ -2264,6 +2282,259 @@ async function adsResultaten(){
     if(!d||!d.ok){toast((d&&(d.fout||d.error))||'Budget wijzigen mislukt','err');return;}
     toast('Dagbudget aangepast','ok');
   });
+}
+
+/* ================= WERKLIJST =================
+   De ochtendlijst van Ashley. Alles komt uit één RPC (werklijst) die alleen
+   de bronnen leest die de waarheid bevatten: pipeline_cards, purchases,
+   reservations en inbox_messages. De vier statussystemen die elkaar
+   tegenspreken (broadcast_contacten.sales_stage, inbox-status, needs_human,
+   contacts_overview.is_customer) zijn hier bewust geen bron. Waarom staat in
+   docs/LEARNINGS-werklijst.md; drie eerdere conceptbellijsten gingen daarop
+   de mist in.
+
+   Drie secties met elk een teller en per rij het bewijs (kaart en fase, van
+   wie, laatste bericht, afspraak, reservering). Eén knop per rij legt de
+   belpoging vast in sales_activiteiten en zet de kaart op de gekozen fase.
+   "Klopt niet" bewaart de rij met bewijs in werklijst_opmerkingen; Steven
+   verwerkt die en de regels worden aangepast. */
+let WL={data:null,tab:'mijn',proj:null,uitOpen:false,afgevinktOpen:false,verwerktOpen:false};
+const WL_UITKOMST=[['bereikt','Bereikt'],['niet_bereikt','Niet bereikt'],['afspraak','Afspraak gemaakt'],['afgesloten','Afgesloten']];
+const WL_SECTIE={wacht:'Wacht op antwoord',belbaar:'Onaangeraakt en belbaar',uit:'Uitgesloten van bellen',nieuw:'Vandaag binnengekomen',algemeen:'Algemeen'};
+function wlRel(ts){
+  if(!ts)return '';
+  const m=Math.round((Date.now()-new Date(ts).getTime())/60000);
+  if(m<1)return 'zojuist';
+  if(m<60)return m+' min geleden';
+  const h=Math.round(m/60);if(h<24)return h+' u geleden';
+  const d=Math.round(h/24);if(d<14)return d+' d geleden';
+  return new Date(ts).toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+}
+function wlDT(ts){return ts?new Date(ts).toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';}
+function wlDag(ts){return ts?new Date(ts).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'}):'onbekend';}
+function wlKanaal(ch){return (typeof CH_ICON!=='undefined'&&CH_ICON[ch])?CH_ICON[ch]+' ':'';}
+function wlKaart(k){
+  if(!k)return '<span class="muted">geen kaart</span>';
+  return `<span class="badge blue">${esc(String(k.pipeline||'').replace(' pipeline',''))}: ${esc(k.stage_label||k.stage)}</span><div class="muted" style="font-size:11px">sinds ${wlRel(k.sinds)}</div>`;
+}
+function wlWie(k){return k&&k.assignee_naam?esc(k.assignee_naam):'<span class="muted">niemand</span>';}
+function wlLaatste(r){
+  const l=r.laatste;if(!l)return 'geen';
+  const wie=l.direction==='in'?'lead':(l.sender==='human'?'mens':'bot');
+  return `<b>${wie}</b> · ${wlKanaal(l.channel)}${wlRel(l.at)}<div class="muted" style="font-size:11px">${wlDT(l.at)}</div>`;
+}
+function wlAfspraak(a){if(!a)return '<span class="muted">geen</span>';return `${esc(a.titel)}<div class="muted" style="font-size:11px">${wlDT(a.starts_at)} · ${esc(a.status)}</div>`;}
+function wlRes(r){if(!r)return '<span class="muted">geen</span>';return `<span class="badge amber">${esc(r.project)} ${esc(r.unit||'')}</span><div class="muted" style="font-size:11px">${esc(r.status)}</div>`;}
+function wlActs(ref,openbaar){
+  return `<td class="wl-acts">${openbaar?`<button class="btn btn-ghost btn-sm" data-wl-open="${ref}" title="Open in inbox of contactkaart">Open</button>`:''}<button class="btn btn-sm" data-wl-log="${ref}" title="Leg de belpoging vast en zet de kaart op de juiste fase">📞 Bel gelogd</button><button class="btn btn-ghost btn-sm" data-wl-fout="${ref}" title="Klopt deze rij niet? Zet er een opmerking bij, dan passen we de regels aan.">Klopt niet</button></td>`;
+}
+// "sectie:index", of "uit:project-index:index" voor een uitgesloten rij
+function wlRij(ref){
+  const p=String(ref||'').split(':');const d=WL.data||{};
+  if(p[0]==='uit'){const b=(d.belbaar||[])[parseInt(p[1],10)];return {sectie:'uit',row:b?b.uitgesloten[parseInt(p[2],10)]:null};}
+  if(p[0]==='belbaar'){const b=(d.belbaar||[])[parseInt(p[1],10)];return {sectie:'belbaar',row:b?b.rijen[parseInt(p[2],10)]:null};}
+  return {sectie:p[0],row:(d[p[0]]||[])[parseInt(p[1],10)]||null};
+}
+async function renderWerklijst(){
+  const v=$('#view');
+  v.innerHTML='<div class="panel"><div class="empty">Werklijst laden…</div></div>';
+  const {data,error}=await sb.rpc('werklijst');
+  if(error){v.innerHTML=`<div class="panel"><div class="empty">Kon de werklijst niet laden: ${esc(error.message)}</div></div>`;return;}
+  WL.data=data||{};
+  const bel=WL.data.belbaar||[];
+  if(!WL.proj||!bel.some(b=>b.project===WL.proj))WL.proj=bel.length?bel[0].project:null;
+  drawWerklijst();
+}
+function drawWerklijst(){
+  const d=WL.data,v=$('#view');if(!d)return;
+  const wacht=d.wacht||[];wacht.forEach((r,i)=>r._i=i);
+  const open=wacht.filter(r=>!r.afgevinkt_op),afgevinkt=wacht.filter(r=>r.afgevinkt_op);
+  const tabs=[['mijn','Op mijn bord'],['niemand','Van niemand'],['ander','Van een ander']];
+  const perGroep=g=>open.filter(r=>r.groep===g);
+  const rijen1=perGroep(WL.tab);
+  const rij1=r=>`<tr>
+    <td><b>${esc(r.naam||'(naamloos)')}</b>${r.is_customer?' <span class="badge green">klant</span>':''}</td>
+    <td class="muted">${esc(r.bereikbaar||'')}</td>
+    <td>${wlKanaal(r.kanaal)}${esc(r.kanalen||r.kanaal||'')}</td>
+    <td>${wlLaatste(r)}</td>
+    <td>${r.reden==='bot droeg over'?'<span class="badge amber">bot droeg over</span>':'<span class="badge">lead wacht</span>'}${r.afgevinkt_op?`<div class="muted" style="font-size:11px">afgevinkt ${wlRel(r.afgevinkt_op)}</div>`:''}</td>
+    <td>${wlKaart(r.kaart)}<div style="font-size:12px">${wlWie(r.kaart)}</div></td>
+    <td>${r.afspraak||r.reservering?`${r.afspraak?wlAfspraak(r.afspraak):''}${r.reservering?wlRes(r.reservering):''}`:'<span class="muted">geen</span>'}</td>
+    ${wlActs('wacht:'+r._i,true)}
+  </tr>`;
+  const kop1='<tr><th>Naam</th><th>Bereikbaar</th><th>Kanaal</th><th>Laatste bericht</th><th>Reden</th><th>Kaart / fase / van wie</th><th>Afspraak / reservering</th><th></th></tr>';
+
+  const bel=d.belbaar||[];const bi=Math.max(0,bel.findIndex(b=>b.project===WL.proj));const blok=bel[bi]||null;
+  const rij2=(r,i)=>`<tr>
+    <td><b>${esc(r.naam||'(naamloos)')}</b></td>
+    <td class="muted">${esc(r.telefoon||'')}${r.email?`<div style="font-size:11px">${esc(r.email)}</div>`:''}</td>
+    <td>${r.budget_min!=null?esc(r.budget_min)+' tot '+(r.budget_max!=null?esc(r.budget_max):'…')+'K':esc(r.budget_band||'')}</td>
+    <td>${esc(r.project||'')}${r.timing?`<div class="muted" style="font-size:11px">${esc(r.timing)}</div>`:''}</td>
+    <td>${wlDag(r.laatste_gezien)}</td>
+    <td class="muted">${esc(r.bron||'')}${r.taal?' · '+esc(r.taal):''}</td>
+    <td class="muted">${esc(r.sales_stage||'geen')}</td>
+    ${wlActs('belbaar:'+bi+':'+i,false)}
+  </tr>`;
+  const uitTot=blok?blok.uitsluitingen.filter(u=>u.reden!=='geen nummer'&&u.reden!=='afgemeld').reduce((n,u)=>n+u.n,0):0;
+  const sluit=blok?(blok.begin===uitTot+blok.rijen.length):true;
+  const uitRij=(r,i)=>`<tr>
+    <td>${esc(r.naam||'(naamloos)')}</td><td class="muted">${esc(r.telefoon||'')}</td>
+    <td><span class="badge">${esc(r.reden)}</span></td><td class="muted">${esc(r.detail||'')}</td>
+    <td class="muted">${wlDag(r.laatste_gezien)}</td>
+    <td class="wl-acts"><button class="btn btn-ghost btn-sm" data-wl-fout="uit:${bi}:${i}" title="Hoort deze persoon wél gebeld te worden? Zet er een opmerking bij.">Klopt niet</button></td>
+  </tr>`;
+
+  const nieuw=d.nieuw||[];
+  const rij3=(r,i)=>`<tr>
+    <td>${wlDT(r.created_at)}<div class="muted" style="font-size:11px">${wlRel(r.created_at)}</div></td>
+    <td><b>${esc(r.naam||'(naamloos)')}</b><div class="muted" style="font-size:11px">${esc(r.phone||'')}${r.phone&&r.email?' · ':''}${esc(r.email||'')}</div></td>
+    <td><span class="badge ${r.type==='reservation'?'amber':r.type==='dataroom_request'?'blue':''}">${esc(r.type||'')}</span></td>
+    <td>${esc(r.project||'')}${r.unit?' '+esc(r.unit):''}${r.budget?`<div class="muted" style="font-size:11px">${esc(r.budget)}${r.timeline?' · '+esc(r.timeline):''}</div>`:''}</td>
+    <td class="muted">${esc(r.source_page||'')}${r.lang?' · '+esc(r.lang):''}</td>
+    <td>${wlKaart(r.kaart)}<div style="font-size:12px">${wlWie(r.kaart)}</div></td>
+    <td>${r.gesprek?`${wlKanaal(r.gesprek.channel)}${esc(r.gesprek.channel)} · ${esc(inboxStatusText(r.gesprek.status))}<div class="muted" style="font-size:11px">${wlRel(r.gesprek.last_message_at)}</div>`:'<span class="muted">geen</span>'}</td>
+    ${wlActs('nieuw:'+i,true)}
+  </tr>`;
+
+  const opm=d.opmerkingen||[];const opmOpen=opm.filter(o=>o.status==='open'),opmDone=opm.filter(o=>o.status!=='open');
+  const opmHtml=o=>`<div class="wl-opm">
+    <div><b>${esc(o.naam||'(algemeen)')}</b> <span class="badge">${esc(WL_SECTIE[o.sectie]||o.sectie)}</span> <span class="muted" style="font-size:12px">${esc(o.door||'')} · ${wlRel(o.created_at)}</span></div>
+    <div class="t">${esc(o.opmerking)}</div>
+    ${o.status==='verwerkt'?`<div class="muted" style="font-size:12px;margin-top:4px">Verwerkt ${wlRel(o.verwerkt_at)}${o.leerpunt?': '+esc(o.leerpunt):''}</div>`
+      :(isAdmin()?`<div class="wl-leer"><input class="pc-in" data-wl-leer="${esc(o.id)}" placeholder="Leerpunt (komt ook in docs/LEARNINGS-werklijst.md en het brain)"><button class="btn btn-sm" data-wl-verwerk="${esc(o.id)}">Verwerkt</button></div>`:'')}
+  </div>`;
+
+  v.innerHTML=`
+  <div class="wl-head">
+    <div class="wl-kpis">
+      <div class="wl-kpi"><div class="k">Wacht op antwoord</div><div class="v">${open.length}</div></div>
+      <div class="wl-kpi"><div class="k">Belbaar</div><div class="v">${bel.reduce((n,b)=>n+b.rijen.length,0)}</div></div>
+      <div class="wl-kpi"><div class="k">Vandaag binnen</div><div class="v">${nieuw.length}</div></div>
+      <div class="wl-kpi"><div class="k">Belpogingen vandaag</div><div class="v">${esc(d.activiteiten_vandaag||0)}</div></div>
+    </div>
+    <div class="toolbar"><button class="btn btn-ghost" id="wl_opm_alg">Opmerking over de lijst</button><button class="btn btn-ghost" id="wl_refresh">Ververs</button></div>
+  </div>
+
+  <div class="panel wl-sec">
+    <div class="panel-head"><div><h3>1. Wacht op antwoord <span class="count-pill">${open.length}</span></h3><div class="desc">Laatste bericht kwam van de lead en er ging daarna niets uit, over alle kanalen. Of de bot droeg over en er antwoordde nog geen mens. Kaarten op verloren, verkeerd nummer of spam staan er niet bij.</div></div>
+      <div class="seg">${tabs.map(([k,l])=>`<button data-wl-tab="${k}" class="${WL.tab===k?'on':''}">${l} <span class="count-pill">${perGroep(k).length}</span></button>`).join('')}</div></div>
+    <div class="table-wrap">${rijen1.length?`<table><thead>${kop1}</thead><tbody>${rijen1.map(rij1).join('')}</tbody></table>`:'<div class="empty">Niets in dit tabblad. Alles is beantwoord.</div>'}</div>
+    ${afgevinkt.length?`<div class="wl-uit"><button class="btn btn-ghost btn-sm" data-wl-toggle="afgevinkt">${WL.afgevinktOpen?'Verberg':'Toon'} ${afgevinkt.length} in de inbox afgevinkt als "geen antwoord nodig"</button>
+      ${WL.afgevinktOpen?`<div class="table-wrap" style="margin-top:10px"><table><thead>${kop1}</thead><tbody>${afgevinkt.map(rij1).join('')}</tbody></table></div>`:''}</div>`:''}
+  </div>
+
+  <div class="panel wl-sec">
+    <div class="panel-head"><div><h3>2. Onaangeraakt en belbaar <span class="count-pill">${blok?blok.rijen.length:0}</span></h3><div class="desc">Uit de adressenlijst, met een budget dat past op wat er nog te koop is. Iedereen die al klant is, al een kaart, gesprek of afspraak heeft, of nee zei, is eruit; de telling staat onderaan.</div></div>
+      ${bel.length?`<div class="seg">${bel.map((b,i)=>`<button data-wl-proj="${esc(b.project)}" class="${i===bi?'on':''}">${esc(b.project)} <span class="count-pill">${b.rijen.length}</span></button>`).join('')}</div>`:''}</div>
+    ${blok?`<div class="muted" style="padding:10px 18px;font-size:12.5px;border-bottom:1px solid var(--line)">${esc(blok.project)}: ${esc(blok.vrij)} van ${esc(blok.units_total)} units vrij (uit purchases en reservations). Band: budget vanaf ${esc(blok.band_min)}K${blok.band_max!=null?' tot '+esc(blok.band_max)+'K':''}. In de band ${esc(blok.in_band)}, met nummer en niet afgemeld ${esc(blok.begin)}, belbaar ${blok.rijen.length}.</div>
+    <div class="table-wrap">${blok.rijen.length?`<table><thead><tr><th>Naam</th><th>Nummer</th><th>Budget</th><th>Interesse</th><th>Laatst gezien</th><th>Bron</th><th>Oude stage</th><th></th></tr></thead><tbody>${blok.rijen.map(rij2).join('')}</tbody></table>`:'<div class="empty">Niemand over in deze band. Dat is geen fout: iedereen zit al in een traject of is uitgesloten, zie hieronder.</div>'}</div>
+    <div class="wl-uit"><b>Uitsluitingen, in volgorde</b> <span class="muted">(${esc(blok.begin)} begin, ${uitTot} uitgesloten, ${blok.rijen.length} over${sluit?', sluit':', SLUIT NIET'})</span>
+      <table style="margin-top:6px;width:auto"><tbody>${blok.uitsluitingen.filter(u=>u.reden!=='geen nummer'&&u.reden!=='afgemeld').map(u=>`<tr><td>${esc(u.reden)}</td><td class="wl-num"><b>${esc(u.n)}</b></td></tr>`).join('')}
+      ${blok.uitsluitingen.filter(u=>u.reden==='geen nummer'||u.reden==='afgemeld').map(u=>`<tr class="muted"><td>${esc(u.reden)} (buiten het beginaantal)</td><td class="wl-num">${esc(u.n)}</td></tr>`).join('')}</tbody></table>
+      <button class="btn btn-ghost btn-sm" data-wl-toggle="uit" style="margin-top:8px">${WL.uitOpen?'Verberg':'Toon'} de ${blok.uitgesloten.length} uitgesloten rijen met reden</button>
+      ${WL.uitOpen?`<div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Naam</th><th>Nummer</th><th>Reden</th><th>Bewijs</th><th>Laatst gezien</th><th></th></tr></thead><tbody>${blok.uitgesloten.map(uitRij).join('')}</tbody></table></div>`:''}
+    </div>`:'<div class="empty">Geen project met voorraad en een budgetband. Zet werklijst_budget_min op het project.</div>'}
+  </div>
+
+  <div class="panel wl-sec">
+    <div class="panel-head"><div><h3>3. Vandaag binnengekomen <span class="count-pill">${nieuw.length}</span></h3><div class="desc">Aanvragen van de laatste 24 uur die nog niemand heeft afgehandeld. "Bel gelogd" zet ze op afgehandeld.</div></div></div>
+    <div class="table-wrap">${nieuw.length?`<table><thead><tr><th>Binnen</th><th>Naam</th><th>Type</th><th>Project</th><th>Bron</th><th>Kaart / fase / van wie</th><th>Gesprek</th><th></th></tr></thead><tbody>${nieuw.map(rij3).join('')}</tbody></table>`:'<div class="empty">Geen nieuwe aanvragen in de laatste 24 uur.</div>'}</div>
+  </div>
+
+  <div class="panel wl-sec">
+    <div class="panel-head"><div><h3>Klopt niet <span class="count-pill">${opmOpen.length} open</span></h3><div class="desc">Opmerkingen bij rijen die niet kloppen. Steven verwerkt ze; het leerpunt gaat naar docs/LEARNINGS-werklijst.md en het second brain, zodat dezelfde fout niet terugkomt.</div></div></div>
+    ${opmOpen.length?opmOpen.map(opmHtml).join(''):'<div class="empty">Geen open opmerkingen.</div>'}
+    ${opmDone.length?`<div class="wl-uit"><button class="btn btn-ghost btn-sm" data-wl-toggle="verwerkt">${WL.verwerktOpen?'Verberg':'Toon'} ${opmDone.length} verwerkte</button></div>${WL.verwerktOpen?opmDone.map(opmHtml).join(''):''}`:''}
+  </div>`;
+
+  v.querySelectorAll('[data-wl-tab]').forEach(b=>b.onclick=()=>{WL.tab=b.dataset.wlTab;drawWerklijst();});
+  v.querySelectorAll('[data-wl-proj]').forEach(b=>b.onclick=()=>{WL.proj=b.dataset.wlProj;drawWerklijst();});
+  v.querySelectorAll('[data-wl-toggle]').forEach(b=>b.onclick=()=>{const k=b.dataset.wlToggle;if(k==='uit')WL.uitOpen=!WL.uitOpen;if(k==='afgevinkt')WL.afgevinktOpen=!WL.afgevinktOpen;if(k==='verwerkt')WL.verwerktOpen=!WL.verwerktOpen;drawWerklijst();});
+  v.querySelectorAll('[data-wl-open]').forEach(b=>b.onclick=()=>wlOpen(b.dataset.wlOpen));
+  v.querySelectorAll('[data-wl-log]').forEach(b=>b.onclick=()=>wlLogPopup(b.dataset.wlLog));
+  v.querySelectorAll('[data-wl-fout]').forEach(b=>b.onclick=()=>wlFoutPopup(b.dataset.wlFout));
+  v.querySelectorAll('[data-wl-verwerk]').forEach(b=>b.onclick=()=>wlVerwerk(b.dataset.wlVerwerk));
+  const alg=$('#wl_opm_alg');if(alg)alg.onclick=()=>wlFoutPopup(null);
+  const rf=$('#wl_refresh');if(rf)rf.onclick=()=>renderWerklijst();
+}
+async function wlOpen(ref){
+  const {sectie,row}=wlRij(ref);if(!row)return;
+  const conv=sectie==='wacht'?row.conversation_id:(row.gesprek&&row.gesprek.id);
+  if(sectie==='wacht'&&conv){openInboxThread(conv);return;}
+  if(row.contact_id){const {data:c}=await sb.from('contacts').select('*').eq('id',row.contact_id).maybeSingle();if(c){openPerson(c);return;}}
+  if(conv){openInboxThread(conv);return;}
+  toast('Geen contactkaart of gesprek om te openen','err');
+}
+async function wlLogPopup(ref){
+  const {sectie,row}=wlRij(ref);if(!row)return;
+  const d=WL.data;const kaart=row.kaart||null;
+  let stages=d.stages||[];let pipelineNaam='Discovery pipeline';
+  if(kaart&&kaart.pipeline_id&&kaart.pipeline_id!==d.discovery_id){
+    const {data:p}=await sb.from('pipelines').select('name,stages').eq('id',kaart.pipeline_id).maybeSingle();
+    if(p&&Array.isArray(p.stages)&&p.stages.length){stages=p.stages;pipelineNaam=p.name;}
+  }
+  const inDisc=!kaart||kaart.pipeline_id===d.discovery_id;
+  const std=uit=>{
+    if(!inDisc)return kaart.stage;
+    if(uit==='bereikt')return 'in-gesprek-sales';
+    if(uit==='afspraak')return 'gewonnen';
+    if(uit==='afgesloten')return 'verloren';
+    const m=/^dag-(\d)$/.exec(kaart?kaart.stage:'');return 'dag-'+(m?Math.min(5,parseInt(m[1],10)+1):1);
+  };
+  const nu=new Date();nu.setMinutes(nu.getMinutes()-nu.getTimezoneOffset());const nuVal=nu.toISOString().slice(0,16);
+  const naam=row.naam||'(naamloos)';
+  afPopup(`<div style="max-width:540px">
+    <h3 style="margin:0 0 4px">Belpoging bij ${esc(naam)}</h3>
+    <div class="muted" style="font-size:12.5px;margin-bottom:12px">Legt de call vast en zet de kaart op de gekozen fase. ${kaart?`Nu: ${esc(kaart.pipeline)}, ${esc(kaart.stage_label||kaart.stage)}.`:'Er komt een kaart in de Discovery pipeline op jouw naam.'}</div>
+    <div class="pdr-field"><div class="pdr-label">Wanneer</div><input id="wl_d" type="datetime-local" class="pc-in" value="${nuVal}"></div>
+    <div class="pdr-field"><div class="pdr-label">Uitkomst</div><div class="seg" id="wl_uit">${WL_UITKOMST.map(([k,l])=>`<button type="button" data-u="${k}" class="${k==='niet_bereikt'?'on':''}">${l}</button>`).join('')}</div></div>
+    <div class="pdr-field"><div class="pdr-label">Fase daarna (${esc(pipelineNaam)})</div><select id="wl_st" class="pc-in">${stages.map(s=>`<option value="${esc(s.key)}">${esc(s.label)}</option>`).join('')}</select></div>
+    <div class="pdr-field"><div class="pdr-label">Notitie</div><input id="wl_n" class="pc-in" placeholder="Bijv. voicemail ingesproken, belt zelf terug na 15:00"></div>
+    <div style="display:flex;gap:8px;margin-top:14px"><button class="btn" id="wl_ok">Opslaan</button><button class="btn btn-ghost" id="wl_x">Annuleren</button></div>
+  </div>`);
+  let uit='niet_bereikt';const sel=$('#wl_st');sel.value=std(uit);
+  $('#wl_uit').querySelectorAll('button').forEach(b=>b.onclick=()=>{uit=b.dataset.u;$('#wl_uit').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));sel.value=std(uit);});
+  $('#wl_x').onclick=()=>afPopupSluit();
+  $('#wl_ok').onclick=async()=>{
+    const b=$('#wl_ok');b.disabled=true;b.textContent='Opslaan…';
+    const dt=$('#wl_d').value;const datum=(dt&&!isNaN(new Date(dt).getTime())?new Date(dt):new Date()).toISOString();
+    const payload={uitkomst:uit,notitie:$('#wl_n').value.trim(),stage:sel.value||null,datum,
+      contact_id:row.contact_id||null,kaart_id:kaart?kaart.id:null,
+      lead_id:sectie==='nieuw'?row.lead_id:null,
+      broadcast_id:(sectie==='belbaar'||sectie==='uit')?row.broadcast_id:null};
+    const {data,error}=await sb.rpc('werklijst_log_call',{p:payload});
+    if(error){toast('Opslaan mislukt: '+error.message,'err');b.disabled=false;b.textContent='Opslaan';return;}
+    afPopupSluit();toast('Belpoging vastgelegd'+(data&&data.kaart_nieuw?', kaart aangemaakt':''),'ok');
+    if(uit==='afspraak'&&data&&data.contact_id)afspraakVorm({id:data.contact_id,name:row.naam||''});
+    renderWerklijst();
+  };
+}
+function wlFoutPopup(ref){
+  const info=ref?wlRij(ref):{sectie:'algemeen',row:null};
+  const row=info.row;const sectie=info.sectie==='uit'?'belbaar':(WL_SECTIE[info.sectie]?info.sectie:'algemeen');
+  const naam=row?(row.naam||''):'';
+  afPopup(`<div style="max-width:540px">
+    <h3 style="margin:0 0 4px">Klopt niet${naam?': '+esc(naam):''}</h3>
+    <div class="muted" style="font-size:12.5px;margin-bottom:12px">Schrijf op wat er niet klopt: verkeerde lijst, al klant, verkeerd toegewezen, ontbreekt. De rij wordt met bewijs bewaard. Steven verwerkt het en de regels worden aangepast.</div>
+    <div class="pdr-field"><div class="pdr-label">Opmerking</div><textarea id="wl_o" class="pc-in" rows="4" placeholder="Bijv. deze persoon heeft vorige week al gereserveerd"></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:14px"><button class="btn" id="wl_ook">Opslaan</button><button class="btn btn-ghost" id="wl_ox">Annuleren</button></div>
+  </div>`);
+  $('#wl_ox').onclick=()=>afPopupSluit();
+  $('#wl_ook').onclick=async()=>{
+    const t=$('#wl_o').value.trim();if(!t){toast('Schrijf eerst wat er niet klopt','err');return;}
+    const b=$('#wl_ook');b.disabled=true;
+    const regel=row?Object.assign({},row,{_sectie:info.sectie,_tab:WL.tab,_project:WL.proj}):null;
+    const {error}=await sb.rpc('werklijst_opmerking',{p:{sectie,naam,opmerking:t,regel,
+      contact_id:(row&&row.contact_id)||null,broadcast_id:(row&&row.broadcast_id)||null,lead_id:(row&&row.lead_id)||null}});
+    if(error){toast('Opslaan mislukt: '+error.message,'err');b.disabled=false;return;}
+    afPopupSluit();toast('Opmerking bewaard','ok');renderWerklijst();
+  };
+}
+async function wlVerwerk(id){
+  const inp=document.querySelector(`[data-wl-leer="${id}"]`);const leer=inp?inp.value.trim():'';
+  const {error}=await sb.rpc('werklijst_opmerking_verwerken',{p_id:id,p_leerpunt:leer||null});
+  if(error){toast('Verwerken mislukt: '+error.message,'err');return;}
+  toast('Verwerkt. Zet het leerpunt ook in docs/LEARNINGS-werklijst.md en het second brain.','ok');renderWerklijst();
 }
 
 /* ================= BROADCAST =================
@@ -7562,15 +7833,15 @@ function inboxProfileUrl(cv){
   return h?('https://instagram.com/'+encodeURIComponent(h)):'';
 }
 function inboxStatusPill(c){
-  const map={active:['AI actief','#065f46','#ecfdf5','#a7f3d0'],booked:['Afspraak','#1e40af','#eff6ff','#bfdbfe'],
-    needs_human:['Overname','#9a3412','#fff7ed','#fed7aa'],closed:['Gesloten','#475569','#f1f5f9','#e2e8f0'],opted_out:['Afgemeld','#7f1d1d','#fef2f2','#fecaca']};
+  // Sinds 8 september 2026 betekent needs_human weer "wacht op een mens": de
+  // status valt terug naar active zodra een mens antwoordt. Een gesprek dat
+  // een mens overnam is dus active met de bot uit, en heet hier "Mens aan zet".
+  const map={active:['AI actief','#065f46','#ecfdf5','#a7f3d0'],mens:['Mens aan zet','#3730a3','#eef2ff','#c7d2fe'],booked:['Afspraak','#1e40af','#eff6ff','#bfdbfe'],
+    needs_human:['Wacht op mens','#9a3412','#fff7ed','#fed7aa'],closed:['Gesloten','#475569','#f1f5f9','#e2e8f0'],opted_out:['Afgemeld','#7f1d1d','#fef2f2','#fecaca']};
   // Geblokkeerd overstemt alles: dat moet je in de lijst meteen zien, zodat
   // niemand er per ongeluk toch op antwoordt.
   if(c.geblokkeerd) return '<span class="ibx-pill" style="color:#fff;background:#b91c1c;border-color:#991b1b;letter-spacing:.04em">ACCESS BLOCKED</span>';
-  // "AI actief" is alleen waar als de AI voor dit gesprek ook echt aanstaat;
-  // status 'active' betekent verder alleen dat het gesprek open is.
-  let m=map[c.status]||map.active;
-  if(c.status==='active'&&c.ai_enabled===false) m=['AI uit','#475569','#f1f5f9','#e2e8f0'];
+  const m=(c.status==='active'&&c.ai_enabled===false)?map.mens:(map[c.status]||map.active);
   return `<span class="ibx-pill" style="color:${m[1]};background:${m[2]};border-color:${m[3]}">${m[0]}</span>`;
 }
 async function renderInbox(){
@@ -7591,7 +7862,7 @@ async function renderInbox(){
     </div>
   </div>`;
   const chs=[['','Alle'],['instagram',`${CH_ICON.instagram} Instagram`],['facebook',`${CH_ICON.facebook} Messenger`],['whatsapp',`${CH_ICON.whatsapp} WhatsApp`],['email',`${CH_ICON.email} E-mail`]];
-  const sts=[['','Alle statussen'],['active','AI actief'],['needs_human','Overname'],['booked','Afspraak'],['opted_out','Afgemeld']];
+  const sts=[['','Alle statussen'],['active','AI actief of mens aan zet'],['needs_human','Wacht op mens'],['booked','Afspraak'],['opted_out','Afgemeld']];
   $('#ibx_chch').innerHTML=
     `<button class="ibx-chip ibx-vw ${INBOX.unreadOnly?'on':''}" data-vw="unread" title="Toon alleen ongelezen berichten, van alle kanalen door elkaar">● Ongelezen</button>`+
     `<button class="ibx-chip ibx-wacht ${INBOX.onbeantwoord?'on':''}" data-vw="wacht" title="Gesprekken waarin de lead als laatste iets stuurde en wij nog niet reageerden. Blijft staan tot er een antwoord uit is, ook nadat je het gesprek hebt gelezen.">↩ Onbeantwoord<span id="ibx_wacht_n" class="ibx-chip-n"></span></button>`+
@@ -7811,7 +8082,7 @@ function cv_channels(data){
   if(!s.size&&data.conversation&&data.conversation.channel)s.add(data.conversation.channel);
   return [...s];
 }
-function inboxStatusText(s){return ({active:'AI actief',booked:'Afspraak',needs_human:'Overname',closed:'Gesloten',opted_out:'Afgemeld'}[s]||s);}
+function inboxStatusText(s,ai){if(s==='active'&&ai===false)return 'Mens aan zet';return ({active:'AI actief',booked:'Afspraak',needs_human:'Wacht op mens',closed:'Gesloten',opted_out:'Afgemeld'}[s]||s);}
 function inboxSummaryHtml(s){
   if(!s||!s.summary)return '<div class="ibx-ip-note">Nog geen samenvatting. Klik op “Genereren” om een korte AI-samenvatting van dit gesprek te maken.</div>';
   const items=String(s.summary).split(/\n+/).map(l=>l.trim()).filter(Boolean)
@@ -7928,7 +8199,7 @@ function inboxDrawInfo(ctx){
       ${pipeKiezerHtml({prefix:'ibx_pipe',lijnen:alleP,pipelineId:pipeId,stage:pcur,edit,kop:false})}</div>`;
   }
 
-  const chansHtml=chans.length?chans.map(o=>{const oc=INBOX_CH[o.channel]||INBOX_CH.instagram;return `<div class="ibx-oth"><span>${oc.icon} ${oc.label}${o.handle?' · '+esc(o.handle):''}</span><span class="muted">${o.ai_enabled?'AI actief':inboxStatusText(o.status)} · ${inboxRel(o.last_message_at)}</span></div>`;}).join(''):'';
+  const chansHtml=chans.length?chans.map(o=>{const oc=INBOX_CH[o.channel]||INBOX_CH.instagram;return `<div class="ibx-oth"><span>${oc.icon} ${oc.label}${o.handle?' · '+esc(o.handle):''}</span><span class="muted">${o.ai_enabled?'AI actief':inboxStatusText(o.status,o.ai_enabled)} · ${inboxRel(o.last_message_at)}</span></div>`;}).join(''):'';
   const tlicon={lead:'📩',reservation:'📝',purchase:'💰',dataroom:'📂',pipeline:'🧭',webinar:'🎥'};
   const tlHtml=timeline.length?timeline.map(it=>`<div class="ibx-tl"><span class="ibx-tl-ic">${tlicon[it.kind]||'•'}</span><div class="ibx-tl-b"><div class="ibx-tl-t">${esc(it.title)}${it.project?' · '+esc(it.project):''}</div><div class="ibx-tl-m">${it.ts?new Date(it.ts).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'}):''}${it.meta?' · '+esc(it.meta):''}</div></div></div>`).join(''):`<div class="ibx-ip-note">Nog geen eerdere activiteit vastgelegd.</div>`;
   info.innerHTML=`
