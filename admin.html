@@ -2453,7 +2453,7 @@ function drawWerklijst(){
   </div>
 
   <div class="panel wl-sec">
-    <div class="panel-head"><div><h3>3. Vandaag binnengekomen <span class="count-pill">${nieuw.length}</span></h3><div class="desc">Aanvragen van de laatste 24 uur die nog niemand heeft afgehandeld. "Bel gelogd" zet ze op afgehandeld.</div></div></div>
+    <div class="panel-head"><div><h3>3. Vandaag binnengekomen <span class="count-pill">${nieuw.length}</span></h3><div class="desc">Aanvragen van de laatste 24 uur die nog niemand heeft afgehandeld. "Bel gelogd" zet ze op afgehandeld. Staat de kaart al in een werkkolom, dan verdwijnt de aanvraag hier vanzelf: Ashley belt en appt daar al.</div></div></div>
     <div class="table-wrap">${nieuw.length?`<table><thead><tr><th>Binnen</th><th>Naam</th><th>Type</th><th>Project</th><th>Bron</th><th>Kaart / fase / van wie</th><th>Gesprek</th><th></th></tr></thead><tbody>${nieuw.map(rij3).join('')}</tbody></table>`:'<div class="empty">Geen nieuwe aanvragen in de laatste 24 uur.</div>'}</div>
   </div>
 
