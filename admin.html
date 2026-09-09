@@ -1196,7 +1196,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-09-samenvoegen-social';
+const APP_VERSIE='2026-09-09-werklijst-schoon';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2351,6 +2351,10 @@ function drawWerklijst(){
   const d=WL.data,v=$('#view');if(!d)return;
   const wacht=d.wacht||[];wacht.forEach((r,i)=>r._i=i);
   const open=wacht.filter(r=>!r.afgevinkt_op),afgevinkt=wacht.filter(r=>r.afgevinkt_op);
+  // Klanten (ITP getekend of aanbetaling betaald) horen niet in de verkoop-
+  // wachtrij, maar verdwijnen ook niet: ze staan hieronder ingeklapt. Zonder
+  // knoppen, want die werken op de index in d.wacht en die hebben deze rijen niet.
+  const klanten=d.wacht_klanten||[];
   const tabs=[['mijn','Op mijn bord'],['niemand','Van niemand'],['ander','Van een ander']];
   const perGroep=g=>open.filter(r=>r.groep===g);
   const rijen1=perGroep(WL.tab);
@@ -2425,6 +2429,14 @@ function drawWerklijst(){
     <div class="table-wrap">${rijen1.length?`<table><thead>${kop1}</thead><tbody>${rijen1.map(rij1).join('')}</tbody></table>`:'<div class="empty">Niets in dit tabblad. Alles is beantwoord.</div>'}</div>
     ${afgevinkt.length?`<div class="wl-uit"><button class="btn btn-ghost btn-sm" data-wl-toggle="afgevinkt">${WL.afgevinktOpen?'Verberg':'Toon'} ${afgevinkt.length} in de inbox afgevinkt als "geen antwoord nodig"</button>
       ${WL.afgevinktOpen?`<div class="table-wrap" style="margin-top:10px"><table><thead>${kop1}</thead><tbody>${afgevinkt.map(rij1).join('')}</tbody></table></div>`:''}</div>`:''}
+    ${klanten.length?`<div class="wl-uit"><button class="btn btn-ghost btn-sm" data-wl-toggle="klanten">${WL.klantenOpen?'Verberg':'Toon'} ${klanten.length} ${klanten.length===1?'klant die':'klanten die'} buiten de wachtrij ${klanten.length===1?'valt':'vallen'}</button>
+      ${WL.klantenOpen?`<div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Naam</th><th>Kanaal</th><th>Laatste bericht</th><th>Reservering</th></tr></thead><tbody>${klanten.map(r=>`<tr>
+        <td>${esc(r.naam||'(naamloos)')} <span class="badge green">klant</span></td>
+        <td>${wlKanaal(r.kanaal)}${esc(r.kanalen||r.kanaal||'')}</td>
+        <td>${wlLaatste(r)}</td>
+        <td>${r.reservering?wlRes(r.reservering):'<span class="muted">geen</span>'}</td>
+      </tr>`).join('')}</tbody></table></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">Een getekende ITP of een betaalde aanbetaling maakt iemand klant. Die hoort in de nazorg, niet in de verkoop-wachtrij. Wil je toch antwoorden, open het gesprek in de inbox.</div>`:''}</div>`:''}
   </div>
 
   <div class="panel wl-sec">
@@ -2453,7 +2465,7 @@ function drawWerklijst(){
 
   v.querySelectorAll('[data-wl-tab]').forEach(b=>b.onclick=()=>{WL.tab=b.dataset.wlTab;drawWerklijst();});
   v.querySelectorAll('[data-wl-proj]').forEach(b=>b.onclick=()=>{WL.proj=b.dataset.wlProj;drawWerklijst();});
-  v.querySelectorAll('[data-wl-toggle]').forEach(b=>b.onclick=()=>{const k=b.dataset.wlToggle;if(k==='uit')WL.uitOpen=!WL.uitOpen;if(k==='afgevinkt')WL.afgevinktOpen=!WL.afgevinktOpen;if(k==='verwerkt')WL.verwerktOpen=!WL.verwerktOpen;drawWerklijst();});
+  v.querySelectorAll('[data-wl-toggle]').forEach(b=>b.onclick=()=>{const k=b.dataset.wlToggle;if(k==='uit')WL.uitOpen=!WL.uitOpen;if(k==='afgevinkt')WL.afgevinktOpen=!WL.afgevinktOpen;if(k==='klanten')WL.klantenOpen=!WL.klantenOpen;if(k==='verwerkt')WL.verwerktOpen=!WL.verwerktOpen;drawWerklijst();});
   v.querySelectorAll('[data-wl-open]').forEach(b=>b.onclick=()=>wlOpen(b.dataset.wlOpen));
   v.querySelectorAll('[data-wl-crm]').forEach(b=>b.onclick=()=>wlOpenCrm(b.dataset.wlCrm));
   v.querySelectorAll('[data-wl-geenantw]').forEach(b=>b.onclick=()=>wlGeenAntwoord(b.dataset.wlGeenantw));
