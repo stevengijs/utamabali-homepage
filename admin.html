@@ -1196,7 +1196,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-08-werklijst-2';
+const APP_VERSIE='2026-09-09-samenvoegen-social';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -9666,7 +9666,7 @@ async function openMergeFlow(p){
   mb.innerHTML=`<div style="max-width:640px">
     <h3 style="margin:0 0 4px">Samenvoegen met een dubbele lead</h3>
     <div class="muted" style="font-size:12.5px;margin-bottom:14px">Zoek het duplicaat van <b>${esc(p.name||'dit contact')}</b>. Alle chats, aanvragen en pipelinekaarten van beide worden straks een lead.</div>
-    <input id="mg_q" class="pc-in" placeholder="Zoek op naam, nummer of e-mail…" autocomplete="off">
+    <input id="mg_q" class="pc-in" placeholder="Zoek op naam, nummer, e-mail of @handle…" autocomplete="off">
     <div id="mg_res" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
   </div>`;
   const inp=$('#mg_q'), res=$('#mg_res'); let t=null;
@@ -9675,15 +9675,41 @@ async function openMergeFlow(p){
     const q=inp.value.trim(); if(q.length<2){res.innerHTML='';return;}
     const {data,error}=await sb.rpc('lead_zoek',{p_q:q,p_limit:8});
     if(error){res.innerHTML=`<div class="muted" style="font-size:12px">Zoeken mislukt: ${esc(error.message)}</div>`;return;}
-    const items=(data||[]).filter(x=>x.contact_id!==p.id);
-    res.innerHTML=items.length?items.map(x=>
-      `<button class="btn btn-ghost" data-mgpick="${esc(x.contact_id)}" style="text-align:left;display:block;padding:10px 12px">
-        <div style="font-weight:700;font-size:13.5px">${esc(x.naam)}</div>
-        <div class="muted" style="font-size:11.5px">${[x.telefoon,x.email].filter(Boolean).map(esc).join(' · ')||'geen contactgegevens'}</div>
-      </button>`).join('')
+    // Een regel die alleen in de importlijst staat heeft geen contact en dus
+    // niets om samen te voegen; die hoort hier niet.
+    const items=(data||[]).filter(x=>x.contact_id!==p.id&&!x.alleen_import);
+    res.innerHTML=items.length?items.map(x=>{
+      // Een los gesprek (Instagram, Facebook) heeft geen contactrij. Dat wordt
+      // geen samenvoeging maar een koppeling aan dit contact.
+      const los=!!x.alleen_gesprek;
+      const onder=los
+        ? [x.handle,x.kanaal].filter(Boolean).map(esc).join(' · ')+' · nog geen contact'
+        : ([x.telefoon,x.email].filter(Boolean).map(esc).join(' · ')
+           +(Array.isArray(x.handles)&&x.handles.length?(x.telefoon||x.email?' · ':'')+x.handles.map(esc).join(' '):''))
+          ||'geen contactgegevens';
+      return `<button class="btn btn-ghost" data-mgpick="${esc(los?x.conversation_id:x.contact_id)}" data-mglos="${los?'1':''}" style="text-align:left;display:block;padding:10px 12px">
+        <div style="font-weight:700;font-size:13.5px">${esc(x.naam)}${los?' <span class="muted" style="font-weight:600;font-size:11px">los gesprek</span>':''}</div>
+        <div class="muted" style="font-size:11.5px">${onder}</div>
+      </button>`;}).join('')
       :'<div class="muted" style="font-size:12px">Geen andere lead gevonden.</div>';
-    res.querySelectorAll('[data-mgpick]').forEach(b=>b.onclick=()=>mergeKies(p.id,b.dataset.mgpick));
+    res.querySelectorAll('[data-mgpick]').forEach(b=>b.onclick=()=>{
+      if(b.dataset.mglos)return mergeKoppelGesprek(p,b.dataset.mgpick,b.querySelector('div').textContent.trim());
+      mergeKies(p.id,b.dataset.mgpick);
+    });
   },200);};
+}
+// Een Instagram- of Facebook-gesprek zonder eigen contactrij hangen we aan dit
+// contact. Er valt niets samen te voegen, er is maar één contact; de chats
+// verhuizen mee en de pipeline kijkt daarna opnieuw.
+async function mergeKoppelGesprek(p,convId,naam){
+  if(!confirm('Het gesprek met '+naam+' aan '+(p.name||'dit contact')+' koppelen?\n\nAlle berichten uit dat gesprek komen dan bij deze lead te staan.'))return;
+  const {data,error}=await sb.rpc('contact_gesprek_koppelen',{p_contact:p.id,p_conversation:convId});
+  if(error||(data&&data.ok===false)){
+    toast('Koppelen mislukt: '+esc((error&&error.message)||(data&&data.fout)||'onbekend'),'err');return;
+  }
+  toast('Gesprek gekoppeld','ok');
+  const {data:c}=await sb.from('contacts').select('*').eq('id',p.id).single();
+  if(c)openPerson(c);
 }
 async function mergeKies(idA,idB){
   const mb=document.querySelector('#overlay .modal-body'); if(!mb)return;
