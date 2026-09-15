@@ -2366,7 +2366,7 @@ function drawWerklijst(){
     <td>${r.reden==='bot droeg over'?'<span class="badge amber">bot droeg over</span>':'<span class="badge">lead wacht</span>'}${r.afgevinkt_op?`<div class="muted" style="font-size:11px">afgevinkt ${wlRel(r.afgevinkt_op)}</div>`:''}</td>
     <td>${wlKaart(r.kaart)}<div style="font-size:12px">${wlWie(r.kaart)}</div></td>
     <td>${r.afspraak||r.reservering?`${r.afspraak?wlAfspraak(r.afspraak):''}${r.reservering?wlRes(r.reservering):''}`:'<span class="muted">geen</span>'}</td>
-    ${wlActs('wacht:'+r._i,true,r.afgevinkt_op
+    ${wlActs('wacht:'+r._i,true,!canEdit('inbox')?'':r.afgevinkt_op
       ?`<button class="btn btn-ghost btn-sm" data-wl-geenantw="${r._i}:0" title="Zet dit gesprek terug op wachtend">↩︎ Toch beantwoorden</button>`
       :`<button class="btn btn-ghost btn-sm" data-wl-geenantw="${r._i}:1" title="Haal deze lead uit de lijst. Schrijft de lead daarna opnieuw, dan komt hij vanzelf terug.">✓ Geen antwoord nodig</button>`)}
   </tr>`;
@@ -2509,7 +2509,8 @@ async function wlGeenAntwoord(ref){
   if(!row||!row.conversation_id){toast('Geen gesprek om af te vinken','err');return;}
   const {data,error}=await sb.rpc('inbox_geen_antwoord_nodig',{p_conversation:row.conversation_id,p_aan:aan==='1'});
   if(error||!data||!data.ok){toast('Afvinken mislukt: '+((error&&error.message)||(data&&data.reden)||'onbekend'),'err');return;}
-  toast(aan==='1'?'Afgevinkt: geen antwoord nodig':'Staat weer op wachtend','ok');renderWerklijst();
+  const opgelost=!!(data.wachtte_op_mens&&!data.wacht_op_mens);
+  toast(aan==='1'?(opgelost?'Afgevinkt, en niet meer "Wacht op mens"':'Afgevinkt: geen antwoord nodig'):'Staat weer op wachtend','ok');renderWerklijst();
 }
 async function wlLogPopup(ref){
   const {sectie,row}=wlRij(ref);if(!row)return;
@@ -8207,7 +8208,12 @@ function inboxDrawInfo(ctx){
   // Niet elk laatste bericht vraagt om een antwoord: een bedankje, een duim, een
   // afsluiter. Zonder deze knop bleven die eeuwig onder Onbeantwoord staan, want
   // de enige uitweg was zelf iets terugsturen.
-  const afgehandeld=!!(cv.afgehandeld_tot&&cv.last_message_at&&new Date(cv.afgehandeld_tot)>=new Date(cv.last_message_at));
+  // De groepskop (inbox__group_header) geeft geen last_message_at mee; de rij
+  // in de lijst wel. Zonder die terugval was "afgehandeld" altijd false en
+  // verscheen "Toch beantwoorden" hier nooit.
+  const lijstRij=INBOX.convos.find(x=>x.id===gid)||{};
+  const laatsteOp=cv.last_message_at||lijstRij.last_message_at;
+  const afgehandeld=!!(cv.afgehandeld_tot&&laatsteOp&&new Date(cv.afgehandeld_tot)>=new Date(laatsteOp));
   const geenAntwCtrl=edit?(afgehandeld
     ?`<button class="btn btn-sm ibx-rel" id="ibx_antw_terug" title="Zet dit gesprek terug op onbeantwoord">↩︎ Toch beantwoorden</button>`
     :`<button class="btn btn-sm ibx-rel" id="ibx_geen_antw" title="Haal dit gesprek uit Onbeantwoord. Schrijft de lead daarna opnieuw, dan komt het vanzelf terug.">✓ Geen antwoord nodig</button>`):'';
@@ -8505,7 +8511,12 @@ async function inboxGeenAntwoord(id,aan){
   const {data,error}=await sb.rpc('inbox_geen_antwoord_nodig',{p_conversation:id,p_aan:aan});
   if(error){toast('Mislukt: '+esc(error.message),'err');return;}
   if(data&&data.ok===false){toast('Kan niet: '+esc(data.reden||'onbekende reden'),'err');return;}
-  toast(aan?'Uit Onbeantwoord gehaald':'Weer als onbeantwoord gemarkeerd','ok');
+  // Stond het gesprek op "Wacht op mens", dan is dat nu ook opgelost: de
+  // database zet de status terug naar active, met de bot nog steeds uit.
+  const opgelost=!!(data&&data.wachtte_op_mens&&!data.wacht_op_mens);
+  const terug=!!(data&&!data.wachtte_op_mens&&data.wacht_op_mens);
+  toast(aan?(opgelost?'Uit Onbeantwoord gehaald, en niet meer "Wacht op mens"':'Uit Onbeantwoord gehaald')
+           :(terug?'Weer als onbeantwoord gemarkeerd, wacht op een mens':'Weer als onbeantwoord gemarkeerd'),'ok');
   await inboxOpen(id,true);await inboxLoad();
 }
 async function inboxRelatie(id,aan,forceer){
