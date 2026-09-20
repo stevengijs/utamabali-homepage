@@ -370,6 +370,8 @@
   .ibx-mrow.in .ibx-btime{padding-left:33px}
   .ibx-mrow.out .ibx-btime{padding-right:2px}
   .ibx-undel{font-size:10.5px;margin-top:4px;color:#b45309;font-weight:700}
+  .ibx-venster{margin:6px 0 8px;padding:8px 10px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;border-radius:8px;font-size:12.5px;line-height:1.45}
+  .ibx-venster .ibx-venster-k{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
   .ibx-bub.human .ibx-undel{color:#ffe0b2}
   /* Kanaalkleur per wolkje (naast het icoontje): Instagram roze, WhatsApp groen,
      e-mail grijsblauw. Lead licht, AI iets voller, mens verzadigd met wit. */
@@ -8019,12 +8021,80 @@ function inboxSetSendCh(k){
   document.querySelectorAll('#ibx_chsel .ibx-chselb').forEach(b=>b.classList.toggle('on',b.dataset.ch===k));
   const h=$('#ibx_sendhint');if(h)h.innerHTML=inboxComposerHint();
   const inp=$('#ibx_input');if(inp)inp.placeholder=(INBOX_CH[k]||{}).label?`Schrijf een ${(INBOX_CH[k]).label}-bericht…`:'Schrijf een bericht…';
+  inboxVensterTonen();
+}
+// Meta laat vrije tekst alleen door binnen 24 uur na het laatste bericht van de
+// lead. Op 20 september 2026 typte Steven een antwoord aan een lead wiens
+// venster een dag eerder was dichtgegaan: het portaal nam het bericht aan,
+// ManyChat weigerde het, en de melding was een lap JSON. Nu zegt de composer
+// het vooraf, per kanaal, met de weg die nog wel werkt. Bij Instagram is ons
+// venster een schatting (we missen soms een inkomend bericht), dus versturen
+// blijft mogelijk; ManyChat heeft het laatste woord.
+async function inboxVenstersLaden(gid,stil){
+  // stil = tijdens het pollen: niet eerst leegmaken, anders knippert de melding.
+  if(!stil){INBOX.vensters=null;inboxVensterTonen();}
+  const {data,error}=await sb.rpc('inbox_vensters',{p_id:gid});
+  if(error||INBOX.sel!==gid)return;
+  INBOX.vensters={};(data||[]).forEach(v=>{INBOX.vensters[v.channel]=v;});
+  inboxVensterTonen();
+}
+function inboxVensterTonen(){
+  const el=$('#ibx_venster');if(!el)return;
+  if(INBOX.composeMode==='note'){el.hidden=true;return;}
+  const k=INBOX.sendCh;const meta=['instagram','facebook','whatsapp'].includes(k);
+  const naam=k==='facebook'?'Messenger':(k==='whatsapp'?'WhatsApp':'Instagram');
+  const fmt=d=>d.toLocaleString('nl-NL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const h=(INBOX.cur&&INBOX.cur.igHandle)||'';
+  const dmKnop=(k==='instagram'&&h)?`<a class="btn btn-sm" href="https://ig.me/m/${encodeURIComponent(h)}" target="_blank" rel="noopener">Open Instagram-DM ↗</a>`:'';
+  const kopieKnop='<button class="btn btn-sm" id="ibx_v_kopie" type="button">Kopieer bericht</button>';
+  let tekst='';let knoppen='';
+  // Een weigering van zojuist gaat voor op onze eigen schatting: ManyChat of
+  // Meta heeft het laatste woord. De uitleg blijft hier staan, want een toast
+  // van een paar seconden is te kort om drie zinnen te lezen.
+  const fout=(INBOX.zendFout&&INBOX.zendFout.gid===INBOX.sel)?INBOX.zendFout.tekst:'';
+  if(fout){
+    tekst='⚠︎ Niet afgeleverd. '+esc(fout);
+    knoppen=kopieKnop+dmKnop;
+  }else{
+    if(!meta||!INBOX.vensters){el.hidden=true;return;}
+    const v=INBOX.vensters[k];
+    // Geen gesprek op dit kanaal: bij Instagram en Messenger kan er dan toch niet
+    // verstuurd worden (de server zegt dat zelf), bij WhatsApp is er geen venster.
+    if(!v&&k!=='whatsapp'){el.hidden=true;return;}
+    const tot=v&&v.window_expires_at?new Date(v.window_expires_at):null;
+    if(tot&&tot>new Date()){el.hidden=true;return;}
+    if(k==='whatsapp'){
+      tekst=tot?`⏱ Het 24-uursvenster van WhatsApp is dicht sinds ${esc(fmt(tot))}. Vrije tekst laat Meta dan niet door; alleen een goedgekeurd template kan nog, bijvoorbeeld via een broadcast of de brochureknop. Appt de lead weer, dan gaat het venster open.`
+               :'⏱ Deze lead heeft ons nog nooit geappt, dus er is geen 24-uursvenster. Vrije tekst laat Meta dan niet door; alleen een goedgekeurd template kan.';
+    }else{
+      const laatste=v&&v.laatste_in?new Date(v.laatste_in):null;
+      const zeven=laatste?new Date(laatste.getTime()+7*864e5):null;
+      const app=`de ${naam}-app`;
+      if(!tot){
+        tekst=`⏱ Deze lead heeft via ${naam} zelf nog niets gestuurd, dus er is geen venster. Een bericht vanuit het portaal komt dan niet aan. Antwoord in ${app}.`;
+      }else if(zeven&&zeven>new Date()){
+        tekst=`⏱ Het 24-uursvenster van ${naam} is volgens onze gegevens dicht sinds ${esc(fmt(tot))}. Een bericht vanuit het portaal komt dan niet aan. Antwoord in ${app} of in ManyChat Live Chat: daar mag een mens nog tot ${esc(fmt(zeven))} reageren. Schrijft de lead weer, dan werkt het portaal ook weer.`;
+      }else{
+        tekst=`⏱ Het 24-uursvenster van ${naam} is volgens onze gegevens dicht sinds ${esc(fmt(tot))}, en ook de 7 dagen voor een menselijk antwoord via ManyChat zijn voorbij. Alleen ${app} zelf werkt nog. Schrijft de lead weer, dan werkt het portaal ook weer.`;
+      }
+      knoppen=kopieKnop+dmKnop;
+    }
+  }
+  el.innerHTML=tekst+(knoppen?`<div class="ibx-venster-k">${knoppen}</div>`:'');
+  el.hidden=false;
+  const kop=$('#ibx_v_kopie');
+  if(kop)kop.onclick=async()=>{
+    const t=($('#ibx_input')||{}).value||'';
+    if(!t.trim()){toast('Typ eerst je bericht, dan kopieer ik het','');return;}
+    try{await navigator.clipboard.writeText(t);toast('Bericht gekopieerd','ok');}catch(e){toast('Kopieren lukte niet, selecteer de tekst zelf','err');}
+  };
 }
 function inboxDrawThread(data,keepDraft){
   const cv=data.conversation,msgs=data.messages||[];const gid=data.group_id||cv.group_id||INBOX.sel;
   const ch=INBOX_CH[cv.channel]||INBOX_CH.instagram;
   const nm=inboxNaam(cv);
-  INBOX.cur={avatar:cv.avatar_url,name:nm,ch,channel:cv.channel};
+  INBOX.cur={avatar:cv.avatar_url,name:nm,ch,channel:cv.channel,
+    igHandle:String(cv.instagram_handle||(cv.channel==='instagram'?cv.handle:'')||'').replace(/^@/,'').trim()};
   const edit=canEdit('inbox');
   /* De bot zwijgt niet alleen als de schakelaar uit staat, maar ook zodra het
      gesprek op overname staat, gesloten is of de lead zich afmeldde. Dat stond
@@ -8068,6 +8138,7 @@ function inboxDrawThread(data,keepDraft){
         </div>
         <div id="ibx_msgtools">${avail.length>1?`<div class="ibx-chsel" id="ibx_chsel">${avail.map(k=>`<button class="ibx-chselb ${k===def?'on':''}" data-ch="${k}">${(INBOX_CH[k]||INBOX_CH.instagram).icon} ${(INBOX_CH[k]||INBOX_CH.instagram).label}</button>`).join('')}</div>`:''}</div>
         <div class="ibx-sendhint" id="ibx_sendhint">${inboxComposerHint()}</div>
+        <div class="ibx-venster" id="ibx_venster" hidden></div>
         <div class="ibx-crow">
           <textarea id="ibx_input" class="ibx-input" rows="1" placeholder="Schrijf een bericht…"></textarea>
           <button class="btn ibx-sendbtn" id="ibx_send">Sturen</button>
@@ -8079,9 +8150,13 @@ function inboxDrawThread(data,keepDraft){
     document.querySelectorAll('#ibx_chsel .ibx-chselb').forEach(b=>b.onclick=()=>inboxSetSendCh(b.dataset.ch));
     document.querySelectorAll('#ibx_modetabs button').forEach(b=>b.onclick=()=>inboxSetMode(b.dataset.mode));
     inboxSetSendCh(def);
+    inboxVenstersLaden(gid);
     const inp=$('#ibx_input');
     if(inp){
-      if(keepDraft&&INBOX.drafts[gid]!=null)inp.value=INBOX.drafts[gid];
+      // Altijd terugzetten, niet alleen na een hertekening: na een geweigerd
+      // bericht belooft de melding dat je tekst er nog staat, ook als je even
+      // een ander gesprek opent.
+      if(INBOX.drafts[gid]){inp.value=INBOX.drafts[gid];setTimeout(()=>inp.dispatchEvent(new Event('input')),0);}
       inp.oninput=()=>{if(INBOX.composeMode==='msg')INBOX.drafts[gid]=inp.value;inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px';};
       inp.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();inboxComposeSend(gid);}};
     }
@@ -8096,6 +8171,7 @@ function inboxSetMode(mode){
   const inp=$('#ibx_input');if(inp)inp.placeholder=mode==='note'?'Schrijf een interne notitie…':'Schrijf een bericht…';
   const btn=$('#ibx_send');if(btn){btn.textContent=mode==='note'?'Notitie opslaan':'Sturen';btn.classList.toggle('ibx-notebtn',mode==='note');}
   const crow=$('#ibx_input');if(crow)crow.classList.toggle('ibx-input-note',mode==='note');
+  inboxVensterTonen();
 }
 function inboxComposeSend(gid){ return INBOX.composeMode==='note'?inboxAddNote(gid):inboxSend(gid); }
 // Switch the composer to a specific channel and focus it (used by the "Mailen"
@@ -8485,6 +8561,9 @@ async function inboxRefreshMessages(id){
   if(INBOX.sel!==id)return;
   const {data}=await sb.rpc('inbox_thread',{p_id:id});
   if(data&&data.messages&&$('#ibx_msgs'))inboxRenderMsgs(data.messages);
+  // Schrijft de lead terwijl je kijkt, dan gaat het venster open en moet de
+  // waarschuwing weg; verloopt het, dan moet hij erbij.
+  inboxVenstersLaden(id,true);
 }
 async function inboxSend(id){
   const inp=$('#ibx_input');if(!inp)return;const body=inp.value.trim();if(!body){return;}
@@ -8493,10 +8572,17 @@ async function inboxSend(id){
   try{
     const {data,error}=await sb.functions.invoke('inbox-send',{body:{group:id,channel,body}});
     if(error||(data&&data.error)){toast('Versturen mislukt: '+esc((error&&error.message)||(data&&(data.note||data.error))),'err');return;}
-    inp.value='';INBOX.drafts[id]='';inp.style.height='auto';
     const chLbl=(INBOX_CH[data&&data.channel]||{}).label||'';
-    if(data&&data.delivery==='pending')toast(`Opgeslagen. ${chLbl}-verzending nog niet gekoppeld — zie doc om het kanaal-token te koppelen.`,'');
-    else if(data&&data.delivery==='failed')toast('Bericht opgeslagen, maar afleveren mislukte: '+esc(data.delivery_error||''),'err');
+    // Niet aangekomen? Dan blijft de tekst in de composer staan, zodat je hem
+    // kunt kopieren of opnieuw proberen. In het gesprek komt een interne notitie
+    // dat het niet is afgeleverd; voor het systeem telt het niet als antwoord.
+    const aangekomen=!!(data&&data.delivery==='sent');
+    if(aangekomen){inp.value='';INBOX.drafts[id]='';inp.style.height='auto';INBOX.zendFout=null;}
+    else{
+      INBOX.drafts[id]=body;
+      INBOX.zendFout={gid:id,tekst:(data&&data.delivery==='pending')?`${chLbl}-verzending is nog niet gekoppeld.`:((data&&data.delivery_error)||'De reden is onbekend.')};
+    }
+    if(!aangekomen)toast('Niet afgeleverd. De uitleg staat boven het invoerveld, je tekst staat er nog.','err');
     else toast(`Verzonden via ${chLbl||'kanaal'}`,'ok');
     await inboxOpen(id,true);await inboxLoad();
   }catch(e){toast('Versturen mislukt','err');}
