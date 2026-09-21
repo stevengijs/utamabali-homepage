@@ -10992,7 +10992,7 @@ function pipeCardDrawer(card){
         if(error||!data||data.ok===false){toast('Verplaatsen mislukt: '+((data&&data.fout)||(error&&error.message)||'onbekend'),'err');return;}
         toast('Verplaatst','ok');close();loadPipelineData();
       }});
-    q('#pdr_del').onclick=async()=>{if(!confirm('Deze kaart verwijderen?'))return;const {error}=await sb.from('pipeline_cards').delete().eq('id',card.id);if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}close();toast('Verwijderd','ok');loadPipelineData();};
+    q('#pdr_del').onclick=async()=>{if(!confirm('Deze kaart verwijderen? De lead komt pas terug op het bord als hij zelf weer iets van zich laat horen: een bericht, een formulier, een reservering of een afspraak.'))return;const {error}=await sb.from('pipeline_cards').delete().eq('id',card.id);if(error){toast('Verwijderen mislukt: '+error.message,'err');return;}close();toast('Verwijderd','ok');loadPipelineData();};
   }
   if(q('#pdr_wa'))q('#pdr_wa').onclick=e=>{e.preventDefault();pipeWhatsapp(card.id);};
   if(q('#pdr_crm'))q('#pdr_crm').onclick=e=>{e.preventDefault();close();openContactById(card.contact_id);};
@@ -11112,7 +11112,7 @@ function pipeCardForm(card,defaultStage){
     closeM();loadPipelineData();
   };
   if(g('pc_del'))g('pc_del').onclick=async()=>{
-    if(!confirm('Deze kaart verwijderen?'))return;
+    if(!confirm('Deze kaart verwijderen? De lead komt pas terug op het bord als hij zelf weer iets van zich laat horen: een bericht, een formulier, een reservering of een afspraak.'))return;
     const {error}=await sb.from('pipeline_cards').delete().eq('id',card.id);
     if(error){toast('Kon niet verwijderen: '+error.message,'err');return;}
     closeM();toast('Verwijderd','ok');loadPipelineData();
