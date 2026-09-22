@@ -92,16 +92,25 @@ let RES=null;
 function euro(n){n=Number(n)||0;return "€"+n.toLocaleString("nl-NL");}
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 // Bankgegevens per verkopende PT. Houd EXACT in sync met admin.html (PT_BANK in de
-// ITP-generator) en met projects.legal_entity. Uitsluitend PT-rekeningen, nooit
-// privé. The Maison + The Reload = PT. BANGUNAN BETON INDONESIA; MOKA = PT. BALI
-// UTAMA PROPERTY. Onbekend project -> geen nummer (nooit naar de verkeerde PT).
+// ITP-generator) en met projects.legal_entity. The Maison + The Reload = PT.
+// BANGUNAN BETON INDONESIA; MOKA = PT. BALI UTAMA PROPERTY. Onbekend project ->
+// geen nummer (nooit naar de verkeerde PT).
+//
+// TIJDELIJK, sinds 22 september 2026 op verzoek van Steven: de aanbetaling gaat
+// naar zijn privérekening, net als in de ITP (admin.html, dezelfde schakelaar).
+// Terug naar de PT: zet ITP_AANBETALING_PRIVE op false in beide bestanden.
+const ITP_AANBETALING_PRIVE=true;
+const PRIVE_BANK={
+  nl:{bank:"BUNQ B.V.",name:"Steven Gijsman",iban:"NL40BUNQ2025524439"},
+  id:{bank:"OCBC",name:"Steven Roland Gijsman",acct:"160810204315",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"}
+};
 const PROJECT_PT={"the maison":"PT. BANGUNAN BETON INDONESIA","the reload":"PT. BANGUNAN BETON INDONESIA","moka":"PT. BALI UTAMA PROPERTY"};
 const PT_BANK={
   "PT. BANGUNAN BETON INDONESIA":{bank:"OCBC NISP",name:"PT. BANGUNAN BETON INDONESIA",acct:"160800023303",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"},
   "PT. BALI UTAMA PROPERTY":{bank:"OCBC NISP",name:"PT Bali Utama Property",acct:"160800023394",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"}
 };
 function ptFor(r){return PT_BANK[PROJECT_PT[((r&&r.project)||"").trim().toLowerCase()]]||null;}
-function sellerName(r){const b=ptFor(r);return b?b.name:"UTAMA";}
+function sellerName(r){if(ITP_AANBETALING_PRIVE)return PRIVE_BANK.nl.name;const b=ptFor(r);return b?b.name:"UTAMA";}
 // Allowlist-sanitizer: de ITP-body is rijke HTML die door het team is opgesteld,
 // maar wordt hier aan de klant getoond. Deny-by-default zodat een eventuele
 // script/onerror-payload nooit in de browser van de klant uitvoert.
@@ -199,7 +208,21 @@ function summary(r){
 function bankBlock(r){
   const ref=refText(r);
   const b=ptFor(r);
-  const rows=b?`<div class="bank2"><div class="bt">Bankoverschrijving · Indonesië</div>
+  const p=PRIVE_BANK;
+  const rows=ITP_AANBETALING_PRIVE?`<div class="bank2"><div class="bt">Bankoverschrijving · Nederland (IBAN)</div>
+        <div class="row"><span>Bank</span><b>${esc(p.nl.bank)}</b></div>
+        <div class="row"><span>Naam</span><b>${esc(p.nl.name)}</b></div>
+        <div class="row"><span>IBAN</span><b>${esc(p.nl.iban)}</b><button class="cp" data-copy="${esc(p.nl.iban)}">Kopieer</button></div>
+      </div>
+      <div class="bank2"><div class="bt">Of: bankoverschrijving · Indonesië</div>
+        <div class="row"><span>Bank</span><b>${esc(p.id.bank)}</b></div>
+        <div class="row"><span>Naam</span><b>${esc(p.id.name)}</b></div>
+        <div class="row"><span>Rekeningnr.</span><b>${esc(p.id.acct)}</b><button class="cp" data-copy="${esc(p.id.acct)}">Kopieer</button></div>
+        <div class="row"><span>SWIFT</span><b>${esc(p.id.swift)}</b></div>
+        <div class="row"><span>Branch</span><b>${esc(p.id.branch)}</b></div>
+        <div class="row"><span>Bank code</span><b>${esc(p.id.code)}</b></div>
+        <div class="row"><span>Adres</span><b>${esc(p.id.address)}</b></div>
+      </div>`:b?`<div class="bank2"><div class="bt">Bankoverschrijving · Indonesië</div>
         <div class="row"><span>Bank</span><b>${esc(b.bank)}</b></div>
         <div class="row"><span>Naam</span><b>${esc(b.name)}</b></div>
         <div class="row"><span>Rekeningnr.</span><b>${esc(b.acct)}</b><button class="cp" data-copy="${esc(b.acct)}">Kopieer</button></div>
