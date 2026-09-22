@@ -10212,11 +10212,22 @@ let PERSON_RESV={};
    projects.legal_entity. The Maison + The Reload = PT. BANGUNAN BETON INDONESIA;
    MOKA = PT. BALI UTAMA PROPERTY. Onbekende entiteit -> geen nummer, maar een
    nette "volgt per e-mail"-regel (nooit per ongeluk naar de verkeerde PT). */
+/* TIJDELIJK, sinds 22 september 2026 op verzoek van Steven: de aanbetaling voor
+   de leasehold gaat in de ITP weer naar zijn privérekening, niet naar de
+   verkopende PT. Dit is het blok dat op 19 augustus uit het template ging
+   (commit e26ddda), letterlijk teruggezet. Terug naar de rekening per PT: zet
+   ITP_AANBETALING_PRIVE op false; PT_BANK hieronder blijft daarvoor intact.
+   Let op: de betaalpagina (reserve.html, bankBlock) toont nog de PT-rekening. */
+const ITP_AANBETALING_PRIVE=true;
+const PRIVE_BANK_HTML=`<p><b>Bank:</b> BUNQ B.V.<br><b>Naam:</b> Steven Gijsman<br><b>IBAN:</b> NL40BUNQ2025524439</p>`
+  +`<p><b>OR</b></p>`
+  +`<p><b>Bank Name:</b> OCBC<br><b>Account Number:</b> 160810204315<br><b>Account Name:</b> Steven Roland Gijsman<br><b>Swift Code:</b> NISPIDJAXXX<br><b>Branch Code:</b> 7160<br><b>Bank Code:</b> 028<br><b>Clearing Code:</b> 0280024<br><b>Bank Address:</b> Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia</p>`;
 const PT_BANK={
   'PT. BANGUNAN BETON INDONESIA':{bank:'OCBC NISP',name:'PT. BANGUNAN BETON INDONESIA',acct:'160800023303',swift:'NISPIDJAXXX',branch:'7160',code:'028',clearing:'0280024',address:'Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia'},
   'PT. BALI UTAMA PROPERTY':{bank:'OCBC NISP',name:'PT Bali Utama Property',acct:'160800023394',swift:'NISPIDJAXXX',branch:'7160',code:'028',clearing:'0280024',address:'Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia'}
 };
 function ptBankHtml(entity){
+  if(ITP_AANBETALING_PRIVE)return PRIVE_BANK_HTML;
   const b=PT_BANK[entity];
   if(!b)return `<p><i>The bank details for ${esc(entity||'the selling entity')} will be provided separately by email.</i></p>`;
   return `<p><b>Bank Name:</b> ${b.bank}<br><b>Account Name:</b> ${b.name}<br><b>Account Number:</b> ${b.acct}<br><b>Swift Code:</b> ${b.swift}<br><b>Branch Code:</b> ${b.branch}<br><b>Bank Code:</b> ${b.code}<br><b>Clearing Code:</b> ${b.clearing}<br><b>Bank Address:</b> ${b.address}</p>`;
