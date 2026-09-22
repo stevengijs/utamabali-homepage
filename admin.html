@@ -11698,6 +11698,8 @@ function seqStepCard(st,i){
     <div class="seq-watpl seq-waonly" style="${kanaal==='whatsapp'?'':'display:none'}">
       <input class="seq-watpl-in pc-in" placeholder="Naam van het goedgekeurde WhatsApp-template" value="${esc(st.wa_template||'')}">
       <div class="bc-hint">Buiten het venster van 24 uur mag WhatsApp alleen met een goedgekeurd template. Staat hier niets, dan slaat de flow die stap over voor iedereen die ons niet net heeft geappt.</div>
+      <input class="seq-waparams-in pc-in" placeholder="Variabelen van het template, in volgorde, met | ertussen. Bijv. {voornaam} | woensdag 23 september om 13:00" value="${esc(Array.isArray(st.wa_parameters)?st.wa_parameters.join(' | '):(st.wa_parameters||''))}">
+      <div class="bc-hint">Wat er in {{1}}, {{2}}, ... van het template komt. {voornaam}, {naam} en {project} worden ingevuld. Leeg: voornaam en project.</div>
     </div>
     <textarea class="seq-kort pc-in seq-kortonly" rows="4" placeholder="Korte tekst, gebruik {naam} en {project}" style="${kanaal==='email'?'display:none':''}">${esc(seqPlat(st.body))}</textarea>
     <div class="seq-rte-tools seq-mailonly">
@@ -11823,7 +11825,8 @@ function seqCollectSteps(){
       design:node.dataset.design==='newsletter'?'newsletter':'plain',
       kanaal:node.dataset.kanaal||'email',
       voorwaarde:(node.querySelector('.seq-voorwaarde')||{}).value||'altijd',
-      wa_template:(node.querySelector('.seq-watpl-in')||{}).value||''
+      wa_template:(node.querySelector('.seq-watpl-in')||{}).value||'',
+      wa_parameters:(node.querySelector('.seq-waparams-in')||{}).value||''
     };
   });
 }
