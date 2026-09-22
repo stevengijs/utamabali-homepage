@@ -101,7 +101,7 @@ const PROJECT_PT={"the maison":"PT. BANGUNAN BETON INDONESIA","the reload":"PT. 
 const DEPOSIT_UITLEG="In Indonesië staat de grond op naam van een persoon, niet van een vennootschap. De leasehold voor deze villa komt van Steven Gijsman privé, en de aanbetaling daarvoor gaat daarom naar zijn privérekening.";
 const PRIVE_BANK={
   nl:{bank:"BUNQ B.V.",name:"Steven Gijsman",iban:"NL40BUNQ2025524439"},
-  id:{bank:"OCBC",name:"Steven Roland Gijsman",acct:"160810204315",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"}
+  id:{bank:"OCBC",name:"Steven Roland Gijsman",acct:"160810204315",swift:"NISPIDJAXXX",branch:"7160",code:"028",clearing:"0280024",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"}
 };
 function sellerName(r){return PROJECT_PT[((r&&r.project)||"").trim().toLowerCase()]||"UTAMA";}
 function ontvangerNaam(){return PRIVE_BANK.nl.name;}
@@ -151,14 +151,14 @@ function itpFilled(r){
   // Verkoper tekent bij uitgifte: een leeg verkopersblok wordt altijd gevuld,
   // ook op ITP's die zijn aangemaakt voordat de standaardtekst dit meekreeg.
   const uit=new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
-  b=b.replace(/(<b>\s*ACCEPTED BY SELLER\s*<\/b>[\s\S]{0,260}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: \u2713 Digitally signed"+br+"Date: "+esc(uit));
+  b=b.replace(/(<b>\s*ACCEPTED BY SELLER\s*<\/b>[\s\S]{0,260}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: digitally signed"+br+"Date: "+esc(uit));
   if(r.itp_signed_at){
     const d=new Date(r.itp_signed_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
     const wie=r.itp_signer_name||r.name||"";
     // Is er een getekende handtekening, dan komt die in beeld; de naam blijft
     // eronder staan zodat het document leesbaar blijft zonder afbeelding.
     const krabbel=r.itp_signature?`<br><img class="itp-sig" src="${esc(r.itp_signature)}" alt="Handtekening ${esc(wie)}">`:"";
-    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: "+(r.itp_signature?"":"\u2713 ")+"Digitally signed by "+esc(wie)+krabbel+br+"Date: "+esc(d));
+    b=b.replace(/(<b>\s*BUYER\s*<\/b>[\s\S]{0,220}?)Signature:\s*(<br\s*\/?>)\s*Date:(?=\s*<)/i,(m,voor,br)=>voor+"Signature: digitally signed by "+esc(wie)+krabbel+br+"Date: "+esc(d));
   }else{
     // Nog niet getekend: maak duidelijk dat dit vanzelf wordt ingevuld,
     // anders lijkt het alsof de koper hier zelf iets moet invullen.
@@ -214,6 +214,7 @@ function bankBlock(r){
         <div class="row"><span>SWIFT</span><b>${esc(p.id.swift)}</b></div>
         <div class="row"><span>Branch</span><b>${esc(p.id.branch)}</b></div>
         <div class="row"><span>Bank code</span><b>${esc(p.id.code)}</b></div>
+        <div class="row"><span>Clearing code</span><b>${esc(p.id.clearing)}</b></div>
         <div class="row"><span>Adres</span><b>${esc(p.id.address)}</b></div>
       </div>`;
   return `<h3 style="margin:6px 0 4px;font-size:15px">Aanbetaling van ${euro(r.deposit_amount)}</h3>
@@ -317,9 +318,9 @@ function makePdf(r,signer,sigData){
       "Seller: digitally signed upon issuance of this ITP"
     ]:[
       "Prepared on "+new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
-      "PARTIJEN","Verkoper: PT Bali Utama Property","Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
+      "PARTIJEN","Verkoper: "+sellerName(r),"Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
       "OBJECT","Project: "+(r.project||"—"),"Unit: "+(r.unit||"—"),(r.unit_price?"Indicatieve koopsom: €"+Number(r.unit_price).toLocaleString("nl-NL"):""),"",
-      "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL")+" aan PT Bali Utama Property.",
+      "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL")+" aan "+ontvangerNaam()+" privé. "+DEPOSIT_UITLEG,
       "Referentie: "+refText(r),
       "Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.","",
       "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
