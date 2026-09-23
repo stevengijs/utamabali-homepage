@@ -3152,6 +3152,9 @@ function bcTelling(){
   }
   const account=g.filter(r=>r.heeft_account).length;
   const klanten=g.filter(r=>r.klant).length;
+  // Server-side uitgesloten (broadcast_selectie): wie uitsluitend via een
+  // webinar binnenkwam krijgt geen algemene campagne. Steven, 23 september.
+  const webinarWeg=(BC.sel&&BC.sel.webinar_uitgesloten)||0;
   bcZoekInfo();
   // De vervolg-uitsluiting gebeurt server-side (die mensen zitten dus niet in
   // BC.sel); de teller toont hoeveel ontvangers de vorige campagne had.
@@ -3163,6 +3166,7 @@ function bcTelling(){
     `, waarvan <b>${m.length}</b> met e-mailadres`+
     (g.length-m.length?` <span class="muted">(${g.length-m.length} alleen telefonisch bereikbaar)</span>`:'')+
     (klanten?` &middot; <span class="bc-let-inline"><b>${klanten}</b> is al klant</span>`:'')+
+    (webinarWeg?` &middot; <span class="bc-let-inline" title="Wie alleen via een webinar binnenkwam krijgt alleen webinarberichten. Filter op de funnel Webinar of de bron webinar om ze wel mee te nemen."><b>${webinarWeg}</b> webinarinschrijver${webinarWeg>1?'s':''} zonder andere bron uitgesloten</span>`:'')+
     (account?` &middot; <b>${account}</b> heeft ingelogd op invest`:'')+
     // Boven de 2000 kapt de server de lijst af. Zonder deze regel stel je een
     // campagne samen die stilzwijgend maar een deel van je selectie dekt.
@@ -9143,16 +9147,22 @@ let PEOPLE=[];
 async function renderPeople(){
   const v=$('#view');
   v.innerHTML=`<div id="people_banner"></div><div class="panel"><div class="panel-head"><div><h3>People <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">One record per email — click a person for all their data, activity & history.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Search people…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Loading…</div></div></div>`;
-  const [cr,lr,dr,rv]=await Promise.all([
+  const [cr,lr,dr,rv,wr,ws]=await Promise.all([
     sb.from('contacts').select('*').order('last_activity_at',{ascending:false,nullsFirst:false}),
     sb.from('leads').select('id,contact_id,type,project,unit,source_page,created_at,handled_at'),
     sb.from('dataroom_access').select('contact_id,contact_email,project,granted_at'),
     sb.from('reservations').select('id,contact_id,email,project,unit,deposit_amount,status,itp_signed_at,itp_signer_name,payment_status'),
+    // Webinaraanmeldingen (via WebinarGeek of de aanmeldpagina) zijn geen
+    // inquiry, maar horen wel zichtbaar te zijn: Steven, 23 september 2026.
+    sb.from('webinar_registrations').select('email,session_id,created_at,attended,watch_minutes'),
+    sb.from('webinar_sessions').select('id,title,starts_at'),
   ]);
   if(cr.error){$('#tw_people').innerHTML='<div class="empty">'+esc(cr.error.message)+'</div>';return;}
   const byC={};(lr.data||[]).forEach(l=>{(byC[l.contact_id]=byC[l.contact_id]||[]).push(l);});
   const drById={},drByEmail={};(dr.data||[]).forEach(x=>{if(x.contact_id)(drById[x.contact_id]=drById[x.contact_id]||[]).push(x);const e=(x.contact_email||'').toLowerCase();if(e)(drByEmail[e]=drByEmail[e]||[]).push(x);});
   const rvById={},rvByEmail={};(rv.data||[]).forEach(x=>{if(x.contact_id)(rvById[x.contact_id]=rvById[x.contact_id]||[]).push(x);const e=(x.email||'').toLowerCase();if(e)(rvByEmail[e]=rvByEmail[e]||[]).push(x);});
+  const wsById={};(ws&&ws.data||[]).forEach(x=>{wsById[x.id]=x;});
+  const wbByEmail={};(wr&&wr.data||[]).forEach(x=>{const e=(x.email||'').toLowerCase();if(!e)return;const sess=wsById[x.session_id]||{};(wbByEmail[e]=wbByEmail[e]||[]).push({title:sess.title||'webinar',starts_at:sess.starts_at||null,attended:!!x.attended,at:x.created_at});});
   const now=Date.now(),WK=7*864e5;
   PEOPLE=(cr.data||[]).map(c=>{
     const leads=byC[c.id]||[];
@@ -9184,6 +9194,7 @@ async function renderPeople(){
       _resv:items.filter(i=>i.kind==='reservation'),
       _itp:items.filter(i=>i.kind==='itp').length,
       _deposit:items.filter(i=>i.kind==='deposit').length,
+      _webinar:wbByEmail[(c.email||'').toLowerCase()]||[],
       _isNew:(now-Math.max(lastAct,newestLead))<WK,_activeDr:grantedProj.size};
   });
   const cel=$('#cnt_people');if(cel)cel.textContent=PEOPLE.length;
@@ -9380,6 +9391,11 @@ async function makeItpFromReservationLead(leadId){
   const {data:projs}=await sb.from('projects').select('name,slug,price_current,legal_entity').order('sort_order',{ascending:true});
   openReservationForm(person,projs||[],{project:l.project,unit:l.unit,leadId:l.id});
 }
+// 'webinar The Reload 23 sep', met 'gekeken' als WebinarGeek dat heeft gemeld.
+function webinarFlagTekst(w){
+  let d='';try{if(w.starts_at)d=' '+new Date(w.starts_at).toLocaleDateString('nl-NL',{day:'numeric',month:'short',timeZone:'Europe/Amsterdam'});}catch(e){}
+  return '🎥 webinar '+(w.title||'')+d+(w.attended?' · gekeken':'');
+}
 function drawPeople(){
   const q=($('#search_people')?.value||'').toLowerCase();
   let rows=PEOPLE; if(q)rows=rows.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
@@ -9388,7 +9404,7 @@ function drawPeople(){
   let h='<table><thead><tr><th>Name</th><th>Koopbereidheid</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Flags</th><th>Last activity</th></tr></thead><tbody>';
   rows.forEach(p=>{
     const projs=[...new Set(p._leads.map(l=>l.project).filter(Boolean))].join(', ');
-    const flags=`${p._isNew?'<span class="badge green">NEW</span> ':''}${p._deposit?'<span class="badge green">💶 aanbetaling gemeld</span> ':''}${p._itp?'<span class="badge blue">📝 ITP getekend</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
+    const flags=`${p._isNew?'<span class="badge green">NEW</span> ':''}${(p._webinar||[]).map(w=>`<span class="badge blue" title="Aangemeld voor het webinar">${esc(webinarFlagTekst(w))}</span> `).join('')}${p._deposit?'<span class="badge green">💶 aanbetaling gemeld</span> ':''}${p._itp?'<span class="badge blue">📝 ITP getekend</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
     const warm=warmthBadge(WARMTH[p.id])||'<span class="muted" style="font-size:12px">—</span>';
     h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${p.partner?' '+partnerBadge(p.partner):''}${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${warm}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td style="white-space:normal">${flags}</td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
   });
