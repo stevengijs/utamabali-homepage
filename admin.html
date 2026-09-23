@@ -10116,19 +10116,23 @@ async function openPerson(p){
   // inmiddels geopend ander contact schrijft.
   if(canView('inbox'))(async()=>{
     try{
-      const [cvR,sumR]=await Promise.all([
-        sb.from('inbox_conversations').select('interest,timeline,budget_band,funds,is_qualified').eq('contact_id',p.id),
+      // Leadgegevens komen uit een RPC die gesprek, webformulier en
+      // webinaraanmelding samenvoegt (gesprek wint), met per veld de bron.
+      // Steven, 23 september 2026: de funnelantwoorden van webinarleads horen
+      // op dezelfde plek als bij elke andere lead.
+      const [kwR,sumR]=await Promise.all([
+        sb.rpc('lead_kwalificatie',{p_contact:p.id}),
         sb.from('inbox_summaries').select('summary,generated_at,message_count').eq('contact_id',p.id).maybeSingle()
       ]);
       const kw=$('#pd_kwal');
       if(kw&&kw.dataset.cid===String(p.id)){
-        const cvs=cvR.data||[];
-        const pak=k=>{const r=cvs.find(c=>c[k]!=null&&c[k]!=='');return r?r[k]:null;};
+        const d=kwR.data||{};const br=d.bronnen||{};
         const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
-        const q=cvs.some(c=>c.is_qualified===true)?'Ja ✓':(cvs.some(c=>c.is_qualified===false)?'Nee':null);
-        const rows=[['Interesse',pak('interest')],['Timing',tlmap[pak('timeline')]||pak('timeline')],['Budget',pak('budget_band')],['Geld beschikbaar',pak('funds')],['Gekwalificeerd',q]].filter(r=>r[1]);
-        if(rows.length)kw.innerHTML=rows.map(([k,v])=>`<div class="pdr-fact"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');
-        else{kw.classList.remove('pdr-facts');kw.innerHTML='<div class="muted" style="font-size:13px">Nog geen kwalificatie vastgelegd. Dit vult zich vanuit de inbox-gesprekken.</div>';}
+        const bronTxt={gesprek:'uit het gesprek',formulier:'uit het formulier',webinar:'uit de webinaraanmelding'};
+        const q=d.is_qualified===true?'Ja ✓':(d.is_qualified===false?'Nee':null);
+        const rows=[['Interesse',d.interest,br.interest],['Timing',tlmap[d.timeline]||d.timeline,br.timeline],['Budget',d.budget_band,br.budget_band],['Geld beschikbaar',d.funds,br.funds],['Gekwalificeerd',q,br.is_qualified]].filter(r=>r[1]);
+        if(rows.length)kw.innerHTML=rows.map(([k,v,b])=>`<div class="pdr-fact"><div class="k">${esc(k)}${b&&b!=='gesprek'?` <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0" title="${esc(bronTxt[b]||b)}">· ${esc(b)}</span>`:''}</div><div class="v">${esc(v)}</div></div>`).join('');
+        else{kw.classList.remove('pdr-facts');kw.innerHTML='<div class="muted" style="font-size:13px">Nog geen kwalificatie vastgelegd. Dit vult zich vanuit de inbox-gesprekken, het formulier of een webinaraanmelding.</div>';}
       }
       const sbd=$('#pd_sum_body');
       if(sumR.data&&sumR.data.summary&&sbd&&sbd.dataset.cid===String(p.id)){
@@ -10645,6 +10649,16 @@ async function pipeLoadEnrichment(){
     sb.from('inbox_conversations').select('contact_id,channel,last_message_at').in('contact_id',ids),
   ]);
   (ctR.data||[]).forEach(ct=>{PIPE.enrich[ct.id]={name:ct.name,phone:ct.phone,email:ct.email,first_seen_at:ct.first_seen_at,last_activity_at:ct.last_activity_at};});
+  // Webinaraanmeldingen: budget en termijn uit de funnel als er geen formulier
+  // is. Op e-mailadres, want een aanmelding heeft geen contact_id.
+  try{
+    const emails=[...new Set((ctR.data||[]).map(ct=>(ct.email||'').toLowerCase()).filter(Boolean))];
+    if(emails.length){
+      const {data:wb}=await sb.from('webinar_registrations').select('email,budget,horizon,created_at').in('email',emails).order('created_at',{ascending:false});
+      const byMail={};(wb||[]).forEach(w=>{const e=(w.email||'').toLowerCase();if(!byMail[e]&&(w.budget||w.horizon))byMail[e]=w;});
+      (ctR.data||[]).forEach(ct=>{const w=byMail[(ct.email||'').toLowerCase()];if(!w)return;const e=PIPE.enrich[ct.id];if(!e.budget&&w.budget)e.budget=w.budget;if(!e.timeline&&w.horizon)e.timeline=w.horizon;});
+    }
+  }catch(e){}
   (ldR.data||[]).forEach(l=>{if(!l.contact_id)return;const e=PIPE.enrich[l.contact_id]||(PIPE.enrich[l.contact_id]={});if(!e.budget&&l.budget)e.budget=l.budget;if(!e.timeline&&l.timeline)e.timeline=l.timeline;if(!e.project&&l.project)e.project=l.project;if(l.created_at&&(!e.leadFirst||l.created_at<e.leadFirst))e.leadFirst=l.created_at;});
   // Chat activity per contact: latest message time + which channels are in play.
   (chR.data||[]).forEach(cv=>{if(!cv.contact_id)return;const e=PIPE.enrich[cv.contact_id]||(PIPE.enrich[cv.contact_id]={});const ch=e.chat||(e.chat={at:null,channels:[]});if(cv.channel&&!ch.channels.includes(cv.channel))ch.channels.push(cv.channel);if(cv.last_message_at&&(!ch.at||cv.last_message_at>ch.at))ch.at=cv.last_message_at;});
