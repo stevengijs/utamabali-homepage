@@ -9866,7 +9866,7 @@ async function mergeKies(idA,idB){
 }
 async function openPerson(p){
   showDetail('Contact','<div class="muted">Loading…</div>');
-  const [lr,pr,wr,dr,rr,projR,rvR,pcR,plR]=await Promise.all([
+  const [lr,pr,wr,dr,rr,projR,rvR,pcR,plR,wsR]=await Promise.all([
     sb.from('leads').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
     sb.from('purchases').select('*').eq('contact_id',p.id).order('created_at',{ascending:false}),
     sb.from('webinar_registrations').select('*').eq('email',p.email).order('created_at',{ascending:false}),
@@ -9876,6 +9876,7 @@ async function openPerson(p){
     sb.from('reservations').select('*').or('contact_id.eq.'+p.id+',email.eq.'+p.email).order('created_at',{ascending:false}),
     sb.from('pipeline_cards').select('id,pipeline_id,stage,assignee,value,stage_changed_at').eq('contact_id',p.id),
     sb.from('pipelines').select('id,name,stages').order('sort_order',{ascending:true}),
+    sb.from('webinar_sessions').select('id,title,starts_at'),
   ]);
   const leads=lr.data||[],purch=pr.data||[],webs=wr.data||[],drs=dr.data||[],refs=rr.data||[],projList=projR.data||[],resvs=rvR.data||[];
   const pCards=pcR.data||[],pLines=plR.data||[];
@@ -9961,6 +9962,26 @@ async function openPerson(p){
   if(canView('inbox')){
     body+=`<div style="margin-top:20px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">AI-samenvatting</div>${canEdit('inbox')?`<button type="button" class="ibx-sum-btn" id="pd_sum_btn">✨ Genereren</button>`:''}</div><div id="pd_sum_body" data-cid="${esc(p.id)}">${inboxSummaryHtml(null)}</div></div>`;
     body+=_sec('Leadgegevens',`<div id="pd_kwal" class="pdr-facts" data-cid="${esc(p.id)}"><div class="muted" style="font-size:13px">Laden…</div></div>`);
+  }
+  // Webinaraanmeldingen met de antwoorden uit de funnel (budget, termijn,
+  // gekwalificeerd) en de advertentie waar ze vandaan kwamen. Die zaten alleen
+  // ruw in de payload van WebinarGeek. Steven, 23 september 2026.
+  if(webs.length){
+    const sess={};((wsR&&wsR.data)||[]).forEach(x=>{sess[x.id]=x;});
+    const feit=(l,v)=>v?`<div><div class="muted" style="font-size:11.5px">${l}</div><div style="font-size:13px">${esc(v)}</div></div>`:'';
+    body+=_sec('Webinar',`<div style="display:flex;flex-direction:column;gap:8px">`+webs.map(w=>{
+      const sx=sess[w.session_id]||{};const a=w.antwoorden||{};
+      let d='';try{if(sx.starts_at)d=new Date(sx.starts_at).toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Amsterdam'});}catch(e){}
+      const kw=a.gekwalificeerd?(String(a.gekwalificeerd).toLowerCase()==='ja'?'<span class="badge green" title="Volgens de vragen in de aanmeldfunnel">gekwalificeerd</span>':'<span class="badge grey" title="Volgens de vragen in de aanmeldfunnel">niet gekwalificeerd</span>'):'';
+      const gekeken=w.attended?`<span class="badge green">gekeken${w.watch_minutes?' · '+w.watch_minutes+' min':''}</span>`:'<span class="badge grey">nog niet gekeken</span>';
+      const via=[w.utm_source?('via '+w.utm_source):'',w.utm_campaign,a.utm_content?('advertentie '+a.utm_content):'',a.variant?('variant '+a.variant):''].filter(Boolean).join(' · ');
+      const bron=(w.raw_payload&&w.raw_payload.entity&&w.raw_payload.entity.registration_source)||(w.raw_payload&&w.raw_payload.page)||'';
+      return `<div style="border:1px solid var(--line);border-radius:10px;padding:9px 12px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600">🎥 ${esc(sx.title||'Webinar')}</span>${d?`<span class="muted" style="font-size:12px">${esc(d)}</span>`:''}<span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${kw}${gekeken}</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-top:8px">${feit('Budget',w.budget)}${feit('Termijn',w.horizon)}${feit('Aangemeld op',fmtDateTime(w.created_at))}${feit('Herkomst',via)}${feit('Aanmelding via',bron==='api'?'funnel (API)':bron==='registration_page'?'registratiepagina':bron==='embed_form'?'formulier op de site':bron)}</div>
+        ${(w.budget||w.horizon)?'':`<div class="muted" style="font-size:12px;margin-top:6px">Geen antwoorden meegestuurd: aangemeld zonder de funnelvragen.</div>`}
+      </div>`;
+    }).join('')+`</div>`);
   }
   // Waar staat deze lead in de pipelines? Stond alleen in de inbox, niet hier.
   {
