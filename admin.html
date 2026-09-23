@@ -10649,8 +10649,10 @@ async function pipeLoadEnrichment(){
     sb.from('inbox_conversations').select('contact_id,channel,last_message_at').in('contact_id',ids),
   ]);
   (ctR.data||[]).forEach(ct=>{PIPE.enrich[ct.id]={name:ct.name,phone:ct.phone,email:ct.email,first_seen_at:ct.first_seen_at,last_activity_at:ct.last_activity_at};});
-  // Webinaraanmeldingen: budget en termijn uit de funnel als er geen formulier
-  // is. Op e-mailadres, want een aanmelding heeft geen contact_id.
+  (ldR.data||[]).forEach(l=>{if(!l.contact_id)return;const e=PIPE.enrich[l.contact_id]||(PIPE.enrich[l.contact_id]={});if(!e.budget&&l.budget)e.budget=l.budget;if(!e.timeline&&l.timeline)e.timeline=l.timeline;if(!e.project&&l.project)e.project=l.project;if(l.created_at&&(!e.leadFirst||l.created_at<e.leadFirst))e.leadFirst=l.created_at;});
+  // Webinaraanmeldingen: budget en termijn uit de funnel, alleen als het
+  // formulier hierboven niets gaf (zelfde volgorde als lead_kwalificatie en
+  // lead_warmth). Op e-mailadres, want een aanmelding heeft geen contact_id.
   try{
     const emails=[...new Set((ctR.data||[]).map(ct=>(ct.email||'').toLowerCase()).filter(Boolean))];
     if(emails.length){
@@ -10659,7 +10661,6 @@ async function pipeLoadEnrichment(){
       (ctR.data||[]).forEach(ct=>{const w=byMail[(ct.email||'').toLowerCase()];if(!w)return;const e=PIPE.enrich[ct.id];if(!e.budget&&w.budget)e.budget=w.budget;if(!e.timeline&&w.horizon)e.timeline=w.horizon;});
     }
   }catch(e){}
-  (ldR.data||[]).forEach(l=>{if(!l.contact_id)return;const e=PIPE.enrich[l.contact_id]||(PIPE.enrich[l.contact_id]={});if(!e.budget&&l.budget)e.budget=l.budget;if(!e.timeline&&l.timeline)e.timeline=l.timeline;if(!e.project&&l.project)e.project=l.project;if(l.created_at&&(!e.leadFirst||l.created_at<e.leadFirst))e.leadFirst=l.created_at;});
   // Chat activity per contact: latest message time + which channels are in play.
   (chR.data||[]).forEach(cv=>{if(!cv.contact_id)return;const e=PIPE.enrich[cv.contact_id]||(PIPE.enrich[cv.contact_id]={});const ch=e.chat||(e.chat={at:null,channels:[]});if(cv.channel&&!ch.channels.includes(cv.channel))ch.channels.push(cv.channel);if(cv.last_message_at&&(!ch.at||cv.last_message_at>ch.at))ch.at=cv.last_message_at;});
 }
