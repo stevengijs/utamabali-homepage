@@ -7894,7 +7894,14 @@ function inboxStatusPill(c){
   // Geblokkeerd overstemt alles: dat moet je in de lijst meteen zien, zodat
   // niemand er per ongeluk toch op antwoordt.
   if(c.geblokkeerd) return '<span class="ibx-pill" style="color:#fff;background:#b91c1c;border-color:#991b1b;letter-spacing:.04em">ACCESS BLOCKED</span>';
-  const m=(c.status==='active'&&c.ai_enabled===false)?map.mens:(map[c.status]||map.active);
+  const mens=(c.status==='active'&&c.ai_enabled===false);
+  // Afgevinkt met "Geen antwoord nodig" en sindsdien niets nieuws: dan is er
+  // niets aan zet. "Mens aan zet" las als een openstaande taak, terwijl de
+  // klik wel was verwerkt (Steven, 24 september 2026). De AI blijft uit tot
+  // iemand "Terug naar AI" klikt; dat staat in de tooltip.
+  const afgevinkt=!!(c.afgehandeld_tot&&(!c.last_message_at||new Date(c.afgehandeld_tot)>=new Date(c.last_message_at)));
+  if(mens&&afgevinkt) return '<span class="ibx-pill" style="color:#475569;background:#f1f5f9;border-color:#e2e8f0" title="Afgevinkt: geen antwoord nodig. De AI staat uit op dit gesprek; klik Terug naar AI als de bot weer mag antwoorden.">✓ Afgevinkt</span>';
+  const m=mens?map.mens:(map[c.status]||map.active);
   return `<span class="ibx-pill" style="color:${m[1]};background:${m[2]};border-color:${m[3]}">${m[0]}</span>`;
 }
 async function renderInbox(){
