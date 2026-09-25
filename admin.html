@@ -3893,8 +3893,21 @@ async function bcBewaar(){
   }
   BC.camp=data.id;
   bcCampBewaren();
+  // Tekst gewijzigd na de proef? Dan heeft de server test_at leeggemaakt en
+  // moet er eerst een nieuwe proef uit.
+  if(data.getest===false) BC.getest=false;
   // De lijst ligt vast zodra er iets verstuurd is; de server zegt dat dan zelf.
-  return {id:data.id, ontvangers:data.ontvangers, bevroren:!!data.bevroren};
+  return {id:data.id, ontvangers:data.ontvangers, bevroren:!!data.bevroren,
+          zonderProef:data.getest===false, gewijzigd:!!data.test_nodig};
+}
+
+/* Voor de bevestigingsvraag al zeggen dat er eerst een proef moet, in plaats
+   van dat de verzendfunctie het pas na "Doorgaan?" weigert. */
+function bcEerstProef(st, bewaard, woord){
+  if(!bewaard.zonderProef) return false;
+  st.innerHTML=`<span class="err">${bewaard.gewijzigd?`Je hebt de inhoud gewijzigd na de proef. Stuur eerst opnieuw ${woord}`:`Stuur eerst ${woord}`} naar jezelf.</span>`;
+  bcKanaalTekenen();
+  return true;
 }
 
 async function bcVerstuur(test){
@@ -3912,6 +3925,7 @@ async function bcVerstuur(test){
   }
 
   if(!test){
+    if(bcEerstProef(st, bewaard, 'een proefmail')) return;
     const n=bewaard.ontvangers;
     // Bij een vastgelegde lijst zegt de bevestiging wat er ECHT gebeurt: de
     // rest van die lijst, niet de huidige filterselectie. Precies het verschil
@@ -4027,16 +4041,15 @@ async function bcVerstuurSms(test){
     st.textContent='Proefbericht versturen…';
     const bewaard=await bcBewaar();
     if(bewaard.fout){ st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`; return; }
-    const {data,error}=await sb.functions.invoke('sms-send',{body:{
-      to:nr, body:tekst.replace(/\{\{\s*voornaam\s*\}\}/gi,'Steven').replace(/\{\{\s*project\s*\}\}/gi,'The Maison'),
-      context:'broadcast-test', template_key:'broadcast_test', category:'marketing'}});
+    // Via broadcast-sms en niet rechtstreeks naar sms-send: die eist het
+    // gedeelde geheim, dat de browser niet heeft, dus hier strandde elk
+    // proefbericht op een 401. broadcast-sms stuurt de opgeslagen tekst en zet
+    // zelf test_at; de browser mag de campagnetabel niet meer schrijven.
+    const {data,error}=await sb.functions.invoke('broadcast-sms',{body:{actie:'test', campagne_id:BC.camp, naar:nr}});
     if(error||!data||data.ok!==true){
-      st.innerHTML=`<span class="err">Proefbericht mislukt: ${esc((data&&(data.fout||data.overgeslagen))||(error&&error.message)||'onbekend')}</span>`;
+      st.innerHTML=`<span class="err">Proefbericht mislukt: ${esc((data&&data.reden)||(error&&error.message)||'onbekend')}</span>`;
       return;
     }
-    // Pas na een geslaagd proefbericht mag de echte lijst; broadcast-sms
-    // weigert zonder deze markering.
-    await sb.from('broadcast_campagnes').update({test_at:new Date().toISOString()}).eq('id',BC.camp);
     BC.getest=true;
     st.innerHTML=`Proefbericht verstuurd naar ${esc(nr)}. Controleer hem, dan kun je de campagne versturen.`;
     bcKanaalTekenen();
@@ -4054,6 +4067,7 @@ async function bcVerstuurSms(test){
     else st.innerHTML=`<span class="err">${esc(bewaard.fout)}</span>`;
     return;
   }
+  if(bcEerstProef(st, bewaard, 'een proefbericht')) return;
   const knop=$('#bc_verstuur'); if(knop) knop.disabled=true;
   let totV=0, totM=0, totO=0, rondes=0;
   try{
@@ -4117,10 +4131,12 @@ async function bcVerstuurWa(test){
     if(error){st.innerHTML=`<span class="err">Mislukt: ${esc(error.message)}</span>`;return;}
     if(!data||data.ok===false){st.innerHTML=`<span class="err">${esc((data&&(data.detail||data.reden))||'mislukt')}</span>`;return;}
     st.innerHTML=`Proefbericht verstuurd naar <b>${esc(data.naar)}</b>. Controleer het op je telefoon, dan kun je de eerste golf sturen.`;
+    BC.getest=true; // zoals bij e-mail: overleeft hertekeningen van de knoppenbalk
     const b=$('#bc_verstuur'); b.disabled=false; b.title='';
     return;
   }
 
+  if(bcEerstProef(st, bewaard, 'een proefbericht')) return;
   const n=bewaard.ontvangers, golf=Math.min(BC.golf,n);
   if(!confirm(`Je stuurt nu een golf van ${golf} WhatsApp-berichten (van in totaal ${n}).\n\nDit kun je niet terugdraaien. Doorgaan?`)){
     st.style.display='none';return;
@@ -9930,8 +9946,10 @@ async function openPerson(p){
     if(_attr.utm_source||isMeta)_attrBits.push(['Bron',bronLabel]);
     if(_attr.utm_medium)_attrBits.push(['Medium',_attr.utm_medium]);
     if(_attr.utm_campaign)_attrBits.push(['Campagne',show(_attr.utm_campaign)]);
-    if(_attr.utm_content)_attrBits.push([isMeta?'Advertentieset':'Advertentie',show(_attr.utm_content)]);
-    if(_attr.utm_term)_attrBits.push([isMeta?'Advertentie':'Zoekterm',show(_attr.utm_term)]);
+    // Bij Meta is utm_content de advertentie en utm_term de advertentieset
+    // (zo lossen ze op in meta_names). Die labels stonden omgewisseld.
+    if(_attr.utm_content)_attrBits.push(['Advertentie',show(_attr.utm_content)]);
+    if(_attr.utm_term)_attrBits.push([isMeta?'Advertentieset':'Zoekterm',show(_attr.utm_term)]);
     if(!_attr.utm_source&&_attr.referrer_host)_attrBits.push(['Verwijzer',_attr.referrer_host]);
     _attrHead=_attr.utm_campaign?show(_attr.utm_campaign):(_attr.utm_source?(isMeta?'Meta':_attr.utm_source):'');
     if(_attrChan==='paid'&&!_attr.utm_campaign&&!_attr.utm_source)_attrNote='Herkend als advertentieklik (ad-click-id in de URL), maar er zijn geen campagne-tags meegegeven. Voeg <code>utm_campaign</code>/<code>utm_content</code> toe aan je advertentie-links om te zien wélke advertentie precies.';
