@@ -1198,7 +1198,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-09-werklijst-schoon';
+const APP_VERSIE='2026-09-25-claude-concepten';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2918,7 +2918,13 @@ function bcSessieToken(){
 }
 function bcCampagnesHtml(data){
   const lopend=data.filter(c=>c.status==='bezig');
-  const rest=data.filter(c=>c.status!=='bezig').slice(0,6);
+  // Concepten (nog niets verstuurd) staan in een eigen blok met een knop om ze
+  // te openen. Onderaan vielen ze buiten de zes en waren ze niet te bewerken.
+  // Een concept kan ook van Claude komen; afmaken en versturen gebeurt hier.
+  const isConcept=c=>(c.status==='concept'||c.status==='test')&&!((c.verzonden||0)+(c.mislukt||0)+(c.overgeslagen||0));
+  const concepten=data.filter(isConcept);
+  const rest=data.filter(c=>c.status!=='bezig'&&!isConcept(c)).slice(0,6);
+  const kanNaam=k=>k==='whatsapp'?'WhatsApp':k==='sms'?'SMS':'E-mail';
   const pct=(a,b)=>b>0?Math.round(a/b*100):0;
   const kaart=c=>{
     const behandeld=(c.verzonden||0)+(c.mislukt||0)+(c.overgeslagen||0);
@@ -2928,7 +2934,7 @@ function bcCampagnesHtml(data){
     const basis=c.afgeleverd||c.verzonden||0;
     return `<div class="bc-camp ${loopt?'loopt':''}">
       <span class="bc-camp-naam" title="${esc(c.onderwerp||'')}">${esc(c.naam||'(zonder naam)')}</span>
-      <span class="bc-camp-kan">${c.kanaal==='whatsapp'?'WhatsApp':'E-mail'}</span>
+      <span class="bc-camp-kan">${kanNaam(c.kanaal)}</span>
       ${!loopt&&c.status!=='klaar'?`<span class="bc-camp-kan"${c.status==='geannuleerd'?' style="background:#fbeaea;color:#b42318"':''}>${esc(c.status)}</span>`:''}
       <div class="bc-bar" title="${behandeld} van ${c.doel} behandeld"><i style="width:${pct(behandeld,c.doel)}%"></i></div>
       <div class="bc-cijfers">
@@ -2947,12 +2953,26 @@ function bcCampagnesHtml(data){
                 :'')}
     </div>`;
   };
-  // Lopende campagnes bovenaan het paneel; alles wat af of oud is als apart
-  // blok onderaan, onder de adressenlijst.
+  const conceptKaart=c=>{
+    const vanClaude=(c.filters&&c.filters.concept_door==='claude')||/^Concept \(Claude\)/.test(c.naam||'');
+    return `<div class="bc-camp">
+      <span class="bc-camp-naam" title="${esc(c.onderwerp||'')}">${esc(c.naam||'(zonder naam)')}</span>
+      <span class="bc-camp-kan">${kanNaam(c.kanaal)}</span>
+      ${vanClaude?'<span class="bc-camp-kan" style="background:#e7f4ee;color:#0f6b4f">van Claude</span>':''}
+      ${c.status==='test'?'<span class="bc-camp-kan">test</span>':''}
+      <div class="bc-cijfers"><span><b>${c.doel||0}</b> ontvangers</span>${c.door?`<span>door ${esc(c.door)}</span>`:''}${c.aangemaakt?`<span>${esc(bcDatum(c.aangemaakt))}</span>`:''}</div>
+      <button type="button" class="btn btn-primary btn-sm" data-openen="${esc(c.id)}">Openen</button>
+      <button type="button" class="bc-annuleer" data-annuleer="${esc(c.id)}" data-concept="1" title="Er is nog niets mee verstuurd; het concept verdwijnt uit deze lijst">Weggooien</button>
+    </div>`;
+  };
+  // Lopende campagnes en concepten bovenaan het paneel; alles wat af of oud is
+  // als apart blok onderaan, onder de adressenlijst.
   return {
-    boven: lopend.length
+    boven: (lopend.length
       ? `<div class="bc-lab" style="margin:0">Lopende campagnes</div>`+lopend.map(kaart).join('')
-      : '',
+      : '')+(concepten.length
+      ? `<div class="bc-lab" style="margin:${lopend.length?'8px':'0'} 0 0">Concepten (${concepten.length})</div>`+concepten.map(conceptKaart).join('')
+      : ''),
     onder: rest.length
       ? `<details><summary class="bc-zoekactie" style="cursor:pointer;padding:4px 0">Afgeronde en eerdere campagnes (${rest.length})</summary>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rest.map(kaart).join('')}</div></details>`
@@ -2999,12 +3019,14 @@ async function bcCampagnesLaden(){
 }
 // Eén permanente listener voor de campagneknoppen: overleeft elke hertekening.
 document.addEventListener('click',e=>{
+  const co=e.target.closest&&e.target.closest('[data-openen]');
+  if(co){ bcConceptOpenen(co.dataset.openen); return; }
   const v=e.target.closest&&e.target.closest('[data-verder]');
   if(v){ bcCampagneHervatten(v.dataset.verder); return; }
   const d=e.target.closest&&e.target.closest('[data-detail]');
   if(d){ bcCampagneDetail(d.dataset.detail); return; }
   const a=e.target.closest&&e.target.closest('[data-annuleer]');
-  if(a){ bcCampagneAnnuleren(a.dataset.annuleer); return; }
+  if(a){ bcCampagneAnnuleren(a.dataset.annuleer, !!a.dataset.concept); return; }
   const vv=e.target.closest&&e.target.closest('[data-vervolg]');
   if(vv) bcVervolgStarten(vv.dataset.vervolg);
 });
@@ -3045,10 +3067,100 @@ async function bcVervolgStarten(id){
   if($('#bc_pre')) $('#bc_pre').value=camp.preheader||'';
   if($('#bc_body')) $('#bc_body').innerHTML=camp.body_html||'';
   bcTelling(); bcTabel(); bcKanaalTekenen();
-  toast(`Vervolg klaargezet: gaat naar ${nieuw} mensen die "${BC.vervolgVan.naam}" nog niet kregen`,'ok');
+  toast(`Vervolg klaargezet: gaat naar ${nieuw} mensen die "${esc(BC.vervolgVan.naam)}" nog niet kregen`,'ok');
 }
-async function bcCampagneAnnuleren(id){
-  if(!confirm('Deze campagne annuleren? Wat al verzonden is blijft staan; de rest van de lijst krijgt niets meer.')) return;
+/* Een concept van Claude gaat als HTML de opsteller in, binnen de admin-sessie.
+   Claude leest ook berichten van leads, dus blind vertrouwen kan niet: scripts,
+   frames, formulieren, on*-handlers en javascript:-links gaan eruit. Opmaak,
+   inline stijl en afbeeldingen blijven, die horen in een nieuwsbrief
+   (sanitizeHtml is daarvoor te streng, die gooit afbeeldingen en stijl weg). */
+function bcVeiligeBody(html){
+  const doc=new DOMParser().parseFromString('<div id="__bc">'+String(html||'')+'</div>','text/html');
+  const root=doc.getElementById('__bc');
+  root.querySelectorAll('script,style,iframe,frame,frameset,object,embed,link,meta,base,form,input,button,textarea,select,svg,math,template,noscript').forEach(n=>n.remove());
+  root.querySelectorAll('*').forEach(n=>[...n.attributes].forEach(a=>{
+    const k=a.name.toLowerCase(), v=String(a.value||'').replace(/[\u0000- ]+/g,'').toLowerCase();
+    if(k.startsWith('on')||k==='srcdoc'||k==='formaction'||
+       (/^(href|src|action|xlink:href|background|poster)$/.test(k)&&v&&!/^(https?:|mailto:|tel:|#)/.test(v)))
+      n.removeAttribute(a.name);
+  }));
+  return root.innerHTML;
+}
+/* Een concept (status concept of test, nog niets verstuurd) openen om het af te
+   maken en te versturen. Filters en de opgeslagen ontvangerslijst komen terug,
+   zodat de volgende opslag precies die lijst bewaart en niet wat er toevallig op
+   het scherm stond. Bewust niet via bcCampagneHervatten: die zet de verstuurknop
+   open zonder proefbericht. Hier moet er eerst een proef uit (BC.getest). */
+async function bcConceptOpenen(id){
+  const [ladenUit,rijUit]=await Promise.all([
+    sb.rpc('broadcast_campagne_laden',{p_id:id}),
+    sb.from('broadcast_campagnes').select('ontvangers').eq('id',id).single(),
+  ]);
+  const camp=ladenUit.data;
+  if(ladenUit.error||!camp||camp.ok===false){toast('Kon het concept niet laden','err');return;}
+  if(!(camp.status==='concept'||camp.status==='test')||(camp.behandeld||0)>0){
+    toast('Deze campagne is al (deels) verstuurd en is geen concept meer','err');return;
+  }
+  const f=camp.filters||{};
+  BC_GROEPEN.forEach(g=>{ BC[g]=Array.isArray(f[g])?f[g].map(String):[]; });
+  BC.periode=f.periode||''; BC.kanaal=f.kanaal||'email'; BC.ddOpen=null;
+  bcCampVergeten();
+  BC.camp=null; BC.vast=null; BC.waGolven=0; BC.getest=false;
+  BC.verzendKanaal=camp.kanaal||'email';
+  BC.layout=camp.layout||'utama'; BC.golf=camp.golf_grootte||40;
+  // Was het een vervolg, dan komt de uitsluiting mee terug, net als bij hervatten.
+  BC.vervolgUit=new Set(); BC.vervolgVan=null;
+  if(f.vervolg_van){
+    BC.vervolgVan={id:f.vervolg_van, naam:f.vervolg_naam||'vorige campagne'};
+    try{ const {data:al}=await sb.rpc('broadcast_al_gemaild',{p_id:f.vervolg_van}); BC.vervolgUit=new Set(al||[]); }
+    catch(e){ BC.vervolgUit=new Set(); }
+  }
+  toast('Concept openen…','ok');
+  bcTekenFilters();
+  // Ingehaald door een nieuwere selectie (dubbelklik, filter aangeklikt): dan
+  // hoort de opgeslagen lijst niet meer bij wat er op het scherm staat.
+  const geladen=await bcLaad();
+  if(geladen===null) return;
+  if(!geladen){ toast('Het concept kon niet worden geopend: de selectie laadde niet. Probeer het opnieuw.','err'); return; }
+  // Wie niet in de opgeslagen lijst staat gaat afgevinkt. Wie in de lijst stond
+  // maar nu buiten de selectie valt (afgemeld, uitgesloten) telt niet meer mee.
+  let weg=0;
+  if(!rijUit.error&&rijUit.data){
+    const ontv=new Set(rijUit.data.ontvangers||[]);
+    const rijen=(BC.sel&&BC.sel.rijen)||[];
+    rijen.forEach(r=>{ if(!ontv.has(r.id)) BC.uit.add(r.id); });
+    const inSel=new Set(rijen.map(r=>r.id));
+    ontv.forEach(x=>{ if(!inSel.has(x)) weg++; });
+  } else toast('Kon de opgeslagen ontvangerslijst niet lezen; de lijst volgt nu de filters','err');
+  if(!bcMailbaar().length&&!bcAppbaar().length){
+    bcTelling(); bcTabel();
+    toast('Niemand uit dit concept is nog bereikbaar','err'); return;
+  }
+  bcOpstellen(null);
+  // bcOpstellen begint schoon; pas daarna het concept erin zetten.
+  BC.camp=camp.id; BC.vast=null; BC.waGolven=0; BC.getest=false;
+  BC.conceptId=camp.id;   // aanpassen werkt dit concept bij, zie koppelingLosbreken
+  BC.verzendKanaal=camp.kanaal||'email';
+  BC.layout=camp.layout||'utama'; BC.golf=camp.golf_grootte||40;
+  BC.waTplNaam=camp.wa_template||null;
+  BC.waVars=Array.isArray(camp.wa_variabelen)?camp.wa_variabelen:[];
+  BC.waTpl=(BC.waTpls||[]).find(t=>t.naam===BC.waTplNaam)||null;
+  if($('#bc_naam')) $('#bc_naam').value=camp.naam||'';
+  if($('#bc_golf')) $('#bc_golf').value=BC.golf;
+  if(BC.verzendKanaal==='sms'){ if($('#bc_smstekst')) $('#bc_smstekst').value=camp.body_html||''; }
+  else if(BC.verzendKanaal==='email'){
+    if($('#bc_onderwerp')) $('#bc_onderwerp').value=camp.onderwerp||'';
+    if($('#bc_pre')) $('#bc_pre').value=camp.preheader||'';
+    if($('#bc_body')) $('#bc_body').innerHTML=bcVeiligeBody(camp.body_html);
+  }
+  bcTelling(); bcTabel(); bcKanaalTekenen();
+  toast(`Concept "${esc(camp.naam||'campagne')}" geopend`+(weg?`, ${weg} uit de lijst ${weg===1?'is':'zijn'} niet meer bereikbaar`:'')+
+        '. Stuur eerst een proefbericht, daarna kun je versturen.','ok');
+}
+async function bcCampagneAnnuleren(id, concept){
+  if(!confirm(concept
+    ?'Dit concept weggooien? Er is nog niets mee verstuurd.'
+    :'Deze campagne annuleren? Wat al verzonden is blijft staan; de rest van de lijst krijgt niets meer.')) return;
   try{
     const tok=bcSessieToken();
     const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/broadcast_campagne_annuleren`,{
@@ -3057,7 +3169,10 @@ async function bcCampagneAnnuleren(id){
       body:JSON.stringify({p_id:id})});
     const uit=await r.json().catch(()=>null);
     if(!r.ok||!uit||uit.ok===false) throw new Error((uit&&uit.reden)||('server gaf '+r.status));
-    toast('Campagne geannuleerd','ok');
+    toast(concept?'Concept weggegooid':'Campagne geannuleerd','ok');
+    // Stond dit concept open in de opsteller, dan wordt de volgende opslag een
+    // nieuwe campagne en niet een wijziging van de geannuleerde.
+    if(BC.camp===id){ BC.camp=null; BC.getest=false; bcCampVergeten(); }
   }catch(e){ toast('Annuleren lukte niet: '+String(e&&e.message||e),'err'); }
   BC.campHtml=null; bcCampagnesLaden();
 }
@@ -3096,7 +3211,7 @@ async function bcCampagneHervatten(id){
   }
   bcCampBewaren();
   bcOpstellen(data);
-  toast(`Verder met "${data.naam||'campagne'}": nog ${data.resterend} te gaan`,'ok');
+  toast(`Verder met "${esc(data.naam||'campagne')}": nog ${data.resterend} te gaan`,'ok');
 }
 
 async function bcCampagneDetail(id){
@@ -3126,6 +3241,10 @@ async function bcCampagneDetail(id){
 
 async function bcLaad(){
   const f=bcFilters();
+  // Alleen de nieuwste aanvraag zet de selectie. Een tragere eerdere (die van
+  // het tekenen van dit tabblad) wiste anders de afvinkingen van een net
+  // geopend concept en zette de selectie van de oude filters terug.
+  const nr=BC.laadNr=(BC.laadNr||0)+1;
   const {data,error}=await sb.rpc('broadcast_selectie',{
     p_bronnen:f.bronnen, p_funnels:f.funnels, p_projecten:f.projecten, p_banden:f.banden,
     p_timings:f.timings, p_talen:f.talen, p_vastgoed:f.vastgoed, p_doelen:f.doelen,
@@ -3135,10 +3254,16 @@ async function bcLaad(){
     // kreeg, VÓÓR de 2000-cap. Client-side filteren miste anders iedereen
     // achter de afkapgrens, precies de aanwas waarvoor de knop bestaat.
     p_zonder_campagne:BC.vervolgVan?BC.vervolgVan.id:null});
-  if(error){$('#bc_telling').innerHTML=`<span class="err">${esc(error.message)}</span>`;return;}
+  if(nr!==BC.laadNr) return null;   // ingehaald door een nieuwere aanvraag
+  if(error){$('#bc_telling').innerHTML=`<span class="err">${esc(error.message)}</span>`;return false;}
   BC.sel=data; BC.uit.clear(); BC.open.clear();
   bcTelling(); bcTabel();
+  return true;
 }
+/* bcSelectieLaden werd op zeven plekken aangeroepen maar bestond niet, zodat
+   vervolg en hervatten-met-vervolg vastliepen op een ReferenceError. Het is
+   hetzelfde als bcLaad: de selectie opnieuw ophalen met de huidige filters. */
+function bcSelectieLaden(){ return bcLaad(); }
 
 function bcTelling(){
   const g=bcGekozen(), m=bcMailbaar(), uit=BC.uit.size;
@@ -3681,7 +3806,7 @@ async function bcWaLaden(){
     // Variabelen resetten: een ander template heeft andere posities.
     BC.waVars=Array.from({length:BC.waTpl.variabelen},(_x,i)=>
       i===0?{bron:'voornaam',waarde:''}:{bron:'tekst',waarde:''});
-    BC.camp=null;
+    if(BC.camp!==BC.conceptId) BC.camp=null;
     vak.querySelectorAll('[data-watpl]').forEach(x=>x.classList.toggle('on',x===b));
     bcWaVarsTekenen();
   });
@@ -3724,8 +3849,11 @@ function bcWaVarsTekenen(){
   // in diezelfde campagne de tekst bijschaven voor de volgende golf; de
   // koppeling loslaten zou de server een nieuwe campagne laten weigeren
   // ("je bent nog niet klaar met ..."). De ontvangerslijst blijft hoe dan ook
-  // bevroren, dus niemand krijgt hierdoor twee berichten.
-  const koppelingLosbreken=()=>{ if(!(BC.camp&&BC.waGolven>0)) BC.camp=null; };
+  // bevroren, dus niemand krijgt hierdoor twee berichten. Een geopend concept
+  // blijft ook gekoppeld: anders kwam er bij de volgende proef een nieuwe rij
+  // en bleef het concept als wees in de lijst staan. De server haalt test_at
+  // weg zodra de inhoud verandert, dus er moet dan gewoon opnieuw een proef uit.
+  const koppelingLosbreken=()=>{ if(!(BC.camp&&(BC.waGolven>0||BC.camp===BC.conceptId))) BC.camp=null; };
   vak.querySelectorAll('[data-varbron]').forEach(sel=>sel.onchange=()=>{
     const i=Number(sel.dataset.varbron);
     BC.waVars[i].bron=sel.value; koppelingLosbreken(); bcWaVarsTekenen();
