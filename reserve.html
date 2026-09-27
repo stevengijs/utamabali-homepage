@@ -132,12 +132,18 @@ function sanitizeHtml(dirty){
 function itpToHtml(body){if(!body)return "";if(/<\w+[^>]*>/.test(body))return sanitizeHtml(body);return body.split("\n").map(line=>{const t=line.trim();if(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44)return "<b>"+esc(t)+"</b>";return esc(line);}).join("<br>");}
 function htmlToPlain(h){return (h||"").replace(/<\/(p|div|h[1-6])>/gi,"\n\n").replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/\n{3,}/g,"\n\n").trim();}
 function isHeadingLine(t){t=(t||"").trim();return !!(t&&t===t.toUpperCase()&&/[A-Z]/.test(t)&&t.length<44);}
+// Is dit een teamlid dat in /admin is ingelogd (zelfde domein, dus dezelfde
+// sessie)? Dan telt het openen van deze link niet als opening door de klant.
+// De functie controleert het token zelf; hier alleen doorgeven.
+function teamSessie(){
+  try{const s=JSON.parse(localStorage.getItem("sb-gcpachivrwalsneuvlsa-auth-token")||"null");return (s&&s.access_token)||"";}catch(e){return "";}
+}
 async function api(action,extra){
   // Nooit laten crashen op netwerk-/serverfouten: geef altijd een {ok:false,error}
   // terug zodat de knoppen herstellen en de klant een nette melding ziet
   // (voorheen bleef de pagina hangen op "Laden…" of de knop op "Bezig…").
   try{
-    const r=await fetch(EP,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,token,...(extra||{})})});
+    const r=await fetch(EP,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,token,...(action==="get"&&teamSessie()?{kijker_token:teamSessie()}:{}),...(extra||{})})});
     if(!r.ok){return {ok:false,error:"De server reageert even niet (status "+r.status+"). Probeer het over een minuut opnieuw."};}
     return await r.json();
   }catch(e){
