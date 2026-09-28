@@ -1277,7 +1277,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-28-dagdoelen';
+const APP_VERSIE='2026-09-28-webinar-aanmeldingen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1418,7 +1418,14 @@ const RES = {
     ]},
   webinar_sessions:{page:'webinars', table:'webinar_sessions', title:'Webinar sessions', single:'Session',
     desc:'The webinar(s) themselves.',
-    cols:['title','starts_at','status','platform'],
+    // Aanmeldingen komen mee uit webinar_registrations; testaanmeldingen en die
+    // van het bureau (webinar-scale.com) tellen niet, net als op de werklijst.
+    select:'*,webinar_registrations(name,email,attended)',
+    cols:['title','starts_at','aanmeldingen','status','platform'],
+    virt:{aanmeldingen:{label:'Aanmeldingen',fmt:r=>{
+      const echt=(r.webinar_registrations||[]).filter(x=>!/test|ashley/i.test((x.name||'')+' '+(x.email||''))&&!/@webinar-scale\.com$/i.test(x.email||''));
+      const gekeken=echt.filter(x=>x.attended).length;
+      return echt.length?`<b>${echt.length}</b>${gekeken?` <span class="muted">· ${gekeken} gekeken</span>`:''}`:'<span class="muted">0</span>';}}},
     fields:[
       {k:'title',label:'Title',type:'text',req:true},
       {k:'starts_at',label:'Starts at',type:'datetime'},
@@ -1689,6 +1696,7 @@ function statusBadge(v){if(v==null||v==='')return '<span class="badge grey">—<
 function boolBadge(v){return v?'<span class="badge green">Yes</span>':'<span class="badge grey">No</span>';}
 
 function cell(resKey,f,row){
+  const vd=RES[resKey].virt&&RES[resKey].virt[f];if(vd)return vd.fmt(row);
   const v=row[f];
   const def=(RES[resKey].fields.find(x=>x.k===f))||{};
   if(f==='status'||f==='type'||f==='category'||f==='agreement')return statusBadge(v);
@@ -9331,7 +9339,7 @@ async function renderResource(resKey,mount){
     <div class="toolbar"><input class="search" id="search_${resKey}" placeholder="Search…">${canCreate?`<button class="btn btn-primary btn-sm" id="add_${resKey}">+ New ${R.single}</button>`:(editable?'':'<span class="readonly-tag">Read only</span>')}</div></div>
     <div class="table-wrap" id="tw_${resKey}"><div class="empty">Loading…</div></div></div>`;
   const ob=R.orderBy||'created_at';
-  const {data,error}=await sb.from(R.table).select('*').order(ob,{ascending:!!R.asc,nullsFirst:false});
+  const {data,error}=await sb.from(R.table).select(R.select||'*').order(ob,{ascending:!!R.asc,nullsFirst:false});
   if(error){$('#tw_'+resKey).innerHTML=`<div class="empty">Error: ${esc(error.message)}</div>`;const c=$('#cnt_'+resKey);if(c)c.textContent='!';return;}
   _cache[resKey]=data||[];
   $('#cnt_'+resKey).textContent=_cache[resKey].length;
@@ -9347,7 +9355,7 @@ function drawTable(resKey){
   const tw=$('#tw_'+resKey);if(!tw)return;
   if(!rows.length){tw.innerHTML='<div class="empty">No records'+(q?' match your search.':' yet.')+'</div>';return;}
   let h='<table><thead><tr>';
-  R.cols.forEach(c=>{const def=R.fields.find(f=>f.k===c);h+=`<th>${esc(def?def.label:c)}</th>`;});
+  R.cols.forEach(c=>{const def=R.fields.find(f=>f.k===c)||(R.virt&&R.virt[c]);h+=`<th>${esc(def?def.label:c)}</th>`;});
   h+='<th style="text-align:right">'+(editable?'Actions':'')+'</th></tr></thead><tbody>';
   rows.forEach(r=>{
     h+=`<tr data-row="${r.id}" style="cursor:pointer">`;R.cols.forEach(c=>{h+=`<td>${cell(resKey,c,r)}</td>`;});
