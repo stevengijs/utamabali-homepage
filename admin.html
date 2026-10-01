@@ -1277,7 +1277,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-09-28-webinar-aanmeldingen';
+const APP_VERSIE='2026-10-01-flow-webinar-datum';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -12392,13 +12392,17 @@ async function seqOpen(id){
       sb.from('leads').select('budget').not('budget','is',null).limit(2000),
       sb.from('leads').select('timeline').not('timeline','is',null).limit(2000),
       sb.from('projects').select('name').order('sort_order',{ascending:true}),
-      sb.from('webinar_sessions').select('id,title').order('created_at',{ascending:false})
+      sb.from('webinar_sessions').select('id,title,starts_at').order('starts_at',{ascending:false,nullsFirst:false})
     ]);
+    // Twee sessies kunnen dezelfde titel hebben ("The Reload" op 23 en op 30
+    // september). Zonder datum zijn ze in de keuzelijst niet uit elkaar te
+    // houden. Nederlandse tijd, want daarin wordt het webinar aangekondigd.
+    const wbDatum=v=>{try{return v?new Date(v).toLocaleString('nl-NL',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'}):'nog geen datum';}catch(e){return 'nog geen datum';}};
     SEQ.opts={
       budget:['Tot €200K','€200K–€250K','€250K–€400K','€400K+','Onbekend'],
       timeline:[...new Set((tR.data||[]).map(x=>x.timeline).filter(Boolean))],
       projects:(pR.data||[]).map(x=>x.name).filter(Boolean),
-      webinars:(wR.data||[]).map(x=>({id:x.id,titel:x.title})).filter(x=>x.titel)
+      webinars:(wR.data||[]).filter(x=>x.title).map(x=>({id:x.id,titel:x.title+' · '+wbDatum(x.starts_at)}))
     };
   }
   SEQ.cur={id:id||null,seq,steps,enrollments};
