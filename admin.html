@@ -1208,6 +1208,65 @@
     .seq-h{font-size:13px}
     .seq-step-n{font-size:13px}
   }
+  /* KPI-pagina: doelbalk, keten, persoon, kanalen */
+  .kp-doel{padding:18px}
+  .kp-cijfers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 24px}
+  .kp-cijfers .l{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .kp-cijfers .g{font-size:26px;font-weight:750;line-height:1.15;margin-top:4px;font-variant-numeric:tabular-nums}
+  .kp-cijfers .u{font-size:12px;color:var(--muted);margin-top:2px}
+  .kp-cijfers .gat .g{color:#b0362a}
+  .kp-balk{position:relative;height:12px;border-radius:999px;background:#eef0ef;margin:16px 0 12px}
+  .kp-balk .doel,.kp-balk .get{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+  .kp-balk .doel{background:#bfe5d5}
+  .kp-balk .get{background:var(--brand)}
+  .kp-balk .tempo{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:2px}
+  .kp-strip{display:flex;gap:6px 8px;flex-wrap:wrap;align-items:center;font-size:12px}
+  .kp-hals{font-size:13px;padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:#f2f4f2;max-width:560px}
+  .kp-hals.rood{background:#fbeeec;border-color:#f0d3ce;color:#8f2a20}
+  .kp-hals.oranje{background:#fdf3e2;border-color:#f4e2c1;color:#7a4f0c}
+  .kp-hals.groen{background:#e7f6ef;border-color:#c6ead9;color:#0f6b4f}
+  .kp-keten{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;padding:14px 18px 18px}
+  .kp-tegel{border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:#fff;min-width:0}
+  .kp-tegel .k{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .kp-tegel .v{font-size:21px;font-weight:800;line-height:1.15;margin-top:4px;font-variant-numeric:tabular-nums}
+  .kp-tegel .s{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .kp-tegel .r{font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
+  .kp-tegel.groen{border-color:#c6ead9}
+  .kp-tegel.oranje{border-color:#f0d9ae;background:#fefaf1}
+  .kp-tegel.rood{border-color:#e9b3ab;background:#fdf4f2}
+  .kp-tegel.rood .v{color:#b0362a}
+  .kp-kpi{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:4px 14px;padding:13px 18px;border-bottom:1px solid var(--line);align-items:center}
+  .kp-stip{width:10px;height:10px;border-radius:50%;background:#cfd6d2}
+  .kp-stip.groen{background:var(--brand-2)}
+  .kp-stip.oranje{background:#e0a030}
+  .kp-stip.rood{background:#d0473a}
+  .kp-kpi .t{font-weight:650;font-size:14px}
+  .kp-kpi .u{font-size:12px;color:var(--muted);margin-top:2px}
+  .kp-kpi .w{font-size:18px;font-weight:800;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .kp-kpi .d{font-size:11.5px;color:var(--muted);text-align:right;margin-top:1px}
+  .kp-taken{padding:12px 18px 16px;background:#fafbfa}
+  .kp-takenkop{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+  .kp-taak{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .kp-taak:last-child{border-bottom:none}
+  .kp-det>summary{padding:14px 18px;font-weight:700;font-size:14px;cursor:pointer;list-style:none}
+  .kp-det>summary::-webkit-details-marker{display:none}
+  .kp-det>summary::before{content:'▸';display:inline-block;width:18px;color:var(--muted)}
+  .kp-det[open]>summary::before{content:'▾'}
+  .kp-det[open]>summary{border-bottom:1px solid var(--line)}
+  .kp-det .panel{margin:14px 18px 0;box-shadow:none}
+  .kp-in{width:92px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;text-align:right}
+  .kp-spend{display:flex;gap:10px 16px;flex-wrap:wrap;align-items:center;padding:14px 18px;border-top:1px solid var(--line);font-size:13px}
+  .kp-meting{padding:12px 18px 16px;display:grid;gap:8px;font-size:13px}
+  @media(max-width:1100px){.kp-keten{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @media(max-width:720px){
+    .kp-cijfers{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .kp-cijfers .g{font-size:20px}
+    .kp-keten{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .kp-kpi{grid-template-columns:12px minmax(0,1fr)}
+    .kp-kpi>div:last-child{grid-column:2}
+    .kp-kpi .w,.kp-kpi .d{text-align:left}
+    .kp-hals{max-width:none}
+  }
 </style>
 </head>
 <body>
@@ -1277,7 +1336,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-05-campagne-opstellen';
+const APP_VERSIE='2026-10-05-kpi-dashboard';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1296,6 +1355,7 @@ async function versieCheck(){
 }
 
 const PAGES = [
+  {key:'kpi',      label:'KPI',                    icon:'🏁'},
   {key:'werklijst',label:'Werklijst',              icon:'☀️'},
   {key:'inbox',    label:'Inbox',                  icon:'💬'},
   {key:'pipeline', label:'Pipeline',               icon:'🧭'},
@@ -1439,6 +1499,31 @@ const RES = {
     ]},
 
   /* ---- PORTAL PAGE ---- */
+  /* ---- KPI PAGE: bewerkbaar onder "Aanbod in voorbereiding en mijlpalen" ---- */
+  kpi_pijplijn:{page:'kpi', table:'kpi_pijplijn', title:'Aanbod in voorbereiding', single:'product', orderBy:'volgorde', asc:true,
+    desc:'Producten die nog niet te koop staan. Staat een product te koop, zet het dan in Projects en zet de rij hier op te_koop.',
+    cols:['naam','units','prijs','fase','te_koop_per','gate','gate_datum'],
+    fields:[
+      {k:'naam',label:'Product',type:'text',req:true},
+      {k:'units',label:'Units',type:'number'},
+      {k:'prijs',label:'Prijs per unit (€)',type:'number',money:true},
+      {k:'fase',label:'Fase',type:'select',opts:['idee','grond','ontwerp','geprijsd','te_koop','vervallen']},
+      {k:'te_koop_per',label:'Te koop per',type:'date'},
+      {k:'gate',label:'Volgende gate',type:'text'},
+      {k:'gate_datum',label:'Datum gate',type:'date'},
+      {k:'notitie',label:'Notitie',type:'textarea'},
+      {k:'volgorde',label:'Volgorde',type:'number'},
+    ]},
+  kpi_mijlpalen:{page:'kpi', table:'kpi_mijlpalen', title:'Mijlpalen', single:'mijlpaal', orderBy:'datum', asc:true,
+    desc:'Beslismomenten met een datum. Zolang Klaar uit staat, komt de mijlpaal als taak terug.',
+    cols:['titel','datum','eigenaar','klaar'],
+    fields:[
+      {k:'titel',label:'Mijlpaal',type:'text',req:true},
+      {k:'datum',label:'Datum',type:'date',req:true},
+      {k:'eigenaar',label:'Eigenaar',type:'select',opts:['steven','ashley']},
+      {k:'klaar',label:'Klaar',type:'bool'},
+      {k:'volgorde',label:'Volgorde',type:'number'},
+    ]},
   purchases:{page:'portal', table:'purchases', title:'Purchases', single:'Purchase', noCreate:true,
     desc:'Reservations, contracts & completed sales.',
     cols:['buyer_name','project','unit','status','price','created_at'],
@@ -1451,6 +1536,10 @@ const RES = {
       {k:'deposit_amount',label:'Deposit (€)',type:'number',money:true},
       {k:'deposit_paid_at',label:'Deposit paid at',type:'datetime'},
       {k:'contract_signed_at',label:'Contract signed at',type:'datetime'},
+      // Deze drie samen zijn de handtekening die op het KPI-dashboard als omzet telt.
+      {k:'lease_getekend_at',label:'Lease getekend (notaris)',type:'date'},
+      {k:'bouw_getekend_at',label:'Bouwovereenkomst getekend',type:'date'},
+      {k:'coordinatie_getekend_at',label:'Coordinatieovereenkomst getekend',type:'date'},
       {k:'notes',label:'Notes',type:'textarea'},
       {k:'contact_id',label:'Contact ID',type:'text'},
       TS('created_at'),
@@ -1942,7 +2031,7 @@ function gzInit(){
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',werklijst:'Werklijst',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users',ads:'Ads'};
+  const titles={dashboard:'Dashboard',kpi:'KPI',werklijst:'Werklijst',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users',ads:'Ads'};
   $('#pageTitle').textContent=titles[k]||k;
   versieCheck();
   if(k==='dashboard')return renderDashboard();
@@ -1951,6 +2040,7 @@ function go(k){
   if(k==='users')return renderUsers();
   if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;}
   if(k==='werklijst')return renderWerklijst();
+  if(k==='kpi')return renderKpi();
   if(k==='leads')return renderPeople();
   if(k==='inbox')return renderInbox();
   if(k==='pipeline')return renderPipeline();
@@ -1961,6 +2051,192 @@ function go(k){
   if(k==='ads')return renderAds();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
+}
+
+/* ================= KPI =================
+   Eén scherm: doelbalk, keten, persoon, kanalen. Alle cijfers en doelen komen
+   uit kpi_dashboard() in de database: geen doel en geen budget is ingetypt,
+   ze volgen uit de ambitie, het aanbod en de tarieven. De pagina kiest alleen
+   de kleur van een tegel en de flessenhals. Details staan dichtgeklapt, zodat
+   het scherm leesbaar blijft. Opdracht en beslissingen van Steven (5 oktober
+   2026): brain, 40-systems/kpi-dashboard.md. */
+let KPI={data:null,persoon:null};
+const kpN=(x,d)=>(x==null||!isFinite(x))?'–':Number(x).toLocaleString('nl-NL',{minimumFractionDigits:0,maximumFractionDigits:d==null?1:d});
+const kpKort=x=>{x=Number(x)||0;return Math.abs(x)>=1e6?'€'+kpN(x/1e6,2)+'M':(Math.abs(x)>=10000?'€'+kpN(x/1000,0)+'K':anMoney(x));};
+const kpPct=x=>(x==null||!isFinite(x))?'–':kpN(Number(x)*100,1)+'%';
+// Groen vanaf 90% van het doel, oranje vanaf 60%, daaronder rood. Zonder doel geen kleur.
+function kpKleur(werkelijk,doel){if(doel==null||!isFinite(doel))return '';if(doel<=0)return 'groen';const r=(Number(werkelijk)||0)/doel;return r>=.9?'groen':(r>=.6?'oranje':'rood');}
+function kpDatum(s){if(!s)return '–';const [y,m,d]=String(s).slice(0,10).split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});}
+async function renderKpi(){
+  const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">KPI laden…</div>';
+  const {data,error}=await sb.rpc('kpi_dashboard');
+  if(CURRENT!=='kpi')return;
+  if(error){v.innerHTML=`<div class="panel"><div class="empty">KPI niet beschikbaar: ${esc(error.message)}</div></div>`;return;}
+  KPI.data=data;if(!KPI.persoon)KPI.persoon=data.ik||'steven';
+  kpiTeken();
+}
+/* De keten van omzet terug naar advertentiebudget. Per stap: wat er in de
+   laatste vier weken gebeurde, wat er per vier weken nodig is voor het
+   verkoopdoel (wat het aanbod toelaat) en voor de ambitie. De flessenhals is
+   de stap die het verst onder het verkoopdoel zit; bij gelijke stand de stap
+   het dichtst bij de bron, want die houdt de rest tegen. */
+function kpiKeten(d){
+  const a=d.niveaus.find(n=>n.naam==='aanbod')||{}, b=d.niveaus.find(n=>n.naam==='ambitie')||{}, w=d.werkelijk, t=d.tarieven, s=d.steven, g=d.doel;
+  const meet=k=>{const m=t[k];return (m&&Number(m.noemer)>0)?`Gemeten: ${kpPct(m.gemeten)} (${kpN(m.teller,0)} van ${kpN(m.noemer,0)})`:'Nog niet gemeten';};
+  const totaal=Math.max(1,Math.round((new Date(g.eind)-new Date(g.start))/864e5)+1), verstreken=Math.max(0,1-g.dagen_over/totaal);
+  const verwacht=(g.verkoopdoel||0)*verstreken;
+  const startKleur=verstreken<0.04?'':kpKleur(g.getekend,verwacht);
+  const flow=(sleutel,naam,eig,werk,pw,tarief,naar)=>({sleutel,naam,eig,werk,nodig:(a[pw]||0)*4,amb:(b[pw]||0)*4,
+    v:kpN(werk,0),s:`nodig ${kpN((a[pw]||0)*4,1)} · bij €5M ${kpN((b[pw]||0)*4,1)}`,
+    r:tarief?`${kpPct(t[tarief].model)} ${naar}`:'',tip:tarief?meet(tarief):'',kleur:kpKleur(werk,(a[pw]||0)*4)});
+  const stappen=[
+    {sleutel:'omzet',naam:'Omzet getekend',eig:'Steven',v:kpKort(g.getekend),s:`doel ${kpKort(g.verkoopdoel)} · ambitie ${kpKort(g.ambitie)}`,r:`${kpKort(g.tempo_per_maand)} per maand nodig`,tip:'Getekend = lease bij de notaris plus bouw- en coordinatieovereenkomst. Een ITP telt niet.',kleur:startKleur},
+    {sleutel:'getekend',naam:'Handtekeningen',eig:'Steven',v:kpN(g.getekend_units,0),s:`nodig ${kpN(a.units,0)} · bij €5M ${kpN(b.units,0)}`,r:`${kpN(g.itp_units,0)} met een ITP`,tip:'Units waarvan alle drie de documenten getekend zijn, in het venster.',kleur:startKleur},
+    flow('itps','ITP\'s met aanbetaling','Ashley',w.itps_28,'itps_pw','itp_teken','tekent'),
+    flow('calls','Intro-calls gehouden','Ashley',w.calls_28,'calls_pw','call_itp','naar ITP'),
+    flow('warm','Warme leads','Steven',w.warm_28,'warm_pw','warm_call','naar call'),
+    flow('leads','Leads','Steven',w.leads_28,'leads_pw','lead_warm','wordt warm'),
+    {sleutel:'budget',naam:'Advertentiebudget',eig:'Steven',v:s.spend_maand==null?'–':anMoney(s.spend_maand),s:`nodig ${anMoney(a.budget_pm)} · bij €5M ${anMoney(b.budget_pm)} per maand`,
+      r:`€${kpN(s.kosten_per_lead,0)} per lead (${s.kosten_per_lead_gemeten?'gemeten':'aanname'})${s.spend_maand==null?' · besteding niet ingevuld':''}`,tip:'Nodig = (leads nodig min gratis leads) maal de kosten per lead. Besteed = wat voor deze maand is ingevuld.',kleur:''},
+  ];
+  // Flessenhals: van bron naar omzet zoeken naar de laagste verhouding onder 90%.
+  let hals=null,laagst=.9;
+  ['leads','warm','calls','itps'].forEach(k=>{const st=stappen.find(x=>x.sleutel===k);if(!(st.nodig>0))return;const r=(Number(st.werk)||0)/st.nodig;if(r<laagst){laagst=r;hals=st;}});
+  if(hals)hals.hals=true;
+  return {stappen,hals};
+}
+function kpiTeken(){
+  const v=$('#view'),d=KPI.data;if(!d||CURRENT!=='kpi')return;
+  const g=d.doel,s=d.steven,a=d.ashley,wie=KPI.persoon;
+  const nA=d.niveaus.find(n=>n.naam==='aanbod')||{}, nB=d.niveaus.find(n=>n.naam==='ambitie')||{}, w=d.werkelijk;
+  const {stappen,hals}=kpiKeten(d);
+  const totaal=Math.max(1,Math.round((new Date(g.eind)-new Date(g.start))/864e5)+1), verstreken=Math.max(0,1-g.dagen_over/totaal);
+  const pc=x=>Math.max(0,Math.min(100,(x/(g.ambitie||1))*100));
+  // ---- Blok 1: doelbalk ----
+  let h=`<div class="panel" style="margin-top:0"><div class="kp-doel">
+    <div class="kp-cijfers">
+      <div><div class="l">Getekend</div><div class="g">${anMoney(g.getekend)}</div><div class="u">${kpN(g.getekend_units,0)} units</div></div>
+      <div><div class="l">Verkoopdoel</div><div class="g">${anMoney(g.verkoopdoel)}</div><div class="u">wat er nu te koop staat · ${kpKort(g.tempo_per_maand)} per maand</div></div>
+      <div><div class="l">Ambitie</div><div class="g">${anMoney(g.ambitie)}</div><div class="u">${kpDatum(g.start)} tot ${kpDatum(g.eind)} · nog ${kpN(g.dagen_over,0)} dagen</div></div>
+      <div class="${g.gat>0?'gat':''}"><div class="l">Aanbod-gat</div><div class="g">${anMoney(g.gat)}</div><div class="u">${g.gat>0?`ongeveer ${kpN(g.gat_units,0)} villa's die nog niet te koop staan · Steven`:'het aanbod dekt de ambitie'}</div></div>
+    </div>
+    <div class="kp-balk" title="Donker: getekend. Licht: verkoopdoel. Streep: waar het vandaag zou moeten staan.">
+      <div class="doel" style="width:${pc(g.verkoopdoel)}%"></div><div class="get" style="width:${pc(g.getekend)}%"></div>
+      <div class="tempo" style="left:${pc((g.verkoopdoel||0)*verstreken)}%"></div></div>
+    <div class="kp-strip">${(d.voorraad||[]).map(p=>`<span class="badge grey">${esc(p.project)}: ${kpN(p.vrij,0)} te koop${p.gereserveerd?`, ${kpN(p.gereserveerd,0)} met ITP`:''}</span>`).join('')}
+      <span class="badge ${g.pijplijn_units>0?'blue':'red'}">In voorbereiding: ${kpN(g.pijplijn_units,0)} units · ${kpKort(g.pijplijn_waarde)}</span>
+      <span class="muted">Een handtekening telt als omzet: lease bij de notaris plus bouw- en coordinatieovereenkomst.</span></div>
+  </div></div>`;
+  // ---- Blok 2: de keten ----
+  h+=`<div class="panel"><div class="panel-head"><div><h3>De keten: van omzet terug naar budget</h3><div class="desc">Laatste 4 weken tegenover wat er per 4 weken nodig is. Niets is ingetypt: alles volgt uit het doel.</div></div>
+    <div class="kp-hals ${hals?'rood':(g.gat>0?'oranje':'groen')}">${hals?`Flessenhals: <b>${esc(hals.naam.toLowerCase())}</b>. ${esc(hals.v)} in 4 weken, ${kpN(hals.nodig,1)} nodig. Eigenaar: ${esc(hals.eig)}.`:(g.gat>0?'De keten haalt het verkoopdoel. De rem is nu het <b>aanbod</b>. Eigenaar: Steven.':'Alles op schema.')}</div></div>
+    <div class="kp-keten">${stappen.map(x=>`<div class="kp-tegel ${x.hals?'rood':x.kleur}" title="${esc(x.tip||'')}"><div class="k">${esc(x.naam)}</div><div class="v">${esc(x.v)}</div><div class="s">${esc(x.s)}</div>${x.r?`<div class="r">${esc(x.r)}</div>`:''}</div>`).join('')}</div></div>`;
+  // ---- Blok 3: persoon ----
+  const rij=(kleur,titel,uitleg,waarde,doel)=>`<div class="kp-kpi"><span class="kp-stip ${kleur||''}"></span><div><div class="t">${titel}</div><div class="u">${uitleg}</div></div><div><div class="w">${waarde}</div><div class="d">${doel||''}</div></div></div>`;
+  let rijen='',taken=[];
+  if(wie==='ashley'){
+    taken=a.taken||[];
+    const wacht=(Number(a.nieuw_1u)||0)+(Number(a.wacht)||0);
+    rijen+=rij(wacht>0?'rood':'groen','Wachtende leads en eerste contact',
+      `Op tijd persoonlijk benaderd: ${kpN(a.op_tijd,0)} van ${kpN(a.deadline_verlopen,0)} websiteleads (4 weken)${a.mediaan_uur!=null?` · mediaan ${kpN(a.mediaan_uur,1)} uur`:''} · automatisch antwoord binnen 5 minuten: ${kpN(a.auto_binnen_5min,0)} van ${kpN(a.leads_n,0)}`,
+      `${kpN(wacht,0)} wachten`,'norm: bericht binnen 1 uur in werktijd');
+    rijen+=rij(kpKleur(a.bereikt,a.leads_n),'Opvolging gelogd',
+      `Websiteleads van 4 weken met een persoonlijk bericht uit de inbox of een gelogde belpoging. Gemiddeld ${kpN(a.pogingen_gem,1)} pogingen per lead.`,
+      `${kpN(a.bereikt,0)} van ${kpN(a.leads_n,0)}`,'norm: 6 pogingen in 14 dagen');
+    rijen+=rij(kpKleur(a.calls_28,(nA.calls_pw||0)*4),'Intro-calls gehouden',
+      `Deze week ${kpN(a.calls_week,0)} gehouden, ${kpN(a.calls_gepland,0)} gepland · no-show ${kpN(a.noshow_56,0)} van ${kpN((Number(a.noshow_56)||0)+(Number(a.gehouden_56)||0),0)} in 8 weken`,
+      `${kpN(a.calls_28,0)} in 4 weken`,`nodig ${kpN((nA.calls_pw||0)*4,1)} · bij €5M ${kpN((nB.calls_pw||0)*4,1)}`);
+    rijen+=rij(kpKleur(a.itp_28,(nA.itps_pw||0)*4),'ITP\'s met aanbetaling',
+      `Deze maand ${kpN(a.itp_maand,0)} · met de volledige ${anMoney(a.aanbetaling_norm)}: ${kpN(a.itp_vol_28,0)} van ${kpN(a.itp_28,0)}`,
+      `${kpN(a.itp_28,0)} in 4 weken`,`nodig ${kpN((nA.itps_pw||0)*4,1)} · bij €5M ${kpN((nB.itps_pw||0)*4,1)}`);
+    rijen+=rij('','Commissie verdiend',`${kpPct(a.commissie_pct)} van de getekende omzet`,anMoney(a.commissie_verdiend),`bij het verkoopdoel ${anMoney(a.commissie_aanbod)} · bij €5M ${anMoney(a.commissie_ambitie)}`);
+  }else{
+    taken=s.taken||[];
+    const dekOk=g.gat<=0||(Number(g.dekking_maanden)||0)>=(Number(g.voorraad_norm)||0);
+    rijen+=rij(g.gat<=0?'groen':(dekOk?'oranje':'rood'),'Aanbod',
+      g.gat>0?`Op ambitietempo is de voorraad op rond ${kpDatum(g.voorraad_op)}: ${kpN(g.dekking_maanden,1)} maanden, norm ${kpN(g.voorraad_norm,0)}. In voorbereiding: ${kpN(g.pijplijn_units,0)} units.`:'Wat te koop staat dekt de ambitie.',
+      g.gat>0?`gat ${kpKort(g.gat)}`:'gedekt',g.gat>0?`ongeveer ${kpN(g.gat_units,0)} villa's erbij`:'');
+    const dag=((new Date().getDay()+6)%7)+1, verwachtReels=Math.max(1,Math.round((Number(s.reels_norm)||7)*dag/7));
+    rijen+=rij(kpKleur(s.reels_week,verwachtReels),'Reels deze week',
+      `${kpN(s.reels_streak,0)} dagen op rij · ${kpN(s.reels_klaar,0)} klaar om te posten · ${kpN(s.reels_28,0)} in de laatste 4 weken`,
+      `${kpN(s.reels_week,0)} van ${kpN(s.reels_norm,0)}`,'norm: één per dag');
+    rijen+=rij(kpKleur(w.leads_pw,nA.leads_pw),'Leads per week',
+      `Gratis ${kpN(w.gratis_pw,1)} (reels, DM's, broadcasts, overig) · betaald ${kpN(w.betaald_pw,1)}. Elke gratis lead per week scheelt ongeveer ${anMoney((Number(s.kosten_per_lead)||0)*52/12)} advertentiebudget per maand.`,
+      kpN(w.leads_pw,1),`nodig ${kpN(nA.leads_pw,1)} · bij €5M ${kpN(nB.leads_pw,1)}`);
+    rijen+=rij(s.spend_maand==null?'':'groen','Advertentiebudget',
+      `Volgt uit het doel: leads nodig min gratis leads, maal €${kpN(s.kosten_per_lead,0)} per lead (${s.kosten_per_lead_gemeten?'gemeten':'aanname, nog niet gemeten'}).`,
+      s.spend_maand==null?'niet ingevuld':anMoney(s.spend_maand)+' besteed',`nodig ${anMoney(nA.budget_pm)} · bij €5M ${anMoney(nB.budget_pm)} per maand`);
+    const itps=d.itp_open||[], oud=itps.filter(x=>Number(x.dagen)>Number(s.teken_dagen_norm));
+    rijen+=rij(oud.length?'rood':'groen','ITP\'s die op de handtekening wachten',
+      itps.length?itps.map(x=>`${esc(x.project)} ${esc(x.unit)}: ${kpN(x.dagen,0)} dagen`).join(' · '):'Geen open ITP\'s.',
+      kpN(itps.length,0),`norm: getekend binnen ${kpN(s.teken_dagen_norm,0)} dagen`);
+  }
+  h+=`<div class="panel"><div class="panel-head"><div><h3>Wat moet er gebeuren</h3><div class="desc">${wie==='ashley'?'Van lead tot ITP. Deze doelen zijn een voorstel tot Steven ze met Ashley heeft afgesproken.':'Aanbod, aandacht en handtekeningen.'}</div></div>
+    <div class="seg" id="kp_wie"><button data-wie="steven" class="${wie==='steven'?'on':''}">Steven</button><button data-wie="ashley" class="${wie==='ashley'?'on':''}">Ashley</button></div></div>
+    ${rijen}
+    <div class="kp-taken"><div class="kp-takenkop">Deze week</div>${taken.length?taken.map(t=>`<div class="kp-taak"><span>${esc(t.tekst)}</span>${t.naar&&t.naar!=='kpi'&&canView(t.naar)?`<button class="btn btn-ghost btn-sm" data-naar="${esc(t.naar)}">Open</button>`:''}</div>`).join(''):'<div class="kp-taak"><span class="muted">Niets dat achterloopt.</span></div>'}</div></div>`;
+  // ---- Blok 4: kanalen ----
+  const OORDEEL={werkt:['green','Werkt'],testen:['blue','Testen'],stoppen:['red','Stoppen'],achtergrond:['grey','Achtergrond'],niet_gebruikt:['grey','Niet gebruikt']};
+  h+=`<div class="panel"><div class="panel-head"><div><h3>Kanalen: wat werkt</h3><div class="desc">Laatste 8 weken, op het eerste contact van een lead. Werkt = minstens één warme lead. Stoppen = genoeg geprobeerd zonder warme lead.</div></div></div>
+    <div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Kanaal</th><th>Eigenaar</th><th>Gedaan</th><th style="text-align:right">Leads</th><th style="text-align:right">Warm</th><th>Oordeel</th></tr></thead><tbody>
+    ${(d.kanalen||[]).map(k=>{const o=OORDEEL[k.oordeel];return `<tr><td><b>${esc(k.naam)}</b></td><td class="muted">${esc(k.eigenaar)}</td><td>${esc(k.gedaan_tekst||'–')}</td><td style="text-align:right">${kpN(k.leads,0)}</td><td style="text-align:right"><b>${kpN(k.warm,0)}</b></td><td>${o?`<span class="badge ${o[0]}">${o[1]}</span>`:''}</td></tr>`;}).join('')}
+    </tbody></table></div>
+    <div class="muted" style="font-size:12px;padding:10px 18px 14px">SMS staat er niet bij: dat gebruiken we voor herinneringen voor calls en webinars, niet voor campagnes.</div></div>`;
+  // ---- Details, dichtgeklapt ----
+  const TAR={lead_warm:1,warm_call:1,call_itp:1,itp_teken:1,kosten_per_lead:1}, bew=!!d.mag_bewerken;
+  const SOORT={doel:['green','doel'],aanname:['amber','aanname'],gemeten:['blue','gemeten'],norm:['grey','norm']};
+  const invoer=(d.instellingen||[]).map(x=>{
+    const isPct=['lead_warm','warm_call','call_itp','itp_teken','commissie'].includes(x.sleutel), vast=x.sleutel==='start'||x.sleutel==='eind';
+    const m=d.tarieven[x.sleutel], heeftMeting=m&&m.gemeten!=null&&Number(m.noemer)>0;
+    // Overnemen kan pas bij genoeg waarnemingen; één call zegt niets over het tarief.
+    const genoeg=heeftMeting&&Number(m.gemeten)>0&&(x.sleutel==='kosten_per_lead'||Number(m.noemer)>=20);
+    const toon=vast?kpDatum(x.tekst):(isPct?kpN(x.waarde*100,1)+'%':kpN(x.waarde,0));
+    const meting=TAR[x.sleutel]?(heeftMeting?`${x.sleutel==='kosten_per_lead'?anMoney(m.gemeten):kpPct(m.gemeten)} <span class="muted">(${x.sleutel==='kosten_per_lead'?`${anMoney(m.teller)} op ${kpN(m.noemer,0)} leads`:`${kpN(m.teller,0)} van ${kpN(m.noemer,0)}${Number(m.noemer)<20?', te weinig om over te nemen':''}`})</span>`:'<span class="muted">niet gemeten</span>'):'';
+    const so=SOORT[x.soort]||['grey',x.soort];
+    return `<tr><td>${esc(x.label)}</td><td><span class="badge ${so[0]}">${so[1]}</span></td>
+      <td>${bew&&!vast?`<input class="kp-in" data-inst="${esc(x.sleutel)}" data-pct="${isPct?1:0}" value="${isPct?kpN(x.waarde*100,1).replace(',','.'):Number(x.waarde)}" inputmode="decimal">${isPct?' %':''}`:toon}</td>
+      <td>${meting}</td><td style="text-align:right">${bew&&!vast?`<button class="btn btn-ghost btn-sm" data-opslaan="${esc(x.sleutel)}">Opslaan</button>`:''}${bew&&genoeg&&TAR[x.sleutel]?` <button class="btn btn-ghost btn-sm" data-neem="${esc(x.sleutel)}" data-w="${Number(m.gemeten)}">Neem gemeten over</button>`:''}</td></tr>`;}).join('');
+  const maand=s.maand?new Date(s.maand):new Date(), vorige=new Date(maand.getFullYear(),maand.getMonth()-1,1);
+  const mNaam=x=>x.toLocaleDateString('nl-NL',{month:'long',year:'numeric'}), mIso=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-01';
+  h+=`<details class="panel kp-det"><summary>Model en invoer</summary>
+      <div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Invoer</th><th>Soort</th><th>Waarde in het model</th><th>Gemeten, laatste 12 weken</th><th></th></tr></thead><tbody>${invoer}</tbody></table></div>
+      <div class="kp-spend"><b>Advertentiekosten per maand</b><span class="muted">Er is geen Meta-koppeling; vul het bedrag uit Ads Manager in.</span>
+        ${[[vorige,s.spend_vorige],[maand,s.spend_maand]].map(([dt,bedrag])=>`<label>${esc(mNaam(dt))} <input class="kp-in" data-spend="${mIso(dt)}" value="${bedrag==null?'':Number(bedrag)}" placeholder="€" inputmode="decimal" ${bew?'':'disabled'}></label>`).join('')}
+        ${bew?'<button class="btn btn-primary btn-sm" id="kp_spend">Opslaan</button>':''}</div></details>
+    <details class="panel kp-det" id="kp_det_aanbod"><summary>Aanbod in voorbereiding en mijlpalen</summary><div id="kp_pijplijn"></div><div id="kp_mijlpalen"></div>
+      <div class="muted" style="font-size:12px;padding:12px 18px">Na een wijziging hier: klik op Ververs bovenaan. Tekendata van een koop vul je in bij Portal &amp; Investors, Purchases.</div></details>
+    <details class="panel kp-det"><summary>Wat wordt gemeten</summary><div class="kp-meting">${(d.meting||[]).map(m=>`<div><span class="badge ${m.ok?'green':'amber'}">${m.ok?'gemeten':'niet gemeten'}</span> <b>${esc(m.punt)}</b><span class="muted"> ${esc(m.uitleg)}</span></div>`).join('')}
+      <div class="muted">Een lead is een nieuw persoon: een websiteaanvraag, een gesprek met een echt inkomend bericht of een webinaraanmelding. Warm = gekwalificeerd in een gesprek, of als kaart op Gekwalificeerd of in de Sales pipeline. Bijgewerkt ${esc(fmtDateTime(d.bijgewerkt))}.</div></div></details>`;
+  const wasOpen=[...v.querySelectorAll('details.kp-det')].map(x=>x.open);
+  v.innerHTML=h;
+  v.querySelectorAll('details.kp-det').forEach((x,n)=>{if(wasOpen[n])x.open=true;});
+  $('#topRight').innerHTML='<button class="btn btn-ghost btn-sm" id="kp_ververs">Ververs</button>';
+  $('#kp_ververs').onclick=()=>renderKpi();
+  v.querySelectorAll('#kp_wie button').forEach(b=>b.onclick=()=>{KPI.persoon=b.dataset.wie;kpiTeken();});
+  v.querySelectorAll('[data-naar]').forEach(b=>b.onclick=()=>go(b.dataset.naar));
+  // De bewerkbare tabellen pas laden als het blok opengaat, dan blijft de pagina licht.
+  const det=$('#kp_det_aanbod');
+  const laadAanbod=()=>{if(det&&det.open&&!det.dataset.geladen){det.dataset.geladen='1';renderResource('kpi_pijplijn',$('#kp_pijplijn'));renderResource('kpi_mijlpalen',$('#kp_mijlpalen'));}};
+  if(det){det.addEventListener('toggle',laadAanbod);laadAanbod();}
+  const zet=async(sleutel,waarde,soort)=>{
+    if(!isFinite(waarde)){toast('Vul een getal in','err');return;}
+    const {data,error}=await sb.rpc('kpi_instelling_zet',{p_sleutel:sleutel,p_waarde:waarde,p_soort:soort||null});
+    if(error){toast('Opslaan mislukt: '+error.message,'err');return;}
+    KPI.data=data;toast('Opgeslagen. Alle doelen zijn opnieuw berekend.','ok');kpiTeken();
+  };
+  v.querySelectorAll('[data-opslaan]').forEach(b=>b.onclick=()=>{const i=v.querySelector(`[data-inst="${b.dataset.opslaan}"]`);const x=parseFloat(String(i.value).replace(',','.'));zet(b.dataset.opslaan,i.dataset.pct==='1'?x/100:x,null);});
+  v.querySelectorAll('[data-neem]').forEach(b=>b.onclick=()=>zet(b.dataset.neem,Math.round(Number(b.dataset.w)*1000)/1000,'gemeten'));
+  const sp=$('#kp_spend');if(sp)sp.onclick=async()=>{
+    let laatste=null;
+    for(const i of v.querySelectorAll('[data-spend]')){
+      if(String(i.value).trim()==='')continue;
+      const x=parseFloat(String(i.value).replace(',','.'));if(!isFinite(x)||x<0){toast('Vul een bedrag in','err');return;}
+      const {data,error}=await sb.rpc('kpi_advertentiekosten_zet',{p_maand:i.dataset.spend,p_bedrag:x});
+      if(error){toast('Opslaan mislukt: '+error.message,'err');return;}
+      laatste=data;
+    }
+    if(laatste){KPI.data=laatste;toast('Advertentiekosten opgeslagen','ok');kpiTeken();}
+  };
 }
 
 /* ================= ADS =================
