@@ -1337,7 +1337,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-05-kpi-verkopen-meta';
+const APP_VERSIE='2026-10-05-kpi-alleen-eigen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2108,9 +2108,12 @@ function kpiKeten(d){
 }
 function kpiTeken(){
   const v=$('#view'),d=KPI.data;if(!d||CURRENT!=='kpi')return;
-  const g=d.doel,s=d.steven,a=d.ashley,wie=KPI.persoon;
+  // Alleen de eigenaar ziet alles; een ander ziet het doel en de eigen KPI's (Steven, 5 oktober
+  // 2026). De database stuurt een ander ook niet meer mee dan dat (kpi_dashboard).
+  const eig=d.eigenaar!==false;
+  const g=d.doel,s=d.steven||{},a=d.ashley||{},wie=eig?KPI.persoon:d.ik;
   const nA=d.niveaus.find(n=>n.naam==='aanbod')||{}, nB=d.niveaus.find(n=>n.naam==='ambitie')||{}, w=d.werkelijk;
-  const {stappen,hals}=kpiKeten(d);
+  const {stappen,hals}=eig?kpiKeten(d):{stappen:[],hals:null};
   const totaal=Math.max(1,Math.round((new Date(g.eind)-new Date(g.start))/864e5)+1), verstreken=Math.max(0,1-g.dagen_over/totaal);
   const pc=x=>Number(g.ambitie)>0?Math.max(0,Math.min(100,(Number(x)||0)/g.ambitie*100)):0;
   // ---- Blok 1: doelbalk ----
@@ -2129,8 +2132,8 @@ function kpiTeken(){
       <span class="badge ${g.pijplijn_units>0?'blue':'red'}">In voorbereiding: ${kpN(g.pijplijn_units,0)} units · ${kpKort(g.pijplijn_waarde)}</span>
       <span class="muted">Omzet telt zodra de kaart op Gewonnen staat in de Sales pipeline, of als de koop getekend is (de drie documenten, of anders de contractdatum). Een ITP telt als reservering.</span></div>
   </div></div>`;
-  // ---- Blok 2: de keten ----
-  h+=`<div class="panel"><div class="panel-head"><div><h3>De keten: van omzet terug naar budget</h3><div class="desc">Laatste 4 weken tegenover wat er per 4 weken nodig is. Niets is ingetypt: alles volgt uit het doel.</div></div>
+  // ---- Blok 2: de keten (alleen de eigenaar) ----
+  if(eig)h+=`<div class="panel"><div class="panel-head"><div><h3>De keten: van omzet terug naar budget</h3><div class="desc">Laatste 4 weken tegenover wat er per 4 weken nodig is. Niets is ingetypt: alles volgt uit het doel.</div></div>
     <div class="kp-hals ${hals?'rood':(g.gat>0?'oranje':'groen')}">${hals?`Flessenhals: <b>${esc(hals.naam.toLowerCase())}</b>. ${esc(hals.v)} in 4 weken, ${kpN(hals.nodig,1)} nodig. Eigenaar: ${esc(hals.eig)}.`:(g.gat>0?'De keten haalt het verkoopdoel. De rem is nu het <b>aanbod</b>. Eigenaar: Steven.':'Alles op schema.')}</div></div>
     <div class="kp-keten">${stappen.map(x=>`<div class="kp-tegel ${x.hals?'rood':x.kleur}" title="${esc(x.tip||'')}"><div class="k">${esc(x.naam)}</div><div class="v">${esc(x.v)}</div><div class="s">${esc(x.s)}</div>${x.r?`<div class="r">${esc(x.r)}</div>`:''}</div>`).join('')}</div></div>`;
   // ---- Blok 3: persoon ----
@@ -2152,7 +2155,7 @@ function kpiTeken(){
       `Deze maand ${kpN(a.itp_maand,0)} · met de volledige ${anMoney(a.aanbetaling_norm)}: ${kpN(a.itp_vol_28,0)} van ${kpN(a.itp_28,0)}`,
       `${kpN(a.itp_28,0)} in 4 weken`,`nodig ${kpN((nA.itps_pw||0)*4,1)} · bij €5M ${kpN((nB.itps_pw||0)*4,1)}`);
     rijen+=rij('','Commissie verdiend',`${kpPct(a.commissie_pct)} van de verkochte omzet`,anMoney(a.commissie_verdiend),`bij het verkoopdoel ${anMoney(a.commissie_aanbod)} · bij €5M ${anMoney(a.commissie_ambitie)}`);
-  }else{
+  }else if(wie==='steven'){
     taken=s.taken||[];
     const dekOk=g.gat<=0||(Number(g.dekking_maanden)||0)>=(Number(g.voorraad_norm)||0);
     rijen+=rij(g.gat<=0?'groen':(dekOk?'oranje':'rood'),'Aanbod',
@@ -2174,13 +2177,13 @@ function kpiTeken(){
       itps.length?itps.map(x=>x.bron==='pijplijn'?`${esc(x.project||x.naam||'?')} (kaart op Reservering, nog geen ITP): ${kpN(x.dagen,0)} dagen`:`${esc(x.project)} ${esc(x.unit)}: ${kpN(x.dagen,0)} dagen`).join(' · '):'Geen open ITP\'s of reserveringen.',
       kpN(itps.length,0),`norm: getekend binnen ${kpN(s.teken_dagen_norm,0)} dagen`);
   }
-  h+=`<div class="panel"><div class="panel-head"><div><h3>Wat moet er gebeuren</h3><div class="desc">${wie==='ashley'?'Van lead tot ITP. Deze doelen zijn een voorstel tot Steven ze met Ashley heeft afgesproken.':'Aanbod, aandacht en handtekeningen.'}</div></div>
-    <div class="seg" id="kp_wie"><button data-wie="steven" class="${wie==='steven'?'on':''}">Steven</button><button data-wie="ashley" class="${wie==='ashley'?'on':''}">Ashley</button></div></div>
+  if(wie)h+=`<div class="panel"><div class="panel-head"><div><h3>Wat moet er gebeuren</h3><div class="desc">${wie==='ashley'?'Van lead tot ITP. Deze doelen zijn een voorstel tot Steven ze met Ashley heeft afgesproken.':'Aanbod, aandacht en handtekeningen.'}</div></div>
+    ${eig?`<div class="seg" id="kp_wie"><button data-wie="steven" class="${wie==='steven'?'on':''}">Steven</button><button data-wie="ashley" class="${wie==='ashley'?'on':''}">Ashley</button></div>`:''}</div>
     ${rijen}
     <div class="kp-taken"><div class="kp-takenkop">Deze week</div>${taken.length?taken.map(t=>`<div class="kp-taak"><span>${esc(t.tekst)}</span>${t.naar&&t.naar!=='kpi'&&canView(t.naar)?`<button class="btn btn-ghost btn-sm" data-naar="${esc(t.naar)}">Open</button>`:''}</div>`).join(''):'<div class="kp-taak"><span class="muted">Niets dat achterloopt.</span></div>'}</div></div>`;
   // ---- Blok 4: kanalen ----
   const OORDEEL={werkt:['green','Werkt'],testen:['blue','Testen'],stoppen:['red','Stoppen'],achtergrond:['grey','Achtergrond'],niet_gebruikt:['grey','Niet gebruikt']};
-  h+=`<div class="panel"><div class="panel-head"><div><h3>Kanalen: wat werkt</h3><div class="desc">Laatste 8 weken, op het eerste contact van een lead. Werkt = minstens één warme lead. Stoppen = genoeg geprobeerd zonder warme lead.</div></div></div>
+  if(eig)h+=`<div class="panel"><div class="panel-head"><div><h3>Kanalen: wat werkt</h3><div class="desc">Laatste 8 weken, op het eerste contact van een lead. Werkt = minstens één warme lead. Stoppen = genoeg geprobeerd zonder warme lead.</div></div></div>
     <div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Kanaal</th><th>Eigenaar</th><th>Gedaan</th><th style="text-align:right">Leads</th><th style="text-align:right">Warm</th><th>Oordeel</th></tr></thead><tbody>
     ${(d.kanalen||[]).map(k=>{const o=OORDEEL[k.oordeel];return `<tr><td><b>${esc(k.naam)}</b></td><td class="muted">${esc(k.eigenaar)}</td><td>${esc(k.gedaan_tekst||'–')}</td><td style="text-align:right">${kpN(k.leads,0)}</td><td style="text-align:right"><b>${kpN(k.warm,0)}</b></td><td>${o?`<span class="badge ${o[0]}">${o[1]}</span>`:''}</td></tr>`;}).join('')}
     </tbody></table></div>
@@ -2201,7 +2204,7 @@ function kpiTeken(){
       <td>${meting}</td><td style="text-align:right">${bew&&!vast?`<button class="btn btn-ghost btn-sm" data-opslaan="${esc(x.sleutel)}">Opslaan</button>`:''}${bew&&genoeg&&TAR[x.sleutel]?` <button class="btn btn-ghost btn-sm" data-neem="${esc(x.sleutel)}" data-w="${Number(m.gemeten)}">Neem gemeten over</button>`:''}</td></tr>`;}).join('');
   const maand=s.maand?new Date(s.maand):new Date(), vorige=new Date(maand.getFullYear(),maand.getMonth()-1,1);
   const mNaam=x=>x.toLocaleDateString('nl-NL',{month:'long',year:'numeric'}), mIso=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-01';
-  h+=`<details class="panel kp-det"><summary>Model en invoer</summary>
+  if(eig)h+=`<details class="panel kp-det"><summary>Model en invoer</summary>
       <div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Invoer</th><th>Soort</th><th>Waarde in het model</th><th>Gemeten, laatste 12 weken</th><th></th></tr></thead><tbody>${invoer}</tbody></table></div>
       <div class="kp-spend"><b>Advertentiekosten per maand</b><span class="muted">${s.meta_opgehaald?`Komt elke ochtend uit Meta Ads. Laatst opgehaald ${esc(fmtDateTime(s.meta_opgehaald))}. Een bedrag dat je zelf invult, gaat voor. Maak het veld leeg om terug te gaan naar Meta.`:(bew?'Nog niet opgehaald uit Meta. Klik op Nu ophalen uit Meta, of vul het bedrag uit Ads Manager in.':'Nog niet opgehaald uit Meta.')}</span>
         ${[[vorige,s.spend_vorige,s.spend_bron_vorige],[maand,s.spend_maand,s.spend_bron_maand]].map(([dt,bedrag,bron])=>`<label>${esc(mNaam(dt))} <input class="kp-in" data-spend="${mIso(dt)}" data-bron="${esc(bron||'')}" data-orig="${bedrag==null?'':Number(bedrag)}" value="${bedrag==null?'':Number(bedrag)}" placeholder="€" inputmode="decimal" ${bew?'':'disabled'}> <span class="badge ${bron==='hand'?'amber':bron==='meta'?'green':'grey'}">${bron==='hand'?'zelf ingevuld':bron==='meta'?'uit Meta':'leeg'}</span></label>`).join('')}
