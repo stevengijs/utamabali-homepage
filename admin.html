@@ -1371,7 +1371,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-05-kpi-visueel-1';
+const APP_VERSIE='2026-10-05-kpi-campagnes-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2145,11 +2145,13 @@ function kpiTeken(){
     'ITP met aanbetaling na een goede call':['🤝',"Nieuwe ITP's"],'Calls inplannen en houden':['📞','Intro-calls'],
     'Gehouden call op afgerond zetten':['✅','Calls afronden'],'Berichten en belpogingen':['💬','Berichten en bellen'],
     'Nieuwe lead binnen 1 uur':['⚡','Binnen 1 uur reageren'],'Reels posten':['🎬','Reels'],
-    'WhatsApp-broadcast':['📣','WhatsApp-broadcast'],'Advertenties':['💶','Advertenties']};
+    'WhatsApp-broadcast':['📣','WhatsApp-broadcast'],'E-mailcampagne':['✉️','E-mailcampagne'],'Advertenties':['💶','Advertenties']};
   const EENHEID={"ITP's tekenen of vrijgeven":'te tekenen','in 4 weken':'per 4 weken','per dag deze maand':'per dag'};
   const ketenOk=Array.isArray(d.keten);
   const tegels=[];
-  (d.keten||[]).forEach((st,si)=>(st.acties||[]).forEach((x,ai)=>{if(filter==='alles'||x.eigenaar===WIE[filter])tegels.push({x,st,volg:si*10+ai});}));
+  // Een actie kan van meer mensen zijn (eigenaars); de broadcast en e-mail doen Steven en Ashley samen.
+  const vanWie=x=>Array.isArray(x.eigenaars)&&x.eigenaars.length?x.eigenaars:[x.eigenaar];
+  (d.keten||[]).forEach((st,si)=>(st.acties||[]).forEach((x,ai)=>{if(filter==='alles'||vanWie(x).includes(WIE[filter]))tegels.push({x,st,volg:si*10+ai});}));
   const RANG={rood:0,oranje:1,groen:2,'':3};
   tegels.sort((p,q)=>(RANG[KLEUR(p.x.ratio)]-RANG[KLEUR(q.x.ratio)])||((q.st.hals?1:0)-(p.st.hals?1:0))||(p.volg-q.volg));
   const tel=k=>tegels.filter(t=>KLEUR(t.x.ratio)===k).length;
@@ -2164,7 +2166,7 @@ function kpiTeken(){
       <div class="kp-t-kop"><span class="kp-t-ico">${k[0]}</span><span class="kp-t-naam">${esc(k[1])}</span>${rem?'<span class="kp-pil rood">rem</span>':''}</div>
       <div class="kp-t-n${x.nodig_tekst?' tekst':''}">${groot}${eenh?`<span>${esc(eenh)}</span>`:''}</div>
       <div class="kp-t-balk"><i style="width:${breed}%"></i></div>
-      <div class="kp-t-nu"><span>${/^laatste /.test(nu)?'':'nu '}${esc(nu)}</span><span>${esc(x.eigenaar)}</span></div></div>`;
+      <div class="kp-t-nu"><span>${/^laatste /.test(nu)?'':'nu '}${esc(nu)}</span><span>${vanWie(x).length>1?'Samen':esc(x.eigenaar)}</span></div></div>`;
   };
   const hals=(d.keten||[]).find(st=>st.hals);
   const halsTekst=hals?(hals.sleutel==='omzet'?'Grootste rem: <b>aanbod</b>, er moeten villa\'s bij · Steven':`Grootste rem: <b>${esc(hals.naam)}</b> · ${esc(hals.eigenaar)}`):'Alles op tempo.';
