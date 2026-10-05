@@ -1208,59 +1208,22 @@
     .seq-h{font-size:13px}
     .seq-step-n{font-size:13px}
   }
-  /* KPI-pagina: doelbalk, keten, persoon, kanalen */
+  /* KPI-pagina: doel, tegels, wat werkt, alle cijfers */
   .kp-doel{padding:18px}
   .kp-cijfers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 24px}
   .kp-cijfers .l{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
   .kp-cijfers .g{font-size:26px;font-weight:750;line-height:1.15;margin-top:4px;font-variant-numeric:tabular-nums}
   .kp-cijfers .u{font-size:12px;color:var(--muted);margin-top:2px}
   .kp-cijfers .gat .g{color:#b0362a}
-  .kp-balk{position:relative;height:12px;border-radius:999px;background:#eef0ef;margin:16px 0 12px}
-  .kp-balk .doel,.kp-balk .res,.kp-balk .get{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
-  .kp-balk .res{background:#6fb898}
-  .kp-balk .doel{background:#bfe5d5}
-  .kp-balk .get{background:var(--brand)}
-  .kp-balk .tempo{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:2px}
   .kp-strip{display:flex;gap:6px 8px;flex-wrap:wrap;align-items:center;font-size:12px}
-  .kp-hals{font-size:13px;padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:#f2f4f2;max-width:560px}
+  .kp-hals{font-size:13.5px;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:#f2f4f2;max-width:560px;margin:12px 18px 0}
   .kp-hals.rood{background:#fbeeec;border-color:#f0d3ce;color:#8f2a20}
   .kp-hals.oranje{background:#fdf3e2;border-color:#f4e2c1;color:#7a4f0c}
   .kp-hals.groen{background:#e7f6ef;border-color:#c6ead9;color:#0f6b4f}
-  .kp-stap{padding:14px 18px;border-top:1px solid var(--line)}
-  .kp-stap.hals{background:#fdf6f5}
-  .kp-stapkop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:10px}
-  .kp-stapkop b{color:var(--ink);font-weight:650}
-  .kp-stapkop .kp-stip{flex:none}
-  .kp-stapkop>span:nth-child(2){flex:1 1 0;min-width:0}
-  .kp-acties{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-  .kp-actie{border:1px solid var(--line);border-left:4px solid #cfd6d2;border-radius:10px;padding:12px 14px;background:#fff}
-  .kp-actie.groen{border-left-color:#1d9e75}.kp-actie.oranje{border-left-color:#e0a030}.kp-actie.rood{border-left-color:#d4493c}
-  .kp-actie-n{font-size:28px;font-weight:750;line-height:1.1;font-variant-numeric:tabular-nums}
-  .kp-actie-n.tekst{font-size:19px;padding-top:5px}
-  .kp-actie-n span{font-size:13px;font-weight:600;color:var(--muted);margin-left:6px}
-  .kp-actie-t{font-size:14px;font-weight:650;margin-top:4px}
-  .kp-actie-nu{font-size:12.5px;margin-top:6px;color:var(--muted)}
-  .kp-actie.rood .kp-actie-nu{color:#8f2a20}.kp-actie.oranje .kp-actie-nu{color:#7a4f0c}.kp-actie.groen .kp-actie-nu{color:#0f6b4f}
-  .kp-actie-u{font-size:12px;color:var(--muted);margin-top:4px}
-  .kp-keten{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;padding:14px 18px 18px}
-  .kp-tegel{border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:#fff;min-width:0}
-  .kp-tegel .k{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700}
-  .kp-tegel .v{font-size:21px;font-weight:800;line-height:1.15;margin-top:4px;font-variant-numeric:tabular-nums}
-  .kp-tegel .s{font-size:11.5px;color:var(--muted);margin-top:3px}
-  .kp-tegel .r{font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
-  .kp-tegel.groen{border-color:#c6ead9}
-  .kp-tegel.oranje{border-color:#f0d9ae;background:#fefaf1}
-  .kp-tegel.rood{border-color:#e9b3ab;background:#fdf4f2}
-  .kp-tegel.rood .v{color:#b0362a}
-  .kp-kpi{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:4px 14px;padding:13px 18px;border-bottom:1px solid var(--line);align-items:center}
   .kp-stip{width:10px;height:10px;border-radius:50%;background:#cfd6d2}
   .kp-stip.groen{background:var(--brand-2)}
   .kp-stip.oranje{background:#e0a030}
   .kp-stip.rood{background:#d0473a}
-  .kp-kpi .t{font-weight:650;font-size:14px}
-  .kp-kpi .u{font-size:12px;color:var(--muted);margin-top:2px}
-  .kp-kpi .w{font-size:18px;font-weight:800;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-  .kp-kpi .d{font-size:11.5px;color:var(--muted);text-align:right;margin-top:1px}
   .kp-taken{padding:12px 18px 16px;background:#fafbfa}
   .kp-takenkop{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
   .kp-taak{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
@@ -1274,15 +1237,70 @@
   .kp-in{width:92px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;text-align:right}
   .kp-spend{display:flex;gap:10px 16px;flex-wrap:wrap;align-items:center;padding:14px 18px;border-top:1px solid var(--line);font-size:13px}
   .kp-meting{padding:12px 18px 16px;display:grid;gap:8px;font-size:13px}
-  @media(max-width:1100px){.kp-keten{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  .kp-held{padding:20px 22px 18px}
+  .kp-held-kop{display:flex;justify-content:space-between;align-items:flex-end;gap:8px 16px;flex-wrap:wrap}
+  .kp-held-n{font-size:42px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .kp-held-van{font-size:20px;font-weight:650;color:var(--muted)}
+  .kp-held-dagen{font-size:14px;color:var(--muted)}
+  .kp-held-dagen b{font-size:20px;color:var(--ink)}
+  .kp-held-balk{position:relative;height:22px;border-radius:999px;background:#eef0ef;margin:16px 0 12px;overflow:hidden}
+  .kp-held-balk i{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+  .kp-held-balk i.res{background:#9fd3bd}
+  .kp-held-balk i.get{background:var(--brand)}
+  .kp-held-balk b{position:absolute;top:0;bottom:0;width:3px;background:var(--ink);opacity:.5}
+  .kp-held-leg{display:flex;gap:8px 18px;flex-wrap:wrap;align-items:center;font-size:13.5px}
+  .kp-held-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .kp-held-leg i.get{background:var(--brand)}
+  .kp-held-leg i.res{background:#9fd3bd}
+  .kp-pil{display:inline-block;font-size:12px;font-weight:650;padding:3px 10px;border-radius:999px;background:#f2f4f2;white-space:nowrap}
+  .kp-pil.rood{background:#fbeeec;color:#8f2a20}
+  .kp-telling{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:5px}
+  .kp-telling .kp-stip{display:inline-block;margin-right:6px;vertical-align:-1px}
+  .kp-tegels{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;padding:14px 18px 18px}
+  .kp-t{border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;background:#fff;min-width:0}
+  .kp-t.hals{border-color:#e9b3ab;box-shadow:0 0 0 1px #e9b3ab}
+  .kp-t-kop{display:flex;align-items:center;gap:8px}
+  .kp-t-ico{font-size:18px;line-height:1}
+  .kp-t-naam{font-size:13px;font-weight:650;flex:1;min-width:0}
+  .kp-t-n{font-size:30px;font-weight:800;line-height:1.1;margin-top:10px;font-variant-numeric:tabular-nums}
+  .kp-t-n.tekst{font-size:21px;padding-top:6px}
+  .kp-t-n span{font-size:13px;font-weight:600;color:var(--muted);margin-left:6px}
+  .kp-t-balk{height:6px;border-radius:999px;background:#eef0ef;margin-top:12px;overflow:hidden}
+  .kp-t-balk i{display:block;height:100%;border-radius:999px;background:#cfd6d2}
+  .kp-t.rood .kp-t-balk i{background:#d4493c}
+  .kp-t.oranje .kp-t-balk i{background:#e0a030}
+  .kp-t.groen .kp-t-balk i{background:#1d9e75}
+  .kp-t-nu{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:7px}
+  .kp-t-nu span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .kp-t.rood .kp-t-nu span:first-child{color:#8f2a20}
+  .kp-t.oranje .kp-t-nu span:first-child{color:#7a4f0c}
+  .kp-t.groen .kp-t-nu span:first-child{color:#0f6b4f}
+  .kp-inz{display:grid;gap:8px;padding:14px 18px 6px}
+  .kp-inz-r{display:flex;gap:10px;align-items:flex-start;font-size:14px;padding:9px 12px;border-radius:10px;background:#f6f8f7}
+  .kp-inz-r.top{background:#e7f6ef}
+  .kp-inz-r.duur{background:#fdf3e2}
+  .kp-inz-r.niets{background:#fbeeec}
+  .kp-kan{padding:8px 18px 16px}
+  .kp-kan-r{display:grid;grid-template-columns:190px minmax(0,1fr) 46px 190px 104px;grid-template-areas:"naam balk pct w o";gap:6px 14px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .kp-kan-r:last-child{border-bottom:none}
+  .kp-kan-naam{grid-area:naam;font-weight:650}
+  .kp-kan-balk{grid-area:balk;height:14px;border-radius:999px;background:#eef0ef;overflow:hidden}
+  .kp-kan-balk i{display:block;height:100%;border-radius:999px;background:#cfd6d2}
+  .kp-kan-balk i.green{background:#1d9e75}
+  .kp-kan-balk i.blue{background:#4a7fd4}
+  .kp-kan-balk i.red{background:#d4493c}
+  .kp-kan-pct{grid-area:pct;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+  .kp-kan-w{grid-area:w;color:var(--muted);font-size:12.5px}
+  .kp-kan-o{grid-area:o}
   @media(max-width:720px){
     .kp-cijfers{grid-template-columns:repeat(2,minmax(0,1fr))}
     .kp-cijfers .g{font-size:20px}
-    .kp-keten{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .kp-kpi{grid-template-columns:12px minmax(0,1fr)}
-    .kp-kpi>div:last-child{grid-column:2}
-    .kp-kpi .w,.kp-kpi .d{text-align:left}
     .kp-hals{max-width:none}
+    .kp-held-n{font-size:34px}
+    .kp-tegels{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
+    .kp-t{padding:12px}
+    .kp-t-n{font-size:26px}
+    .kp-kan-r{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"naam pct" "balk balk" "w o"}
   }
 </style>
 </head>
@@ -1353,7 +1371,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-05-kpi-acties-2';
+const APP_VERSIE='2026-10-05-kpi-visueel-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2071,8 +2089,9 @@ function go(k){
 }
 
 /* ================= KPI =================
-   Eén scherm: doelbalk, wat er moet gebeuren (acties per stap van de keten),
-   kanalen. Alle cijfers en doelen komen uit kpi_dashboard() in de database:
+   Eén scherm, kort en visueel: het doel als balk, wat er moet gebeuren als
+   tegels (rood eerst), wat werkt per kanaal. De precieze cijfers staan onder
+   Alle cijfers. Alle cijfers en doelen komen uit kpi_dashboard() in de database:
    geen doel en geen budget is ingetypt, ze volgen uit de ambitie, het aanbod,
    de tarieven en de normen. De flessenhals komt uit kpi__keten(); de pagina
    kiest alleen de kleur van een actie. Details staan dichtgeklapt, zodat
@@ -2081,6 +2100,11 @@ function go(k){
 let KPI={data:null,filter:null};
 const kpN=(x,d)=>(x==null||!isFinite(x))?'–':Number(x).toLocaleString('nl-NL',{minimumFractionDigits:0,maximumFractionDigits:d==null?1:d});
 const kpKort=x=>{x=Number(x)||0;return Math.abs(x)>=1e6?'€'+kpN(x/1e6,2)+'M':(Math.abs(x)>=10000?'€'+kpN(x/1000,0)+'K':anMoney(x));};
+// Ronde getallen voor het team: onder de 2 met één decimaal, tot 100 heel, daarboven twee cijfers
+// (239 wordt 240). Bedragen bovenaan als €0,4M of €75K.
+const kpRuw=(x,geld)=>{x=Number(x);if(!isFinite(x))return '–';const a=Math.abs(x);
+  const r=a<2?Math.round(x*10)/10:(a<100?Math.round(x):Number(x.toPrecision(2)));return (geld?'€':'')+kpN(r,1);};
+const kpRond=x=>{x=Number(x)||0;const a=Math.abs(x);return a===0?'€0':(a>=1e5?'€'+kpN(x/1e6,1)+'M':(a>=1000?'€'+kpN(x/1000,0)+'K':'€'+kpN(x,0)));};
 const kpPct=x=>(x==null||!isFinite(x))?'–':kpN(Number(x)*100,1)+'%';
 // Groen vanaf 90% van het doel, oranje vanaf 60%, daaronder rood. Zonder doel geen kleur.
 function kpDatum(s){if(!s)return '–';const [y,m,d]=String(s).slice(0,10).split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});}
@@ -2100,65 +2124,98 @@ function kpiTeken(){
   const g=d.doel,s=d.steven||{},a=d.ashley||{},filter=eig?(KPI.filter||'alles'):(d.ik||'');
   const totaal=Math.max(1,Math.round((new Date(g.eind)-new Date(g.start))/864e5)+1), verstreken=Math.max(0,1-g.dagen_over/totaal);
   const pc=x=>Number(g.ambitie)>0?Math.max(0,Math.min(100,(Number(x)||0)/g.ambitie*100)):0;
-  // ---- Blok 1: doelbalk ----
-  let h=`<div class="panel" style="margin-top:0"><div class="kp-doel">
-    <div class="kp-cijfers">
-      <div><div class="l">Verkocht</div><div class="g">${anMoney(g.getekend)}</div><div class="u">${kpN(g.getekend_units,0)} ${Number(g.getekend_units)===1?'unit':'units'}${g.gewonnen_zonder_bedrag?` · ${kpN(g.gewonnen_zonder_bedrag,0)} zonder bedrag`:''}</div></div>
-      <div><div class="l">Gereserveerd</div><div class="g">${anMoney(g.itp_waarde)}</div><div class="u">${kpN(g.itp_units,0)} ${Number(g.itp_units)===1?'unit':'units'} met een ITP of op Reservering${g.reservering_zonder_bedrag?` · ${kpN(g.reservering_zonder_bedrag,0)} zonder bedrag`:''}</div></div>
-      <div><div class="l">Verkoopdoel</div><div class="g">${anMoney(g.verkoopdoel)}</div><div class="u">wat er nu te koop staat · ${kpKort(g.tempo_per_maand)} per maand</div></div>
-      <div><div class="l">Ambitie</div><div class="g">${anMoney(g.ambitie)}</div><div class="u">${kpDatum(g.start)} tot ${kpDatum(g.eind)} · nog ${kpN(g.dagen_over,0)} dagen</div></div>
-      ${eig?`<div class="${g.gat>0?'gat':''}"><div class="l">Aanbod-gat</div><div class="g">${anMoney(g.gat)}</div><div class="u">${g.gat>0?`ongeveer ${kpN(g.gat_units,0)} villa's die nog niet te koop staan · Steven`:'het aanbod dekt de ambitie'}</div></div>`:''}
-    </div>
-    <div class="kp-balk" title="Donker: verkocht. Midden: gereserveerd (ITP of Reservering). Licht: verkoopdoel. Streep: waar het vandaag zou moeten staan.">
-      <div class="doel" style="width:${pc(g.verkoopdoel)}%"></div><div class="res" style="width:${pc((Number(g.getekend)||0)+(Number(g.itp_waarde)||0))}%"></div><div class="get" style="width:${pc(g.getekend)}%"></div>
-      <div class="tempo" style="left:${pc((g.verkoopdoel||0)*verstreken)}%"></div></div>
-    <div class="kp-strip">${(d.voorraad||[]).map(p=>`<span class="badge grey">${esc(p.project)}: ${kpN(p.vrij,0)} te koop${p.gereserveerd?`, ${kpN(p.gereserveerd,0)} met ITP`:''}</span>`).join('')}
-      ${eig?`<span class="badge ${g.pijplijn_units>0?'blue':'red'}">In voorbereiding: ${kpN(g.pijplijn_units,0)} units · ${kpKort(g.pijplijn_waarde)}</span>`:''}
-      <span class="muted">Omzet telt zodra de kaart op Gewonnen staat in de Sales pipeline, of als de koop getekend is (de drie documenten, of anders de contractdatum). Een ITP telt als reservering.</span></div>
-  </div></div>`;
-  // ---- Blok 2: wat er moet gebeuren ----
-  // De acties staan voorop (Steven, 5 oktober 2026: "maak de onderliggende onderdelen juist
-  // prominent: wat er moet gebeuren, of dit nu calls, berichten of marketing messages zijn").
-  // Per actie het grote getal: wat er per dag, week of maand nodig is voor de ambitie. Klein
-  // eronder wat er nu gebeurt. De stap die de actie voedt staat er klein boven. Alle getallen
-  // komen uit kpi__keten() in de database; de pagina kiest alleen de kleur.
-  const KLEUR=r=>(r==null||!isFinite(r))?'':(r>=.9?'groen':(r>=.6?'oranje':'rood'));
-  const waarde=(x,veld)=>{
-    const t=x[veld+'_tekst'];if(t)return {groot:esc(t),klein:'',tekst:true};
-    const n=x[veld];if(n==null)return {groot:veld==='nodig'?'onbekend':'nog niet gemeten',klein:'',tekst:true};
-    return {groot:x.geld?anMoney(n):kpN(n,Math.abs(Number(n))<10?1:0),klein:esc(x[veld+'_eenheid']||''),tekst:false};
-  };
+  // Kort en visueel voor het team (Steven, 5 oktober 2026: "Maak het KPI dashboard makkelijker te
+  // begrijpen, minder cijfers. Gewoon kort en krachtig, en visueel voor het team. Details zijn hier
+  // niet belangrijk."). Bovenaan alleen ronde getallen en balken; de precieze cijfers staan
+  // dichtgeklapt onder Alle cijfers.
   const WIE={steven:'Steven',ashley:'Ashley'};
+  const KLEUR=r=>(r==null||!isFinite(r))?'':(r>=.9?'groen':(r>=.6?'oranje':'rood'));
+  // ---- Blok 1: het doel, één balk ----
+  const binnen=(Number(g.getekend)||0)+(Number(g.itp_waarde)||0);
+  let h=`<div class="panel kp-held" style="margin-top:0">
+    <div class="kp-held-kop"><div><span class="kp-held-n">${kpRond(binnen)}</span> <span class="kp-held-van">van ${kpRond(g.ambitie)}</span></div>
+      <div class="kp-held-dagen"><b>${kpN(g.dagen_over,0)}</b> dagen te gaan</div></div>
+    <div class="kp-held-balk" title="Donker: verkocht. Licht: gereserveerd (ITP of Reservering). Streep: waar we vandaag zouden moeten staan."><i class="res" style="width:${pc(binnen)}%"></i><i class="get" style="width:${pc(g.getekend)}%"></i><b style="left:${pc((Number(g.ambitie)||0)*verstreken)}%"></b></div>
+    <div class="kp-held-leg"><span><i class="get"></i>Verkocht ${kpRond(g.getekend)}</span><span><i class="res"></i>Gereserveerd ${kpRond(g.itp_waarde)}</span>
+      ${eig&&g.gat>0?`<span class="kp-pil rood">Aanbod: ${kpN(g.gat_units,0)} villa's te weinig</span>`:''}</div></div>`;
+  // ---- Blok 2: wat er moet gebeuren, één tegel per actie ----
+  // Groot: wat er nodig is voor de ambitie. Balk: hoe ver we zijn. Rood eerst. De uitleg en het
+  // volledige "nu" staan in de tooltip. Alle getallen komen uit kpi__keten() in de database.
+  const KORT={'Nieuw aanbod':['🏗️','Nieuw aanbod'],"ITP's laten tekenen":['✍️',"ITP's tekenen"],
+    'ITP met aanbetaling na een goede call':['🤝',"Nieuwe ITP's"],'Calls inplannen en houden':['📞','Intro-calls'],
+    'Gehouden call op afgerond zetten':['✅','Calls afronden'],'Berichten en belpogingen':['💬','Berichten en bellen'],
+    'Nieuwe lead binnen 1 uur':['⚡','Binnen 1 uur reageren'],'Reels posten':['🎬','Reels'],
+    'WhatsApp-broadcast':['📣','WhatsApp-broadcast'],'Advertenties':['💶','Advertenties']};
+  const EENHEID={"ITP's tekenen of vrijgeven":'te tekenen','in 4 weken':'per 4 weken','per dag deze maand':'per dag'};
   const ketenOk=Array.isArray(d.keten);
-  const keten=(d.keten||[]).map(st=>Object.assign({},st,{acties:(st.acties||[]).filter(x=>filter==='alles'||x.eigenaar===WIE[filter])})).filter(st=>st.acties.length);
+  const tegels=[];
+  (d.keten||[]).forEach((st,si)=>(st.acties||[]).forEach((x,ai)=>{if(filter==='alles'||x.eigenaar===WIE[filter])tegels.push({x,st,volg:si*10+ai});}));
+  const RANG={rood:0,oranje:1,groen:2,'':3};
+  tegels.sort((p,q)=>(RANG[KLEUR(p.x.ratio)]-RANG[KLEUR(q.x.ratio)])||((q.st.hals?1:0)-(p.st.hals?1:0))||(p.volg-q.volg));
+  const tel=k=>tegels.filter(t=>KLEUR(t.x.ratio)===k).length;
+  const tegel=({x,st})=>{
+    const k=KORT[x.naam]||['•',x.naam],kl=KLEUR(x.ratio),rem=st.hals&&kl!=='groen';
+    const groot=x.nodig_tekst?esc(x.nodig_tekst):(x.nodig==null?'?':kpRuw(x.nodig,x.geld));
+    const eenh=x.nodig_tekst?'':(EENHEID[x.nodig_eenheid]||x.nodig_eenheid||'');
+    const nu=x.nu_tekst?String(x.nu_tekst).split(',')[0]:(x.nu==null?'niet gemeten':kpRuw(x.nu,x.geld));
+    const breed=x.ratio==null||!isFinite(x.ratio)?0:Math.max(3,Math.min(100,x.ratio*100));
+    const tip=[x.naam,x.nu_tekst?'Nu: '+x.nu_tekst+'.':'',x.uitleg||''].filter(Boolean).join(' ');
+    return `<div class="kp-t ${kl}${rem?' hals':''}" title="${esc(tip)}">
+      <div class="kp-t-kop"><span class="kp-t-ico">${k[0]}</span><span class="kp-t-naam">${esc(k[1])}</span>${rem?'<span class="kp-pil rood">rem</span>':''}</div>
+      <div class="kp-t-n${x.nodig_tekst?' tekst':''}">${groot}${eenh?`<span>${esc(eenh)}</span>`:''}</div>
+      <div class="kp-t-balk"><i style="width:${breed}%"></i></div>
+      <div class="kp-t-nu"><span>${/^laatste /.test(nu)?'':'nu '}${esc(nu)}</span><span>${esc(x.eigenaar)}</span></div></div>`;
+  };
   const hals=(d.keten||[]).find(st=>st.hals);
-  const halsTekst=!ketenOk?'De acties zijn nog niet beschikbaar: de database is nog niet bijgewerkt.':hals?(hals.sleutel==='omzet'?'De keten haalt het tempo. De rem is het <b>aanbod</b>: er moeten villa\'s bij. Eigenaar: Steven.'
-    :`Flessenhals: <b>${esc(hals.naam)}</b>. Nu ${kpN(hals.werk_pw,1)} per week, ${kpN(hals.nodig_pw,1)} nodig. Eigenaar: ${esc(hals.eigenaar)}.`):'Alles op tempo.';
-  h+=`<div class="panel"><div class="panel-head"><div><h3>Wat er moet gebeuren voor ${kpKort(g.ambitie)}</h3>
-      <div class="desc">Groot: wat er nodig is voor ${kpKort(g.ambitie)}, uit het doel en ${eig?'de normen bij Model en invoer':'de afgesproken normen'}, met gemeten cijfers waar we die hebben. Klein: wat er nu gebeurt. Groen vanaf 90%, oranje vanaf 60%, rood daaronder.</div></div>
+  const halsTekst=hals?(hals.sleutel==='omzet'?'Grootste rem: <b>aanbod</b>, er moeten villa\'s bij · Steven':`Grootste rem: <b>${esc(hals.naam)}</b> · ${esc(hals.eigenaar)}`):'Alles op tempo.';
+  h+=`<div class="panel"><div class="panel-head"><div><h3>Wat er moet gebeuren voor ${kpRond(g.ambitie)}</h3>
+      <div class="kp-telling">${tel('rood')?`<span><i class="kp-stip rood"></i>${tel('rood')} achter</span>`:''}${tel('oranje')?`<span><i class="kp-stip oranje"></i>${tel('oranje')} bijna</span>`:''}${tel('groen')?`<span><i class="kp-stip groen"></i>${tel('groen')} op schema</span>`:''}</div></div>
       ${eig?`<div class="seg" id="kp_wie">${[['alles','Iedereen'],['steven','Steven'],['ashley','Ashley']].map(([k,l])=>`<button data-wie="${k}" class="${filter===k?'on':''}">${l}</button>`).join('')}</div>`:''}</div>
-    ${eig?`<div class="kp-hals ${!ketenOk?'':(hals&&hals.sleutel!=='omzet'?'rood':(hals?'oranje':'groen'))}" style="margin:12px 18px 2px">${halsTekst}</div>`:''}
-    ${keten.map(st=>{const sr=Number(st.nodig_pw)>0?(Number(st.werk_pw)||0)/Number(st.nodig_pw):null;
-      return `<div class="kp-stap ${st.hals?'hals':''}">
-      <div class="kp-stapkop"><span class="kp-stip ${KLEUR(sr)}"></span><span>Voor <b>${esc(st.naam)}</b>${st.nodig_pw==null?'':(Number(st.nodig_pw)<1?`: ${kpN(Number(st.nodig_pw)*4,1)} per 4 weken nodig, laatste 4 weken ${kpN((Number(st.werk_pw)||0)*4,0)}`:`: ${kpN(st.nodig_pw,1)} per week nodig, nu ${kpN(st.werk_pw||0,1)}`)}</span>${st.hals?'<span class="badge red">flessenhals</span>':''}</div>
-      <div class="kp-acties">${st.acties.map(x=>{const n=waarde(x,'nodig'),u=waarde(x,'nu');return `<div class="kp-actie ${KLEUR(x.ratio)}">
-        <div class="kp-actie-n ${n.tekst?'tekst':''}">${n.groot}${n.klein?`<span>${n.klein}</span>`:''}</div>
-        <div class="kp-actie-t">${esc(x.naam)}</div>
-        <div class="kp-actie-nu">nu ${u.groot}${u.klein?' '+u.klein:''} · ${esc(x.eigenaar)}</div>
-        ${x.uitleg?`<div class="kp-actie-u">${esc(x.uitleg)}</div>`:''}</div>`;}).join('')}</div></div>`;}).join('')||`<div class="muted" style="padding:16px 18px">${ketenOk?'Geen acties voor dit account.':'De acties zijn nog niet beschikbaar: de database is nog niet bijgewerkt.'}</div>`}`;
-  // Taken van deze week, per persoon; de eigenaar ziet ze bij Iedereen allebei.
+    ${eig&&ketenOk?`<div class="kp-hals ${hals&&hals.sleutel!=='omzet'?'rood':(hals?'oranje':'groen')}">${halsTekst}</div>`:''}
+    ${tegels.length?`<div class="kp-tegels">${tegels.map(tegel).join('')}</div>`:`<div class="muted" style="padding:16px 18px">${ketenOk?'Geen acties voor dit account.':'De acties zijn nog niet beschikbaar: de database is nog niet bijgewerkt.'}</div>`}`;
+  // Te doen, per persoon; de eigenaar ziet ze bij Iedereen allebei.
   const takenVan=k=>((d[k]||{}).taken||[]).map(t=>Object.assign({},t,{wie:WIE[k]}));
   const taken=filter==='alles'?takenVan('steven').concat(takenVan('ashley')):(WIE[filter]?takenVan(filter):[]);
   const toonCommissie=(filter==='alles'||filter==='ashley')&&a.commissie_pct!=null;
-  h+=`<div class="kp-taken"><div class="kp-takenkop">Deze week</div>${taken.length?taken.map(t=>`<div class="kp-taak"><span>${filter==='alles'?`<b>${esc(t.wie)}</b> · `:''}${esc(t.tekst)}</span>${t.naar&&t.naar!=='kpi'&&canView(t.naar)?`<button class="btn btn-ghost btn-sm" data-naar="${esc(t.naar)}">Open</button>`:''}</div>`).join(''):'<div class="kp-taak"><span class="muted">Niets openstaand.</span></div>'}
-    ${toonCommissie?`<div class="kp-taak"><span class="muted">Commissie Ashley: ${anMoney(a.commissie_verdiend)} verdiend (${kpPct(a.commissie_pct)} van de verkochte omzet) · bij het verkoopdoel ${anMoney(a.commissie_aanbod)} · bij ${kpKort(g.ambitie)} ${anMoney(a.commissie_ambitie)}</span></div>`:''}</div></div>`;
-  // ---- Blok 4: kanalen ----
+  h+=`<div class="kp-taken"><div class="kp-takenkop">Te doen</div>${taken.length?taken.map(t=>`<div class="kp-taak"><span>${filter==='alles'?`<b>${esc(t.wie)}</b> · `:''}${esc(t.tekst)}</span>${t.naar&&t.naar!=='kpi'&&canView(t.naar)?`<button class="btn btn-ghost btn-sm" data-naar="${esc(t.naar)}">Open</button>`:''}</div>`).join(''):'<div class="kp-taak"><span class="muted">Niets openstaand.</span></div>'}
+    ${toonCommissie?`<div class="kp-taak"><span class="muted">Commissie Ashley: ${kpRond(a.commissie_verdiend)} verdiend · bij ${kpRond(g.ambitie)} ${kpRond(a.commissie_ambitie)}</span></div>`:''}</div></div>`;
+  // ---- Blok 3: wat werkt ----
+  // Per kanaal het deel van de warme leads, op volgorde van belang (kpi__data), met een paar zinnen
+  // over wat het belangrijkst is. Steven: "laat ook zien hoe goed iets werkt, zodat we weten wat
+  // het belangrijkst is."
   const OORDEEL={werkt:['green','Werkt'],testen:['blue','Testen'],stoppen:['red','Stoppen'],achtergrond:['grey','Achtergrond'],niet_gebruikt:['grey','Niet gebruikt']};
-  if(eig)h+=`<div class="panel"><div class="panel-head"><div><h3>Kanalen: wat werkt</h3><div class="desc">Laatste 8 weken, op het eerste contact van een lead. Werkt = minstens één warme lead. Stoppen = genoeg geprobeerd zonder warme lead.</div></div></div>
-    <div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Kanaal</th><th>Eigenaar</th><th>Gedaan</th><th style="text-align:right">Leads</th><th style="text-align:right">Warm</th><th>Oordeel</th></tr></thead><tbody>
-    ${(d.kanalen||[]).map(k=>{const o=OORDEEL[k.oordeel];return `<tr><td><b>${esc(k.naam)}</b></td><td class="muted">${esc(k.eigenaar)}</td><td>${esc(k.gedaan_tekst||'–')}</td><td style="text-align:right">${kpN(k.leads,0)}</td><td style="text-align:right"><b>${kpN(k.warm,0)}</b></td><td>${o?`<span class="badge ${o[0]}">${o[1]}</span>`:''}</td></tr>`;}).join('')}
+  const ICO={top:'🏆',goed:'💡',duur:'💸',niets:'⛔',let_op:'👀'};
+  if(eig){
+    const kan=(d.kanalen||[]).filter(k=>k.sleutel!=='overig'||Number(k.leads)>0);
+    h+=`<div class="panel"><div class="panel-head"><div><h3>Wat werkt</h3><div class="desc">Welk deel van de warme leads elk kanaal brengt, laatste 8 weken. Belangrijkste bovenaan.</div></div></div>
+      ${(d.kanaal_inzicht||[]).length?`<div class="kp-inz">${d.kanaal_inzicht.map(z=>`<div class="kp-inz-r ${esc(z.soort)}"><span>${ICO[z.soort]||'•'}</span><span>${esc(z.tekst)}</span></div>`).join('')}</div>`:''}
+      <div class="kp-kan">${kan.map(k=>{const o=OORDEEL[k.oordeel],p=k.aandeel==null?0:Number(k.aandeel)*100;
+        return `<div class="kp-kan-r" title="${esc(`${k.naam}: ${kpN(k.leads,0)} leads, ${kpN(k.warm,0)} warm${k.gedaan_tekst?`, ${k.gedaan_tekst}`:''}${k.verder?`. Ooit: ${k.verder}`:''}.`)}">
+          <div class="kp-kan-naam">${esc(k.naam)}</div>
+          <div class="kp-kan-balk"><i class="${o?o[0]:'grey'}" style="width:${p>0?Math.max(p,2):0}%"></i></div>
+          <div class="kp-kan-pct">${kpN(p,0)}%</div>
+          <div class="kp-kan-w">${esc(k.rendement||'')}</div>
+          <div class="kp-kan-o">${o?`<span class="badge ${o[0]}">${o[1]}</span>`:''}</div></div>`;}).join('')}</div></div>`;
+  }
+  // ---- Alle cijfers, dichtgeklapt (alleen de eigenaar) ----
+  const alleCijfers=!eig?'':`<details class="panel kp-det"><summary>Alle cijfers</summary>
+    <div class="kp-doel"><div class="kp-cijfers">
+      <div><div class="l">Verkocht</div><div class="g">${anMoney(g.getekend)}</div><div class="u">${kpN(g.getekend_units,0)} ${Number(g.getekend_units)===1?'unit':'units'}${g.gewonnen_zonder_bedrag?` · ${kpN(g.gewonnen_zonder_bedrag,0)} zonder bedrag`:''}</div></div>
+      <div><div class="l">Gereserveerd</div><div class="g">${anMoney(g.itp_waarde)}</div><div class="u">${kpN(g.itp_units,0)} ${Number(g.itp_units)===1?'unit':'units'} met een ITP of op Reservering${g.reservering_zonder_bedrag?` · ${kpN(g.reservering_zonder_bedrag,0)} zonder bedrag`:''}</div></div>
+      <div><div class="l">Verkoopdoel</div><div class="g">${anMoney(g.verkoopdoel)}</div><div class="u">wat er nu te koop staat · ${kpKort(g.tempo_per_maand)} per maand</div></div>
+      <div><div class="l">Ambitie</div><div class="g">${anMoney(g.ambitie)}</div><div class="u">${kpDatum(g.start)} tot ${kpDatum(g.eind)}</div></div>
+      <div class="${g.gat>0?'gat':''}"><div class="l">Aanbod-gat</div><div class="g">${anMoney(g.gat)}</div><div class="u">${g.gat>0?`ongeveer ${kpN(g.gat_units,0)} villa's die nog niet te koop staan`:'het aanbod dekt de ambitie'}</div></div>
+    </div>
+    <div class="kp-strip" style="margin-top:14px">${(d.voorraad||[]).map(p=>`<span class="badge grey">${esc(p.project)}: ${kpN(p.vrij,0)} te koop${p.gereserveerd?`, ${kpN(p.gereserveerd,0)} met ITP`:''}</span>`).join('')}
+      <span class="badge ${g.pijplijn_units>0?'blue':'red'}">In voorbereiding: ${kpN(g.pijplijn_units,0)} units · ${kpKort(g.pijplijn_waarde)}</span>
+      <span class="muted">Omzet telt zodra de kaart op Gewonnen staat in de Sales pipeline, of als de koop getekend is (de drie documenten, of anders de contractdatum). Een ITP telt als reservering.</span></div></div>
+    <div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Stap in de keten</th><th style="text-align:right">Nodig per week</th><th style="text-align:right">Nu per week</th><th>Eigenaar</th></tr></thead><tbody>
+      ${(d.keten||[]).map(st=>`<tr><td><b>${esc(st.naam)}</b>${st.hals?' <span class="badge red">rem</span>':''}</td><td style="text-align:right">${kpN(st.nodig_pw,1)}</td><td style="text-align:right">${kpN(st.werk_pw||0,1)}</td><td class="muted">${esc(st.eigenaar||'')}</td></tr>`).join('')}
     </tbody></table></div>
-    <div class="muted" style="font-size:12px;padding:10px 18px 14px">SMS staat er niet bij: dat gebruiken we voor herinneringen voor calls en webinars, niet voor campagnes.</div></div>`;
+    <div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Kanaal, laatste 8 weken</th><th>Gedaan</th><th style="text-align:right">Leads</th><th style="text-align:right">Warm</th><th style="text-align:right">Warm %</th><th>Oplevering</th><th>Ooit verder gekomen</th><th>Oordeel</th></tr></thead><tbody>
+      ${(d.kanalen||[]).map(k=>{const o=OORDEEL[k.oordeel];return `<tr><td><b>${esc(k.naam)}</b><div class="muted" style="font-size:12px">${esc(k.eigenaar)}</div></td><td>${esc(k.gedaan_tekst||'–')}</td><td style="text-align:right">${kpN(k.leads,0)}</td><td style="text-align:right"><b>${kpN(k.warm,0)}</b></td><td style="text-align:right">${k.warm_pct==null?'–':kpN(Number(k.warm_pct)*100,0)+'%'}</td><td>${esc(k.rendement||'–')}</td><td>${esc(k.verder||'–')}</td><td>${o?`<span class="badge ${o[0]}">${o[1]}</span>`:''}</td></tr>`;}).join('')}
+    </tbody></table></div>
+    <div class="muted" style="font-size:12px;padding:10px 18px 14px">Warm = gekwalificeerd in een gesprek, of als kaart op Gekwalificeerd of in de Sales pipeline. Advertenties per warme lead telt alle leads via advertenties, ook de webinaraanmeldingen. Ooit verder gekomen: over alle data, een call, ITP of verkoop; calls worden nog weinig vastgelegd. SMS staat er niet bij: dat gebruiken we voor herinneringen, niet voor campagnes.</div></details>`;
   // ---- Details, dichtgeklapt ----
   const TAR={lead_warm:1,warm_call:1,call_itp:1,itp_teken:1,kosten_per_lead:1,itp_teken_dagen:1}, bew=!!d.mag_bewerken;
   const SOORT={doel:['green','doel'],aanname:['amber','aanname'],gemeten:['blue','gemeten'],norm:['grey','norm']};
@@ -2175,6 +2232,7 @@ function kpiTeken(){
       <td>${meting}</td><td style="text-align:right">${bew&&!vast?`<button class="btn btn-ghost btn-sm" data-opslaan="${esc(x.sleutel)}">Opslaan</button>`:''}${bew&&genoeg&&TAR[x.sleutel]?` <button class="btn btn-ghost btn-sm" data-neem="${esc(x.sleutel)}" data-w="${Number(m.gemeten)}">Neem gemeten over</button>`:''}</td></tr>`;}).join('');
   const maand=s.maand?new Date(s.maand):new Date(), vorige=new Date(maand.getFullYear(),maand.getMonth()-1,1);
   const mNaam=x=>x.toLocaleDateString('nl-NL',{month:'long',year:'numeric'}), mIso=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-01';
+  h+=alleCijfers;
   if(eig)h+=`<details class="panel kp-det"><summary>Model en invoer</summary>
       <div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Invoer</th><th>Soort</th><th>Waarde in het model</th><th>Gemeten, laatste 12 weken</th><th></th></tr></thead><tbody>${invoer}</tbody></table></div>
       <div class="kp-spend"><b>Advertentiekosten per maand</b><span class="muted">${s.meta_opgehaald?`Komt elke ochtend uit Meta Ads. Laatst opgehaald ${esc(fmtDateTime(s.meta_opgehaald))}. Een bedrag dat je zelf invult, gaat voor. Maak het veld leeg om terug te gaan naar Meta.`:(bew?'Nog niet opgehaald uit Meta. Klik op Nu ophalen uit Meta, of vul het bedrag uit Ads Manager in.':'Nog niet opgehaald uit Meta.')}</span>
