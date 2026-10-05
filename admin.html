@@ -1277,7 +1277,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-01-flow-webinar-datum';
+const APP_VERSIE='2026-10-05-campagne-opstellen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2963,7 +2963,7 @@ async function renderBroadcast(){
       <div class="muted" style="font-size:12px;padding:8px 18px 0">Het grijze getal achter een keuze is het totaal aantal contacten, het groene getal hoeveel daarvan bereikbaar zijn via het gekozen kanaal. Versturen kan alleen naar wie een e-mailadres heeft. <b>Ingelogd op invest</b> betekent dat iemand ooit een inloglink heeft aangevraagd, wat alleen voor de dataroom nodig is; iedereen in deze lijst staat sowieso in het portaal. <b>Klant</b> is wie een ITP tekende of aanbetaalde, plus iedereen die als klant in Moneybird staat. Zet dat filter op <b>Nog geen klant</b> om je bestaande kopers over te slaan. <b>Let op:</b> een campagne verstuurt altijd naar de lijst die bij de eerste verzendbeurt is vastgelegd; wie daarna in deze lijst bijkomt zit er dus niet in. Nieuwe contacten bereik je met <b>📬 Stuur naar wie hem nog niet kreeg</b> op een afgeronde campagne, zonder dat iemand dubbel ontvangt.</div>
       <div class="bc-telling" id="bc_telling"></div>
       <div class="bc-acties">
-        <button class="btn btn-primary btn-sm" id="bc_opstellen">✉ Nieuwsbrief opstellen</button>
+        <button class="btn btn-primary btn-sm" id="bc_opstellen">📣 Campagne opstellen</button>
         <button class="btn btn-ghost btn-sm" id="bc_csv">⬇ Exporteer als CSV</button>
         <button class="btn btn-ghost btn-sm" id="bc_lijst"></button>
         <button class="btn btn-ghost btn-sm" id="bc_allemaal">Alles aanvinken</button>
@@ -3535,7 +3535,7 @@ const bcPsReferral = () =>
   'style="color:#0f6b4f;font-weight:600;text-decoration:underline">persoonlijke referral-link</a> '+
   'en je ontvangt \u20ac2.500 zodra diegene koopt en het contract getekend is.</p>';
 
-/* ---------------- nieuwsbrief opstellen en versturen ---------------- */
+/* ---------------- campagne opstellen en versturen (e-mail, WhatsApp, sms) ---------------- */
 function bcOpstellen(hervatCamp){
   const m=bcMailbaar(), w=bcAppbaar(), sm=bcSmsbaar();
   // Bij een hervatte campagne ligt de ontvangerslijst al vast in de database,
@@ -3555,7 +3555,7 @@ function bcOpstellen(hervatCamp){
   $('#bc_opstel').innerHTML=`
   <div class="panel" id="bc_opstelpaneel">
     <div class="panel-head"><div>
-      <h3>Bericht opstellen</h3>
+      <h3>Campagne opstellen</h3>
       <div class="muted" style="font-size:13px;margin-top:2px" id="bc_kop"></div>
     </div></div>
     ${hervat?`<div class="bc-let" id="bc_hervat">Er staat nog een campagne open op dit apparaat (${esc(String(hervat.id).slice(0,8))}, ${esc(hervat.kanaal)}${hervat.golven?`, ${hervat.golven} golf${hervat.golven===1?'':'ven'} verstuurd`:''}). <button type="button" class="bc-zoekactie" id="bc_hervatja">Verder met die campagne</button> &middot; <button type="button" class="bc-zoekactie" id="bc_hervatnee">Nieuwe beginnen</button></div>`:''}
@@ -3583,7 +3583,7 @@ function bcOpstellen(hervatCamp){
       <div class="field bc-buiten">
         <label>Goedgekeurd template</label>
         <div id="bc_watpls"><span class="muted" style="font-size:12.5px">Templates laden&hellip;</span></div>
-        <div class="bc-hint">Buiten het 24-uursvenster staat WhatsApp alleen door Meta goedgekeurde templates toe. Vrije tekst kan niet, en een broadcast naar een oude lijst valt altijd buiten dat venster. Alleen templates in de categorie MARKETING mogen voor een nieuwsbrief.</div>
+        <div class="bc-hint">Buiten het 24-uursvenster staat WhatsApp alleen door Meta goedgekeurde templates toe. Vrije tekst kan niet, en een broadcast naar een oude lijst valt altijd buiten dat venster. Alleen templates in de categorie MARKETING mogen voor een campagne.</div>
       </div>
       <div class="field bc-buiten" id="bc_wavars_vak" style="display:none">
         <label>Variabelen invullen</label>
@@ -3617,7 +3617,7 @@ function bcOpstellen(hervatCamp){
       <div class="field bc-emailonly"><label>Onderwerp</label>
         <input id="bc_onderwerp" placeholder="Wat zien mensen in hun inbox?">
         <div class="vo-knoppen" style="margin-top:6px">
-          <button class="bc-zoekactie" id="bc_feiten" type="button">🔎 Actuele marktcijfers voor deze nieuwsbrief</button>
+          <button class="bc-zoekactie" id="bc_feiten" type="button">🔎 Actuele marktcijfers voor deze campagne</button>
         </div>
         <div id="bc_feitenvak"></div>
         <div class="bc-hint">De regel waarop mensen besluiten of ze openen.</div></div>
@@ -3818,7 +3818,7 @@ function bcKanaalTekenen(){
   // selectie, hoe goed hun telefoonnummer ook is.
   const kanaalfilterKnelt = wa && BC.kanaal==='email';
   $('#bc_kanaalhint').innerHTML = sms
-    ? `Elk bericht kost ongeveer \u20ac ${SMS_PRIJS.toFixed(2).replace('.',',')}, dus een ronde naar ${n} mensen komt op zo'n \u20ac ${(n*SMS_PRIJS).toFixed(2).replace('.',',')}. De afmeldlink wordt automatisch onder elk bericht gezet; wie zich afmeldt blijft wel gewoon de nieuwsbrief ontvangen.`
+    ? `Elk bericht kost ongeveer \u20ac ${SMS_PRIJS.toFixed(2).replace('.',',')}, dus een ronde naar ${n} mensen komt op zo'n \u20ac ${(n*SMS_PRIJS).toFixed(2).replace('.',',')}. De afmeldlink wordt automatisch onder elk bericht gezet; wie zich afmeldt, krijgt geen sms meer, maar blijft wel e-mail en WhatsApp ontvangen.`
       + (BC.kanaal==='email' ? ' <b>Let op:</b> het filter <b>Bereikbaar via</b> staat op "heeft e-mail", dus mensen met alleen een nummer zitten er nu niet bij.' : '')
     : wa
     ? 'Mag alleen met een door Meta goedgekeurd template en in golven. Antwoordt iemand met STOP, dan is hij meteen ook uit de e-maillijst.'
@@ -4177,7 +4177,7 @@ async function bcVerstuur(test){
     }
     const vraag = (BC.camp&&BC.vast)
       ? `Je gaat verder met "${BC.vast.naam||'deze campagne'}".\n\nDe lijst is vastgelegd bij de eerste verzending: ${BC.vast.doel} ontvangers, waarvan nog ongeveer ${BC.vast.resterend} te gaan. Alleen die rest krijgt nu een mail; je huidige filterselectie staat hier los van.\n\nDit kun je niet terugdraaien. Doorgaan?`
-      : `Je staat op het punt deze nieuwsbrief te versturen naar ${n} mensen`+
+      : `Je staat op het punt deze e-mailcampagne te versturen naar ${n} mensen`+
         (BC.vervolgVan?` (vervolg op "${BC.vervolgVan.naam}": wie die al kreeg is uitgesloten)`:'')+
         `.\n\nDit kun je niet terugdraaien. Doorgaan?`;
     if(!confirm(vraag)){
@@ -4231,7 +4231,7 @@ async function bcVerstuur(test){
   BC.camp=null; BC.vast=null; BC.getest=false;
   if(BC.vervolgVan){ BC.vervolgUit=new Set(); BC.vervolgVan=null; bcSelectieLaden(); }
   bcCampagnesLaden();
-  toast(`Nieuwsbrief verstuurd naar ${totaal} mensen`,'ok');
+  toast(`E-mailcampagne verstuurd naar ${totaal} mensen`,'ok');
 }
 
 /* WhatsApp verstuurt per golf, niet in één keer. Na elke golf staat de nieuwe
