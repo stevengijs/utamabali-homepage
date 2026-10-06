@@ -1389,7 +1389,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-06-kpi-perweek-1';
+const APP_VERSIE='2026-10-06-broadcast-fasen-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3110,7 +3110,7 @@ async function wlVerwerk(id){
    Wat je op het scherm afvinkt is precies wat er uitgaat. */
 let BC = {fac:null, sjablonen:[],
           bronnen:[], funnels:[], projecten:[], banden:[], timings:[], talen:[],
-          vastgoed:[], doelen:[], statussen:[], temperaturen:[], account:[], klant:[],
+          vastgoed:[], doelen:[], statussen:[], temperaturen:[], account:[], klant:[], fasen:[],
           periode:'', kanaal:'email', lijstOpen:false, zoek:'',
           verzendKanaal:'email', waTpls:null, waStatus:null, waTpl:null, waTplNaam:null, waVars:[], golf:40, waGolven:0,
           sel:null, uit:new Set(), open:new Set(), ddOpen:null, camp:null, stap:'kiezen',
@@ -3126,11 +3126,11 @@ const bcFilters = () => ({
   banden:bcArg(BC.banden), timings:bcArg(BC.timings), talen:bcArg(BC.talen),
   vastgoed:bcArg(BC.vastgoed), doelen:bcArg(BC.doelen), statussen:bcArg(BC.statussen),
   temperaturen:bcArg(BC.temperaturen), account:bcArg(BC.account), klant:bcArg(BC.klant),
-  periode:BC.periode||null, kanaal:BC.kanaal});
+  fasen:bcArg(BC.fasen), periode:BC.periode||null, kanaal:BC.kanaal});
 
 /* De groepen met aanvinkvakjes, in schermvolgorde. Kanaal en periode staan er
    niet bij: dat zijn enkele keuzes met hun eigen stukje staat. */
-const BC_GROEPEN = ['bronnen','funnels','projecten','banden','timings','doelen',
+const BC_GROEPEN = ['fasen','bronnen','funnels','projecten','banden','timings','doelen',
                     'vastgoed','statussen','temperaturen','account','klant','talen'];
 const bcActieveFilters = () =>
   BC_GROEPEN.reduce((n,g)=>n+BC[g].length,0) + (BC.periode?1:0);
@@ -3139,7 +3139,8 @@ const bcActieveFilters = () =>
    database staan ze vertaald naar één sleutel; hier staat hoe die sleutel op
    het scherm heet. */
 const BC_LABELS = {
-  bronnen:      {perspective:'Perspective', facebook:'Facebook', portaal:'Portaal', webinar:'Webinar'},
+  // crm: contacten uit het CRM (pipeline, inbox, DM-setter), elk kwartier aangevuld (6 oktober 2026).
+  bronnen:      {perspective:'Perspective', facebook:'Facebook', portaal:'Portaal', webinar:'Webinar', crm:'CRM (pipeline en inbox)'},
   timings:      {nu:'Direct', weken:'Binnen enkele weken', '3mnd':'Binnen 3 maanden',
                  enkele_mnd:'Over enkele maanden', '6mnd':'Binnen 6 maanden',
                  '12mnd':'Binnen 12 maanden', later:'Over een jaar of later',
@@ -3228,7 +3229,7 @@ const bcOntvangers = () =>
    zijn waarvan 67 met e-mailadres. Bereikbaarheid staat apart, in het groene
    getal ernaast. */
 const bcFacet = (lijst, groep) => (lijst||[]).map(f=>({
-  waarde:String(f.waarde), label:bcLabel(groep, f.waarde),
+  waarde:String(f.waarde), label:f.label||bcLabel(groep, f.waarde),
   n:f.n, met_email:f.met_email, met_tel:f.met_tel}));
 
 function bcDD(groep, label, opties, gekozen, enkel){
@@ -3275,6 +3276,7 @@ function bcFilterHtml(){
                                      met_email:j.met_email, met_tel:j.met_tel})));
   const n = bcActieveFilters();
   return bcDD('kanaal','Bereikbaar via',kanalen,[BC.kanaal],true)
+       + bcDD('fasen','Pipeline en fase',bcFacet(fac.fasen,'fasen'),BC.fasen)
        + bcDD('periode','Binnengekomen',perioden,[BC.periode||''],true)
        + bcDD('bronnen','Bron',bcFacet(fac.bronnen,'bronnen'),BC.bronnen)
        + bcDD('projecten','Project',bcFacet(fac.projecten,'projecten'),BC.projecten)
@@ -3339,6 +3341,8 @@ function bcBindFilters(){
 async function renderBroadcast(){
   const v=$('#view');
   v.innerHTML=`<div class="panel"><div class="muted" style="padding:20px">Adressenlijst laden…</div></div>`;
+  // Eerst nieuwe CRM-contacten en afmeldingen bijwerken (ook elk kwartier); lukt dat niet, dan gewoon door.
+  try{await sb.rpc('broadcast_contacten_aanvullen');}catch(e){}
   const {data:fac,error}=await sb.rpc('broadcast_facetten');
   if(error){v.innerHTML=`<div class="panel"><div class="empty" style="padding:20px">Kon de lijst niet laden: ${esc(error.message)}</div></div>`;return;}
   BC.fac=fac;
@@ -3751,7 +3755,7 @@ async function bcLaad(){
     p_bronnen:f.bronnen, p_funnels:f.funnels, p_projecten:f.projecten, p_banden:f.banden,
     p_timings:f.timings, p_talen:f.talen, p_vastgoed:f.vastgoed, p_doelen:f.doelen,
     p_statussen:f.statussen, p_temperaturen:f.temperaturen, p_account:f.account,
-    p_klant:f.klant, p_periode:f.periode, p_kanaal:f.kanaal, p_limit:2000,
+    p_klant:f.klant, p_periode:f.periode, p_kanaal:f.kanaal, p_limit:2000, p_fasen:f.fasen,
     // Vervolgcampagne: de server laat iedereen weg die de vorige campagne al
     // kreeg, VÓÓR de 2000-cap. Client-side filteren miste anders iedereen
     // achter de afkapgrens, precies de aanwas waarvoor de knop bestaat.
