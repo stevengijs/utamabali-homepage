@@ -159,8 +159,9 @@
   .dd-kolkop{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:12px 18px 2px}
   .dd-kolkop .dd-datum{color:var(--muted);font-size:12px}
   .dd-streak .dd-vlam{vertical-align:-1px}
-  .dd-groep{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin:12px 0 0}
-  .dd-groep .kp-stip{display:inline-block}
+  .dd-kpi{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);margin-top:3px}
+  .dd-kpi .kp-stip{display:inline-block;width:7px;height:7px}
+  .dd-kpi span:last-child{opacity:.85}
   .dd-rij.lezen .dd-vink{cursor:default}
   .dd-open{flex:none}
   .kp-t-plan{margin-top:8px;font-size:11.5px;line-height:1.35;color:#4b3c7a;background:#f3f0fb;border-radius:7px;padding:5px 8px}
@@ -1274,6 +1275,9 @@
   .kp-pil.rood{background:#fbeeec;color:#8f2a20}
   .kp-telling{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:5px}
   .kp-telling .kp-stip{display:inline-block;margin-right:6px;vertical-align:-1px}
+  .kp-termijn+.kp-termijn{border-top:1px solid var(--line)}
+  .kp-termijnkop{padding:14px 18px 0;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--ink)}
+  .kp-termijnkop span{font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)}
   .kp-tegels{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;padding:14px 18px 18px}
   .kp-t{border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;background:#fff;min-width:0}
   .kp-t.hals{border-color:#e9b3ab;box-shadow:0 0 0 1px #e9b3ab}
@@ -1389,7 +1393,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-06-broadcast-fasen-2';
+const APP_VERSIE='2026-10-06-kpi-termijn-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2188,6 +2192,12 @@ function kpiTeken(){
     'Nieuwe lead binnen 1 uur':['⚡','Binnen 1 uur reageren'],'Reels posten':['🎬','Reels'],
     'WhatsApp-broadcast':['📣','WhatsApp-broadcast'],'E-mailcampagne':['✉️','E-mailcampagne'],'Advertenties':['💶','Advertenties']};
   const EENHEID={"ITP's tekenen of vrijgeven":'te tekenen','in 4 weken':'per 4 weken','per dag deze maand':'per dag'};
+  // Per termijn (Steven, 6 oktober 2026: "Laten we wel duidelijk zijn wat er vandaag moet gebeuren, en deze week /
+  // maand moet gebeuren. Er kan natuurlijk niet dagelijks een ITP worden getekend").
+  const TERMIJN={berichten:'dag',binnen_1u:'dag',calls_afronden:'dag',reels:'dag',ads:'dag',calls:'week',broadcast:'week',email:'week',
+    itp_nieuw:'maand',itp_tekenen:'maand',aanbod:'jaar'};
+  const termijnVan=x=>TERMIJN[x.sleutel]||(/per (werk)?dag/.test(x.nodig_eenheid||'')?'dag':(/per week/.test(x.nodig_eenheid||'')?'week':'maand'));
+  const TERMIJN_TEKST={dag:'elke dag',week:'deze week',maand:'deze maand',jaar:'dit jaar'};
   const ketenOk=Array.isArray(d.keten);
   const tegels=[];
   // Een actie kan van meer mensen zijn (eigenaars); de broadcast en e-mail doen Steven en Ashley samen.
@@ -2201,12 +2211,14 @@ function kpiTeken(){
   KPI.dd={info:{},volgorde:[]};
   alle.sort(orde).forEach(({x})=>{if(!x.sleutel||KPI.dd.info[x.sleutel])return;const k=KORT[x.naam]||['•',x.naam];
     const nodig=x.nodig_tekst?String(x.nodig_tekst):(x.nodig==null?'':kpRuw(x.nodig,x.geld)+' '+(EENHEID[x.nodig_eenheid]||x.nodig_eenheid||''));
-    KPI.dd.info[x.sleutel]={ico:k[0],naam:k[1],kleur:KLEUR(x.ratio),nodig:nodig.trim()};KPI.dd.volgorde.push(x.sleutel);});
+    KPI.dd.info[x.sleutel]={ico:k[0],naam:k[1],kleur:KLEUR(x.ratio),nodig:nodig.trim(),termijn:TERMIJN_TEKST[termijnVan(x)]};KPI.dd.volgorde.push(x.sleutel);});
   const tel=k=>tegels.filter(t=>KLEUR(t.x.ratio)===k).length;
   const tegel=({x,st})=>{
     const k=KORT[x.naam]||['•',x.naam],kl=KLEUR(x.ratio),rem=st.hals&&kl!=='groen';
-    const groot=x.nodig_tekst?esc(x.nodig_tekst):(x.nodig==null?'?':kpRuw(x.nodig,x.geld));
-    const eenh=x.nodig_tekst?'':(EENHEID[x.nodig_eenheid]||x.nodig_eenheid||'');
+    // "In 4 weken" staat onder Deze maand, dus als maand: ronde getallen, een maand is 30,4 dagen.
+    const per4=x.nodig_eenheid==='in 4 weken';
+    const groot=x.nodig_tekst?esc(x.nodig_tekst):(x.nodig==null?'?':kpRuw(per4?x.nodig*30.4375/28:x.nodig,x.geld));
+    const eenh=x.nodig_tekst?'':(per4?'per maand':(EENHEID[x.nodig_eenheid]||x.nodig_eenheid||''));
     const nu=x.nu_tekst?String(x.nu_tekst).split(',')[0]:(x.nu==null?'niet gemeten':kpRuw(x.nu,x.geld));
     const breed=x.ratio==null||!isFinite(x.ratio)?0:Math.max(3,Math.min(100,x.ratio*100));
     const tip=[x.naam,x.nu_tekst?'Nu: '+x.nu_tekst+'.':'',x.uitleg||''].filter(Boolean).join(' ');
@@ -2224,7 +2236,9 @@ function kpiTeken(){
       <div class="kp-telling">${tel('rood')?`<span><i class="kp-stip rood"></i>${tel('rood')} achter</span>`:''}${tel('oranje')?`<span><i class="kp-stip oranje"></i>${tel('oranje')} bijna</span>`:''}${tel('groen')?`<span><i class="kp-stip groen"></i>${tel('groen')} op schema</span>`:''}</div></div>
       ${eig?`<div class="seg" id="kp_wie">${[['alles','Iedereen'],['steven','Steven'],['ashley','Ashley']].map(([k,l])=>`<button data-wie="${k}" class="${filter===k?'on':''}">${l}</button>`).join('')}</div>`:''}</div>
     ${eig&&ketenOk?`<div class="kp-hals ${hals&&hals.sleutel!=='omzet'?'rood':(hals?'oranje':'groen')}">${halsTekst}</div>`:''}
-    ${tegels.length?`<div class="kp-tegels">${tegels.map(tegel).join('')}</div>`:`<div class="muted" style="padding:16px 18px">${ketenOk?'Geen acties voor dit account.':'De acties zijn nog niet beschikbaar: de database is nog niet bijgewerkt.'}</div>`}`;
+    ${tegels.length?[['dag','Vandaag','elke dag'],['week','Deze week',''],['maand','Deze maand',''],['jaar','Dit jaar','tot '+kpDatum(g.eind)]].map(([tm,kop,sub])=>{
+        const ts=tegels.filter(x=>termijnVan(x.x)===tm);
+        return ts.length?`<div class="kp-termijn"><div class="kp-termijnkop">${kop}${sub?` <span>${esc(sub)}</span>`:''}</div><div class="kp-tegels">${ts.map(tegel).join('')}</div></div>`:'';}).join(''):`<div class="muted" style="padding:16px 18px">${ketenOk?'Geen acties voor dit account.':'De acties zijn nog niet beschikbaar: de database is nog niet bijgewerkt.'}</div>`}`;
   // Te doen, per persoon; de eigenaar ziet ze bij Iedereen allebei.
   // Een melding die hetzelfde telt als een dagdoel van die persoon staat al onder Vandaag (regel uit kpi__data).
   const ddVan=k=>!DD.eigen?null:(d.ik===k?DD.eigen:(Object.values(DD.anderen).find(x=>x.wie===k||(!x.wie&&x.naam===WIE[k]))||null));
@@ -7956,11 +7970,11 @@ function ddTeken(box,opts){
   const kols=(opts.kolommen||[]).filter(Boolean), kpi=opts.kpi, opnieuw=opts.opnieuw||(()=>{});
   const eigen=DD.eigen, meer=kols.length>1;
   box.classList.toggle('af',kols.length>0&&kols.every(k=>k.dag_af));
-  const kop=`<div class="dd-kop"><h3>🎯 ${eigen&&!eigen.vandaag&&kols.includes(eigen)?'Gisteren':'Vandaag'}: wat de naald beweegt</h3>${kpi?'<span class="dd-datum">Per KPI wat er vandaag moet gebeuren. Afvinken telt mee in de reeks.</span>':''}</div>`;
+  const kop=`<div class="dd-kop"><h3>🎯 ${eigen&&!eigen.vandaag&&kols.includes(eigen)?'Gisteren':'Vandaag'}: wat de naald beweegt</h3>${kpi?'<span class="dd-datum">Wat er vandaag te doen is. Bij elke taak staat welke KPI hij helpt halen. Afvinken telt mee in de reeks.</span>':''}</div>`;
   if(!kols.length){box.innerHTML=kop+`<div class="dd-leeg">${DD.fout?'Niet beschikbaar: '+esc(DD.fout):(DD.eigen&&opts.leeg?esc(opts.leeg):'Laden…')}</div>`;return;}
   const kpiInfo=s=>(kpi&&kpi.info[s])||(()=>{const x=DD_KPI.find(k=>k[0]===s);return x?{ico:x[1],naam:x[2],kleur:'',nodig:''}:null;})();
   const gezien=new Set();
-  const rij=(t,lezen,kol)=>{
+  const rij=(t,lezen,kol,info,id)=>{
     const omg=!!t.omgekeerd, auto=!!t.regel, teller=t.doel>1&&!omg&&!lezen;
     let sub='';
     if(omg&&DD_TIJD[t.regel])sub=t.auto>0?(t.klaar?'zelf afgevinkt':DD_TIJD[t.regel][0]):DD_TIJD[t.regel][1];
@@ -7970,9 +7984,10 @@ function ddTeken(box,opts){
     // Kort: de omschrijving staat in de tooltip van de titel. Bij een ander (alleen lezen) geen Open.
     const subs=[sub,t.notitie].filter(Boolean).map(esc).join(' · ');
     const naar=!lezen&&!t.klaar&&DD_NAAR[t.regel]&&canView(DD_NAAR[t.regel])?DD_NAAR[t.regel]:'';
-    return `<div class="dd-rij${t.klaar?' klaar':''}${auto?' auto':''}${lezen?' lezen':''}" data-id="${esc(t.id)}">
+    return `<div class="dd-rij${t.klaar?' klaar':''}${auto?' auto':''}${lezen?' lezen':''}" data-id="${esc(t.id)}"${id||''}>
       <button class="dd-vink" data-vink="${esc(t.id)}" ${lezen?`disabled title="Alleen ${esc(kol.naam||'de eigenaar')} vinkt dit af"`:`title="${t.klaar?'Terugzetten':(omg?'Afvinken, ook al staat er iets open':'Afvinken')}"`}>${t.klaar?'✓':''}</button>
-      <div class="dd-tekst"><div class="dd-titel"${t.omschrijving?` title="${esc(t.omschrijving)}"`:''}>${esc(t.titel)}</div>${subs?`<div class="dd-sub">${subs}</div>`:''}</div>
+      <div class="dd-tekst"><div class="dd-titel"${t.omschrijving?` title="${esc(t.omschrijving)}"`:''}>${esc(t.titel)}</div>${subs?`<div class="dd-sub">${subs}</div>`:''}
+        ${info?`<div class="dd-kpi"><span class="kp-stip ${info.kleur||''}"></span>helpt bij ${info.ico} ${esc(info.naam)}${info.termijn?` <span>· doel ${esc(info.termijn)}</span>`:''}</div>`:''}</div>
       ${naar?`<button class="btn btn-ghost btn-sm dd-open" data-naar="${esc(naar)}">Open</button>`:''}
       ${teller?`<div class="dd-tel"><button data-min="${esc(t.id)}" title="Eén minder" ${t.gedaan<=0?'disabled':''}>−</button><span>${t.gedaan}/${t.doel}</span><button data-plus="${esc(t.id)}" title="Eén meer">+</button></div>`:''}</div>`;
   };
@@ -7988,11 +8003,12 @@ function ddTeken(box,opts){
     if(!taken.length)return h+`<div class="dd-leeg">Nog geen dagdoelen.</div></div>`;
     h+='<div class="dd-lijst">';
     if(kpi){
-      const groepen={};taken.forEach(t=>{const s=kpiInfo(t.kpi_actie)?t.kpi_actie:'';(groepen[s]=groepen[s]||[]).push(t);});
-      const volg=[...kpi.volgorde.filter(s=>groepen[s]),...Object.keys(groepen).filter(s=>s&&!kpi.volgorde.includes(s)),...(groepen['']?['']:[])];
-      volg.forEach(s=>{const info=s?kpiInfo(s):null, id=s&&!gezien.has(s)?` id="kpdd_${esc(s)}"`:'';if(s)gezien.add(s);
-        h+=`<div class="dd-groep"${id}>${info?`<span class="kp-stip ${info.kleur||''}"></span>${info.ico} ${esc(info.naam)}${info.nodig?` <span class="muted">· ${esc(info.nodig)}</span>`:''}`:'<span class="kp-stip"></span>Overig <span class="muted">· hoort bij geen KPI</span>'}</div>`
-          +groepen[s].map(t=>rij(t,lezen,k)).join('');});
+      // Plat: wat er vandaag te doen is, met per taak de KPI die hij helpt halen en de termijn van dat doel. Geen
+      // week- of maanddoel als kop boven een dagtaak, want dan leek het een dagdoel (6 oktober 2026).
+      const pos=s=>{const i=kpi.volgorde.indexOf(s);return i<0?999:i;};
+      [...taken].sort((a,b)=>pos(a.kpi_actie)-pos(b.kpi_actie)).forEach(t=>{const s=t.kpi_actie, info=s?kpiInfo(s):null;
+        const id=info&&!gezien.has(s)?` id="kpdd_${esc(s)}"`:'';if(info)gezien.add(s);
+        h+=rij(t,lezen,k,info,id);});
     }else h+=taken.map(t=>rij(t,lezen,k)).join('');
     h+='</div>';
     if(isEigen)h+=`<div class="dd-hist"><span class="muted" style="font-size:11.5px;margin-right:6px">14 dagen</span>${(k.historie||[]).map(d=>`<span class="dd-dag${d.n?(d.af>=d.n?' af':(d.af?' deels':'')):''}${d.datum===k.datum?' vandaag':''}" title="${esc(d.datum)}: ${d.af}/${d.n}"></span>`).join('')}
