@@ -151,6 +151,22 @@
   .dd-chip.af{background:#e7f6ef;border-color:#c6ead9;color:var(--brand)}
   .dd-chip.af .n{color:var(--brand)}
   .dd-vlam{width:10px;height:12px;fill:currentColor;flex:none}
+  /* Op de KPI-pagina: per persoon een kolom, per KPI een groep (6 oktober 2026) */
+  .kp-dd{margin-top:20px;margin-bottom:0}
+  .dd-kols.meer{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:1px;background:var(--line)}
+  .dd-kols.meer .dd-kol{background:var(--panel)}
+  #dd_kort .dd-kop{border-bottom:none}
+  .dd-kolkop{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:12px 18px 2px}
+  .dd-kolkop .dd-datum{color:var(--muted);font-size:12px}
+  .dd-streak .dd-vlam{vertical-align:-1px}
+  .dd-groep{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin:12px 0 0}
+  .dd-groep .kp-stip{display:inline-block}
+  .dd-rij.lezen .dd-vink{cursor:default}
+  .dd-open{flex:none}
+  .kp-t-dd{margin-top:8px;font-size:11.5px;font-weight:650;color:var(--muted);cursor:pointer}
+  .kp-t-dd:empty{display:none}
+  .kp-t-dd .af{color:#0f6b4f}
+  .dd-ed-kpi{flex:1;min-width:170px}
   .dd-nav{margin-left:auto;font-size:11px;font-weight:800;background:var(--danger);color:#fff;border-radius:999px;padding:1px 7px;line-height:1.5}
   .dd-nav.af{background:var(--brand-2)}
   /* Editor voor de dagdoelen (modal) */
@@ -180,6 +196,7 @@
     .dd-hist{gap:3px}
     .dd-dag{width:13px;height:13px;border-radius:3px}
     .dd-knoppen{margin-left:0;width:100%}
+    .dd-kolkop{padding:10px 14px 2px}
   }
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:20px;overflow:hidden}
@@ -1371,7 +1388,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-05-kpi-campagnes-1';
+const APP_VERSIE='2026-10-06-kpi-dagdoelen-3';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1975,9 +1992,11 @@ function handleDeepLink(){
 /* ================= NAV ================= */
 function buildNav(){
   const nav=$('#nav');nav.innerHTML='';
-  // De dagdoelen-badge ("2/5" tot de dag af is) wordt gevuld door ddBadge().
-  const dash=el('button','nav-item','<span class="ic">▚</span> Dashboard<span class="dd-nav" id="dd_nav" hidden></span>');dash.onclick=()=>go('dashboard');dash.dataset.k='dashboard';nav.append(dash);
-  PAGES.forEach(p=>{if(!canView(p.key))return;const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${p.label}`);b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);});
+  // De dagdoelen-badge ("2/5" tot de dag af is) wordt gevuld door ddBadge(). Hij staat bij KPI, waar de
+  // dagdoelen sinds 6 oktober 2026 staan; wie die pagina niet ziet, heeft hem bij Dashboard.
+  const badge='<span class="dd-nav" id="dd_nav" hidden></span>', kpiZicht=canView('kpi');
+  const dash=el('button','nav-item','<span class="ic">▚</span> Dashboard'+(kpiZicht?'':badge));dash.onclick=()=>go('dashboard');dash.dataset.k='dashboard';nav.append(dash);
+  PAGES.forEach(p=>{if(!canView(p.key))return;const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${p.label}`+(p.key==='kpi'?badge:''));b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);});
 }
 function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>n.classList.toggle('active',n.dataset.k===k));}
 
@@ -2110,11 +2129,31 @@ const kpPct=x=>(x==null||!isFinite(x))?'–':kpN(Number(x)*100,1)+'%';
 function kpDatum(s){if(!s)return '–';const [y,m,d]=String(s).slice(0,10).split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});}
 async function renderKpi(){
   const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">KPI laden…</div>';
-  const {data,error}=await sb.rpc('kpi_dashboard');
+  const [{data,error}]=await Promise.all([sb.rpc('kpi_dashboard'),ddLaden()]);
   if(CURRENT!=='kpi')return;
-  if(error){v.innerHTML=`<div class="panel"><div class="empty">KPI niet beschikbaar: ${esc(error.message)}</div></div>`;return;}
+  // Zonder KPI-cijfers blijven de dagdoelen af te vinken (een gemiste dag kost de reeks).
+  if(error){v.innerHTML=`<div class="panel"><div class="empty">KPI niet beschikbaar: ${esc(error.message)}</div></div><div class="panel dd kp-dd" id="kp_vandaag"></div>`;
+    const nood=()=>ddTeken($('#kp_vandaag'),{kolommen:[DD.eigen],opnieuw:nood});nood();return;}
   KPI.data=data;
   kpiTeken();
+}
+// Vandaag op de KPI-pagina: welke kolommen bij het filter horen, en per tegel hoeveel taken van vandaag af zijn.
+function kpiDdTeken(){
+  const box=$('#kp_vandaag'), d=KPI.data;if(!box||!d)return;
+  const eig=d.eigenaar!==false, filter=eig?(KPI.filter||'alles'):(d.ik||'');
+  const WIE={steven:'Steven',ashley:'Ashley'};
+  const van=k=>!DD.eigen?null:(d.ik===k?DD.eigen:(Object.values(DD.anderen).find(x=>x.wie===k||(!x.wie&&x.naam===WIE[k]))||null));
+  const gisteren=DD.eigen&&!DD.eigen.vandaag;
+  // Gisteren alleen de eigen kolom, zodat er geen twee dagen door elkaar staan.
+  const kols=gisteren?[DD.eigen]:((!eig||!d.ik||!WIE[filter])?(eig?[DD.eigen,...Object.values(DD.anderen)]:[DD.eigen]):[van(filter)]);
+  ddTeken(box,{kolommen:kols,kpi:KPI.dd,opnieuw:kpiDdTeken,
+    leeg:WIE[filter]?(DD.foutAnderen?'De dagdoelen van '+WIE[filter]+' zijn nu niet beschikbaar.':'Geen dagdoelen voor '+WIE[filter]+'.'):'Nog geen dagdoelen.'});
+  const tel={};kols.filter(Boolean).forEach(k=>(k.taken||[]).forEach(t=>{if(!t.kpi_actie)return;const x=tel[t.kpi_actie]||(tel[t.kpi_actie]={n:0,af:0});x.n++;if(t.klaar)x.af++;}));
+  document.querySelectorAll('#view [data-kpdd]').forEach(s=>{const x=tel[s.dataset.kpdd];
+    const op=((KPI.dd&&KPI.dd.info[s.dataset.kpdd])||{}).kleur==='groen';
+    s.innerHTML=x?`<span class="${x.af>=x.n&&op?'af':''}">☑ ${x.af}/${x.n} ${x.n===1?'taak':'taken'} ${gisteren?'gisteren':'vandaag'}${x.af>=x.n&&!op?' · KPI nog achter':''}</span>`:'';
+    s.title=x?'Naar de taken van vandaag':'';
+    s.onclick=x?(()=>{const gr=document.getElementById('kpdd_'+s.dataset.kpdd);if(gr)gr.scrollIntoView({behavior:'smooth',block:'center'});}):null;});
 }
 function kpiTeken(){
   const v=$('#view'),d=KPI.data;if(!d||CURRENT!=='kpi')return;
@@ -2138,6 +2177,7 @@ function kpiTeken(){
     <div class="kp-held-balk" title="Donker: verkocht. Licht: gereserveerd (ITP of Reservering). Streep: waar we vandaag zouden moeten staan."><i class="res" style="width:${pc(binnen)}%"></i><i class="get" style="width:${pc(g.getekend)}%"></i><b style="left:${pc((Number(g.ambitie)||0)*verstreken)}%"></b></div>
     <div class="kp-held-leg"><span><i class="get"></i>Verkocht ${kpRond(g.getekend)}</span><span><i class="res"></i>Gereserveerd ${kpRond(g.itp_waarde)}</span>
       ${eig&&g.gat>0?`<span class="kp-pil rood">Aanbod: ${kpN(g.gat_units,0)} villa's te weinig</span>`:''}</div></div>`;
+
   // ---- Blok 2: wat er moet gebeuren, één tegel per actie ----
   // Groot: wat er nodig is voor de ambitie. Balk: hoe ver we zijn. Rood eerst. De uitleg en het
   // volledige "nu" staan in de tooltip. Alle getallen komen uit kpi__keten() in de database.
@@ -2153,7 +2193,14 @@ function kpiTeken(){
   const vanWie=x=>Array.isArray(x.eigenaars)&&x.eigenaars.length?x.eigenaars:[x.eigenaar];
   (d.keten||[]).forEach((st,si)=>(st.acties||[]).forEach((x,ai)=>{if(filter==='alles'||vanWie(x).includes(WIE[filter]))tegels.push({x,st,volg:si*10+ai});}));
   const RANG={rood:0,oranje:1,groen:2,'':3};
-  tegels.sort((p,q)=>(RANG[KLEUR(p.x.ratio)]-RANG[KLEUR(q.x.ratio)])||((q.st.hals?1:0)-(p.st.hals?1:0))||(p.volg-q.volg));
+  const orde=(p,q)=>(RANG[KLEUR(p.x.ratio)]-RANG[KLEUR(q.x.ratio)])||((q.st.hals?1:0)-(p.st.hals?1:0))||(p.volg-q.volg);
+  tegels.sort(orde);
+  // Voor Vandaag: per KPI-actie het pictogram, de korte naam, de kleur en wat er nodig is, in de volgorde van de tegels.
+  const alle=[];(d.keten||[]).forEach((st,si)=>(st.acties||[]).forEach((x,ai)=>alle.push({x,st,volg:si*10+ai})));
+  KPI.dd={info:{},volgorde:[]};
+  alle.sort(orde).forEach(({x})=>{if(!x.sleutel||KPI.dd.info[x.sleutel])return;const k=KORT[x.naam]||['•',x.naam];
+    const nodig=x.nodig_tekst?String(x.nodig_tekst):(x.nodig==null?'':kpRuw(x.nodig,x.geld)+' '+(EENHEID[x.nodig_eenheid]||x.nodig_eenheid||''));
+    KPI.dd.info[x.sleutel]={ico:k[0],naam:k[1],kleur:KLEUR(x.ratio),nodig:nodig.trim()};KPI.dd.volgorde.push(x.sleutel);});
   const tel=k=>tegels.filter(t=>KLEUR(t.x.ratio)===k).length;
   const tegel=({x,st})=>{
     const k=KORT[x.naam]||['•',x.naam],kl=KLEUR(x.ratio),rem=st.hals&&kl!=='groen';
@@ -2166,7 +2213,8 @@ function kpiTeken(){
       <div class="kp-t-kop"><span class="kp-t-ico">${k[0]}</span><span class="kp-t-naam">${esc(k[1])}</span>${rem?'<span class="kp-pil rood">rem</span>':''}</div>
       <div class="kp-t-n${x.nodig_tekst?' tekst':''}">${groot}${eenh?`<span>${esc(eenh)}</span>`:''}</div>
       <div class="kp-t-balk"><i style="width:${breed}%"></i></div>
-      <div class="kp-t-nu"><span>${/^laatste /.test(nu)?'':'nu '}${esc(nu)}</span><span>${vanWie(x).length>1?'Samen':esc(x.eigenaar)}</span></div></div>`;
+      <div class="kp-t-nu"><span>${/^laatste /.test(nu)?'':'nu '}${esc(nu)}</span><span>${vanWie(x).length>1?'Samen':esc(x.eigenaar)}</span></div>
+      <div class="kp-t-dd" data-kpdd="${esc(x.sleutel||'')}"></div></div>`;
   };
   const hals=(d.keten||[]).find(st=>st.hals);
   const halsTekst=hals?(hals.sleutel==='omzet'?'Grootste rem: <b>aanbod</b>, er moeten villa\'s bij · Steven':`Grootste rem: <b>${esc(hals.naam)}</b> · ${esc(hals.eigenaar)}`):'Alles op tempo.';
@@ -2176,10 +2224,15 @@ function kpiTeken(){
     ${eig&&ketenOk?`<div class="kp-hals ${hals&&hals.sleutel!=='omzet'?'rood':(hals?'oranje':'groen')}">${halsTekst}</div>`:''}
     ${tegels.length?`<div class="kp-tegels">${tegels.map(tegel).join('')}</div>`:`<div class="muted" style="padding:16px 18px">${ketenOk?'Geen acties voor dit account.':'De acties zijn nog niet beschikbaar: de database is nog niet bijgewerkt.'}</div>`}`;
   // Te doen, per persoon; de eigenaar ziet ze bij Iedereen allebei.
-  const takenVan=k=>((d[k]||{}).taken||[]).map(t=>Object.assign({},t,{wie:WIE[k]}));
+  // Een melding die hetzelfde telt als een dagdoel van die persoon staat al onder Vandaag (regel uit kpi__data).
+  const ddVan=k=>!DD.eigen?null:(d.ik===k?DD.eigen:(Object.values(DD.anderen).find(x=>x.wie===k||(!x.wie&&x.naam===WIE[k]))||null));
+  const ddRegels=k=>new Set(((ddVan(k)||{}).taken||[]).map(t=>t.regel).filter(Boolean));
+  const takenVan=k=>{const al=ddRegels(k);return ((d[k]||{}).taken||[]).filter(t=>!(t.regel&&al.has(t.regel))).slice(0,5).map(t=>Object.assign({},t,{wie:WIE[k]}));};
   const taken=filter==='alles'?takenVan('steven').concat(takenVan('ashley')):(WIE[filter]?takenVan(filter):[]);
   const toonCommissie=(filter==='alles'||filter==='ashley')&&a.commissie_pct!=null;
-  h+=`<div class="kp-taken"><div class="kp-takenkop">Te doen</div>${taken.length?taken.map(t=>`<div class="kp-taak"><span>${filter==='alles'?`<b>${esc(t.wie)}</b> · `:''}${esc(t.tekst)}</span>${t.naar&&t.naar!=='kpi'&&canView(t.naar)?`<button class="btn btn-ghost btn-sm" data-naar="${esc(t.naar)}">Open</button>`:''}</div>`).join(''):'<div class="kp-taak"><span class="muted">Niets openstaand.</span></div>'}
+  // Vandaag (de dagdoelen per KPI) direct onder de tegels, zodat de rem en de tegels bovenaan blijven.
+  h+='</div><div class="panel dd kp-dd" id="kp_vandaag"></div>';
+  h+=`<div class="panel"><div class="kp-taken"><div class="kp-takenkop">Meldingen</div>${taken.length?taken.map(t=>`<div class="kp-taak"><span>${filter==='alles'?`<b>${esc(t.wie)}</b> · `:''}${esc(t.tekst)}</span>${t.naar&&t.naar!=='kpi'&&canView(t.naar)?`<button class="btn btn-ghost btn-sm" data-naar="${esc(t.naar)}">Open</button>`:''}</div>`).join(''):'<div class="kp-taak"><span class="muted">Niets openstaand.</span></div>'}
     ${toonCommissie?`<div class="kp-taak"><span class="muted">Commissie Ashley: ${kpRond(a.commissie_verdiend)} verdiend · bij ${kpRond(g.ambitie)} ${kpRond(a.commissie_ambitie)}</span></div>`:''}</div></div>`;
   // ---- Blok 3: wat werkt ----
   // Per kanaal het deel van de warme leads, op volgorde van belang (kpi__data), met een paar zinnen
@@ -2246,6 +2299,7 @@ function kpiTeken(){
       <div class="muted">Een lead is een nieuw persoon: een websiteaanvraag, een gesprek met een echt inkomend bericht of een webinaraanmelding. Warm = gekwalificeerd in een gesprek, of als kaart op Gekwalificeerd of in de Sales pipeline. Bijgewerkt ${esc(fmtDateTime(d.bijgewerkt))}.</div></div></details>`;
   const wasOpen=[...v.querySelectorAll('details.kp-det')].map(x=>x.open);
   v.innerHTML=h;
+  kpiDdTeken();
   v.querySelectorAll('details.kp-det').forEach((x,n)=>{if(wasOpen[n])x.open=true;});
   $('#topRight').innerHTML='<button class="btn btn-ghost btn-sm" id="kp_ververs">Ververs</button>';
   $('#kp_ververs').onclick=()=>renderKpi();
@@ -7842,87 +7896,144 @@ async function renderDashboard(){
   html+=`<div class="panel"><div class="panel-head"><div><h3>📅 Google Agenda</h3><div class="desc">Koppel je agenda zodat de AI-assistent je beschikbaarheid kan zien en meetings kan inplannen. Alleen jij koppelt je eigen agenda.</div></div></div><div style="padding:18px" id="gcal_body"><div class="muted" style="font-size:13px">Laden…</div></div></div>`;
   html+=`<div class="panel"><div class="panel-head"><div><h3>📅 Outlook Agenda</h3><div class="desc">Werk je met Outlook/Microsoft 365? Koppel die agenda op dezelfde manier, de AI-assistent kijkt dan in beide.</div></div></div><div style="padding:18px" id="mscal_body"><div class="muted" style="font-size:13px">Laden…</div></div></div>`;
   html+=`<div class="panel"><div class="panel-head"><div><h3>🎯 Intro-calls</h3><div class="desc">Alle intro-calls lopen via de vaste eigenaar. Ben je tijdelijk vervangend beschikbaar (bijv. als zij reist), voeg jezelf dan toe voor een periode; de AI plant dan ook bij jou.</div></div></div><div style="padding:18px" id="intro_body"><div class="muted" style="font-size:13px">Laden…</div></div></div>`;
-  // Het 10X-blok staat boven de stat-tegels; ddRender() vult het.
-  v.innerHTML='<div class="panel dd" id="dd_panel"><div class="dd-kop"><h3>🎯 Vandaag: wat de naald beweegt</h3><span class="dd-datum">Laden…</span></div></div>'+html;
+  // Het 10X-blok staat sinds 6 oktober 2026 op de KPI-pagina; wie die niet ziet, houdt het hier boven de stat-tegels.
+  // Wie de KPI-pagina wel ziet, krijgt hier een korte stand met een knop erheen; op een telefoon is er geen zijbalk.
+  v.innerHTML='<div class="panel dd" id="'+(canView('kpi')?'dd_kort':'dd_panel')+'"><div class="dd-kop"><h3>🎯 Vandaag: wat de naald beweegt</h3><span class="dd-datum">Laden…</span></div></div>'+html;
   v.querySelectorAll('.stat[data-go]').forEach(x=>{if(x.dataset.go)x.onclick=()=>go(x.dataset.go);});
   // OAuth return feedback
   try{const p=new URLSearchParams(location.search).get('gcal');if(p){toast(p==='connected'?'Google Agenda gekoppeld ✓':(p==='cancelled'?'Koppeling geannuleerd':'Koppelen mislukt — probeer opnieuw'),p==='connected'?'ok':'err');history.replaceState(null,'',location.pathname+location.hash);}}catch(e){}
   try{const p=new URLSearchParams(location.search).get('mscal');if(p){toast(p==='connected'?'Outlook Agenda gekoppeld ✓':(p==='cancelled'?'Koppeling geannuleerd':'Koppelen mislukt — probeer opnieuw'),p==='connected'?'ok':'err');history.replaceState(null,'',location.pathname+location.hash);}}catch(e){}
-  ddRender();
+  if(canView('kpi'))ddKort();else ddDashboard();
   gcalRender();
   mscalRender();
   introRender();
   funnelWeekRender();
 }
-/* Dagdoelen: het 10X-blok. De database bepaalt wat "vandaag" is (tijdzone per
-   teamlid) en telt de automatische regels; de pagina toont en vinkt af.
-   ddRender(datum) haalt op en tekent; ddTeken(data) tekent alleen, zodat het
-   antwoord van dagdoel_afvinken direct getoond wordt zonder tweede rondje. */
-let DD=null, DD_BEZIG=false;
+/* Dagdoelen: wat de naald beweegt. Sinds 6 oktober 2026 op de KPI-pagina, per KPI-actie
+   gegroepeerd (Steven: "Combineer dit gedeelte met het KPI dashboard, zodat duidelijk is wat er
+   moet gebeuren om de KPI's te behalen, en dat deze taken afgevinkt kunnen worden"). Wie de
+   KPI-pagina niet mag zien, houdt het blok op het dashboard. De database bepaalt wat "vandaag" is
+   (tijdzone per teamlid) en telt de automatische regels; de pagina toont en vinkt af. Alleen de
+   eigenaar van een taak vinkt af. DD.eigen is dagdoelen() van de ingelogde gebruiker,
+   DD.anderen de taken van de rest van het team (alleen voor de eigenaar van de KPI's, alleen lezen). */
+let DD={eigen:null,anderen:{},fout:null}, DD_BEZIG=false;
 function ddTz(tz){return tz==='Asia/Makassar'?'Bali':(tz==='Europe/Amsterdam'?'NL':(tz||''));}
 // 'YYYY-MM-DD' één dag terug, zonder gedoe met lokale tijdzone of zomertijd.
 function ddGisteren(s){const [y,m,d]=String(s).split('-').map(Number);return new Date(Date.UTC(y,m-1,d-1)).toISOString().slice(0,10);}
 function ddDatumTekst(s){const [y,m,d]=String(s).split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});}
 const DD_VLAM='<svg class="dd-vlam" viewBox="0 0 10 12" aria-hidden="true"><path d="M5.6 0C6 2 8.2 3.2 9 5.4c.9 2.6-.6 5.6-3.7 6.4C2.2 12.6 0 10.4 0 7.8 0 6 1 4.9 1.8 4.2c-.1 1 .4 1.8 1 2.1C2.5 4.3 4.6 3 5.6 0z"/></svg>';
-async function ddRender(datum){
-  const box=$('#dd_panel');if(!box)return;
-  const {data,error}=await sb.rpc('dagdoelen',{p_datum:datum||null});
-  if(!$('#dd_panel'))return;
-  if(error){box.innerHTML=`<div class="dd-kop"><h3>🎯 Vandaag: wat de naald beweegt</h3></div><div class="dd-leeg">Niet beschikbaar: ${esc(error.message)}</div>`;return;}
-  ddTeken(data);
+// De KPI-acties waar een taak bij kan horen (dagdoelen.kpi_actie, sleutel uit kpi__keten).
+const DD_KPI=[['reels','🎬','Reels'],['ads','💶','Advertenties'],['broadcast','📣','WhatsApp-broadcast'],['email','✉️','E-mailcampagne'],
+  ['binnen_1u','⚡','Binnen 1 uur reageren'],['berichten','💬','Berichten en bellen'],['calls','📞','Intro-calls'],['calls_afronden','✅','Calls afronden'],
+  ['itp_nieuw','🤝',"Nieuwe ITP's"],['itp_tekenen','✍️',"ITP's tekenen"],['aanbod','🏗️','Nieuw aanbod']];
+// Waar je heen gaat om een automatische taak te doen (dezelfde plekken als de meldingen in Te doen).
+const DD_NAAR={nieuw_1u:'werklijst',nieuw_open:'werklijst',wacht_open:'werklijst',itp_open:'werklijst',webinar_open:'werklijst',calls_gelogd:'werklijst',reel_gepost:'content'};
+// Eigen dagdoelen ophalen; met alleenEigen=false ook die van de anderen in het team (dat zijn er alleen
+// voor de eigenaar van de KPI's: dagdoelen() geeft een ander alleen zichzelf terug).
+async function ddLaden(datum,alleenEigen){
+  const r=await sb.rpc('dagdoelen',{p_datum:datum||null});
+  if(r.error||!r.data){DD.fout=(r.error&&r.error.message)||'geen antwoord';return;}
+  DD.fout=null;DD.eigen=r.data;if(r.data.vandaag)ddBadge(r.data);
+  if(alleenEigen)return;
+  const anderen=(r.data.team||[]).filter(p=>p.user_id!==ME.id);
+  const res=await Promise.all(anderen.map(p=>sb.rpc('dagdoelen_van',{p_user:p.user_id})));
+  DD.anderen={};DD.foutAnderen=res.some(x=>x.error);res.forEach((x,i)=>{if(!x.error&&x.data)DD.anderen[anderen[i].user_id]=x.data;});
 }
-function ddTeken(data){
-  const box=$('#dd_panel');if(!box||!data)return;
-  DD=data;if(data.vandaag)ddBadge(data);
-  const taken=data.taken||[], team=data.team||[];
-  box.classList.toggle('af',!!data.dag_af);
-  let h=`<div class="dd-kop"><h3>🎯 ${data.vandaag?'Vandaag':'Gisteren'}: wat de naald beweegt</h3>
-    <span class="dd-datum">${esc(ddDatumTekst(data.datum))} · ${esc(ddTz(data.tijdzone))}</span>
-    <span class="dd-streak" title="Dagen op rij alles af">${Number(data.streak)||0} op rij</span>
-    <span class="badge ${data.dag_af?'green':'grey'}">${data.af}/${data.n}${data.dag_af?' · dag afgerond':''}</span>
-    <span class="dd-knoppen">${data.vandaag?'<button class="btn btn-ghost btn-sm" id="dd_gister">Gisteren</button>':'<button class="btn btn-ghost btn-sm" id="dd_vandaag">Vandaag</button>'}
-    <button class="btn btn-ghost btn-sm" id="dd_beheer">${isAdmin()?'Beheren':'Mijn taken'}</button></span></div>`;
-  if(!taken.length){
-    h+=`<div class="dd-leeg">Nog geen dagdoelen. <button class="btn btn-primary btn-sm" id="dd_beheer2">${isAdmin()?'Beheren':'Mijn taken'}</button></div>`;
-  }else{
-    h+='<div class="dd-lijst">'+taken.map(t=>{
-      const omg=!!t.omgekeerd, auto=!!t.regel, teller=t.doel>1&&!omg;
-      let sub='';
-      if(omg)sub=t.klaar?(t.auto>0?`${t.auto} open, zelf afgevinkt`:'niets open'):`${t.auto} open`;
-      else if(auto)sub=`${t.auto} geteld`+(t.handmatig>t.auto?`, ${t.handmatig} zelf`:'');
-      const subs=[t.omschrijving,sub,t.notitie].filter(Boolean).map(esc).join(' · ');
-      return `<div class="dd-rij${t.klaar?' klaar':''}${auto?' auto':''}" data-id="${esc(t.id)}">
-        <button class="dd-vink" data-vink="${esc(t.id)}" title="${t.klaar?'Terugzetten':(omg?'Afvinken, ook al staat er iets open':'Afvinken')}">${t.klaar?'✓':''}</button>
-        <div class="dd-tekst"><div class="dd-titel">${esc(t.titel)}</div>${subs?`<div class="dd-sub">${subs}</div>`:''}</div>
-        ${teller?`<div class="dd-tel"><button data-min="${esc(t.id)}" title="Eén minder" ${t.gedaan<=0?'disabled':''}>−</button><span>${t.gedaan}/${t.doel}</span><button data-plus="${esc(t.id)}" title="Eén meer">+</button></div>`:''}</div>`;
-    }).join('')+'</div>';
-  }
-  h+=`<div class="dd-hist"><span class="muted" style="font-size:11.5px;margin-right:6px">14 dagen</span>${(data.historie||[]).map(d=>`<span class="dd-dag${d.n?(d.af>=d.n?' af':(d.af?' deels':'')):''}${d.datum===data.datum?' vandaag':''}" title="${esc(d.datum)}: ${d.af}/${d.n}"></span>`).join('')}
-    <span class="dd-week">deze week ${anPct(Number(data.week_pct)||0)}</span></div>`;
-  if(team.length>1){
-    h+='<div class="dd-team"><span class="dd-teamkop">Team</span>'+team.map(p=>`<span class="dd-chip${p.dag_af?' af':''}" title="${esc(p.naam)} · ${esc(ddTz(p.tijdzone))}${p.user_id===ME.id?' · jij':''}">${esc(p.naam)} <span class="n">${p.af}/${p.n}</span><span class="st" title="${Number(p.streak)||0} dagen op rij">${DD_VLAM}${Number(p.streak)||0}</span></span>`).join('')+'</div>';
-  }
-  box.innerHTML=h;
+/* Tekent de dagdoelen in box. opts.kolommen: dagdoelen-objecten (de eigen kolom is afvinkbaar,
+   een kolom met alleen_lezen niet). opts.kpi: {info:{sleutel:{ico,naam,kleur,nodig}}, volgorde:[sleutels]}
+   groepeert per KPI-actie; zonder kpi een platte lijst. opts.opnieuw: tekent opnieuw na een wijziging. */
+function ddTeken(box,opts){
+  if(!box)return;
+  const kols=(opts.kolommen||[]).filter(Boolean), kpi=opts.kpi, opnieuw=opts.opnieuw||(()=>{});
+  const eigen=DD.eigen, meer=kols.length>1;
+  box.classList.toggle('af',kols.length>0&&kols.every(k=>k.dag_af));
+  const kop=`<div class="dd-kop"><h3>🎯 ${eigen&&!eigen.vandaag&&kols.includes(eigen)?'Gisteren':'Vandaag'}: wat de naald beweegt</h3>${kpi?'<span class="dd-datum">Per KPI wat er vandaag moet gebeuren. Afvinken telt mee in de reeks.</span>':''}</div>`;
+  if(!kols.length){box.innerHTML=kop+`<div class="dd-leeg">${DD.fout?'Niet beschikbaar: '+esc(DD.fout):(DD.eigen&&opts.leeg?esc(opts.leeg):'Laden…')}</div>`;return;}
+  const kpiInfo=s=>(kpi&&kpi.info[s])||(()=>{const x=DD_KPI.find(k=>k[0]===s);return x?{ico:x[1],naam:x[2],kleur:'',nodig:''}:null;})();
+  const gezien=new Set();
+  const rij=(t,lezen,kol)=>{
+    const omg=!!t.omgekeerd, auto=!!t.regel, teller=t.doel>1&&!omg&&!lezen;
+    let sub='';
+    if(omg)sub=t.klaar?(t.auto>0?`${t.auto} open, zelf afgevinkt`:'niets open'):`${t.auto} open`;
+    else if(auto)sub=`${t.auto} geteld`+(t.handmatig>t.auto?`, ${t.handmatig} zelf`:'');
+    else if(lezen&&t.doel>1)sub=`${t.gedaan}/${t.doel}`;
+    // Kort: de omschrijving staat in de tooltip van de titel. Bij een ander (alleen lezen) geen Open.
+    const subs=[sub,t.notitie].filter(Boolean).map(esc).join(' · ');
+    const naar=!lezen&&!t.klaar&&DD_NAAR[t.regel]&&canView(DD_NAAR[t.regel])?DD_NAAR[t.regel]:'';
+    return `<div class="dd-rij${t.klaar?' klaar':''}${auto?' auto':''}${lezen?' lezen':''}" data-id="${esc(t.id)}">
+      <button class="dd-vink" data-vink="${esc(t.id)}" ${lezen?`disabled title="Alleen ${esc(kol.naam||'de eigenaar')} vinkt dit af"`:`title="${t.klaar?'Terugzetten':(omg?'Afvinken, ook al staat er iets open':'Afvinken')}"`}>${t.klaar?'✓':''}</button>
+      <div class="dd-tekst"><div class="dd-titel"${t.omschrijving?` title="${esc(t.omschrijving)}"`:''}>${esc(t.titel)}</div>${subs?`<div class="dd-sub">${subs}</div>`:''}</div>
+      ${naar?`<button class="btn btn-ghost btn-sm dd-open" data-naar="${esc(naar)}">Open</button>`:''}
+      ${teller?`<div class="dd-tel"><button data-min="${esc(t.id)}" title="Eén minder" ${t.gedaan<=0?'disabled':''}>−</button><span>${t.gedaan}/${t.doel}</span><button data-plus="${esc(t.id)}" title="Eén meer">+</button></div>`:''}</div>`;
+  };
+  const kolom=k=>{
+    const isEigen=k===eigen, lezen=!isEigen||!!k.alleen_lezen, taken=k.taken||[];
+    const naam=isEigen?(ME.full_name||ME.email||'').split(' ')[0]:(k.naam||'');
+    let h=`<div class="dd-kol"><div class="dd-kolkop">${meer||!isEigen?`<b>${esc(naam)}</b>`:''}
+      <span class="dd-datum">${esc(ddDatumTekst(k.datum))} · ${esc(ddTz(k.tijdzone))}</span>
+      <span class="dd-streak" title="Dagen op rij alles af">${DD_VLAM} ${Number(k.streak)||0} op rij</span>
+      <span class="badge ${k.dag_af?'green':'grey'}">${k.af}/${k.n}${k.dag_af?' · dag afgerond':''}</span>
+      <span class="dd-knoppen">${isEigen?(k.vandaag?'<button class="btn btn-ghost btn-sm" data-dd="gister">Gisteren</button>':'<button class="btn btn-ghost btn-sm" data-dd="vandaag">Vandaag</button>'):''}
+        ${isEigen||isAdmin()?`<button class="btn btn-ghost btn-sm" data-dd="beheer" data-uid="${esc(k.user_id||ME.id)}">${isAdmin()?'Beheren':'Mijn taken'}</button>`:''}</span></div>`;
+    if(!taken.length)return h+`<div class="dd-leeg">Nog geen dagdoelen.</div></div>`;
+    h+='<div class="dd-lijst">';
+    if(kpi){
+      const groepen={};taken.forEach(t=>{const s=kpiInfo(t.kpi_actie)?t.kpi_actie:'';(groepen[s]=groepen[s]||[]).push(t);});
+      const volg=[...kpi.volgorde.filter(s=>groepen[s]),...Object.keys(groepen).filter(s=>s&&!kpi.volgorde.includes(s)),...(groepen['']?['']:[])];
+      volg.forEach(s=>{const info=s?kpiInfo(s):null, id=s&&!gezien.has(s)?` id="kpdd_${esc(s)}"`:'';if(s)gezien.add(s);
+        h+=`<div class="dd-groep"${id}>${info?`<span class="kp-stip ${info.kleur||''}"></span>${info.ico} ${esc(info.naam)}${info.nodig?` <span class="muted">· ${esc(info.nodig)}</span>`:''}`:'<span class="kp-stip"></span>Overig <span class="muted">· hoort bij geen KPI</span>'}</div>`
+          +groepen[s].map(t=>rij(t,lezen,k)).join('');});
+    }else h+=taken.map(t=>rij(t,lezen,k)).join('');
+    h+='</div>';
+    if(isEigen)h+=`<div class="dd-hist"><span class="muted" style="font-size:11.5px;margin-right:6px">14 dagen</span>${(k.historie||[]).map(d=>`<span class="dd-dag${d.n?(d.af>=d.n?' af':(d.af?' deels':'')):''}${d.datum===k.datum?' vandaag':''}" title="${esc(d.datum)}: ${d.af}/${d.n}"></span>`).join('')}
+      <span class="dd-week">deze week ${anPct(Number(k.week_pct)||0)}</span></div>`;
+    return h+'</div>';
+  };
+  box.innerHTML=kop+`<div class="dd-kols${meer?' meer':''}">${kols.map(kolom).join('')}</div>`;
   // Afvinken: het antwoord is hetzelfde object als dagdoelen(), dus direct tekenen.
   const vink=async(id,aantal)=>{
-    if(DD_BEZIG)return;DD_BEZIG=true;
+    if(DD_BEZIG||!eigen)return;DD_BEZIG=true;
     box.querySelectorAll('.dd-vink,.dd-tel button').forEach(b=>b.disabled=true);
-    const {data:d2,error:e2}=await sb.rpc('dagdoel_afvinken',{p_id:id,p_aantal:aantal,p_notitie:null,p_datum:data.vandaag?null:data.datum});
+    const voor=eigen;
+    const {data:d2,error:e2}=await sb.rpc('dagdoel_afvinken',{p_id:id,p_aantal:aantal,p_notitie:null,p_datum:voor.vandaag?null:voor.datum});
     DD_BEZIG=false;
-    if(!$('#dd_panel'))return;
-    if(e2){toast('Afvinken mislukt: '+e2.message,'err');ddTeken(data);return;}
-    ddTeken(d2);
-    if(d2.dag_af&&!data.dag_af)toast('Dag afgerond. '+(Number(d2.streak)||0)+' op rij','ok');
+    if(e2){toast('Afvinken mislukt: '+e2.message,'err');opnieuw();return;}
+    DD.eigen=d2;if(d2.vandaag)ddBadge(d2);opnieuw();
+    if(d2.dag_af&&!voor.dag_af)toast('Dag afgerond. '+(Number(d2.streak)||0)+' op rij','ok');
   };
-  const taak=id=>taken.find(x=>x.id===id);
+  const taak=id=>((eigen&&eigen.taken)||[]).find(x=>x.id===id);
   box.querySelectorAll('[data-vink]').forEach(b=>b.onclick=()=>{const t=taak(b.dataset.vink);if(t)vink(t.id,t.klaar?0:null);});
   box.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{const t=taak(b.dataset.plus);if(t)vink(t.id,Math.max(t.handmatig||0,t.auto||0)+1);});
   box.querySelectorAll('[data-min]').forEach(b=>b.onclick=()=>{const t=taak(b.dataset.min);if(t)vink(t.id,Math.max(0,(t.gedaan||0)-1));});
-  const g=$('#dd_gister');if(g)g.onclick=()=>ddRender(ddGisteren(data.datum));
-  const v0=$('#dd_vandaag');if(v0)v0.onclick=()=>ddRender();
-  ['#dd_beheer','#dd_beheer2'].forEach(s=>{const b=$(s);if(b)b.onclick=()=>openDagdoelenForm(ME);});
+  box.querySelectorAll('.dd-open[data-naar]').forEach(b=>b.onclick=()=>go(b.dataset.naar));
+  box.querySelectorAll('[data-dd]').forEach(b=>b.onclick=async()=>{
+    const a=b.dataset.dd;
+    if(a==='gister'||a==='vandaag'){b.disabled=true;await ddLaden(a==='gister'?ddGisteren(eigen.datum):null,true);opnieuw();return;}
+    if(a==='beheer'){const uid=b.dataset.uid, k=kols.find(x=>(x.user_id||ME.id)===uid);
+      openDagdoelenForm(uid===ME.id||!k?ME:{id:uid,full_name:k.full_name||k.naam,email:k.email||''});}
+  });
 }
-/* Badge op de Dashboard-knop in de zijbalk: "2/5" tot de dag af is, dan een vinkje. */
+// Dashboard, alleen voor wie de KPI-pagina niet kan zien: het blok zoals het was, zonder KPI-groepen.
+async function ddDashboard(){
+  const box=$('#dd_panel');if(!box)return;
+  await ddLaden(null,true);
+  ddDashboardTeken();
+}
+// Dashboard voor wie de KPI-pagina ziet: de stand van vandaag en een knop naar KPI, waar je afvinkt.
+async function ddKort(){
+  if(!$('#dd_kort'))return;
+  await ddLaden(null,true);
+  const box=$('#dd_kort'), k=DD.eigen;if(!box)return;
+  if(!k||!k.n){box.remove();return;}
+  box.classList.toggle('af',!!k.dag_af);
+  box.innerHTML=`<div class="dd-kop"><h3>🎯 Vandaag: wat de naald beweegt</h3>
+    <span class="badge ${k.dag_af?'green':'grey'}">${k.af}/${k.n}${k.dag_af?' · dag afgerond':''}</span>
+    <span class="dd-streak" title="Dagen op rij alles af">${DD_VLAM} ${Number(k.streak)||0} op rij</span>
+    <span class="dd-knoppen"><button class="btn btn-primary btn-sm" id="dd_naar_kpi">${k.dag_af?'Bekijk op KPI':'Afvinken op KPI'}</button></span></div>`;
+  $('#dd_naar_kpi').onclick=()=>go('kpi');
+}
+function ddDashboardTeken(){const box=$('#dd_panel');if(box)ddTeken(box,{kolommen:[DD.eigen],opnieuw:ddDashboardTeken});}
+/* Badge in de zijbalk (op KPI, of op Dashboard voor wie de KPI-pagina niet ziet): "2/5" tot de dag af is, dan een vinkje. */
 async function ddBadge(data){
   try{
     if(!data){const r=await sb.rpc('dagdoelen',{p_datum:null});if(r.error||!r.data)return;data=r.data;}
@@ -12320,11 +12431,12 @@ async function openDagdoelenForm(user){
   const DAGEN=['M','D','W','D','V','Z','Z'];
   const regelHtml=r=>'<option value="" title="Zelf afvinken; er wordt niets geteld">Handmatig afvinken</option>'+
     regels.map(x=>`<option value="${esc(x.key)}" title="${esc(x.uitleg||'')}" ${r===x.key?'selected':''}>${esc(x.label||x.key)}${x.omgekeerd?' (klaar bij 0)':''}</option>`).join('');
+  const kpiHtml=k=>'<option value="">Geen KPI</option>'+DD_KPI.map(x=>`<option value="${esc(x[0])}" ${k===x[0]?'selected':''}>${x[1]} ${esc(x[2])}</option>`).join('');
   let teller=0;
   const rijHtml=t=>{const wd=t.weekdagen==null?31:Number(t.weekdagen);const i=teller++;
     return `<div class="dd-ed" data-id="${esc(t.id||'')}">
       <div class="dd-ed-r"><input class="dd-ed-titel" placeholder="Titel" maxlength="80" value="${esc(t.titel||'')}"><input class="dd-ed-doel" type="number" min="1" max="99" step="1" value="${Number(t.doel)||1}" title="Doel per dag"><select class="dd-ed-regel" title="Hoe de taak geteld wordt">${regelHtml(t.regel||'')}</select></div>
-      <div class="dd-ed-r"><input class="dd-ed-oms" placeholder="Omschrijving (optioneel)" maxlength="400" value="${esc(t.omschrijving||'')}"></div>
+      <div class="dd-ed-r"><input class="dd-ed-oms" placeholder="Omschrijving (optioneel)" maxlength="400" value="${esc(t.omschrijving||'')}"><select class="dd-ed-kpi" title="Bij welke KPI deze taak hoort; zo staat hij op de KPI-pagina onder die KPI">${kpiHtml(t.kpi_actie||'')}</select></div>
       <div class="dd-ed-r dd-ed-voet"><span class="dd-ed-dagen" title="Op welke weekdagen de taak geldt">${DAGEN.map((d,k)=>`<label>${d}<input type="checkbox" data-bit="${1<<k}" ${(wd&(1<<k))?'checked':''}></label>`).join('')}</span>
         <label class="dd-ed-klein">Volgorde <input class="dd-ed-volg" type="number" step="1" value="${t.volgorde==null?(i+1)*10:Number(t.volgorde)}"></label>
         <label class="dd-ed-klein"><input type="checkbox" class="dd-ed-actief" ${t.actief===false?'':'checked'}> Actief</label>
@@ -12349,10 +12461,10 @@ async function openDagdoelenForm(user){
       let weekdagen=0;r.querySelectorAll('[data-bit]').forEach(c=>{if(c.checked)weekdagen|=Number(c.dataset.bit);});
       if(!weekdagen){toast('Kies minstens één weekdag: '+titel,'err');return false;}
       const p={actie:'opslaan',user_id:user.id,titel,omschrijving:r.querySelector('.dd-ed-oms').value.trim()||null,doel,
-        regel:r.querySelector('.dd-ed-regel').value||null,volgorde:parseInt(r.querySelector('.dd-ed-volg').value,10)||0,
+        regel:r.querySelector('.dd-ed-regel').value||null,kpi_actie:r.querySelector('.dd-ed-kpi').value||null,volgorde:parseInt(r.querySelector('.dd-ed-volg').value,10)||0,
         actief:r.querySelector('.dd-ed-actief').checked,weekdagen};
       if(id){p.id=id;const o=orig[id];
-        if(o&&o.titel===p.titel&&(o.omschrijving||null)===p.omschrijving&&Number(o.doel)===p.doel&&(o.regel||null)===p.regel
+        if(o&&o.titel===p.titel&&(o.omschrijving||null)===p.omschrijving&&Number(o.doel)===p.doel&&(o.regel||null)===p.regel&&(o.kpi_actie||null)===p.kpi_actie
            &&Number(o.volgorde||0)===p.volgorde&&(o.actief!==false)===p.actief&&Number(o.weekdagen==null?31:o.weekdagen)===p.weekdagen)continue;}
       acties.push({p,rij:r});
     }
@@ -12368,7 +12480,7 @@ async function openDagdoelenForm(user){
     }
     if(fouten)return false;
     toast(acties.length?'Dagdoelen opgeslagen':'Niets gewijzigd','ok');
-    if($('#dd_panel'))ddRender();else ddBadge();
+    if(CURRENT==='kpi'&&$('#kp_vandaag')){await ddLaden();if(KPI.data)kpiTeken();else renderKpi();}else if($('#dd_panel'))ddDashboard();else if($('#dd_kort'))ddKort();else ddBadge();
     return true;
   });
   const ed=$('#dd_ed');
