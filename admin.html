@@ -1388,7 +1388,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-06-kpi-dagdoelen-3';
+const APP_VERSIE='2026-10-06-kpi-campagnetaken-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -7927,7 +7927,10 @@ const DD_KPI=[['reels','🎬','Reels'],['ads','💶','Advertenties'],['broadcast
   ['binnen_1u','⚡','Binnen 1 uur reageren'],['berichten','💬','Berichten en bellen'],['calls','📞','Intro-calls'],['calls_afronden','✅','Calls afronden'],
   ['itp_nieuw','🤝',"Nieuwe ITP's"],['itp_tekenen','✍️',"ITP's tekenen"],['aanbod','🏗️','Nieuw aanbod']];
 // Waar je heen gaat om een automatische taak te doen (dezelfde plekken als de meldingen in Te doen).
-const DD_NAAR={nieuw_1u:'werklijst',nieuw_open:'werklijst',wacht_open:'werklijst',itp_open:'werklijst',webinar_open:'werklijst',calls_gelogd:'werklijst',reel_gepost:'content'};
+const DD_NAAR={nieuw_1u:'werklijst',nieuw_open:'werklijst',wacht_open:'werklijst',itp_open:'werklijst',webinar_open:'werklijst',calls_gelogd:'werklijst',reel_gepost:'content',
+  broadcast_te_laat:'broadcast',email_te_laat:'broadcast'};
+// Klaar-bij-0-regels die geen aantal tellen maar zeggen of het tijd is (sinds 6 oktober 2026).
+const DD_TIJD={broadcast_te_laat:['nu versturen','op tijd'],email_te_laat:['nu versturen','op tijd']};
 // Eigen dagdoelen ophalen; met alleenEigen=false ook die van de anderen in het team (dat zijn er alleen
 // voor de eigenaar van de KPI's: dagdoelen() geeft een ander alleen zichzelf terug).
 async function ddLaden(datum,alleenEigen){
@@ -7954,7 +7957,8 @@ function ddTeken(box,opts){
   const rij=(t,lezen,kol)=>{
     const omg=!!t.omgekeerd, auto=!!t.regel, teller=t.doel>1&&!omg&&!lezen;
     let sub='';
-    if(omg)sub=t.klaar?(t.auto>0?`${t.auto} open, zelf afgevinkt`:'niets open'):`${t.auto} open`;
+    if(omg&&DD_TIJD[t.regel])sub=t.auto>0?(t.klaar?'zelf afgevinkt':DD_TIJD[t.regel][0]):DD_TIJD[t.regel][1];
+    else if(omg)sub=t.klaar?(t.auto>0?`${t.auto} open, zelf afgevinkt`:'niets open'):`${t.auto} open`;
     else if(auto)sub=`${t.auto} geteld`+(t.handmatig>t.auto?`, ${t.handmatig} zelf`:'');
     else if(lezen&&t.doel>1)sub=`${t.gedaan}/${t.doel}`;
     // Kort: de omschrijving staat in de tooltip van de titel. Bij een ander (alleen lezen) geen Open.
