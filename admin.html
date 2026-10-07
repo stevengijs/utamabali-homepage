@@ -1403,7 +1403,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-07-wie-reageerde-1';
+const APP_VERSIE='2026-10-08-notitie-in-contact-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -11312,9 +11312,12 @@ async function inboxRenderContactChat(contactId){
   alle.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   const nieuwste=threads.slice().sort((a,b)=>new Date(b.last_message_at||0)-new Date(a.last_message_at||0))[0];
   const kanalen=threads.map(t=>{const ch=INBOX_CH[t.channel]||INBOX_CH.instagram;return `<span class="ibx-chtag" style="color:${ch.color};background:${ch.bg};border-color:${ch.bd}">${ch.icon} ${ch.label}</span>`;}).join(' ');
-  const kanaalSetPd=new Set(alle.map(m=>m.channel||'instagram'));
+  const kanaalSetPd=new Set(alle.filter(m=>!m.is_note).map(m=>m.channel||'instagram'));
   const gemengdPd=kanaalSetPd.size>1;
   const bubbles=alle.map(m=>{
+    // Interne notitie: dezelfde gele kaart als in de Inbox, nooit als bericht van een kanaal. Ze heeft kanaal
+    // "note" en viel daardoor terug op het Instagram-icoon, zodat hij las als een Instagram-bericht (Steven, 8 okt 2026).
+    if(m.is_note) return `<div class="ibx-note" style="max-width:88%"><div class="ibx-note-h">📝 Interne notitie · ${esc((m.sender_name||'Team').split('@')[0])} · ${esc(inboxRel(m.created_at))}</div><div class="ibx-note-b">${esc(m.body||'')}</div></div>`;
     const out=m.direction==='out',who=m.sender;
     const mch=INBOX_CH[m.channel]||INBOX_CH.instagram;
     const chip=gemengdPd?`<span class="ibx-chtag" style="color:${mch.color};background:${mch.bg};border-color:${mch.bd};font-size:10px;padding:1px 7px;margin-right:6px">${mch.icon} ${mch.label}</span>`:'';
