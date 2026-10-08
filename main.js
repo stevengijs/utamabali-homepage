@@ -109,7 +109,7 @@
     wSub: 'Less partying, more recovery. Guests look for a home with an idea: sauna, ice bath, jacuzzi, sport and an interior they want to share.',
     wGym: 'Sport', wSauna: 'Sauna', wIce: 'Ice bath', wJac: 'Jacuzzi', wTag1: 'The Reload, in development',
     altReloadWell: 'Impression of the roof terrace of The Reload from above: sauna, ice bath, jacuzzi, a gym corner and a lounge',
-    altNissen: 'Niches in a limewash wall of Villa Calma with ceramics and candles', wT1: 'Interiors guests share',
+    altNissen: 'Open kitchen with wooden shelves, hob and rattan bar stools in a delivered villa', wT1: 'Interiors guests share',
     altMokaJac: 'Impression of a jacuzzi on the roof terrace of a villa in MOKA, looking over the rice fields to the sea', wT2: 'Jacuzzi on the roof terrace',
     wPartK: 'With partners close by', wPartP: 'Padel, recovery and wellness near our projects.',
     wS1K: 'Wellness tourism worldwide', wS1V: 'USD 894 bn', wS1S: 'Source: Global Wellness Institute, figure for 2024',
