@@ -717,6 +717,11 @@ html.menu-open{ overflow:hidden; }
 .sec-cta{ display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; margin:36px 0 0; }
 .sec-cta .btn{ margin-top:0; }
 .sec-cta-note{ font:500 14px/1.4 var(--body); color:var(--muted); }
+.sec-cta-big{ margin-top:28px; padding:22px 24px; border-radius:20px; background:var(--sage); box-shadow:0 0 0 1px var(--line); gap:14px 22px; }
+.sec-cta-txt{ display:grid; gap:4px; flex:1 1 320px; min-width:0; }
+.sec-cta-txt b{ font:800 18px/1.25 var(--display); letter-spacing:-.01em; color:var(--ink); }
+.sec-cta-txt span{ font:400 14.5px/1.5 var(--body); color:var(--ink-soft); }
+.sec-cta-link{ flex-basis:100%; font:600 13.5px/1.4 var(--body); color:var(--olive-deep); text-decoration:underline; text-underline-offset:3px; }
 @media (min-width:760px){ .brand-mini{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; } }
 .brand-loc{ font:600 11.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
 .brand-name{ font-size:44px; line-height:1; letter-spacing:-.02em; }
