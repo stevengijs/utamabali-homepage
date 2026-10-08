@@ -790,6 +790,8 @@ html.menu-open{ overflow:hidden; }
 .c-ic svg{ width:13px; height:13px; }
 .c-ic.down{ background:var(--sand-2); color:var(--ink-soft); }
 .c-ic.up{ background:var(--olive-deep); color:#fff; }
+.c-ic.dot{ background:var(--sand-2); color:var(--olive-deep); }
+.c-ic.dot svg{ width:9px; height:9px; }
 @media (min-width:1024px){
   .smart-grid{ grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:20px; align-items:stretch; }
   .map-card{ display:flex; flex-direction:column; }
