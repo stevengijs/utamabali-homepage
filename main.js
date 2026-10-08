@@ -103,6 +103,7 @@
     pfDone: 'Delivered',
     pfRented: 'Rented to guests',
     pfResold: 'Delivered and resold',
+    reelSrc: '@stevenbalivillas · real numbers from our most watched reel',
     cmpSource: 'Source: MOKA and The Maison brochures, realistic scenario at 85% occupancy. Netherlands: Amsterdam broker figures 2026. Returns are estimates, not guarantees.',
     wEyebrow: 'Healthy and in the picture', wH: 'The new guest lives healthy.<br><span class="accent">It is in every concept.</span>',
     wSub: 'Less partying, more recovery. Guests look for a home with an idea: sauna, ice bath, jacuzzi, sport and an interior they want to share.',

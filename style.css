@@ -625,8 +625,16 @@ html.menu-open{ overflow:hidden; }
 .reel-lines{ flex:1; display:grid; gap:5px; padding-bottom:2px; }
 .reel-lines i{ display:block; height:4px; border-radius:4px; background:rgba(254,251,246,.85); }
 .reel-lines i + i{ width:62%; background:rgba(254,251,246,.5); }
-.reel-icons{ display:grid; gap:6px; }
-.reel-icons i{ display:block; width:12px; height:12px; border-radius:50%; background:rgba(254,251,246,.8); }
+.reel-rail{ display:grid; gap:9px; justify-items:center; color:#fff; }
+.reel-rail span{ display:grid; justify-items:center; gap:2px; font:700 9.5px/1 var(--body); text-shadow:0 1px 2px rgba(0,0,0,.45); }
+.reel-rail svg{ width:17px; height:17px; filter:drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
+.reel-views{ position:absolute; z-index:2; left:8px; top:68px; padding:4px 8px; border-radius:999px; background:rgba(23,20,15,.62); color:#fff; font:600 9.5px/1 var(--body); backdrop-filter:blur(3px); }
+.reel-views b{ font-weight:800; }
+.reel-src{ grid-column:1; grid-row:2; align-self:start; margin:8px 2px 0; font:500 10.5px/1.35 var(--body); color:rgba(254,251,246,.55); }
+.m-src{ grid-template-rows:auto auto; }
+.m-src-t{ grid-column:2; grid-row:1 / span 2; }
+.reel-frame{ grid-column:1; grid-row:1; }
+.ch-ic svg{ width:16px; height:16px; }
 .reel-tag{ bottom:auto; left:8px; top:40px; }
 .m-src-t{ display:flex; flex-direction:column; justify-content:center; min-width:0; }
 .m-k{ font:600 11px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:rgba(254,251,246,.58); margin-bottom:8px; }
