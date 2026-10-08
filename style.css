@@ -886,7 +886,8 @@ html.menu-open{ overflow:hidden; }
 .cmp-card.on .pl-roof{ stroke:var(--olive-deep); }
 .cmp-card.on .pl-staff{ fill:var(--olive-deep); opacity:1; }
 .cmp-card figcaption{ margin-top:12px; }
-.cmp-k{ display:block; font:800 18px/1.2 var(--display); letter-spacing:-.02em; margin-bottom:8px; }
+.cmp-k{ display:block; font:800 18px/1.2 var(--display); letter-spacing:-.02em; margin-bottom:2px; }
+.cmp-ex{ font:500 12.5px/1.3 var(--body); color:var(--muted); margin:0 0 8px; }
 .cmp-card.on .cmp-k{ color:var(--olive-deep); }
 .cmp-list{ list-style:none; margin:0; padding:0; display:grid; gap:2px; }
 .cmp-list li{ display:flex; align-items:center; gap:10px; padding:6px 0; font:600 14px/1.3 var(--body); color:var(--ink-soft); }
