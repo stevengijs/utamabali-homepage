@@ -705,7 +705,7 @@ html.menu-open{ overflow:hidden; }
 .bmini{ display:block; border-radius:22px; background:var(--sand); box-shadow:0 0 0 1px var(--line); padding:8px; color:var(--ink); text-decoration:none; transition:transform .25s var(--ease), box-shadow .25s var(--ease); }
 .bmini:hover{ transform:translateY(-3px); box-shadow:0 0 0 1px var(--line), 0 18px 40px -18px rgba(23,20,15,.35); }
 .bmini-img{ position:relative; display:block; aspect-ratio:4/3; border-radius:16px; overflow:hidden; background:var(--ph); }
-.bmini-img img{ width:100%; height:100%; object-fit:cover; display:block; }
+.bmini-img img, .bmini-img video{ width:100%; height:100%; object-fit:cover; display:block; }
 .bmini-img .tag{ position:absolute; top:10px; left:10px; }
 .bmini-body{ display:block; padding:16px 10px 12px; }
 .bmini .brand-loc{ display:block; margin-bottom:8px; }
