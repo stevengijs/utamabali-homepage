@@ -2042,6 +2042,15 @@ function gzTeken(items,q){
         <span class="gz-pipe">${esc(it.bron||'import')} · klik om er een contact van te maken</span>
       </button>`;
     }
+    // Een gesprek zonder contactrij (Instagram zonder nummer of mail): openen
+    // als gesprek; de CRM-knop daar maakt er desgewenst een contact van.
+    if(!it.contact_id&&it.conversation_id){
+      return `<button class="gz-item${i===0?' sel':''}" data-conv="${esc(it.conversation_id)}" data-i="${i}">
+        <div class="gz-naam">${esc(it.naam)} <span class="gz-pipe" style="background:#eef2ff;border-color:#c7d2fe;color:#3730a3">alleen een gesprek, nog geen contact</span></div>
+        ${sub?`<div class="gz-sub">${esc(sub)}</div>`:''}
+        <span class="gz-pipe">klik om het gesprek te openen</span>
+      </button>`;
+    }
     return `<button class="gz-item${i===0?' sel':''}" data-gz="${esc(it.contact_id)}" data-i="${i}">
       <div class="gz-naam">${esc(it.naam)}</div>
       ${sub?`<div class="gz-sub">${esc(sub)}</div>`:''}
@@ -2050,6 +2059,7 @@ function gzTeken(items,q){
   }).join('');
   r.hidden=false;
   r.querySelectorAll('[data-gz]').forEach(b=>b.onclick=()=>gzOpen(b.dataset.gz));
+  r.querySelectorAll('[data-conv]').forEach(b=>b.onclick=()=>{gzSluit();openInboxThread(b.dataset.conv);});
   r.querySelectorAll('[data-import]').forEach(b=>b.onclick=()=>gzOpenImport(b.dataset.import));
 }
 /* Een importregel wordt pas een contact als je hem daadwerkelijk oppakt. Zo
@@ -2090,7 +2100,7 @@ function gzInit(){
       const r=$('#gz_res');if(r)r.querySelectorAll('.gz-item').forEach((b,i)=>b.classList.toggle('sel',i===GZ.sel));
     }
     if(e.key==='Enter'&&GZ.sel>=0){e.preventDefault();const it=GZ.items[GZ.sel];
-      if(it.alleen_import)gzOpenImport(it.import_id);else gzOpen(it.contact_id);}
+      if(it.alleen_import)gzOpenImport(it.import_id);else if(!it.contact_id&&it.conversation_id){gzSluit();openInboxThread(it.conversation_id);}else gzOpen(it.contact_id);}
   };
   document.addEventListener('click',e=>{const w=e.target.closest('.gz-wrap');if(!w)gzSluit();});
   document.addEventListener('keydown',e=>{
@@ -9362,7 +9372,7 @@ function inboxDrawInfo(ctx){
     </div>`;
   // Acties uit de vaste rij: bewust buiten de edit-gate gebonden, elke knop
   // heeft zijn eigen permissiecheck al in leadActieRij.
-  const crmB=$('#ibx_crm');if(crmB)crmB.onclick=()=>openContactById(cv.contact_id);
+  const crmB=$('#ibx_crm');if(crmB)crmB.onclick=()=>contactVanGesprek(cv);
   const shB=$('#ibx_share');if(shB)shB.onclick=()=>copyLink(crmDeepLink(cv.contact_id));
   const mlB=$('#ibx_mail');if(mlB)mlB.onclick=()=>inboxComposeVia('email');
   const afb=$('#ibx_afspraak');if(afb)afb.onclick=()=>afspraakVorm({id:cv.contact_id,name:nm});
@@ -10957,7 +10967,8 @@ async function openPerson(p){
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap"><span style="font-size:18px;font-weight:750">${esc(p.name||p.email||'Contact')}</span>${p.partner?partnerBadge(p.partner):''}${warmthBadgeId(p.id,{big:true})?`<span style="display:inline-flex;align-items:center;gap:7px"><span class="muted" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Koopbereidheid</span>${warmthBadgeId(p.id,{big:true})}</span>`:''}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap"><span style="font-size:18px;font-weight:750">${esc(p.name||p.email||'Contact')}</span>${p.geblokkeerd?'<span class="badge" style="background:#b91c1c;color:#fff;border-color:#991b1b;font-weight:800;letter-spacing:.04em">🚫 GEBLOKKEERD</span>':''}${p.partner?partnerBadge(p.partner):''}${warmthBadgeId(p.id,{big:true})?`<span style="display:inline-flex;align-items:center;gap:7px"><span class="muted" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Koopbereidheid</span>${warmthBadgeId(p.id,{big:true})}</span>`:''}</div>
+        ${p.geblokkeerd?`<div style="margin:-4px 0 10px;padding:8px 12px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-weight:600;font-size:12.5px">🚫 Geblokkeerd${p.geblokkeerd_at?' sinds '+fmtDate(p.geblokkeerd_at):''}${p.geblokkeerd_reden?' · '+esc(p.geblokkeerd_reden):''}. Niet benaderen: geen WhatsApp, e-mail of broadcast; de bot zwijgt.</div>`:''}
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <a href="mailto:${esc(p.email)}" class="badge blue" style="text-decoration:none">${esc(p.email)}</a>
           ${p.phone?`<span class="badge grey">${esc(p.phone)}</span>`:''}
@@ -12066,6 +12077,28 @@ async function pipeColDrop(col,e){
   drawPipeline();
   const {error}=await sb.from('pipelines').update({stages}).eq('id',PIPE.cur.id);
   if(error){toast('Kon kolomvolgorde niet opslaan: '+error.message,'err');loadPipelineData();}
+}
+/* Een Instagram-gesprek heeft vaak geen contactrij: inbox-ingest maakt die alleen
+   bij een e-mailadres of nummer. "Contact niet gevonden" hielp dan niemand (Steven,
+   8 oktober 2026, @johann_ehv). Nu maken we het contact ter plekke aan en koppelen
+   we het gesprek via contact_gesprek_koppelen. */
+async function contactVanGesprek(cv){
+  if(cv&&cv.contact_id){openContactById(cv.contact_id);return;}
+  const convId=(cv&&cv.id)||(String(INBOX.sel||'').startsWith('c:')?null:INBOX.sel);
+  if(!convId){toast('Geen gesprek gevonden','err');return;}
+  const naam=((cv&&(cv.display_name||cv.handle))||'').trim()||'Onbekend';
+  const kanaal=(INBOX_CH[cv&&cv.channel]||{}).label||(cv&&cv.channel)||'kanaal';
+  if(!confirm('Dit gesprek is nog niet aan een contact gekoppeld (alleen een '+kanaal+'-handle). Contact "'+naam+'" aanmaken en koppelen?'))return;
+  try{
+    const now=new Date().toISOString();
+    const {data:c,error}=await sb.from('contacts').insert({name:naam,first_seen_at:now,last_activity_at:now}).select('*').single();
+    if(error||!c){toast('Contact aanmaken mislukt'+(error?': '+error.message:''),'err');return;}
+    const {data:k,error:ke}=await sb.rpc('contact_gesprek_koppelen',{p_contact:c.id,p_conversation:convId});
+    if(ke||!(k&&k.ok)){toast('Koppelen mislukt'+(ke?': '+ke.message:(k&&k.fout?': '+k.fout:'')),'err');return;}
+    if(cv)cv.contact_id=c.id;
+    toast('Contact aangemaakt en aan het gesprek gekoppeld','ok');
+    openPerson(c);
+  }catch(e){toast('Kon contact niet aanmaken','err');}
 }
 async function openContactById(id){try{const {data}=await sb.from('contacts').select('*').eq('id',id).single();if(data)openPerson(data);else toast('Contact niet gevonden','err');}catch(e){toast('Kon contact niet openen','err');}}
 function pipeWhatsapp(id){const c=PIPE.cards.find(x=>x.id===id);if(!c)return;const en=(PIPE.enrich&&PIPE.enrich[c.contact_id])||{};const url=_helloWaUrl(en.phone,en.name||c.title,c.project||en.project||'');if(!url){toast('Geen geldig telefoonnummer voor deze lead','err');return;}window.open(url,'_blank','noopener');}
