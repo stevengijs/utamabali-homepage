@@ -222,29 +222,30 @@
         </figcaption>
         <div class="bars" role="group" aria-label="Illustratie: twaalf maandelijkse uitbetalingen van wisselende hoogte. Kies een maand voor de bedragen." data-t-aria="yearAria">
           <output class="bar-tip" aria-live="polite"><b></b><small></small></output>
-          <button type="button" class="bar lbl" style="--h:0.62;--i:1" data-m="1" aria-pressed="false" aria-label="Maand 1"><span>M1</span></button>
-          <button type="button" class="bar" style="--h:0.5;--i:2" data-m="2" aria-pressed="false" aria-label="Maand 2"><span>M2</span></button>
-          <button type="button" class="bar lbl" style="--h:0.56;--i:3" data-m="3" aria-pressed="false" aria-label="Maand 3"><span>M3</span></button>
-          <button type="button" class="bar" style="--h:0.7;--i:4" data-m="4" aria-pressed="false" aria-label="Maand 4"><span>M4</span></button>
-          <button type="button" class="bar" style="--h:0.78;--i:5" data-m="5" aria-pressed="false" aria-label="Maand 5"><span>M5</span></button>
-          <button type="button" class="bar lbl" style="--h:0.88;--i:6" data-m="6" aria-pressed="false" aria-label="Maand 6"><span>M6</span></button>
-          <button type="button" class="bar sel" style="--h:1;--i:7" data-m="7" aria-pressed="true" aria-label="Maand 7"><span>M7</span></button>
-          <button type="button" class="bar" style="--h:0.96;--i:8" data-m="8" aria-pressed="false" aria-label="Maand 8"><span>M8</span></button>
-          <button type="button" class="bar lbl" style="--h:0.74;--i:9" data-m="9" aria-pressed="false" aria-label="Maand 9"><span>M9</span></button>
-          <button type="button" class="bar" style="--h:0.6;--i:10" data-m="10" aria-pressed="false" aria-label="Maand 10"><span>M10</span></button>
-          <button type="button" class="bar" style="--h:0.66;--i:11" data-m="11" aria-pressed="false" aria-label="Maand 11"><span>M11</span></button>
-          <button type="button" class="bar lbl" style="--h:0.92;--i:12" data-m="12" aria-pressed="false" aria-label="Maand 12"><span>M12</span></button>
+          <button type="button" class="bar s-tussen lbl" style="--h:0.64;--i:1" data-m="1" aria-pressed="false" aria-label="Januari"><span data-t="mon1">jan</span></button>
+          <button type="button" class="bar s-laag" style="--h:0.5;--i:2" data-m="2" aria-pressed="false" aria-label="Februari"><span data-t="mon2">feb</span></button>
+          <button type="button" class="bar s-laag" style="--h:0.56;--i:3" data-m="3" aria-pressed="false" aria-label="Maart"><span data-t="mon3">mrt</span></button>
+          <button type="button" class="bar s-tussen lbl" style="--h:0.7;--i:4" data-m="4" aria-pressed="false" aria-label="April"><span data-t="mon4">apr</span></button>
+          <button type="button" class="bar s-tussen" style="--h:0.78;--i:5" data-m="5" aria-pressed="false" aria-label="Mei"><span data-t="mon5">mei</span></button>
+          <button type="button" class="bar s-tussen" style="--h:0.88;--i:6" data-m="6" aria-pressed="false" aria-label="Juni"><span data-t="mon6">jun</span></button>
+          <button type="button" class="bar s-hoog lbl sel" style="--h:1;--i:7" data-m="7" aria-pressed="true" aria-label="Juli"><span data-t="mon7">jul</span></button>
+          <button type="button" class="bar s-hoog" style="--h:0.96;--i:8" data-m="8" aria-pressed="false" aria-label="Augustus"><span data-t="mon8">aug</span></button>
+          <button type="button" class="bar s-tussen" style="--h:0.76;--i:9" data-m="9" aria-pressed="false" aria-label="September"><span data-t="mon9">sep</span></button>
+          <button type="button" class="bar s-tussen lbl" style="--h:0.66;--i:10" data-m="10" aria-pressed="false" aria-label="Oktober"><span data-t="mon10">okt</span></button>
+          <button type="button" class="bar s-laag" style="--h:0.58;--i:11" data-m="11" aria-pressed="false" aria-label="November"><span data-t="mon11">nov</span></button>
+          <button type="button" class="bar s-hoog" style="--h:0.92;--i:12" data-m="12" aria-pressed="false" aria-label="December"><span data-t="mon12">dec</span></button>
           <div class="bars-total"><b class="num" data-year-net>≈ €29.900</b><small data-t="together">per jaar uitbetaald</small></div>
         </div>
+        <p class="seasons"><span><i class="sw hoog"></i><span data-t="seasHoog">Hoogseizoen: juli, augustus en december</span></span><span><i class="sw"></i><span data-t="seasTussen">Tussenseizoen</span></span><span><i class="sw laag"></i><span data-t="seasLaag">Laagseizoen: regentijd, februari, maart en november</span></span></p>
         <div class="year-split" data-split>
           <div class="ys-h">
-            <b data-ys-title>Maand 7 · hoogseizoen</b>
+            <b data-ys-title>Juli · hoogseizoen</b>
             <div class="ys-toggle" role="group" aria-label="Periode"><button type="button" class="on" data-scope="maand" aria-pressed="true" data-t="ysMaand">Per maand</button><button type="button" data-scope="jaar" aria-pressed="false" data-t="ysJaar">Heel jaar</button></div>
           </div>
           <dl>
-            <div><dt data-t="ysOmzet">Omzet van de woning</dt><dd data-ys-gross>€6.090</dd></div>
-            <div><dt data-t="ysKosten">Kosten en beheer</dt><dd data-ys-costs>−€2.739</dd></div>
-            <div class="ys-net"><dt data-t="ysUit">Uitbetaling aan jou</dt><dd data-ys-net>€3.351</dd></div>
+            <div><dt data-t="ysOmzet">Omzet van de woning</dt><dd data-ys-gross>€6.080</dd></div>
+            <div><dt data-t="ysKosten">Kosten en beheer</dt><dd data-ys-costs>−€2.736</dd></div>
+            <div class="ys-net"><dt data-t="ysUit">Uitbetaling aan jou</dt><dd data-ys-net>€3.344</dd></div>
           </dl>
         </div>
         <p class="year-note" data-t="yearNote">Illustratie: de maandcijfers volgen het realistische scenario uit de brochure van The Maison (€175 per nacht, 85% bezetting), verdeeld over de seizoenen. Omzet is de huur die de woning opbrengt. Kosten en beheer zijn verhuurbeheer, operationeel beheer en overige kosten en belasting.</p>
@@ -276,7 +277,7 @@
       <div class="steps-vp">
       <ol class="steps" data-reveal tabindex="0" aria-label="Tien stappen van grond tot gast" data-t-aria="stepsAria">
         <li class="step">
-          <div class="step-head"><span class="step-dot jij">01</span></div>
+          <div class="step-head"><span class="step-dot jij" role="button" tabindex="0" aria-label="Stap 1">01</span></div>
           <div class="step-media ui">
             <div class="ui-card">
               <div class="ui-row"><span class="ui-ic"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2.5h7l3.5 3.5v11.5H5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 10h5M8 13h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><div><b data-t="s1Card">Koopcontract</b><small>The Maison</small></div></div>
@@ -289,14 +290,14 @@
           <div class="roles"><span class="role jij" data-t="roleJij">Jij</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot">02</span></div>
+          <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 2">02</span></div>
           <figure class="step-media ph" style="--ph:#9CA293"><img src="img/grond-bouwplaats-800.webp" srcset="img/grond-bouwplaats-800.webp 800w, img/grond-bouwplaats-1024.webp 1024w" sizes="(min-width:1024px) 300px, 78vw" width="1024" height="768" alt="Steven Gijsman met de aannemer op de bouwplaats, de tekeningen in de hand" loading="lazy" decoding="async" style="object-position:62% 50%" data-t-alt="altGrond"><figcaption class="tag tag-dark tag-sm"><span data-t="tagPhoto">Foto</span> · <span data-t="tagSite">Op de bouwplaats</span></figcaption></figure>
           <h3 data-t="s2H">De grond</h3>
           <p data-t="s2P">Wij selecteren de grond en verwerven die in leasehold.</p>
           <div class="roles"><span class="role wij" data-t="roleWij">Wij</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot">03</span></div>
+          <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 3">03</span></div>
           <div class="step-media ui ui-map">
             <svg class="mini-map" viewBox="0 0 320 240" aria-hidden="true">
               <path class="mm-land" d="M0 0H320V200C300 192 284 186 268 180 246 171 226 162 208 154 188 145 168 136 150 128 128 118 104 106 82 96 58 85 30 76 0 70Z"/>
@@ -315,7 +316,7 @@
           <div class="roles"><span class="role wij" data-t="roleWij">Wij</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot">04</span></div>
+          <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 4">04</span></div>
           <div class="step-media ui">
             <ul class="ui-check">
               <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-t="s4a">Vergunningen</span></li>
@@ -328,21 +329,21 @@
           <div class="roles"><span class="role wij" data-t="roleWij">Wij</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot">05</span></div>
+          <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 5">05</span></div>
           <figure class="step-media ph" style="--ph:#9B9586"><img src="img/maison-living-800.webp" width="800" height="450" alt="Impressie van de woonkamer van The Maison" loading="lazy" decoding="async" data-t-alt="altMaisonLiving"><figcaption class="tag tag-dark tag-sm"><span data-t="tagImp">Impressie</span> · The Maison</figcaption></figure>
           <h3 data-t="s5H">Ontwerp</h3>
           <p data-t="s5P">Met onze partners voor interieur- en exterieurarchitectuur.</p>
           <div class="roles"><span class="role wij" data-t="roleWij">Wij</span><span class="role partner" data-t="rolePartner">Partner</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot partner">06</span></div>
+          <div class="step-head"><span class="step-dot partner" role="button" tabindex="0" aria-label="Stap 6">06</span></div>
           <figure class="step-media ph" style="--ph:#828A7E"><img src="img/steven-bouw-480.webp" srcset="img/steven-bouw-480.webp 480w, img/steven-bouw-768.webp 768w" sizes="(min-width:1024px) 300px, 78vw" width="768" height="1024" alt="Steven Gijsman op de bekisting van een verdiepingsvloer, met de betonmixer en de rijstvelden erachter" loading="lazy" decoding="async" style="object-position:50% 52%" data-t-alt="altStevenBouw"><figcaption class="tag tag-dark tag-sm"><span data-t="tagPhoto">Foto</span> · <span data-t="tagSite">Op de bouwplaats</span></figcaption></figure>
           <h3 data-t="s6H">De bouw</h3>
           <p data-t="s6P">Een onafhankelijke aannemer bouwt. Wij leggen het bestek vast en staan dagelijks op de bouwplaats.</p>
           <div class="roles"><span class="role partner" data-t="rolePartner">Partner</span><span class="role wij" data-t="roleWij">Wij</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot">07</span></div>
+          <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 7">07</span></div>
           <figure class="step-media ph social" style="--ph:#8E8B81">
             <img src="img/interieur-zebra-724.webp" width="724" height="1086" alt="Zebrastoelen en een ligstoel in een villa-interieur, ontworpen om te fotograferen" loading="lazy" decoding="async" style="object-position:50% 62%" data-t-alt="altZebra">
             <figcaption class="tag tag-dark tag-sm"><span data-t="tagPhoto">Foto</span> · <span data-t="tagInterior">Interieur</span></figcaption>
@@ -357,25 +358,25 @@
             </span>
           </figure>
           <h3 data-t="s7H">Instagrammable</h3>
-          <p data-t="s7P">Meubels, inrichting, decoratie en architectuur: alles is ontworpen om gefotografeerd te worden. Gasten delen het, en zo komen de volgende gasten.</p>
+          <p data-t="s7P">Meubels, decoratie en architectuur: ontworpen om te fotograferen. Gasten delen het.</p>
           <div class="roles"><span class="role wij" data-t="roleWij">Wij</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot">08</span></div>
+          <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 8">08</span></div>
           <figure class="step-media ph" style="--ph:#A49289"><img src="img/sleuteloverdracht-768.webp" width="768" height="1024" alt="Steven en een koper bij de sleuteloverdracht van zijn villa" loading="lazy" decoding="async" style="object-position:50% 38%" data-t-alt="altSleutel"><figcaption class="tag tag-dark tag-sm"><span data-t="tagPhoto">Foto</span> · <span data-t="tagHandover">Sleuteloverdracht</span></figcaption></figure>
           <h3 data-t="s8H">Sleuteloverdracht</h3>
           <p data-t="s8P">Volledig ingericht en verhuurklaar. Jij kiest: verhuren, zelf gebruiken of verkopen.</p>
           <div class="roles"><span class="role wij" data-t="roleWij">Wij</span><svg class="to" viewBox="0 0 16 16" role="img" aria-label="naar"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="role jij" data-t="roleJij">Jij</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot partner">09</span></div>
+          <div class="step-head"><span class="step-dot partner" role="button" tabindex="0" aria-label="Stap 9">09</span></div>
           <figure class="step-media ph" style="--ph:#939189"><img src="img/calmaan-480.webp" srcset="img/calmaan-480.webp 480w, img/calmaan-724.webp 724w" sizes="(min-width:1024px) 300px, 78vw" width="724" height="1086" alt="Villa Calmaan, ingericht: open woonkeuken aan het zwembad, klaar voor de eerste gasten" loading="lazy" decoding="async" style="object-position:50% 58%" data-t-alt="altCalmaan"><figcaption class="tag tag-dark tag-sm"><span data-t="tagPhoto">Foto</span> · Villa Calmaan</figcaption></figure>
           <h3 data-t="s9H">Eerste gasten</h3>
           <p data-t="s9P">Onze verhuurpartners doen reserveringen, platforms en prijzen. Wij zetten het op en managen het.</p>
           <div class="roles"><span class="role partner" data-t="rolePartner">Partner</span><span class="role wij" data-t="roleWij">Wij</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot jij">10</span></div>
+          <div class="step-head"><span class="step-dot jij" role="button" tabindex="0" aria-label="Stap 10">10</span></div>
           <div class="step-media ui ui-pay">
             <div class="ui-pay-in">
               <div class="mini-note">
@@ -387,7 +388,7 @@
             </div>
           </div>
           <h3 data-t="s10H">De uitbetaling</h3>
-          <p data-t="s10P">Elke maand ontvang je de huuropbrengst. Daar draait het om.</p>
+          <p data-t="s10P">Elke maand de huuropbrengst op je rekening, in Nederland of Indonesië, in euro's of rupiah.</p>
           <div class="roles"><span class="role jij" data-t="roleJij">Jij</span></div>
         </li>
       </ol>
@@ -402,8 +403,8 @@
   <div class="wrap">
     <header class="sec-head" data-reveal>
       <p class="eyebrow eyebrow-light"><span class="dot"></span><span data-t="gEyebrow">Ons model</span></p>
-      <h2 id="gasten-h" data-t="gH">Gasten vinden ons online.<br><span class="accent">En boeken direct via onze website.</span></h2>
-      <p class="sec-sub" data-t="gSub">Social media en content trekken gasten aan. Daarnaast staat elke villa op de grote platforms.</p>
+      <h2 id="gasten-h" data-t="gH">Reizen verandert.<br><span class="accent">Gasten vinden ons online en boeken steeds vaker direct.</span></h2>
+      <p class="sec-sub" data-t="gSub">Social media en content trekken gasten aan. Wie direct via onze website boekt, stapt in de beleving van het merk. Dat combineren we met de grote platforms.</p>
     </header>
 
     <div class="model" data-reveal>
@@ -434,8 +435,8 @@
         <div class="lane lane-a">
           <p class="m-k"><span data-t="gGoal">Direct via onze website</span> <span class="lane-soon" data-t="gSoon">eigen site per project</span></p>
           <h3 data-t="gDirectH">Direct via de eigen website van het project</h3>
-          <p data-t="gDirectP">Minder commissie. Dat is beter voor het rendement.</p>
-          <span class="lane-badge"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 11l4-4 3 3 4-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-t="gMore">Meer over voor jou</span></span>
+          <p data-t="gDirectP">Meer merkbeleving voor de gast en minder commissie. Dat is beter voor het rendement.</p>
+          <span class="lane-badge"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 11l4-4 3 3 4-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-t="gMore">≈ 15% hogere uitbetaling per directe boeking</span></span>
         </div>
         <div class="lane lane-b">
           <p class="m-k" data-t="gAlso">Daarnaast</p>
@@ -451,7 +452,7 @@
       <svg class="merge-arr" viewBox="0 0 40 16" aria-hidden="true"><path d="M2 8h34M30 3l6 5-6 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <b data-t="gPayout">jouw maandelijkse uitbetaling</b>
     </div>
-    <p class="model-note" data-t="gNote">Dit is ons model voor elk project, geen boekingssite die al live is. Onze verhuurpartners doen de reserveringen, de platforms en de prijzen. Wij zetten het op en managen het.</p>
+    <p class="model-note" data-t="gNote">Dit is ons model voor elk project, in combinatie met de grote platforms. Een directe boeking draagt geen platformcommissie van 15%. Bij MOKA kan het al: <a href="https://www.mokavillas.com/" target="_blank" rel="noopener">mokavillas.com</a>. Onze verhuurpartners doen de reserveringen, de platforms en de prijzen. Wij zetten het op en managen het.</p>
   </div>
 </section>
 
@@ -465,31 +466,28 @@
     </header>
 
     <div class="smart-grid">
-      <figure class="map-card" data-reveal>
-        <svg class="bali" viewBox="0 0 640 400" role="img" aria-label="Schematische kaart van de zuidwestkust van Bali: van Seminyak via Canggu en Pererenan naar Cemagi en Kedungu. The Maison ligt in Pererenan, The Reload in Cemagi, MOKA in Kedungu." data-t-aria="mapAria">
-          <defs>
-            <linearGradient id="growG" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#C3C9A6" stop-opacity=".4"/><stop offset="1" stop-color="#5B6A45"/></linearGradient>
-            <pattern id="sea" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M0 9h10" stroke="#D8DCC8" stroke-width="1"/></pattern>
-            <pattern id="field" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(-24)"><path d="M0 13h14" stroke="#EDE5D3" stroke-width="1"/></pattern>
-          </defs>
-          <rect class="sea" width="640" height="400"/>
-          <rect width="640" height="400" fill="url(#sea)"/>
-          <path class="land" d="M0 0H640V372C622 362 604 352 584 344 560 334 540 322 522 312 500 300 478 288 458 278 440 270 422 260 402 252 384 244 364 234 344 226 322 216 300 206 280 198 262 190 246 184 236 172 222 168 204 160 184 150 164 140 142 130 118 120 92 110 64 100 36 92 24 90 12 88 0 86Z"/>
-          <path class="coast" d="M640 372C622 362 604 352 584 344 560 334 540 322 522 312 500 300 478 288 458 278 440 270 422 260 402 252 384 244 364 234 344 226 322 216 300 206 280 198 262 190 246 184 236 172 222 168 204 160 184 150 164 140 142 130 118 120 92 110 64 100 36 92 24 90 12 88 0 86"/>
-          <path class="grow" pathLength="1" d="M560 318C520 296 480 276 440 258 400 240 360 222 320 206 280 190 240 172 200 156 168 142 140 130 112 118"/>
-          <path class="grow-head" d="M124 108l-14 10 16 6"/>
-          <g class="place old"><circle cx="566" cy="328" r="6"/><text x="556" y="356" text-anchor="end">Seminyak</text></g>
-          <g class="place old"><circle cx="452" cy="270" r="6"/><text x="464" y="260">Canggu</text></g>
-          <g class="place new"><circle class="pulse" cx="392" cy="244" r="7"/><circle cx="392" cy="244" r="7"/><text x="404" y="232">Pererenan</text></g>
-          <g class="place new"><circle class="pulse" cx="300" cy="202" r="7"/><circle cx="300" cy="202" r="7"/><text x="312" y="190">Cemagi</text></g>
-          <g class="place new"><circle class="pulse" cx="160" cy="136" r="7"/><circle cx="160" cy="136" r="7"/><text x="172" y="124">Kedungu</text></g>
-          <g class="pin"><rect x="368" y="262" width="96" height="26" rx="13"/><text x="416" y="279">The Maison</text></g>
-          <g class="pin"><rect x="262" y="220" width="96" height="26" rx="13"/><text x="310" y="237">The Reload</text></g>
-          <g class="pin"><rect x="128" y="154" width="66" height="26" rx="13"/><text x="161" y="171">MOKA</text></g>
-          <text class="sea-l" x="40" y="330" data-t="mapSea">Indische Oceaan</text>
-          <g class="compass"><circle cx="596" cy="48" r="18"/><path d="M596 34l5 14h-10z"/><text x="596" y="62">N</text></g>
-        </svg>
-        <figcaption><span class="mc-k" data-t="mapK">Schematisch, niet op schaal</span><span class="mc-t" data-t="mapT">De groei liep van Seminyak naar het westen. Onze projecten liggen waar die nu naartoe gaat.</span></figcaption>
+      <figure class="map-card map-live" data-reveal>
+        <div class="map-ui">
+          <ul class="map-list" aria-label="Plekken op de kaart" data-t-aria="mapListAria">
+          <li class="mp-k" data-t="mapKProj">Onze projecten</li>
+          <li><button type="button" class="mp on" data-q="q=-8.594269,115.081099" data-z="14" aria-pressed="true"><b>MOKA</b><small><span>Kedungu</span> · <span data-t="mokaNote">in oplevering</span></small></button></li>
+          <li><button type="button" class="mp" data-q="q=-8.6385,115.1215" data-z="14" aria-pressed="false"><b>The Maison</b><small><span>Pererenan</span> · <span data-t="approxNote">locatie bij benadering</span></small></button></li>
+          <li><button type="button" class="mp" data-q="q=-8.6295,115.1105" data-z="14" aria-pressed="false"><b>The Reload</b><small><span>Cemagi</span> · <span data-t="approxNote">locatie bij benadering</span></small></button></li>
+          <li class="mp-k" data-t="mapKHot">Hotspots vlakbij</li>
+          <li><button type="button" class="mp" data-q="q=Air+Seseh+Recovery+Club" data-z="15" aria-pressed="false"><b>Air Seseh Recovery Club</b><small><span>Seseh</span> · <span data-t="hotSauna">sauna en ijsbad</span></small></button></li>
+          <li><button type="button" class="mp" data-q="q=House+of+Kairos+Seseh+Bali" data-z="15" aria-pressed="false"><b>The House of Kairos</b><small><span>Seseh</span> · <span data-t="hotWell">wellness en social club</span></small></button></li>
+          <li><button type="button" class="mp" data-q="q=Jungle+Padel+Canggu" data-z="14" aria-pressed="false"><b>Jungle Padel</b><small><span>Canggu</span> · <span data-t="hotPadel">padelclub</span></small></button></li>
+          <li><button type="button" class="mp" data-q="q=Pererenan+Beach+Bali" data-z="15" aria-pressed="false"><b>Strand van Pererenan</b><small><span>Pererenan</span> · <span data-t="hotBeach">strand</span></small></button></li>
+          <li><button type="button" class="mp" data-q="q=Kedungu+Beach+Bali" data-z="15" aria-pressed="false"><b>Strand van Kedungu</b><small><span>Kedungu</span> · <span data-t="hotBeach">strand</span></small></button></li>
+          <li class="mp-k" data-t="mapKTrend">De richting</li>
+          <li><button type="button" class="mp" data-q="q=-8.655,115.125" data-z="12" aria-pressed="false"><b>Van Seminyak naar het westen</b><small><span>overzicht</span> · <span data-t="trendNote">Seminyak, Canggu, Pererenan, Cemagi, Kedungu</span></small></button></li>
+          </ul>
+          <div class="map-frame">
+            <iframe class="gmap" title="Google Maps: de zuidwestkust van Bali met onze projecten" data-t-title="mapIframe" src="https://www.google.com/maps?q=-8.594269,115.081099&z=14&hl=nl&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+            <a class="map-open" href="https://www.google.com/maps/search/?api=1&query=-8.594269,115.081099" target="_blank" rel="noopener" data-t="mapOpen">Open in Google Maps</a>
+          </div>
+        </div>
+        <figcaption><span class="mc-k" data-t="mapK">Google Maps · klik op een plek</span><span class="mc-t" data-t="mapT">Bali groeit, en die groei schuift van Seminyak naar het westen. Onze projecten liggen waar de groei nu naartoe gaat.</span></figcaption>
       </figure>
 
       <div class="smart-side">
@@ -518,9 +516,9 @@
 <section class="sec compact" id="compact" aria-labelledby="compact-h">
   <div class="wrap">
     <header class="sec-head" data-reveal>
-      <p class="eyebrow"><span class="dot"></span><span data-t="cmpEyebrow">Compact wint</span></p>
-      <h2 id="compact-h" data-t="cmpH">Kleiner is slimmer.<br><span class="accent">Vaak een hoger rendement.</span></h2>
-      <p class="sec-sub" data-t="cmpSub">Een woning hoeft niet groot te zijn. Compact kost minder en haalt per vierkante meter een hogere prijs en nachtprijs.</p>
+      <p class="eyebrow"><span class="dot"></span><span data-t="cmpEyebrow">Locatie eerst</span></p>
+      <h2 id="compact-h" data-t="cmpH">De locatie telt het zwaarst.<br><span class="accent">Daar kan de woning compact zijn.</span></h2>
+      <p class="sec-sub" data-t="cmpSub">Bali is een vakantieplek waar veel te doen is. Gasten gaan op stap, hoppen langs cafés en liggen op het strand. Thuis willen ze mooi wonen, lekker slapen, rustig wakker worden en afkoelen in de pool. Hoe toeristischer de plek, hoe compacter de woning kan zijn, met een hoog rendement.</p>
     </header>
 
     <div class="cmp-grid" data-reveal>
@@ -563,7 +561,7 @@
             <li><span class="c-ic up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-t="cmpSm1">Minder onderhoud, minder personeel</span></li>
             <li><span class="c-ic up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-t="cmpSm2">Hogere prijs per vierkante meter</span></li>
             <li><span class="c-ic up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-t="cmpSm3">Hogere nachtprijs per vierkante meter</span></li>
-            <li><span class="c-ic up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-t="cmpSm4">Vaak een hoger rendement</span></li>
+            <li><span class="c-ic up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-t="cmpSm4">Op een toplocatie een hoog rendement</span></li>
           </ul>
         </figcaption>
       </figure>
@@ -693,7 +691,7 @@
           <h3 class="brand-name">MOKA</h3>
           <p class="brand-story" data-t="bMokaStory">Vijftien woningen in Marokkaanse en mediterrane stijl, 600 meter van het strand. Met een gedeelde rooftop pool lounge, café en wellness club.</p>
           <ul class="brand-pal" aria-label="Kleuren van MOKA"><li style="--c:#3E311E"></li><li style="--c:#9D8262"></li><li style="--c:#CFBCA7"></li><li style="--c:#B3624F"></li></ul>
-          <ul class="brand-chips"><li data-t="bChip1">Eigen site</li><li data-t="bChip2">Eigen Instagram</li><li data-t="bChip3">Eigen verhaal, tot de handdoeken</li></ul>
+          <ul class="brand-chips"><li><a href="https://www.mokavillas.com/" target="_blank" rel="noopener" data-t="bChipMoka">Eigen site: mokavillas.com</a></li><li data-t="bChip2">Eigen Instagram</li><li data-t="bChip3">Eigen verhaal, tot de handdoeken</li></ul>
           <p class="brand-facts"><span class="num" data-t="pMokaSold">14 van 15 verkocht</span><span data-t="pMokaStatus">Afbouw en oplevering</span></p>
           <a class="btn btn-ink" href="https://invest.utamabali.com/moka"><span data-t="bGoMoka">Bekijk MOKA</span> <svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         </div>

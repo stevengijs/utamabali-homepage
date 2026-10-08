@@ -38,6 +38,7 @@
     srcPage: 'Source: The Maison project page', srcBrochure: 'Source: example month in the brochure',
     amtYear: '≈ €29,900', perYearPaid: 'paid out a year', srcYear: 'Twelve times the example month',
     fNacht: '€175 a night', fBez: '85% occupancy', fOmzet: 'revenue €4,530 a month', fKosten: 'less: costs and management €2,039', fUit: '≈ €2,491 payout',
+    mon1: 'Jan', mon2: 'Feb', mon3: 'Mar', mon4: 'Apr', mon5: 'May', mon6: 'Jun', mon7: 'Jul', mon8: 'Aug', mon9: 'Sep', mon10: 'Oct', mon11: 'Nov', mon12: 'Dec', seasHoog: 'High season: July, August and December', seasTussen: 'Shoulder season', seasLaag: 'Low season: rainy months, February, March and November',
     ysMaand: 'Per month', ysJaar: 'Whole year', ysOmzet: 'Revenue of the home', ysKosten: 'Costs and management', ysUit: 'Payout to you',
     yearH: 'What a year could look like later', yearP: 'Twelve payouts. The amount varies by season. Hover over a month for the amounts.', yearPill: '12 payouts',
     together: 'paid out a year',
@@ -53,18 +54,18 @@
     s4a: 'Permits', s4b: 'Notarial deed', s4H: 'Permits', s4P: 'We handle the permits and the notary.',
     s5H: 'Design', s5P: 'With our partners for interior and exterior architecture.',
     s6H: 'Construction', s6P: 'An independent contractor builds. We fix the specifications and are on site every day.',
-    s7H: 'Instagrammable', s7P: 'Furniture, interior, decoration and architecture: all designed to be photographed. Guests share it, and that brings the next guests.',
+    s7H: 'Instagrammable', s7P: 'Furniture, decoration and architecture: designed to be photographed. Guests share it.',
     s8H: 'Key handover', s8P: 'Fully furnished and ready to rent. You choose: rent it out, use it yourself or sell.',
     s9H: 'First guests', s9P: 'Our rental partners handle bookings, platforms and pricing. We set it up and manage it.',
-    s10Note: 'Payout', s10Cap: 'Every month', s10H: 'The payout', s10P: 'Every month you receive the rental income. That is what it is about.',
+    s10Note: 'Payout', s10Cap: 'Every month', s10H: 'The payout', s10P: 'The rental income every month, to your account in the Netherlands or Indonesia, in euros or rupiah.',
     swipe: 'Swipe for all ten steps',
-    gEyebrow: 'Our model', gH: 'Guests find us online.<br><span class="accent">And book directly through our website.</span>',
-    gSub: 'Social media and content attract guests. Every villa is also listed on the major platforms.',
+    gEyebrow: 'Our model', gH: 'Travel is changing.<br><span class="accent">Guests find us online and book direct more and more.</span>',
+    gSub: 'Social media and content attract guests. Whoever books directly through our website steps into the brand experience. We combine that with the major platforms.',
     gAttract: 'Attract', gSmH: 'Social media first', gSmP: 'Video and stories about every villa. That is how guests find us.',
     gVideo: 'Video and content', gOther: 'Other channels', gGoal: 'Direct through our website', gSoon: 'own site per project',
-    gDirectH: 'Book directly through the project\'s own website', gDirectP: 'Less commission. That is better for the return.', gMore: 'More left for you',
+    gDirectH: 'Book directly through the project\'s own website', gDirectP: 'More brand experience for the guest and less commission. That is better for the return.', gMore: '≈ 15% higher payout per direct booking', bChipMoka: 'Own site: mokavillas.com',
     gAlso: 'Alongside', gPfH: 'On all major platforms', gBoth: 'Both', gRent: 'rental income', gPayout: 'your monthly payout',
-    gNote: 'This is our model for every project, not a booking site that is already live. Our rental partners handle bookings, platforms and pricing. We set it up and manage it.',
+    gNote: 'This is our model for every project, combined with the major platforms. A direct booking carries no platform commission of 15%. At MOKA it is already live: <a href="https://www.mokavillas.com/" target="_blank" rel="noopener">mokavillas.com</a>. Our rental partners handle bookings, platforms and pricing. We set it up and manage it.',
     navSure: 'Certainty', rating: '4.83', amtInleg: '€225,000', amtPay: '≈ €2,491',
     pEyebrow: 'Every project a brand', pH: 'You do not buy a loose villa.<br><span class="accent">You step into a brand.</span>',
     pSub: 'Own name, colour and story, down to the towels and the shampoo. That is why the nightly rate is higher than for a loose villa.',
@@ -81,8 +82,8 @@
     altMokaBoog: 'Coconut palms seen through an arch on the MOKA site',
     mEyebrow: 'Data and automation', mH: 'Demand is moving west.<br><span class="accent">We move with it.</span>',
     mSub: 'Seminyak, Canggu, Pererenan. Now Cemagi and Kedungu. We choose location and layout with data and AI, and prices move automatically.',
-    mapSea: 'Indian Ocean', mapK: 'Schematic, not to scale',
-    mapT: 'Growth moved west from Seminyak. Our projects sit where it is heading now.',
+    mapK: 'Schematic, not to scale',
+    mapT: 'Bali keeps growing, and that growth moves west from Seminyak. Our projects sit where it is heading now.', mapK: 'Google Maps · click a place', mapKProj: 'Our projects', mapKHot: 'Hotspots nearby', mapKTrend: 'The direction', mokaNote: 'being delivered', approxNote: 'approximate location', hotSauna: 'sauna and ice bath', hotWell: 'wellness and social club', hotPadel: 'padel club', hotBeach: 'beach', trendNote: 'Seminyak, Canggu, Pererenan, Cemagi, Kedungu', mapOpen: 'Open in Google Maps', mapListAria: 'Places on the map', mapIframe: 'Google Maps: the southwest coast of Bali with our projects',
     aiK: 'Data and AI',
     ai1: 'The place: where demand is heading, from data on demand and rentals.',
     ai2: 'The layout: the floor plan that earns the most per square metre.',
@@ -91,10 +92,10 @@
     auto2: 'A construction update in your portal every week.',
     auto4: 'Your investor portal: contract, progress and documents in one place.',
     auto3: 'At The Reload: self check-in with a smart lock, and a construction camera that watches along.',
-    cmpEyebrow: 'Compact wins', cmpH: 'Smaller is smarter.<br><span class="accent">Often a higher return.</span>',
-    cmpSub: 'A home does not have to be big. Compact costs less and earns a higher price and nightly rate per square metre.',
+    cmpEyebrow: 'Location first', cmpH: 'Location weighs the most.<br><span class="accent">There the home can be compact.</span>',
+    cmpSub: 'Bali is a holiday place with a lot to do. Guests go out, hop from cafe to cafe and lie on the beach. At home they want to live well, sleep well, wake up calmly and cool off in the pool. The more touristic the spot, the more compact the home can be, with a high return.',
     cmpBigK: 'Large villa', cmpBig1: 'Large pool, large garden', cmpBig2: 'A lot of staff', cmpBig3: 'High purchase price, high upkeep', cmpBig4: 'Lower price per square metre',
-    cmpSmallK: 'Compact home', cmpSm1: 'Less upkeep, less staff', cmpSm2: 'Higher price per square metre', cmpSm3: 'Higher nightly rate per square metre', cmpSm4: 'Often a higher return',
+    cmpSmallK: 'Compact home', cmpSm1: 'Less upkeep, less staff', cmpSm2: 'Higher price per square metre', cmpSm3: 'Higher nightly rate per square metre', cmpSm4: 'A high return on a top location',
     amsK: 'It works the same in Amsterdam', amsA: 'Studio, 30 m²', amsB: 'Apartment, 200 m², one bedroom', amsUp: 'higher price per m²', amsDown: 'lower price per m²',
     amsP: 'A 30 m² studio earns more per m² than a 200 m² apartment. Bali works the same way.',
     cmpTag: 'MOKA, one bedroom', altCompact: 'Impression of the living room of a compact one-bedroom home in MOKA',
@@ -194,6 +195,11 @@
       var v = lang === 'en' ? T.en[el.getAttribute('data-t-alt')] : null;
       el.setAttribute('alt', v != null ? v : el.getAttribute('data-nl-alt'));
     });
+    $$('[data-t-title]').forEach(function (el) {
+      if (!el.hasAttribute('data-nl-title')) el.setAttribute('data-nl-title', el.getAttribute('title') || '');
+      var v = lang === 'en' ? T.en[el.getAttribute('data-t-title')] : null;
+      el.setAttribute('title', v != null ? v : el.getAttribute('data-nl-title'));
+    });
     $$('[data-t-aria]').forEach(function (el) {
       if (!el.hasAttribute('data-nl-aria')) el.setAttribute('data-nl-aria', el.getAttribute('aria-label') || '');
       var v = lang === 'en' ? T.en[el.getAttribute('data-t-aria')] : null;
@@ -243,6 +249,17 @@
     target.focus({ preventScroll: true });
   });
 
+  /* ---------- Google Maps: klik op een plek ---------- */
+  var gmap = $('.gmap'), mapOpen = $('.map-open'), mps = $$('.mp');
+  function mapGo(btn) {
+    if (!gmap) return;
+    var q = btn.getAttribute('data-q') || '', z = btn.getAttribute('data-z') || '14';
+    gmap.src = 'https://www.google.com/maps?' + q + '&z=' + z + '&hl=' + (lang === 'en' ? 'en' : 'nl') + '&output=embed';
+    if (mapOpen) mapOpen.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q.replace(/^q=/, '').replace(/\+/g, ' '));
+    mps.forEach(function (b) { var on = b === btn; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+  }
+  mps.forEach(function (b) { b.addEventListener('click', function () { mapGo(b); }); });
+
   /* ---------- Tijdlijn ---------- */
   var atoz = $('#atoz'), stage = $('.atoz-stage'), track = $('.steps'), vp = $('.steps-vp'), rail = $('.rail');
   var steps = $$('.step', track || document);
@@ -281,7 +298,30 @@
     if (vp) vp.style.setProperty('--x', (-px * pinDist).toFixed(1) + 'px');
     setStep(Math.min(9, Math.floor(p * 9.999)), p);
   }
-  /* mobiel: vegen */
+  /* Klikken op een stap (Steven, 8 oktober 2026): de tijdlijn springt naar die stap. Vastgepind op desktop betekent dat
+     de pagina scrollt naar de plek waar die stap in beeld staat; anders schuift de strook zelf. */
+  function goToStep(i) {
+    var s = steps[i]; if (!s) return;
+    var smooth = reduce ? 'auto' : 'smooth';
+    if (pinned) {
+      var navH = nav ? nav.offsetHeight : 68;
+      var span = pinDist + Math.round((window.innerHeight - navH) * 0.25);
+      var p = (i + 0.5) / 10;
+      var y = atoz.getBoundingClientRect().top + window.scrollY - navH + p * span;
+      window.scrollTo({ top: Math.round(y), behavior: smooth });
+    } else if (track && track.scrollWidth > track.clientWidth + 8) {
+      track.scrollTo({ left: Math.max(0, s.offsetLeft - 16), behavior: smooth });
+    } else {
+      s.scrollIntoView({ behavior: smooth, block: 'center' });
+    }
+  }
+  steps.forEach(function (s, i) {
+    var dot = $('.step-dot', s);
+    if (!dot) return;
+    dot.addEventListener('click', function (e) { e.preventDefault(); goToStep(i); });
+    dot.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToStep(i); } });
+    s.addEventListener('click', function (e) { if (e.target.closest('a, button, .step-dot')) return; goToStep(i); });
+  });
   if (track) {
     track.addEventListener('scroll', function () {
       if (pinned) return;
@@ -450,6 +490,12 @@
     return { gross: gross, costs: gross - net, net: net };
   });
   var YEAR = MONTHS.reduce(function (a, m) { return { gross: a.gross + m.gross, costs: a.costs + m.costs, net: a.net + m.net }; }, { gross: 0, costs: 0, net: 0 });
+  var MNL = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  var MEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var SEAS = ['tussen','laag','laag','tussen','tussen','tussen','hoog','hoog','tussen','tussen','laag','hoog'];
+  var SEASN = { nl: { hoog: 'hoogseizoen', tussen: 'tussenseizoen', laag: 'laagseizoen' }, en: { hoog: 'high season', tussen: 'shoulder season', laag: 'low season' } };
+  function mName(i) { var n = lang === 'en' ? MEN[i - 1] : MNL[i - 1]; return n.charAt(0).toUpperCase() + n.slice(1); }
+  function mSeason(i) { return SEASN[lang === 'en' ? 'en' : 'nl'][SEAS[i - 1]]; }
   var selMonth = 7, scope = 'maand';
   function eur(n) {
     var str = String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : '.');
@@ -467,7 +513,7 @@
     var row = scope === 'jaar' ? YEAR : MONTHS[selMonth - 1];
     var title = scope === 'jaar'
       ? (lang === 'en' ? 'Whole year, 12 payouts' : 'Heel jaar, 12 uitbetalingen')
-      : (lang === 'en' ? 'Month ' + selMonth : 'Maand ' + selMonth) + (selMonth === 7 ? (lang === 'en' ? ' · peak' : ' · hoogseizoen') : '');
+      : mName(selMonth) + ' · ' + mSeason(selMonth);
     $('[data-ys-title]', split).textContent = title;
     $('[data-ys-gross]', split).textContent = eur(row.gross);
     $('[data-ys-costs]', split).textContent = '−' + eur(row.costs);
@@ -477,7 +523,7 @@
     barEls.forEach(function (b, i) {
       var on = scope === 'maand' && i + 1 === selMonth;
       b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
-      b.setAttribute('aria-label', (lang === 'en' ? 'Month ' : 'Maand ') + (i + 1));
+      b.setAttribute('aria-label', mName(i + 1) + ', ' + mSeason(i + 1));
     });
     if (tip) {
       if (scope === 'maand') {
@@ -485,7 +531,7 @@
         tip.style.setProperty('--x', (bb.left - pb.left + bb.width / 2) + 'px');
         tip.style.top = (bb.top - pb.top) + 'px';
         $('b', tip).textContent = eur(MONTHS[selMonth - 1].net);
-        $('small', tip).textContent = lang === 'en' ? 'payout month ' + selMonth : 'uitbetaling maand ' + selMonth;
+        $('small', tip).textContent = (lang === 'en' ? 'payout ' + MEN[selMonth - 1] : 'uitbetaling ' + MNL[selMonth - 1]);
         tip.classList.add('show');
       } else tip.classList.remove('show');
     }
