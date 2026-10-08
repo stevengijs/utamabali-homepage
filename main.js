@@ -58,7 +58,7 @@
     s7H: 'Instagrammable', s7P: 'Furniture, decoration and architecture: designed to be photographed. Guests share it.',
     s8H: 'Key handover', s8P: 'Fully furnished and ready to rent. You choose: rent it out, use it yourself or sell.',
     s9H: 'First guests', s9P: 'Our rental partners handle bookings, platforms and pricing. We set it up and manage it.',
-    s10Note: 'Payout', s10Cap: 'Every month', s10H: 'The payout', s10P: 'The rental income every month, to your account in the Netherlands or Indonesia, in euros or rupiah.',
+    s10Note: 'Payout', s10Cap: 'Month: June', s10H: 'The payout', s10P: 'The rental income every month, to your account in the Netherlands or Indonesia, in euros or rupiah.',
     swipe: 'Swipe for all ten steps',
     gEyebrow: 'Our model', gH: 'Travel is changing.<br><span class="accent">Guests find us online and book direct more and more.</span>',
     gSub: 'Social media and content attract guests. Whoever books directly through our website steps into the brand experience. We combine that with the major platforms.',
