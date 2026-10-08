@@ -11354,17 +11354,26 @@ async function leadMailViaInbox(contactId,email){
   else toast('Geen e-mailadres bekend','err');
 }
 let PERSON_RESV={};
-/* De aanbetaling gaat naar Steven privé, niet naar de verkopende PT. In Indonesië
-   staat de grond op naam van een persoon, niet van een vennootschap: de leasehold
-   komt van Steven Gijsman privé, dus de aanbetaling daarvoor ook. Dit is de ENIGE
-   plek waar de ITP rekeningnummers toont, en het zijn uitsluitend zijn
-   privérekeningen. Houd de nummers EXACT gelijk aan de betaalpagina reserve.html.
-   Geschiedenis: tot 19 augustus 2026 stond dit er zo, daarna tot 22 september de
-   rekening per PT (git e26ddda), en sindsdien weer privé op verzoek van Steven. */
-function depositBankHtml(){
-  return `<p><b>Bank:</b> BUNQ B.V.<br><b>Account Name:</b> Steven Gijsman<br><b>IBAN:</b> NL40BUNQ2025524439</p>`
-    +`<p><b>OR</b></p>`
-    +`<p><b>Bank Name:</b> OCBC<br><b>Account Number:</b> 160810204315<br><b>Account Name:</b> Steven Roland Gijsman<br><b>Swift Code:</b> NISPIDJAXXX<br><b>Branch Code:</b> 7160<br><b>Bank Code:</b> 028<br><b>Clearing Code:</b> 0280024<br><b>Bank Address:</b> Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia</p>`;
+/* De aanbetaling gaat naar de vennootschap van het project, de partij bij de
+   coordination agreement: PT Bali Utama Property voor MOKA, PT Bangunan Beton
+   Indonesia voor de andere projecten. Geen privérekeningen meer (Steven,
+   8 oktober 2026). Dit is de ENIGE plek waar de ITP rekeningnummers toont.
+   Houd de nummers EXACT gelijk aan de betaalpagina reserve.html.
+   Geschiedenis: tot 19 augustus 2026 privé, daarna tot 22 september per PT
+   (git e26ddda), daarna weer privé, en sinds 8 oktober per PT. */
+const DEPOSIT_BANK={
+  "PT. BANGUNAN BETON INDONESIA":{name:"PT Bangunan Beton Indonesia",acct:"160800023303"},
+  "PT. BALI UTAMA PROPERTY":{name:"PT Bali Utama Property",acct:"160800023394"}
+};
+function depositBank(r){
+  const le=String((r&&r.legal_entity)||'').toUpperCase().replace(/[^A-Z]/g,'');
+  const proj=String((r&&r.project)||'').toLowerCase();
+  const utama=le?le.includes('UTAMAPROPERTY'):/moka/.test(proj);
+  return DEPOSIT_BANK[utama?"PT. BALI UTAMA PROPERTY":"PT. BANGUNAN BETON INDONESIA"];
+}
+function depositBankHtml(r){
+  const b=depositBank(r);
+  return `<p><b>Bank Name:</b> OCBC NISP<br><b>Account Name:</b> ${esc(b.name)}<br><b>Account Number:</b> ${b.acct}<br><b>Swift Code:</b> NISPIDJAXXX<br><b>Branch Code:</b> 7160<br><b>Bank Code:</b> 028<br><b>Bank Address:</b> Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia</p>`;
 }
 function itpDraft(r){
   // Volledige Engelstalige ITP naar het vaste UTAMA-model. Alles is daarna
@@ -11412,8 +11421,8 @@ function itpDraft(r){
     +`<p><b>SELLER REPRESENTATIONS</b><br>The Seller represents and warrants that:<br>– the land status and leasehold title are valid and undisputed;<br>– the lessor is fully authorized to grant and extend the leasehold;<br>– the land is correctly zoned for the intended development; and<br>– all applicable permits and approvals required for construction and delivery are in place or will be lawfully obtained.</p>`
     +`<p><b>SIGNING DEADLINE</b><br>The Agreements are signed within 14 days after the day this ITP is signed and the Deposit is received (the Signing Deadline): <b>${veertien}</b> if both happen today, <b>${tekenen}</b> at the latest. Until then the unit is reserved for the Buyer. If the Agreements are not signed by the Signing Deadline and no extension is agreed in writing, this ITP expires, the reservation ends, the Seller may offer the unit to others and the Deposit is forfeited. The refund rights under DEPOSIT remain unaffected.</p>`
     +`<p><b>CONDITIONS</b><br>1. This ITP is a preliminary agreement. The Agreements will be drafted by the notary on the basis of this ITP.<br>2. If the sale does not proceed due to the fault or breach of the Seller, the Deposit will be refunded to the Buyer in full.<br>3. From the moment this ITP is signed and the Deposit is received, and until the Signing Deadline, the Seller holds the unit exclusively for the Buyer and does not offer it to others (see SIGNING DEADLINE).</p>`
-    +`<p><b>NEXT STEPS</b><br>1. Sign this ITP and transfer the ${dep} Deposit within three days. The unit is reserved for you once both have been done: your signature is in and the Deposit has been received.<br>In Indonesia, land is held by a person and not by a company. The leasehold for this villa is granted by Steven Gijsman personally, and the deposit for it is therefore paid to his personal account.<br>Please transfer to:</p>`
-    +depositBankHtml()
+    +`<p><b>NEXT STEPS</b><br>1. Sign this ITP and transfer the ${dep} Deposit within three days. The unit is reserved for you once both have been done: your signature is in and the Deposit has been received.<br>The Deposit is paid to ${pt}, your contract party under the coordination agreement.<br>Please transfer to:</p>`
+    +depositBankHtml(r)
     +`<p>2. Drafting of the Agreements. The notary prepares them, detailing all terms, timelines, pricing and responsibilities.<br>3. Review and sign the Agreements. After review, signing takes place in a meeting with the notary.<br>4. Make the first payment as set out under PAYMENT TERMS once the Agreements are signed.<br>5. You will be added to a WhatsApp group for bi-weekly project updates, and our marketing team will coordinate the preparation for your villa\u2019s Airbnb launch.</p>`
     +`<p><b>VALIDITY</b><br>This ITP is valid until <b>${geldig}</b>, three days after its date. If by then the Buyer has not signed it or the Deposit has not been received (see NEXT STEPS), it lapses.</p>`
     +`<p><b>BUYER</b><br>Name: ${naam}<br>Signature:<br>Date:</p>`

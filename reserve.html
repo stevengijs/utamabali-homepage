@@ -93,18 +93,19 @@ function euro(n){n=Number(n)||0;return "€"+n.toLocaleString("nl-NL");}
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 // Wie verkoopt en wie de aanbetaling ontvangt zijn twee verschillende partijen.
 // Verkoper is de PT per project (staat zo in de ITP). De aanbetaling gaat naar
-// Steven privé: in Indonesië staat de grond op naam van een persoon, niet van een
-// vennootschap, dus de leasehold komt van Steven Gijsman privé en de aanbetaling
-// daarvoor ook. Alleen zijn privérekeningen hier, geen PT-rekeningen. Houd de
-// nummers EXACT gelijk aan admin.html (de ITP-generator).
+// De aanbetaling gaat naar de vennootschap van het project, de partij bij de
+// coordination agreement: PT Bali Utama Property voor MOKA, PT Bangunan Beton
+// Indonesia voor de andere projecten. Geen privérekeningen meer (Steven,
+// 8 oktober 2026). Houd de nummers EXACT gelijk aan admin.html (de ITP-generator).
 const PROJECT_PT={"the maison":"PT. BANGUNAN BETON INDONESIA","the reload":"PT. BANGUNAN BETON INDONESIA","moka":"PT. BALI UTAMA PROPERTY"};
-const DEPOSIT_UITLEG="In Indonesië staat de grond op naam van een persoon, niet van een vennootschap. De leasehold voor deze villa komt van Steven Gijsman privé, en de aanbetaling daarvoor gaat daarom naar zijn privérekening.";
-const PRIVE_BANK={
-  nl:{bank:"BUNQ B.V.",name:"Steven Gijsman",iban:"NL40BUNQ2025524439"},
-  id:{bank:"OCBC",name:"Steven Roland Gijsman",acct:"160810204315",swift:"NISPIDJAXXX",branch:"7160",code:"028",clearing:"0280024",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"}
+const DEPOSIT_UITLEG="De aanbetaling gaat naar de vennootschap waarmee je de coordination agreement sluit en wordt verrekend met de eerste termijn.";
+const PT_BANK={
+  "PT. BANGUNAN BETON INDONESIA":{bank:"OCBC NISP",name:"PT Bangunan Beton Indonesia",acct:"160800023303",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"},
+  "PT. BALI UTAMA PROPERTY":{bank:"OCBC NISP",name:"PT Bali Utama Property",acct:"160800023394",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"}
 };
+function ptBank(r){return PT_BANK[PROJECT_PT[((r&&r.project)||"").trim().toLowerCase()]]||PT_BANK["PT. BANGUNAN BETON INDONESIA"];}
 function sellerName(r){return PROJECT_PT[((r&&r.project)||"").trim().toLowerCase()]||"UTAMA";}
-function ontvangerNaam(){return PRIVE_BANK.nl.name;}
+function ontvangerNaam(r){return ptBank(r).name;}
 // Allowlist-sanitizer: de ITP-body is rijke HTML die door het team is opgesteld,
 // maar wordt hier aan de klant getoond. Deny-by-default zodat een eventuele
 // script/onerror-payload nooit in de browser van de klant uitvoert.
@@ -187,7 +188,7 @@ function itpText(r){
     <h3>Object</h3>
     <p><b>Project:</b> ${esc(r.project||"—")}<br><b>Unit:</b> ${esc(r.unit||"—")}${r.unit_price?`<br><b>Indicatieve koopsom:</b> ${euro(r.unit_price)}`:""}</p>
     <h3>Reserveringsdeposit</h3>
-    <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> aan ${esc(ontvangerNaam())} privé om de bovengenoemde unit te reserveren. ${esc(DEPOSIT_UITLEG)} Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement ("credited against the first payment due under the Development and Construction Agreement").</p>
+    <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> aan ${esc(ontvangerNaam(r))} om de bovengenoemde unit te reserveren. ${esc(DEPOSIT_UITLEG)} Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement ("credited against the first payment due under the Development and Construction Agreement").</p>
     <h3>Vervolg</h3>
     <p>Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.</p>
     <h3>Voorwaarden deposit</h3>
@@ -207,24 +208,18 @@ function summary(r){
 }
 function bankBlock(r){
   const ref=refText(r);
-  const p=PRIVE_BANK;
-  const rows=`<div class="bank2"><div class="bt">Bankoverschrijving · Nederland (IBAN)</div>
-        <div class="row"><span>Bank</span><b>${esc(p.nl.bank)}</b></div>
-        <div class="row"><span>Naam</span><b>${esc(p.nl.name)}</b></div>
-        <div class="row"><span>IBAN</span><b>${esc(p.nl.iban)}</b><button class="cp" data-copy="${esc(p.nl.iban)}">Kopieer</button></div>
-      </div>
-      <div class="bank2"><div class="bt">Of: bankoverschrijving · Indonesië</div>
-        <div class="row"><span>Bank</span><b>${esc(p.id.bank)}</b></div>
-        <div class="row"><span>Naam</span><b>${esc(p.id.name)}</b></div>
-        <div class="row"><span>Rekeningnr.</span><b>${esc(p.id.acct)}</b><button class="cp" data-copy="${esc(p.id.acct)}">Kopieer</button></div>
-        <div class="row"><span>SWIFT</span><b>${esc(p.id.swift)}</b></div>
-        <div class="row"><span>Branch</span><b>${esc(p.id.branch)}</b></div>
-        <div class="row"><span>Bank code</span><b>${esc(p.id.code)}</b></div>
-        <div class="row"><span>Clearing code</span><b>${esc(p.id.clearing)}</b></div>
-        <div class="row"><span>Adres</span><b>${esc(p.id.address)}</b></div>
+  const p=ptBank(r);
+  const rows=`<div class="bank2"><div class="bt">Bankoverschrijving · Indonesië (SWIFT)</div>
+        <div class="row"><span>Bank</span><b>${esc(p.bank)}</b></div>
+        <div class="row"><span>Naam</span><b>${esc(p.name)}</b></div>
+        <div class="row"><span>Rekeningnr.</span><b>${esc(p.acct)}</b><button class="cp" data-copy="${esc(p.acct)}">Kopieer</button></div>
+        <div class="row"><span>SWIFT</span><b>${esc(p.swift)}</b></div>
+        <div class="row"><span>Branch</span><b>${esc(p.branch)}</b></div>
+        <div class="row"><span>Bank code</span><b>${esc(p.code)}</b></div>
+        <div class="row"><span>Adres</span><b>${esc(p.address)}</b></div>
       </div>`;
   return `<h3 style="margin:6px 0 4px;font-size:15px">Aanbetaling van ${euro(r.deposit_amount)}</h3>
-    <p class="muted" style="font-size:13px;margin:0 0 6px">Maak de aanbetaling over aan <b>${esc(ontvangerNaam())}</b> met onderstaand betalingskenmerk.</p>
+    <p class="muted" style="font-size:13px;margin:0 0 6px">Maak de aanbetaling over aan <b>${esc(ontvangerNaam(r))}</b> met onderstaand betalingskenmerk.</p>
     <p class="muted" style="font-size:13px;margin:0 0 12px">${esc(DEPOSIT_UITLEG)}</p>
     <div class="bank"><div class="k">Betalingskenmerk (vermeld dit bij je overschrijving)</div><div class="v" id="ref">${esc(ref)}</div><div style="margin-top:8px"><button class="cp" data-copy="${esc(ref)}">Kopieer kenmerk</button></div></div>
     <div class="banks">${rows}</div>`;
@@ -326,7 +321,7 @@ function makePdf(r,signer,sigData){
       "Prepared on "+new Date(r.sent_at||r.created_at||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),"",
       "PARTIJEN","Verkoper: "+sellerName(r),"Koper: "+(r.name||"—")+(r.email?" ("+r.email+")":""),"",
       "OBJECT","Project: "+(r.project||"—"),"Unit: "+(r.unit||"—"),(r.unit_price?"Indicatieve koopsom: €"+Number(r.unit_price).toLocaleString("nl-NL"):""),"",
-      "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL")+" aan "+ontvangerNaam()+" privé. "+DEPOSIT_UITLEG,
+      "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL")+" aan "+ontvangerNaam(r)+". "+DEPOSIT_UITLEG,
       "Referentie: "+refText(r),
       "Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.","",
       "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
