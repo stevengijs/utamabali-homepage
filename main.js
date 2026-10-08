@@ -99,7 +99,7 @@
     altLocatie: 'Steven in a meeting on site, on the land of a new project',
     capLocatie: 'On site, discussing the land',
     capOpgZwembad: 'Delivered, ready for the first guests',
-    cmpSource: 'Bali: the monthly payout from the MOKA and The Maison brochures on invest.utamabali.com, realistic scenario at 85% occupancy, each with the cost structure of that brochure. Per euro invested, compact and spacious come out about equal; the difference is in the entry price, the costs and the number of homes on a plot. Netherlands: Amsterdam broker figures 2026 (Heeren Makelaars, Makelaarkosten.nl, Kamer.nl), indicative. Returns are estimates, not guarantees.',
+    cmpSource: 'Source: MOKA and The Maison brochures, realistic scenario at 85% occupancy. Netherlands: Amsterdam broker figures 2026. Returns are estimates, not guarantees.',
     wEyebrow: 'Healthy and in the picture', wH: 'The new guest lives healthy.<br><span class="accent">It is in every concept.</span>',
     wSub: 'Less partying, more recovery. Guests look for a home with an idea: sauna, ice bath, jacuzzi, sport and an interior they want to share.',
     wGym: 'Sport', wSauna: 'Sauna', wIce: 'Ice bath', wJac: 'Jacuzzi', wTag1: 'The Reload, in development',
