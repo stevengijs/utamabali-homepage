@@ -98,7 +98,7 @@ function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;"
 // Indonesia voor de andere projecten. Geen privérekeningen meer (Steven,
 // 8 oktober 2026). Houd de nummers EXACT gelijk aan admin.html (de ITP-generator).
 const PROJECT_PT={"the maison":"PT. BANGUNAN BETON INDONESIA","the reload":"PT. BANGUNAN BETON INDONESIA","moka":"PT. BALI UTAMA PROPERTY"};
-const DEPOSIT_UITLEG="De aanbetaling gaat naar de vennootschap waarmee je de coordination agreement sluit en wordt verrekend met de eerste termijn.";
+const DEPOSIT_UITLEG="De aanbetaling gaat naar de vennootschap waarmee je de Development Coordination Agreement sluit.";
 const PT_BANK={
   "PT. BANGUNAN BETON INDONESIA":{bank:"OCBC NISP",name:"PT Bangunan Beton Indonesia",acct:"160800023303",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"},
   "PT. BALI UTAMA PROPERTY":{bank:"OCBC NISP",name:"PT Bali Utama Property",acct:"160800023394",swift:"NISPIDJAXXX",branch:"7160",code:"028",address:"Jl. Teuku Umar No. 2-4, Denpasar 80114, Bali, Indonesia"}
@@ -188,7 +188,7 @@ function itpText(r){
     <h3>Object</h3>
     <p><b>Project:</b> ${esc(r.project||"—")}<br><b>Unit:</b> ${esc(r.unit||"—")}${r.unit_price?`<br><b>Indicatieve koopsom:</b> ${euro(r.unit_price)}`:""}</p>
     <h3>Reserveringsdeposit</h3>
-    <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> aan ${esc(ontvangerNaam(r))} om de bovengenoemde unit te reserveren. ${esc(DEPOSIT_UITLEG)} Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement ("credited against the first payment due under the Development and Construction Agreement").</p>
+    <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> aan ${esc(ontvangerNaam(r))} om de bovengenoemde unit te reserveren. ${esc(DEPOSIT_UITLEG)} Deze aanbetaling is toegewezen aan de Development Coordination Agreement en wordt afgetrokken van de eerste factuur daaronder ("assigned to the Development Coordination Agreement and deducted from its first invoice").</p>
     <h3>Vervolg</h3>
     <p>Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.</p>
     <h3>Voorwaarden deposit</h3>
@@ -323,7 +323,7 @@ function makePdf(r,signer,sigData){
       "OBJECT","Project: "+(r.project||"—"),"Unit: "+(r.unit||"—"),(r.unit_price?"Indicatieve koopsom: €"+Number(r.unit_price).toLocaleString("nl-NL"):""),"",
       "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL")+" aan "+ontvangerNaam(r)+". "+DEPOSIT_UITLEG,
       "Referentie: "+refText(r),
-      "Deze aanbetaling wordt verrekend met de eerste termijn onder de Development and Construction Agreement.","",
+      "Deze aanbetaling is toegewezen aan de Development Coordination Agreement en wordt afgetrokken van de eerste factuur daaronder.","",
       "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
       "SIGNATURES",
       "Buyer: digitally signed by "+signer+" on "+new Date().toLocaleString("en-GB"),
