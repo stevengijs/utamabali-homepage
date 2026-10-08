@@ -13,7 +13,7 @@
     skip: 'Skip to content',
     navHow: 'How it works', navAtoZ: 'A to Z', navGuests: 'Guests', navProjects: 'Projects', navProof: 'Results',
     navWebinar: 'Masterclass', navWebinarFree: 'Free masterclass', navCta: 'Invest with us', menuLang: 'Language',
-    roleJij: 'You', roleWij: 'We', rolePartner: 'Partner', ownIt: 'own it.', runIt: 'run it.',
+    roleJij: 'You', roleWij: 'We', roleWijP: 'We &amp; partners', rolePartner: 'Partner', ownIt: 'own it.', runIt: 'run it.',
     tagPhoto: 'Photo', tagImp: 'Impression', tagTeman: 'TEMAN Villas, delivered', tagSite: 'On site',
     noteUpd: 'Construction update ready', noteUpdSub: 'Every week in your portal', noteNow: 'now',
     rekenvb: 'Worked example', tellerH: 'What your year could look like later', peak: 'peak season',
@@ -26,7 +26,7 @@
     kpiDoneK: 'Delivered', kpiDoneV: 'projects',
     heroFine: 'Worked example: realistic scenario The Maison. Returns are estimates, not guarantees.',
     prodEyebrow: 'What you buy', prodH: 'You buy a villa.<br><span class="accent">You receive the rent.</span>',
-    prodSub: 'Money goes in. The villa earns from guests. Every month something comes back.',
+    prodSub: 'Money goes in. The villa earns from guests. Every month something comes back. The worked example below is one of our real projects: The Maison in Pererenan.',
     flowInleg: 'Investment', flowTo: 'to The Maison', vanaf: 'from', flowNotary: '+ notary fee 1%',
     flow1H: 'You invest', flow1P: 'At The Maison from €225,000.',
     flowVilla: 'The villa', flow2H: 'The villa works', flow2P: 'Delivered fully furnished and ready to rent.',
@@ -39,6 +39,7 @@
     amtYear: '≈ €29,900', perYearPaid: 'paid out a year', srcYear: 'Twelve times the example month',
     fNacht: '€175 a night', fBez: '85% occupancy', fOmzet: 'revenue €4,530 a month', fKosten: 'less: costs and management €2,039', fUit: '≈ €2,491 payout',
     mon1: 'Jan', mon2: 'Feb', mon3: 'Mar', mon4: 'Apr', mon5: 'May', mon6: 'Jun', mon7: 'Jul', mon8: 'Aug', mon9: 'Sep', mon10: 'Oct', mon11: 'Nov', mon12: 'Dec', seasHoog: 'High season: July, August and December', seasTussen: 'Shoulder season', seasLaag: 'Low season: rainy months, February, March and November',
+    fn1B: 'Real project.', fn1: 'The worked example is The Maison, now on sale.', fn2B: 'Leasehold 30 + 30.', fn2: 'Thirty years, with a thirty-year extension, fixed by the notary.', fn3B: 'You can always sell.', fn3: 'Instead of renting on. Villa Calmaan was sold in 2026 at a profit.', fn4B: 'Stay yourself?', fn4: 'You can, by arrangement. Though these homes are made to be rented out every day.', tellerAria: 'Payout per month, worked example',
     ysMaand: 'Per month', ysJaar: 'Whole year', ysOmzet: 'Revenue of the home', ysKosten: 'Costs and management', ysUit: 'Payout to you',
     yearH: 'What a year could look like later', yearP: 'Twelve payouts. The amount varies by season. Hover over a month for the amounts.', yearPill: '12 payouts',
     together: 'paid out a year',
@@ -49,7 +50,7 @@
     legPartner: 'Our partners', legJij: 'The investor',
     s1Card: 'Purchase agreement', s1Signed: 'Signed', s1Portal: 'Your portal is open', s1H: 'You step in',
     s1P: 'You choose a project and invest. From day one you follow everything in your portal.',
-    s2H: 'The land', s2P: 'We select the land and secure it on leasehold: 30 years plus a 30-year extension.',
+    s2H: 'The land', s2P: 'Only land zoned for short-stay rental. We secure it on leasehold: 30 years plus a 30-year extension.',
     s3Cap: 'Data on demand and rentals', s3H: 'The concept', s3P: 'We choose location and layout with data on demand and rentals.',
     s4a: 'Permits', s4b: 'Notarial deed', s4H: 'Permits', s4P: 'We handle the permits and the notary.',
     s5H: 'Design', s5P: 'With our partners for interior and exterior architecture.',
@@ -149,7 +150,7 @@
     q8: 'Where do I start?',
     a8: 'With an introduction call with Ashley. Your situation first, a project second. Then you choose a project on invest.utamabali.com and read the brochure.',
     ctaEyebrow: 'The next step',
-    ctaH: 'You own it.<br><span class="accent">We run it.</span>', ctaP: 'Choose a project, start with the free masterclass, or send a WhatsApp message.',
+    ctaH: 'You own it.<br><span class="accent">We run it.</span>', ctaP: 'Choose a project, or send Ashley a WhatsApp message.',
     refT: 'Introduce someone who buys a villa. You receive it when the purchase agreement is signed.', refGo: 'How it works',
     footP: 'Boutique villa projects in the south of Bali. Pererenan, Cemagi and Kedungu.',
     footFine: 'Returns are estimates, not guarantees. Renders are impressions. © 2026 UTAMA',
@@ -551,6 +552,25 @@
   });
   window.addEventListener('resize', function () { if (tip && tip.classList.contains('show')) renderSplit(); });
   if (barsBox) { renderSplit(); setTimeout(renderSplit, 1200); }
+
+  /* De kleine grafiek in de hero: dezelfde maanden en bedragen, met een bedrag bij aanwijzen (Steven, 8 oktober 2026). */
+  var tBox = $('.t-bars'), tBars = $$('.t-bar', tBox), tTip = tBox ? $('.t-tip', tBox) : null;
+  function tShow(i) {
+    if (!tTip || !MONTHS[i - 1]) return;
+    var b = tBars[i - 1], bb = b.getBoundingClientRect(), pb = tBox.getBoundingClientRect();
+    tTip.style.setProperty('--x', (bb.left - pb.left + bb.width / 2) + 'px');
+    tTip.style.top = (bb.top - pb.top) + 'px';
+    $('b', tTip).textContent = eur(MONTHS[i - 1].net);
+    $('small', tTip).textContent = (lang === 'en' ? MEN[i - 1] : MNL[i - 1]) + ' · ' + mSeason(i);
+    tTip.classList.add('show');
+    tBars.forEach(function (x, k) { x.classList.toggle('sel', k === i - 1); });
+  }
+  tBars.forEach(function (b, i) {
+    b.addEventListener('mouseenter', function () { tShow(i + 1); });
+    b.addEventListener('focus', function () { tShow(i + 1); });
+    b.addEventListener('click', function () { tShow(i + 1); });
+  });
+  if (tBox) tBox.addEventListener('mouseleave', function () { if (tTip) tTip.classList.remove('show'); tBars.forEach(function (x, k) { x.classList.toggle('sel', k === 6); }); });
 
   if (reduce) return;
 

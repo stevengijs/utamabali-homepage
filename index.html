@@ -108,10 +108,11 @@
     <aside class="teller" id="teller" aria-labelledby="teller-h">
       <div class="t-top"><span class="t-chip" data-t="rekenvb">Rekenvoorbeeld</span><span class="t-proj">The Maison</span></div>
       <p class="t-title" id="teller-h" data-t="tellerH">Zo kan je jaar er straks uitzien</p>
-      <div class="t-bars" aria-hidden="true">
-        <i style="--h:.62;--i:1"></i><i style="--h:.5;--i:2"></i><i style="--h:.56;--i:3"></i><i style="--h:.7;--i:4"></i><i style="--h:.78;--i:5"></i><i style="--h:.88;--i:6"></i><i style="--h:1;--i:7"></i><i style="--h:.96;--i:8"></i><i style="--h:.74;--i:9"></i><i style="--h:.6;--i:10"></i><i style="--h:.66;--i:11"></i><i style="--h:.92;--i:12"></i>
+      <div class="t-bars" role="group" aria-label="Uitbetaling per maand, rekenvoorbeeld" data-t-aria="tellerAria">
+        <output class="t-tip" aria-live="polite"><b></b><small></small></output>
+        <button type="button" class="t-bar s-tussen" style="--h:0.64;--i:1" data-m="1" aria-label="Januari"></button><button type="button" class="t-bar s-laag" style="--h:0.5;--i:2" data-m="2" aria-label="Februari"></button><button type="button" class="t-bar s-laag" style="--h:0.56;--i:3" data-m="3" aria-label="Maart"></button><button type="button" class="t-bar s-tussen" style="--h:0.7;--i:4" data-m="4" aria-label="April"></button><button type="button" class="t-bar s-tussen" style="--h:0.78;--i:5" data-m="5" aria-label="Mei"></button><button type="button" class="t-bar s-tussen" style="--h:0.88;--i:6" data-m="6" aria-label="Juni"></button><button type="button" class="t-bar s-hoog sel" style="--h:1;--i:7" data-m="7" aria-label="Juli"></button><button type="button" class="t-bar s-hoog" style="--h:0.96;--i:8" data-m="8" aria-label="Augustus"></button><button type="button" class="t-bar s-tussen" style="--h:0.76;--i:9" data-m="9" aria-label="September"></button><button type="button" class="t-bar s-tussen" style="--h:0.66;--i:10" data-m="10" aria-label="Oktober"></button><button type="button" class="t-bar s-laag" style="--h:0.58;--i:11" data-m="11" aria-label="November"></button><button type="button" class="t-bar s-hoog" style="--h:0.92;--i:12" data-m="12" aria-label="December"></button>
       </div>
-      <div class="t-axis" aria-hidden="true"><span>M1</span><span class="t-peak" data-t="peak">hoogseizoen</span><span>M12</span></div>
+      <div class="t-lbls" aria-hidden="true"><span data-t="mon1">jan</span><span data-t="mon2">feb</span><span data-t="mon3">mrt</span><span data-t="mon4">apr</span><span data-t="mon5">mei</span><span data-t="mon6">jun</span><span data-t="mon7">jul</span><span data-t="mon8">aug</span><span data-t="mon9">sep</span><span data-t="mon10">okt</span><span data-t="mon11">nov</span><span data-t="mon12">dec</span></div>
       <div class="t-foot">
         <div><b class="num">±14%</b><small data-t="tellerYear">per jaar, realistisch scenario</small></div>
         <div><b class="num">12</b><small data-t="tellerPays">uitbetalingen per jaar</small></div>
@@ -147,7 +148,7 @@
     <header class="sec-head" data-reveal>
       <p class="eyebrow"><span class="dot"></span><span data-t="prodEyebrow">Wat je koopt</span></p>
       <h2 id="product-h" data-t="prodH">Je koopt een villa.<br><span class="accent">Je ontvangt de huur.</span></h2>
-      <p class="sec-sub" data-t="prodSub">Geld gaat erin. De villa verdient aan gasten. Elke maand komt er iets terug.</p>
+      <p class="sec-sub" data-t="prodSub">Geld gaat erin. De villa verdient aan gasten. Elke maand komt er iets terug. Het rekenvoorbeeld hieronder is een van onze echte projecten: The Maison in Pererenan.</p>
     </header>
 
     <ol class="flow" data-reveal>
@@ -172,7 +173,7 @@
         <p class="k"><span class="kn">02</span><span data-t="flowVilla">De villa</span></p>
         <h3 data-t="flow2H">De villa werkt</h3>
         <p data-t="flow2P">Volledig ingericht en verhuurklaar opgeleverd.</p>
-        <div class="roles"><span class="role wij" data-t="roleWij">Wij</span><span class="role partner" data-t="rolePartner">Partner</span></div>
+        <div class="roles"><span class="role wij" data-t="roleWijP">Wij &amp; partners</span></div>
       </li>
       <li class="fnode">
         <div class="tile tile-pf">
@@ -183,7 +184,7 @@
         <p class="k"><span class="kn">03</span><span data-t="flowGuests">Gasten</span></p>
         <h3 data-t="flow3H">Gasten boeken</h3>
         <p data-t="flow3P">Via Airbnb, Booking.com en de andere platforms, en direct via de eigen website van het project.</p>
-        <div class="roles"><span class="role partner" data-t="rolePartner">Partner</span><span class="role wij" data-t="roleWij">Wij</span></div>
+        <div class="roles"><span class="role wij" data-t="roleWijP">Wij &amp; partners</span></div>
       </li>
       <li class="fnode pay">
         <div class="tile tile-pay">
@@ -202,6 +203,12 @@
       </li>
     </ol>
 
+    <ul class="flow-notes" data-reveal>
+      <li><b data-t="fn1B">Echt project.</b> <span data-t="fn1">Het rekenvoorbeeld is The Maison, nu in verkoop.</span></li>
+      <li><b data-t="fn2B">Leasehold 30 + 30.</b> <span data-t="fn2">Dertig jaar, met dertig jaar verlenging, notarieel vastgelegd.</span></li>
+      <li><b data-t="fn3B">Verkopen kan altijd.</b> <span data-t="fn3">In plaats van blijven verhuren. Villa Calmaan ging in 2026 met winst van de hand.</span></li>
+      <li><b data-t="fn4B">Zelf logeren?</b> <span data-t="fn4">Kan, in overleg. Al zijn deze woningen gemaakt om elke dag verhuurd te worden.</span></li>
+    </ul>
     <div class="calc">
       <div class="sum" data-reveal>
         <p class="sum-k" data-t="sumK">Rekenvoorbeeld · realistisch scenario The Maison</p>
@@ -266,7 +273,6 @@
         </div>
         <ul class="legend" aria-label="Legenda">
           <li><span class="role wij" data-t="roleWij">Wij</span><span>UTAMA</span></li>
-          <li><span class="role partner" data-t="rolePartner">Partner</span><span data-t="legPartner">Onze partners</span></li>
           <li><span class="role jij" data-t="roleJij">Jij</span><span data-t="legJij">De investeerder</span></li>
         </ul>
       </header>
@@ -291,7 +297,7 @@
           <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 2">02</span></div>
           <figure class="step-media ph" style="--ph:#9CA293"><img src="img/grond-bouwplaats-800.webp" srcset="img/grond-bouwplaats-800.webp 800w, img/grond-bouwplaats-1024.webp 1024w" sizes="(min-width:1024px) 300px, 78vw" width="1024" height="768" alt="Steven Gijsman met de aannemer op de bouwplaats, de tekeningen in de hand" loading="lazy" decoding="async" style="object-position:62% 50%" data-t-alt="altGrond"><figcaption class="tag tag-dark tag-sm"><span data-t="tagPhoto">Foto</span> · <span data-t="tagSite">Op de bouwplaats</span></figcaption></figure>
           <h3 data-t="s2H">De grond</h3>
-          <p data-t="s2P">Wij selecteren de grond en verwerven die in leasehold: 30 jaar plus 30 jaar verlenging.</p>
+          <p data-t="s2P">Alleen grond die bestemd is voor short-stay verhuur. Die verwerven wij in leasehold: 30 jaar plus 30 jaar verlenging.</p>
           <div class="roles"><span class="role wij" data-t="roleWij">Wij</span></div>
         </li>
         <li class="step">
@@ -331,14 +337,14 @@
           <figure class="step-media ph" style="--ph:#9B9586"><img src="img/maison-living-800.webp" width="800" height="450" alt="Impressie van de woonkamer van The Maison" loading="lazy" decoding="async" data-t-alt="altMaisonLiving"><figcaption class="tag tag-dark tag-sm"><span data-t="tagImp">Impressie</span> · The Maison</figcaption></figure>
           <h3 data-t="s5H">Ontwerp</h3>
           <p data-t="s5P">Met onze partners voor interieur- en exterieurarchitectuur.</p>
-          <div class="roles"><span class="role wij" data-t="roleWij">Wij</span><span class="role partner" data-t="rolePartner">Partner</span></div>
+          <div class="roles"><span class="role wij" data-t="roleWijP">Wij &amp; partners</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot partner" role="button" tabindex="0" aria-label="Stap 6">06</span></div>
+          <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 6">06</span></div>
           <figure class="step-media ph" style="--ph:#828A7E"><img src="img/steven-bouw-480.webp" srcset="img/steven-bouw-480.webp 480w, img/steven-bouw-768.webp 768w" sizes="(min-width:1024px) 300px, 78vw" width="768" height="1024" alt="Steven Gijsman op de bekisting van een verdiepingsvloer, met de betonmixer en de rijstvelden erachter" loading="lazy" decoding="async" style="object-position:50% 52%" data-t-alt="altStevenBouw"><figcaption class="tag tag-dark tag-sm"><span data-t="tagPhoto">Foto</span> · <span data-t="tagSite">Op de bouwplaats</span></figcaption></figure>
           <h3 data-t="s6H">De bouw</h3>
           <p data-t="s6P">Een onafhankelijke aannemer bouwt. Wij leggen het bestek vast en staan dagelijks op de bouwplaats.</p>
-          <div class="roles"><span class="role partner" data-t="rolePartner">Partner</span><span class="role wij" data-t="roleWij">Wij</span></div>
+          <div class="roles"><span class="role wij" data-t="roleWijP">Wij &amp; partners</span></div>
         </li>
         <li class="step">
           <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 7">07</span></div>
@@ -367,11 +373,11 @@
           <div class="roles"><span class="role wij" data-t="roleWij">Wij</span><svg class="to" viewBox="0 0 16 16" role="img" aria-label="naar"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="role jij" data-t="roleJij">Jij</span></div>
         </li>
         <li class="step">
-          <div class="step-head"><span class="step-dot partner" role="button" tabindex="0" aria-label="Stap 9">09</span></div>
+          <div class="step-head"><span class="step-dot" role="button" tabindex="0" aria-label="Stap 9">09</span></div>
           <figure class="step-media ph" style="--ph:#939189"><img src="img/calmaan-480.webp" srcset="img/calmaan-480.webp 480w, img/calmaan-724.webp 724w" sizes="(min-width:1024px) 300px, 78vw" width="724" height="1086" alt="Villa Calmaan, ingericht: open woonkeuken aan het zwembad, klaar voor de eerste gasten" loading="lazy" decoding="async" style="object-position:50% 58%" data-t-alt="altCalmaan"><figcaption class="tag tag-dark tag-sm"><span data-t="tagPhoto">Foto</span> · Villa Calmaan</figcaption></figure>
           <h3 data-t="s9H">Eerste gasten</h3>
           <p data-t="s9P">Onze verhuurpartners doen reserveringen, platforms en prijzen. Wij zetten het op en managen het.</p>
-          <div class="roles"><span class="role partner" data-t="rolePartner">Partner</span><span class="role wij" data-t="roleWij">Wij</span></div>
+          <div class="roles"><span class="role wij" data-t="roleWijP">Wij &amp; partners</span></div>
         </li>
         <li class="step">
           <div class="step-head"><span class="step-dot jij" role="button" tabindex="0" aria-label="Stap 10">10</span></div>
@@ -920,7 +926,7 @@
     <div>
       <p class="eyebrow eyebrow-light"><span class="dot"></span><span data-t="ctaEyebrow">De volgende stap</span></p>
       <h2 id="cta-h" data-t="ctaH">Jij bezit het.<br><span class="accent">Wij runnen het.</span></h2>
-      <p data-t="ctaP">Kies een project, begin met de gratis masterclass, of stuur een WhatsApp-bericht.</p>
+      <p data-t="ctaP">Kies een project, of stuur een WhatsApp-bericht aan Ashley.</p>
       <div class="cta-btns">
         <a class="btn btn-paper btn-lg" href="https://invest.utamabali.com"><span data-t="navCta">Investeer mee</span> <svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         <a class="btn btn-line btn-lg" href="/webinar/" data-t="navWebinarFree">Gratis masterclass</a>
