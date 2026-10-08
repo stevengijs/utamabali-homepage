@@ -813,6 +813,21 @@ html.menu-open{ overflow:hidden; }
 
 /* ---------- 11. De mensen ---------- */
 .people-sec{ background:var(--sand); }
+.site-grid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin-top:18px; }
+.site-ph{ position:relative; margin:0; aspect-ratio:4/3; border-radius:14px; overflow:hidden; }
+.site-ph img{ width:100%; height:100%; object-fit:cover; display:block; transition:transform 1.2s var(--ease); }
+.site-ph:hover img{ transform:scale(1.04); }
+.site-ph figcaption{ position:absolute; left:8px; bottom:8px; padding:4px 8px; border-radius:999px; background:rgba(23,20,15,.72); color:#fff; font:600 10px/1.2 var(--body); letter-spacing:.06em; text-transform:uppercase; }
+.team-line{ margin-top:14px; font-size:14px; line-height:1.55; color:var(--muted); max-width:62em; }
+.faq-cta{ display:grid; gap:12px; margin-top:12px; }
+.faq-cta > div{ display:grid; gap:6px; justify-items:start; }
+.faq-cta small{ font:500 12.5px/1.45 var(--body); color:var(--muted); }
+.btn-wa{ background:#075E54; color:#fff; display:inline-flex; align-items:center; gap:8px; }
+.btn-wa svg{ flex:none; }
+@media (min-width:900px){
+  .site-grid{ grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; margin-top:22px; }
+  .faq-cta{ grid-template-columns:1fr 1fr; gap:16px; }
+}
 .people{ display:grid; gap:12px; }
 .person{ display:grid; grid-template-columns:124px minmax(0,1fr); gap:16px; padding:10px; border-radius:22px; background:var(--paper); box-shadow:0 0 0 1px var(--line); align-items:center; }
 .person-img{ border-radius:16px; overflow:hidden; aspect-ratio:4/5; }
