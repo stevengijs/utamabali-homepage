@@ -94,7 +94,7 @@
     auto4: 'Your investor portal: contract, progress and documents in one place.',
     auto3: 'At The Reload: self check-in with a smart lock, and a construction camera that watches along.',
     cmpEyebrow: 'Location first', cmpH: 'The place first.<br><span class="accent">The square metres second.</span>',
-    cmpSub: 'A guest in Bali is out all day: beach, surf, coffee, dinner. What they ask of the home is simple: a good bed, a quiet morning and a pool to fall into. In a place where all of that is around the corner, a compact home earns as well as a large one. At lower cost.',
+    cmpSub: 'Guests in Bali are out all day: beach, surf, coffee, dinner. At home they do not want a big villa but a home that is right: designed to live in and to photograph, with one space you remember, and wellness you share with the neighbours. Compact by design: the size guests book, in places where they already book. There compact earns as well as large, at lower cost.',
     cmpBigK: 'Spacious villa, three bedrooms', cmpBigEx: 'MOKA Signature Villa, Kedungu', cmpSmEx: 'The Maison, Pererenan, 117 m²', cmpBig1: 'Purchase €325,000', cmpBig2: '€195 a night, realistic scenario', cmpBig3: 'Per €100,000 invested: €60 a night', cmpBig4: 'Large pool, large garden, more upkeep',
     cmpSmallK: 'Compact home, two bedrooms', cmpSm1: 'Purchase €225,000', cmpSm2: '€175 a night, realistic scenario', cmpSm3: 'Per €100,000 invested: €78 a night', cmpSm4: 'Less upkeep, less staff',
     amsK: 'It works the same in the Netherlands', amsA: 'Studio, 40 to 60 m²', amsB: 'Apartment, 100 m² or more', amsUp: '≈ €9,000 to €10,000 per m²', amsDown: '≈ €7,500 to €8,000 per m²',
