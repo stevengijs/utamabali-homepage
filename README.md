@@ -1,6 +1,6 @@
 # UTAMA Bali — Homepage (one-page lander)
 
-Single-page marketing homepage for utamabali.com. Static HTML, no build step, all images inlined as base64 so the whole site is one self-contained `index.html`.
+Single-page marketing homepage for utamabali.com. Static HTML, no build step. Since 8 October 2026 the page is `index.html` plus `style.css`, `main.js`, `img/` (WebP) and `video/`; the copy carries `data-t` keys and the English strings live in the `T` dictionary in `main.js`.
 
 - **Repo:** https://github.com/stevengijs/utamabali-homepage
 - **Doel:** vervangt de huidige Framer-site op utamabali.com (top-of-funnel/merk), verwijst door naar invest.utamabali.com voor de investeerdersfunnel.
@@ -16,4 +16,4 @@ This is a separate, newer project from `stevengijs/utamabali-website` (an earlie
 
 ## Bewerken
 
-Alles staat in `index.html`. Er is geen build-stap; wijzigingen zijn direct zichtbaar na een push naar `main` (Vercel deployt automatisch).
+De homepage bestaat uit `index.html`, `style.css`, `main.js`, `img/` en `video/`. Er is geen build-stap; wijzigingen zijn direct zichtbaar na een push naar `main` (Vercel deployt automatisch). Houd `apps/homepage` in de monorepo `utama-platform` gelijk.
