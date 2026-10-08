@@ -90,7 +90,7 @@
     amsP: 'Indicative, Amsterdam 2026. The studio brings in more rent per euro invested than the large house. A tenant pays for the place, not for extra square metres. Bali works the same way.',
     cmpTag: 'MOKA, one bedroom', altCompact: 'Impression of the living room of a compact one-bedroom home in MOKA',
     lblInterieur: 'Interior',
-    bMaisonLine: 'Six homes, three minutes by scooter from the beach.',
+    bMaisonLine: 'Six homes in a gated community, three minutes by scooter from the beach.',
     bMokaLine: 'Boutique resort, 600 metres from the beach. 14 of 15 sold, the last unit is reserved.',
     bReloadLine: 'Wellness villas, 300 metres from the beach.',
     altMokaPoster: 'Impression of a villa in MOKA, Kedungu',
