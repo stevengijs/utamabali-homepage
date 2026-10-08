@@ -32,7 +32,7 @@
     flowVilla: 'The villa', flow2H: 'The villa works', flow2P: 'Delivered fully furnished and ready to rent.',
     pfGoal: 'Direct through our website', flowGuests: 'Guests', flow3H: 'Guests book',
     flow3P: 'Through Airbnb, Booking.com and the other platforms, and directly through the project\'s own website.',
-    payNoteB: 'Payout', payNoteS: 'worked example', flowPay: 'Payout', flow4H: 'You receive',
+    payNoteB: 'Payout', payNoteS: 'June · worked example', flowPay: 'Payout', flow4H: 'You receive',
     flow4P: 'The rental income every month, from the first guests.',
     sumK: 'Worked example · realistic scenario The Maison', perYear: 'a year', perMonth: 'payout a month, on average',
     srcPage: 'Source: The Maison project page', srcBrochure: 'Source: example month in the brochure',
