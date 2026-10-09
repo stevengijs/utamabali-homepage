@@ -712,6 +712,9 @@ html.menu-open{ overflow:hidden; }
 .bmini .brand-name{ display:block; font-size:30px; line-height:1; }
 .bmini.b-reload .brand-name{ font-size:22px; }
 .bmini-line{ display:block; margin-top:8px; font:400 15px/1.5 var(--body); color:var(--ink-soft); }
+/* unitmix van MOKA (Steven, 9 oktober 2026) */
+.bmini-mix{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.bmini-mix span{ padding:5px 10px; border-radius:999px; background:var(--paper); box-shadow:0 0 0 1px var(--line); font:700 12px/1 var(--body); letter-spacing:.02em; color:var(--ink); }
 .bmini-go{ display:inline-flex; align-items:center; gap:8px; margin-top:12px; font:600 14px/1 var(--body); color:var(--ink); }
 .bmini-go .arr{ width:14px; height:14px; }
 .sec-cta{ display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; margin:36px 0 0; }
