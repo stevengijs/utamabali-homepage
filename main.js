@@ -120,7 +120,7 @@
     wS3K: 'Foreign visitors to Bali in 2025', wS3V: '6.95 m', wS3S: '9.7% more than in 2024. Source: BPS Bali',
     zEyebrow: 'Dutch and precise', zH: 'Agreements on paper.<br><span class="accent">No empty promises.</span>',
     zSub: 'A Dutch party with a Dutch founder. Leasehold 30 + 30 years, permits included, paid out every month in euros. Agreements that hold, in writing.',
-    altOpgWoon: 'Furnished living room with open kitchen of a delivered project, under a wooden roof structure',
+    altNotaris: 'Steven Gijsman signing a contract at the notary in Bali', tagNotaris: 'At the notary', altOpgWoon: 'Furnished living room with open kitchen of a delivered project, under a wooden roof structure',
     z1B: 'Dutch.', z1: 'Dutch party, Dutch founder, in Bali himself.',
     z2B: 'Permits included.', z2: 'We deliver every home including permits.',
     z3B: 'Only where renting is allowed.', z3: 'Only in places assigned for tourism and short-stay rental.',
