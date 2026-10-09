@@ -68,12 +68,12 @@
     gNote: 'This is our model for every project, combined with the major platforms. A direct booking carries no platform commission of 15%. At MOKA it is already live: <a href="https://www.mokavillas.com/" target="_blank" rel="noopener">mokavillas.com</a>. Our rental partners handle bookings, platforms and pricing. We set it up and manage it.',
     navSure: 'Certainty', rating: '4.83', amtInleg: '€225,000', amtPay: '≈ €2,491',
     pEyebrow: 'Every project its own brand', pH: 'Guests book a brand.<br><span class="accent">Your villa is part of it.</span>',
-    pSub: 'Own name, own design, own audience. That is why the nightly rate is higher. MOKA 14 of 15 sold and the last one reserved, The Maison 3 of 6 sold and 1 reserved, The Reload to be revealed soon.',
-    bGoMaison: 'See The Maison', bGoMoka: 'See MOKA', bGoReload: 'Put me on the list', soldHead: 'Sold out before', soldStamp: 'Sold out', soldTemanSt: 'Delivered and rented out', soldPalmaSt: 'Every villa sold, under construction', altSoldTeman: 'TEMAN Villas in Tumbak Bayuh, delivered', altSoldPalma: 'Impression of Villa Palma in Kedungu',
+    pSub: 'Own name, own design, own audience. That is why the nightly rate is higher. MOKA 14 of 15 sold and the last one reserved, The Maison 3 of 6 sold and 1 reserved. The next project is revealed soon.',
+    bGoMaison: 'See The Maison', bGoMoka: 'See MOKA', bGoReload: 'Put me on the list', tzTag: 'Coming soon · new project', tzT: 'Next project to be revealed soon', tzPrice: 'Pre-sale: €125,000 to €235,000', tzNote: 'Limited places. Only those who register their interest and are ready to buy get access.', tzGo: 'Put me on the list', soldHead: 'Sold out before', soldStamp: 'Sold out', soldTemanSt: 'Delivered and rented out', soldPalmaSt: 'Every villa sold, under construction', altSoldTeman: 'TEMAN Villas in Tumbak Bayuh, delivered', altSoldPalma: 'Impression of Villa Palma in Kedungu',
     mEyebrow: 'Data and automation', mH: 'Demand is moving west.<br><span class="accent">We are already there.</span>',
     mSub: 'Seminyak, Canggu, Pererenan. Now Cemagi and Kedungu, where we already develop. We choose location and layout with data and AI. Prices move automatically, with our rental partners.',
     mapK: 'Schematic, not to scale',
-    mapT: 'Bali keeps growing, and that growth moves west from Seminyak. Our projects sit where it is heading now.', mapK: 'Google Maps · click a place', mapKProj: 'Our projects · always close to the beach', mapKHot: 'Hotspots nearby', mapKTrend: 'The direction', mokaNote: '600 m from the beach, 2 min by scooter', approxNote: 'approximate location', maisonNote: '3 min by scooter to the beach, pin approximate', reloadNote: '300 m from the beach, 1 min by scooter', hotSauna: 'sauna and ice bath', hotWell: 'wellness and social club', hotPadel: 'padel club', hotBeach: 'beach', trendNote: 'Seminyak, Canggu, Pererenan, Cemagi, Kedungu', mapOpen: 'Open in Google Maps', mapListAria: 'Places on the map', mapIframe: 'Google Maps: the southwest coast of Bali with our projects',
+    mapT: 'Bali keeps growing, and that growth moves west from Seminyak. Our projects sit where it is heading now.', mapK: 'Google Maps · click a place', mapKProj: 'Our projects · always close to the beach', mapKHot: 'Hotspots nearby', mapKTrend: 'The direction', mokaNote: '600 m from the beach, 2 min by scooter', approxNote: 'approximate location', maisonNote: '3 min by scooter to the beach, pin approximate', reloadNote: 'revealed soon', mpNext: 'Next project', hotSauna: 'sauna and ice bath', hotWell: 'wellness and social club', hotPadel: 'padel club', hotBeach: 'beach', trendNote: 'Seminyak, Canggu, Pererenan, Cemagi, Kedungu', mapOpen: 'Open in Google Maps', mapListAria: 'Places on the map', mapIframe: 'Google Maps: the southwest coast of Bali with our projects',
     aiK: 'Data and AI',
     ai1: 'The place: where demand is heading, from data on demand and rentals.',
     ai2: 'The layout: the floor plan that earns the most per square metre.',
@@ -81,7 +81,7 @@
     autoK: 'What runs automatically', auto1: 'Nightly prices move with demand, together with our rental partners.',
     auto2: 'A construction update in your portal every week.',
     auto4: 'Your investor portal: contract, progress and documents in one place.',
-    auto3: 'At The Maison the construction camera already streams live in the brochure; at The Reload soon too, with self check-in through a smart lock.',
+    auto3: 'At The Maison the construction camera already streams live in the brochure; at the next project soon too, with self check-in through a smart lock.',
     cmpEyebrow: 'Location first', cmpH: 'The place first.<br><span class="accent">The square metres second.</span>',
     cmpSub: 'A guest books a bedroom in a prime location, not extra square metres. So compact earns more per euro. At MOKA, the compact homes sold first.',
     cmpBigK: 'Spacious villa, three bedrooms', cmpBigEx: 'Large pool, large garden, more upkeep', cmpPriceL: 'Investment', cmpRoiL: 'Yield', cmpBigRoi: '≈ 14.0% a year', cmpSmRoi: '≈ 16.4% a year', cmpBigPrice: '€325,000', cmpSmPrice: '€135,000', cmpSmEx: 'Lower entry, less upkeep and staff', cmpBig1: 'Payout ≈ €3,781 a month', cmpBig2: 'On an investment of €325,000', cmpBig3: '€195 a night, realistic scenario', cmpBig4: 'Large pool, large garden, more upkeep',
@@ -110,9 +110,9 @@
     ctaPnlAll: 'Or see all projects on invest.utamabali.com',
     cmpSource: 'Source: MOKA brochure, Signature Villa and Boutique Apartment in the same resort, realistic scenario: 85% occupancy and 25% costs and management for both. Yield: payout times twelve, divided by the investment. Netherlands: indicative, Amsterdam broker figures 2026. Estimates, not guarantees.',
     wEyebrow: 'Healthy and in the picture', wH: 'The new guest lives healthy.<br><span class="accent">Every concept is designed for it.</span>',
-    wSub: 'Less partying, more recovery. Guests want a home with an idea: sauna, ice bath, jacuzzi, sport, an interior worth sharing. The Reload in Cemagi is designed around that and will be revealed soon.',
-    wGym: 'Sport', wSauna: 'Sauna', wIce: 'Ice bath', wJac: 'Jacuzzi', wTag1: 'The Reload, in development',
-    altReloadWell: 'Impression of the roof terrace of The Reload from above: sauna, ice bath, jacuzzi, a gym corner and a lounge',
+    wSub: 'Less partying, more recovery. Guests want a home with an idea: sauna, ice bath, jacuzzi, sport, an interior worth sharing. Our next project is designed around that and will be revealed soon.',
+    wGym: 'Sport', wSauna: 'Sauna', wIce: 'Ice bath', wJac: 'Jacuzzi', wTag1: 'Next project, revealed soon',
+    altReloadWell: 'Impression of a roof terrace from above: sauna, ice bath, jacuzzi, a gym corner and a lounge',
     altNissen: 'Open kitchen with wooden shelves, hob and rattan bar stools in a delivered villa', wT1: 'Interiors guests share',
     altMokaJac: 'Impression of a jacuzzi on the roof terrace of a villa in MOKA, looking over the rice fields to the sea', wT2: 'Jacuzzi on the roof terrace',
     wPartK: 'With partners close by', wPartP: 'Padel, recovery and wellness near our projects.',
@@ -173,7 +173,7 @@
     altSteven: 'Steven Gijsman, founder of UTAMA, reviewing a drawing', altAshley: 'Portrait of Ashley from UTAMA',
     yearAria: 'Illustration: twelve monthly payouts of varying height. Pick a month for the amounts.',
     stepsAria: 'Ten steps from land to guest',
-    mapAria: 'Schematic map of the south-west coast of Bali: from Seminyak via Canggu and Pererenan to Cemagi and Kedungu. The Maison is in Pererenan, The Reload in Cemagi, MOKA in Kedungu.'
+    mapAria: 'Schematic map of the south-west coast of Bali: from Seminyak via Canggu and Pererenan to Cemagi and Kedungu. The Maison is in Pererenan, the next project in Cemagi, MOKA in Kedungu.'
   } };
   /* Teksten van de teller, per taal */
   var D = {
