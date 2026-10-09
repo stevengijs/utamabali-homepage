@@ -110,7 +110,7 @@
     ctaPnlAll: 'Or see all projects on invest.utamabali.com',
     cmpSource: 'Source: MOKA brochure, Signature Villa and Boutique Apartment in the same resort, realistic scenario: 85% occupancy and 25% costs and management for both. Yield: payout times twelve, divided by the investment. Netherlands: indicative, Amsterdam broker figures 2026. Estimates, not guarantees.',
     wEyebrow: 'Healthy and in the picture', wH: 'The new guest lives healthy.<br><span class="accent">Every concept is designed for it.</span>',
-    wSub: 'Less partying, more recovery. Guests want a home with an idea: sauna, ice bath, jacuzzi, sport, an interior worth sharing. Our next project is designed around that and will be revealed soon.',
+    wSub: 'Less partying, more recovery. Guests want a home with an idea: sauna, ice bath, jacuzzi, sport, an interior worth sharing. Our concepts are designed around that.',
     wGym: 'Sport', wSauna: 'Sauna', wIce: 'Ice bath', wJac: 'Jacuzzi', wTag1: 'Next project, revealed soon',
     altReloadWell: 'Impression of a roof terrace from above: sauna, ice bath, jacuzzi, a gym corner and a lounge',
     altNissen: 'Open kitchen with wooden shelves, hob and rattan bar stools in a delivered villa', wT1: 'Interiors guests share',
