@@ -81,7 +81,7 @@
     autoK: 'What runs automatically', auto1: 'Nightly prices move with demand, together with our rental partners.',
     auto2: 'A construction update in your portal every week.',
     auto4: 'Your investor portal: contract, progress and documents in one place.',
-    auto3: 'At The Maison the construction camera already streams live on the project page; at The Reload soon too, with self check-in through a smart lock.',
+    auto3: 'At The Maison the construction camera already streams live in the brochure; at The Reload soon too, with self check-in through a smart lock.',
     cmpEyebrow: 'Location first', cmpH: 'The place first.<br><span class="accent">The square metres second.</span>',
     cmpSub: 'Guests choose the place first: the beach, the cafés, the surf. Only then the home. So we only build where guests already book, and design the home around what they really use there: a smart floor plan, an interior they want to share and wellness shared with the community. Compact by design: per euro invested a compact home comes out about equal with a large one, with a lower entry, lower costs and less upkeep. No wonder the compact homes at MOKA were the first to sell.',
     cmpBigK: 'Spacious villa, three bedrooms', cmpBigEx: 'MOKA Signature Villa, Kedungu', cmpSmEx: 'The Maison, Pererenan, 117 m²', cmpBig1: 'Payout ≈ €3,781 a month', cmpBig2: 'On an investment of €325,000', cmpBig3: '€195 a night, realistic scenario', cmpBig4: 'Large pool, large garden, more upkeep',
