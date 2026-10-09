@@ -927,7 +927,7 @@ html.menu-open{ overflow:hidden; }
 .cmp-list li{ display:flex; align-items:center; gap:10px; padding:6px 0; font:600 14px/1.3 var(--body); color:var(--ink-soft); }
 .cmp-ams{ border-radius:22px; padding:20px; background:var(--ink); color:var(--paper); }
 .cmp-ams .m-k.dark{ color:rgba(254,251,246,.6); }
-.ams-rows{ display:grid; gap:14px; margin-top:8px; }
+.ams-rows{ display:grid; gap:12px; margin-top:8px; }
 .ams-row{ display:grid; gap:6px; }
 .ams-l{ font:600 13.5px/1.3 var(--body); }
 .ams-bar{ display:block; height:12px; border-radius:6px; background:rgba(254,251,246,.1); overflow:hidden; }
@@ -937,7 +937,7 @@ html.menu-open{ overflow:hidden; }
 .ams-v svg{ width:14px; height:14px; }
 .ams-v.up{ color:var(--olive-3); }
 .ams-v.down{ color:rgba(254,251,246,.6); }
-.ams-p{ margin-top:16px; padding-top:14px; border-top:1px solid rgba(254,251,246,.14); font-size:14.5px; line-height:1.5; color:rgba(254,251,246,.82); }
+.ams-p{ margin-top:14px; padding-top:12px; border-top:1px solid rgba(254,251,246,.14); font-size:14px; line-height:1.45; color:rgba(254,251,246,.82); }
 .cmp-photo{ position:relative; margin:0; border-radius:22px; overflow:hidden; aspect-ratio:3/2; }
 .cmp-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 @media (min-width:700px){ .cmp-grid{ grid-template-columns:1fr 1fr; } .cmp-ams, .cmp-photo{ grid-column:1 / -1; } .cmp-photo{ aspect-ratio:21/9; } }
