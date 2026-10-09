@@ -68,7 +68,7 @@
     gNote: 'This is our model for every project, combined with the major platforms. A direct booking carries no platform commission of 15%. At MOKA it is already live: <a href="https://www.mokavillas.com/" target="_blank" rel="noopener">mokavillas.com</a>. Our rental partners handle bookings, platforms and pricing. We set it up and manage it.',
     navSure: 'Certainty', rating: '4.83', amtInleg: '€225,000', amtPay: '≈ €2,491',
     pEyebrow: 'Every project its own brand', pH: 'Guests book a brand.<br><span class="accent">Your villa is part of it.</span>',
-    pSub: 'Own name, own design, own audience. That is why the nightly rate is higher. MOKA 14 of 15 sold and the last one reserved, The Maison 4 of 6 taken, The Reload to be revealed soon.',
+    pSub: 'Own name, own design, own audience. That is why the nightly rate is higher. MOKA 14 of 15 sold and the last one reserved, The Maison 3 of 6 sold and 1 reserved, The Reload to be revealed soon.',
     bGoMaison: 'See The Maison', bGoMoka: 'See MOKA', bGoReload: 'Put me on the list',
     mEyebrow: 'Data and automation', mH: 'Demand is moving west.<br><span class="accent">We are already there.</span>',
     mSub: 'Seminyak, Canggu, Pererenan. Now Cemagi and Kedungu, where we already develop. We choose location and layout with data and AI. Prices move automatically, with our rental partners.',
