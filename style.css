@@ -896,7 +896,14 @@ html.menu-open{ overflow:hidden; }
 /* ---------- 6. Compact wint ---------- */
 .compact{ background:var(--paper); }
 .cmp-grid{ display:grid; gap:14px; }
-.cmp-card{ margin:0; border-radius:22px; padding:16px; background:var(--sand); box-shadow:0 0 0 1px var(--line); }
+.cmp-card{ position:relative; margin:0; border-radius:22px; padding:16px; background:var(--sand); box-shadow:0 0 0 1px var(--line); }
+/* inleg als label bovenaan de kaart, over de plattegrond (Steven, 9 oktober 2026) */
+.cmp-price{ position:absolute; top:26px; left:26px; z-index:1; display:inline-flex; align-items:baseline; gap:7px; padding:8px 13px 8px 12px; border-radius:999px; background:var(--ink); color:#fff; box-shadow:0 8px 20px rgba(23,20,15,.18); }
+.cmp-price-l{ font:700 10.5px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; opacity:.78; }
+.cmp-price-v{ font:800 15px/1 var(--display); letter-spacing:-.01em; }
+.cmp-card.on .cmp-price{ background:var(--olive-deep); }
+.cmp-list li.hl{ font-weight:800; color:var(--ink); }
+.cmp-card.on .cmp-list li.hl{ color:var(--olive-deep); }
 .cmp-card.on{ background:var(--sage); box-shadow:0 0 0 1.5px var(--olive-deep); }
 .plan{ width:100%; height:auto; }
 .pl-plot{ fill:var(--paper); stroke:var(--line); stroke-width:1.5; }
@@ -914,7 +921,7 @@ html.menu-open{ overflow:hidden; }
 .cmp-card.on .pl-staff{ fill:var(--olive-deep); opacity:1; }
 .cmp-card figcaption{ margin-top:12px; }
 .cmp-k{ display:block; font:800 18px/1.2 var(--display); letter-spacing:-.02em; margin-bottom:2px; }
-.cmp-ex{ font:500 12.5px/1.3 var(--body); color:var(--muted); margin:0 0 8px; }
+.cmp-ex{ font:500 13.5px/1.35 var(--body); color:var(--muted); margin:0 0 8px; }
 .cmp-card.on .cmp-k{ color:var(--olive-deep); }
 .cmp-list{ list-style:none; margin:0; padding:0; display:grid; gap:2px; }
 .cmp-list li{ display:flex; align-items:center; gap:10px; padding:6px 0; font:600 14px/1.3 var(--body); color:var(--ink-soft); }
