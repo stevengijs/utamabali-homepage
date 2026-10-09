@@ -724,6 +724,12 @@ html.menu-open{ overflow:hidden; }
 .tz-go{ display:inline-flex; align-items:center; gap:8px; margin-top:2px; font:600 14px/1 var(--body); color:#f0c9a8; }
 .tz-go .arr{ width:14px; height:14px; }
 .bmini-line{ display:block; margin-top:8px; font:400 15px/1.5 var(--body); color:var(--ink-soft); }
+/* logo van The Maison (de luipaard uit het merk) naast de naam */
+.bmini-head{ display:flex; align-items:center; gap:12px; }
+.bmini-mark{ width:60px; height:auto; flex:none; }
+/* opleverlabel van MOKA */
+.bmini-status{ display:inline-flex; align-items:center; gap:7px; margin-top:12px; padding:6px 11px; border-radius:999px; background:var(--sage); box-shadow:0 0 0 1px rgba(91,105,74,.25); font:700 12px/1 var(--body); color:var(--olive-deep); }
+.bmini-status i{ width:7px; height:7px; border-radius:50%; background:var(--olive-deep); }
 /* unitmix van MOKA (Steven, 9 oktober 2026) */
 .bmini-mix{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
 .bmini-mix span{ padding:5px 10px; border-radius:999px; background:var(--paper); box-shadow:0 0 0 1px var(--line); font:700 12px/1 var(--body); letter-spacing:.02em; color:var(--ink); }
@@ -759,6 +765,19 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .smini-ab .ab-logo{ width:18px; height:18px; color:#FF385C; margin-right:3px; }
 .smini-ab .ab-star{ width:13px; height:13px; }
 .smini-rev{ color:var(--muted); }
+.smini-video{ width:100%; border:0; font:inherit; text-align:left; cursor:pointer; }
+.smini-video:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 14px 32px -16px rgba(23,20,15,.3); }
+.smini-play{ position:absolute; right:8px; bottom:8px; z-index:2; width:34px; height:34px; border-radius:50%; background:rgba(254,251,246,.95); color:var(--ink); display:grid; place-items:center; box-shadow:0 6px 16px rgba(23,20,15,.25); }
+.smini-play svg{ width:16px; height:16px; margin-left:2px; }
+.smini-go{ display:inline-flex; align-items:center; gap:6px; margin-top:6px; font:600 13.5px/1 var(--body); color:var(--ink); }
+.smini-go svg{ width:13px; height:13px; }
+/* videolaag */
+.vmodal{ position:fixed; inset:0; z-index:2147482000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(23,20,15,.78); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+.vmodal[hidden]{ display:none; }
+.vmodal-box{ position:relative; width:min(960px,100%); border-radius:18px; overflow:hidden; background:#000; box-shadow:0 30px 80px rgba(0,0,0,.45); }
+.vmodal-box video{ display:block; width:100%; aspect-ratio:16/9; background:#000; }
+.vmodal-x{ position:absolute; top:10px; right:10px; z-index:2; width:38px; height:38px; border-radius:50%; border:0; background:rgba(254,251,246,.92); color:var(--ink); font-size:22px; line-height:1; cursor:pointer; }
+.vmodal-tag{ position:absolute; top:12px; left:12px; z-index:2; pointer-events:none; }
 .brand-loc{ font:600 11.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
 .brand-name{ font-size:44px; line-height:1; letter-spacing:-.02em; }
 .b-maison .brand-name{ font-family:'Fraunces', Georgia, serif; font-weight:400; font-variation-settings:"opsz" 144, "SOFT" 0; }
