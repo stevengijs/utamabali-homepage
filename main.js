@@ -83,7 +83,7 @@
     auto4: 'Your investor portal: contract, progress and documents in one place.',
     auto3: 'At The Maison the construction camera already streams live in the brochure; at the next project soon too, with self check-in through a smart lock.',
     cmpEyebrow: 'Location first', cmpH: 'The place first.<br><span class="accent">The square metres second.</span>',
-    cmpSub: 'A guest books a bedroom in a prime location, not extra square metres. So compact earns more per euro. At MOKA, the compact homes sold first.',
+    cmpSub: 'A guest books a bedroom in a prime location, not extra square metres. So compact earns more per euro.',
     cmpBigK: 'Spacious villa, three bedrooms', cmpBigEx: 'Large pool, large garden, more upkeep', cmpPriceL: 'Investment', cmpRoiL: 'Yield', cmpBigRoi: '≈ 14.0% a year', cmpSmRoi: '≈ 16.4% a year', cmpBigPrice: '€325,000', cmpSmPrice: '€135,000', cmpSmEx: 'Lower entry, less upkeep and staff', cmpBig1: 'Payout ≈ €3,781 a month', cmpBig2: 'On an investment of €325,000', cmpBig3: '€195 a night, realistic scenario', cmpBig4: 'Large pool, large garden, more upkeep',
     cmpSmallK: '1 bedroom Suite', cmpSm1: 'Payout ≈ €1,842 a month', cmpSm2: 'On an investment of €135,000', cmpSm3: '€95 a night, realistic scenario', cmpSm4: 'Lower entry, less upkeep and staff',
     amsK: 'It works the same in the Netherlands', amsA: 'Studio, 40 m²', amsB: 'House, three bedrooms', amsUp: 'Buy €375,000 · rent €1,500 a month · 4.8% a year', amsDown: 'Buy €1,000,000 · rent €3,250 a month · 3.9% a year',
