@@ -156,7 +156,7 @@
     q9: 'What warranty do I get on the construction?',
     a9: 'A five-year warranty on the structure and one year on the finishes. It is in your purchase agreement.',
     q8: 'Where do I start?',
-    a8: 'With an introduction call with Ashley. Your situation first, a project second. Then you choose a project on invest.utamabali.com and read the brochure.',
+    a8: 'With an introduction call with Ashley. Your situation first, a project second. Then you choose a project and read the brochure.', a8Btn1: 'WhatsApp Ashley', a8Txt1: 'Book a fifteen-minute introduction call. Ashley answers herself.', a8Btn2: 'See the projects', a8Txt2: 'All projects with prices and the brochure.',
     ctaEyebrow: 'The next step',
     ctaH: 'You own it. We run it.<br><span class="accent">Four projects came before yours.</span>', ctaP: 'Choose a project, or send Ashley a WhatsApp message.',
     refT: 'Introduce someone who buys a villa. You receive it when the purchase agreement is signed.', refGo: 'How it works',
