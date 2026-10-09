@@ -571,6 +571,24 @@ html.menu-open{ overflow:hidden; }
 .soc-n small{ display:block; margin-top:2px; font-size:9.5px; opacity:.72; }
 .soc-i svg{ width:17px; height:17px; }
 
+/* stap 9: Airbnb-listing (Steven, 9 oktober 2026). Schaalt mee met het vlak: foto vult, gegevens onderin. */
+.step-media.ui-airbnb{ padding:0; display:block; background:#fff; box-shadow:0 0 0 1px var(--line) inset; }
+.abc{ display:flex; flex-direction:column; width:100%; height:100%; color:#222; text-decoration:none; font-family:var(--body); }
+.abc-img{ position:relative; display:block; flex:1; min-height:0; overflow:hidden; background:#ddd; }
+.step-media.ui-airbnb .abc-img img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.abc-brand{ position:absolute; top:8px; left:8px; display:inline-flex; align-items:center; gap:4px; padding:4px 8px 4px 6px; border-radius:999px; background:#fff; font:700 10.5px/1 var(--body); color:#222; box-shadow:0 2px 6px rgba(0,0,0,.18); }
+.abc-brand svg{ width:13px; height:13px; color:#FF385C; }
+.abc-heart{ position:absolute; top:7px; right:8px; width:22px; height:22px; }
+.abc-dots{ position:absolute; left:0; right:0; bottom:7px; display:flex; justify-content:center; gap:4px; }
+.abc-dots i{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.6); }
+.abc-dots i.on{ background:#fff; }
+.abc-info{ display:grid; gap:1px; padding:7px 10px 8px; background:#fff; }
+.abc-row{ display:flex; justify-content:space-between; gap:8px; min-width:0; font:600 12px/1.3 var(--body); color:#222; }
+.abc-row b{ font-weight:600; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.abc-rate{ display:inline-flex; align-items:center; gap:3px; font-weight:500; white-space:nowrap; }
+.abc-rate svg{ width:11px; height:11px; }
+.abc-n{ color:#717171; }
+.abc-sub{ font:400 11.5px/1.3 var(--body); color:#717171; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .step-media.ui-pay{ background:var(--olive-deep); box-shadow:none; padding:18px; }
 .ui-pay-in{ width:100%; display:grid; gap:10px; justify-items:center; }
 .ui-pay-in .mini-note{ max-width:100%; }
