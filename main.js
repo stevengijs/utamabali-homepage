@@ -167,7 +167,7 @@
     altMaisonLiving: 'Impression of the living room of The Maison', altStevenBouw: 'Steven Gijsman on the formwork of a floor slab, with the concrete mixer and rice fields behind',
     altOpgZwembad: 'Delivered villa: the pool along the living room, ready for the first guests', tagDelivered: 'delivered project', altCalmaKeuken: 'Furnished open kitchen of Villa Calma',
     altCalmaan: 'Villa Calmaan, furnished: open kitchen and living area by the pool, ready for the first guests',
-    altCalmaZit: 'Kitchen wall with niches and shelves in Villa Calma', altReload: 'Impression of the view from a roof terrace in Cemagi, over the rice fields to the sea',
+    altCalmaZit: 'Kitchen wall with niches and shelves in Villa Calma', altReload: 'Impression of a bedroom with an arched window and a view over the palms to the sea',
     altCalma: 'Villa Calma: pool along the dining table, with a spiral staircase and palms', altCalmaan2: 'Villa Calmaan: open kitchen and living area by the pool',
     altMokaNu: 'MOKA in Kedungu from the air: a row of white villas next to the rice fields, under construction',
     altSteven: 'Steven Gijsman, founder of UTAMA, reviewing a drawing', altAshley: 'Portrait of Ashley from UTAMA',
