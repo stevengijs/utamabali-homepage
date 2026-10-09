@@ -57,7 +57,7 @@
     s6H: 'Construction', s6P: 'An independent contractor builds. We fix the specifications and are on site every day.',
     s7H: 'Instagrammable', s7P: 'Furniture, decoration and architecture: designed to be photographed. Guests share it.',
     s8H: 'Key handover', s8P: 'Fully furnished and ready to rent. You choose: rent it out, use it yourself or sell.',
-    s9H: 'Fully managed', s9P: 'With our partners we take care of everything: the listing on the platforms, pricing, guest contact, check-in, cleaning and maintenance.', abType: 'Villa in Mengwi, Indonesia', abMeta: '2 guests · 1 bedroom · 1 bed · 1 bath', ariaAbListing: 'View the TEMAN Villas listing on Airbnb', altAbListing: 'TEMAN Villas, one of our delivered villas, as guests see it on Airbnb',
+    s9H: 'Fully managed', s9P: 'With our partners we take care of everything: the listing on the platforms, pricing, guest contact, check-in, cleaning and maintenance.', abType: 'Villa in Pererenan, Bali', abMeta: '2 guests · 1 bedroom · 1 bed · 1 bath', ariaAbListing: 'View the TEMAN Villas listing on Airbnb', altAbListing: 'TEMAN Villas, one of our delivered villas, as guests see it on Airbnb',
     s10Note: 'Payout', s10Cap: 'Month: June', s10H: 'The payout', s10P: 'The rental income every month, to your account in the Netherlands or Indonesia, in euros or rupiah.',
     swipe: 'Swipe for all ten steps',
     gEyebrow: 'Our model', gH: 'Guests book direct more and more.<br><span class="accent">Without the 15% platform commission.</span>',
