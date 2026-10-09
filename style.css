@@ -898,12 +898,13 @@ html.menu-open{ overflow:hidden; }
 .cmp-grid{ display:grid; gap:14px; }
 .cmp-card{ position:relative; margin:0; border-radius:22px; padding:16px; background:var(--sand); box-shadow:0 0 0 1px var(--line); }
 /* inleg als label bovenaan de kaart, over de plattegrond (Steven, 9 oktober 2026) */
-.cmp-price{ position:absolute; top:26px; left:26px; z-index:1; display:inline-flex; align-items:baseline; gap:7px; padding:8px 13px 8px 12px; border-radius:999px; background:var(--ink); color:#fff; box-shadow:0 8px 20px rgba(23,20,15,.18); }
+.cmp-chips{ position:absolute; top:26px; left:26px; right:26px; z-index:1; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; }
+.cmp-price{ display:inline-flex; align-items:baseline; gap:7px; padding:8px 13px 8px 12px; border-radius:999px; background:var(--ink); color:#fff; box-shadow:0 8px 20px rgba(23,20,15,.18); }
 .cmp-price-l{ font:700 10.5px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; opacity:.78; }
 .cmp-price-v{ font:800 15px/1 var(--display); letter-spacing:-.01em; }
 .cmp-card.on .cmp-price{ background:var(--olive-deep); }
 /* rendement als tweede label rechtsboven, zodat inleg en rendement naast elkaar staan (Steven, 9 oktober 2026) */
-.cmp-roi{ left:auto; right:26px; background:var(--paper); color:var(--ink); box-shadow:0 0 0 1px var(--line), 0 8px 20px rgba(23,20,15,.12); }
+.cmp-roi{ background:var(--paper); color:var(--ink); box-shadow:0 0 0 1px var(--line), 0 8px 20px rgba(23,20,15,.12); }
 .cmp-card.on .cmp-roi{ background:var(--paper); color:var(--olive-deep); }
 .cmp-roi .cmp-price-l{ opacity:.62; }
 .cmp-list li.hl{ font-weight:800; color:var(--ink); }
