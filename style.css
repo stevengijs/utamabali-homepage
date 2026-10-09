@@ -902,6 +902,10 @@ html.menu-open{ overflow:hidden; }
 .cmp-price-l{ font:700 10.5px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; opacity:.78; }
 .cmp-price-v{ font:800 15px/1 var(--display); letter-spacing:-.01em; }
 .cmp-card.on .cmp-price{ background:var(--olive-deep); }
+/* rendement als tweede label rechtsboven, zodat inleg en rendement naast elkaar staan (Steven, 9 oktober 2026) */
+.cmp-roi{ left:auto; right:26px; background:var(--paper); color:var(--ink); box-shadow:0 0 0 1px var(--line), 0 8px 20px rgba(23,20,15,.12); }
+.cmp-card.on .cmp-roi{ background:var(--paper); color:var(--olive-deep); }
+.cmp-roi .cmp-price-l{ opacity:.62; }
 .cmp-list li.hl{ font-weight:800; color:var(--ink); }
 .cmp-card.on .cmp-list li.hl{ color:var(--olive-deep); }
 .cmp-card.on{ background:var(--sage); box-shadow:0 0 0 1.5px var(--olive-deep); }
