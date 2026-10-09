@@ -91,7 +91,7 @@
     cmpTag: 'MOKA, one bedroom', altCompact: 'Impression of the living room of a compact one-bedroom home in MOKA',
     lblInterieur: 'Interior',
     bMaisonLine: 'Six homes in a gated community, three minutes by scooter from the beach.',
-    bMokaLine: 'Boutique resort, 600 metres from the beach. Fifteen homes in one community: 14 sold, the last one reserved.',
+    bMokaLine: 'Boutique resort, 600 metres from the beach. Fifteen homes in one community.',
     bReloadLine: 'Next project, revealed soon. From €125,000.',
     altMokaPoster: 'Impression of a villa in MOKA, Kedungu',
     ctaProjects: 'See the projects',
