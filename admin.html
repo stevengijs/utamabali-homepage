@@ -1403,7 +1403,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-08-notitie-in-contact-1';
+const APP_VERSIE='2026-10-11-people-sortering-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -10178,7 +10178,7 @@ async function openForm(resKey,row){
 let PEOPLE=[];
 async function renderPeople(){
   const v=$('#view');
-  v.innerHTML=`<div id="people_banner"></div><div class="panel"><div class="panel-head"><div><h3>People <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">One record per email — click a person for all their data, activity & history.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Search people…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Loading…</div></div></div>`;
+  v.innerHTML=`<div id="people_banner"></div><div class="panel"><div class="panel-head"><div><h3>People <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">Eén persoon per e-mailadres, gesorteerd op laatste activiteit (nieuwste bovenaan). NEW = activiteit of aanvraag in de laatste 7 dagen. Klik op een persoon voor alle gegevens, activiteit en geschiedenis.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Search people…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Loading…</div></div></div>`;
   const [cr,lr,dr,rv,wr,ws]=await Promise.all([
     sb.from('contacts').select('*').order('last_activity_at',{ascending:false,nullsFirst:false}),
     sb.from('leads').select('id,contact_id,type,project,unit,source_page,created_at,handled_at'),
@@ -10433,12 +10433,12 @@ function drawPeople(){
   let rows=PEOPLE; if(q)rows=rows.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
   const tw=$('#tw_people');if(!tw)return;
   if(!rows.length){tw.innerHTML='<div class="empty">No people'+(q?' match your search.':'.')+'</div>';return;}
-  let h='<table><thead><tr><th>Name</th><th>Koopbereidheid</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Flags</th><th>Last activity</th></tr></thead><tbody>';
+  let h='<table><thead><tr><th>Name</th><th title="Sorteervolgorde: nieuwste activiteit bovenaan">Laatste activiteit ↓</th><th>Koopbereidheid</th><th>Email</th><th>Phone</th><th>Inquiries</th><th>Flags</th></tr></thead><tbody>';
   rows.forEach(p=>{
     const projs=[...new Set(p._leads.map(l=>l.project).filter(Boolean))].join(', ');
-    const flags=`${p._isNew?'<span class="badge green">NEW</span> ':''}${(p._webinar||[]).map(w=>`<span class="badge blue" title="Aangemeld voor het webinar">${esc(webinarFlagTekst(w))}</span> `).join('')}${p._deposit?'<span class="badge green">💶 aanbetaling gemeld</span> ':''}${p._itp?'<span class="badge blue">📝 ITP getekend</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
+    const flags=`${p._isNew?'<span class="badge green" title="Activiteit of aanvraag in de laatste 7 dagen">NEW</span> ':''}${(p._webinar||[]).map(w=>`<span class="badge blue" title="Aangemeld voor het webinar">${esc(webinarFlagTekst(w))}</span> `).join('')}${p._deposit?'<span class="badge green">💶 aanbetaling gemeld</span> ':''}${p._itp?'<span class="badge blue">📝 ITP getekend</span> ':''}${p._pending.length?`<span class="badge amber">🔓 dataroom${p._pending.length>1?' ×'+p._pending.length:''}</span> `:''}${p._resv.length?`<span class="badge blue">📌 reservering${p._resv.length>1?' ×'+p._resv.length:''}</span> `:''}${p._activeDr?'<span class="badge grey">🔑 access</span>':''}`.trim()||'<span class="muted">—</span>';
     const warm=warmthBadgeId(p.id)||'<span class="muted" style="font-size:12px">—</span>';
-    h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${p.partner?' '+partnerBadge(p.partner):''}${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td>${warm}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td style="white-space:normal">${flags}</td><td>${fmtDateTime(p.last_activity_at)}</td></tr>`;
+    h+=`<tr data-person="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'—')}</b>${p.partner?' '+partnerBadge(p.partner):''}${projs?`<div class="muted" style="font-size:11px">${esc(projs)}</div>`:''}</td><td style="white-space:nowrap">${fmtDateTime(p.last_activity_at)}</td><td>${warm}</td><td>${esc(p.email)}</td><td>${esc(p.phone||'—')}</td><td><span class="badge ${p._leads.length>1?'amber':'grey'}">${p._leads.length}</span></td><td style="white-space:normal">${flags}</td></tr>`;
   });
   tw.innerHTML=h+'</tbody></table>';
   tw.querySelectorAll('tr[data-person]').forEach(tr=>tr.onclick=()=>openPerson(PEOPLE.find(x=>x.id===tr.dataset.person)));
