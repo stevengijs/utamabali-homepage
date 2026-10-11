@@ -9112,7 +9112,10 @@ function inboxDrawThread(data,keepDraft){
   /* De bot zwijgt niet alleen als de schakelaar uit staat, maar ook zodra het
      gesprek op overname staat, gesloten is of de lead zich afmeldde. Dat stond
      hier niet, dus na een noodrem-overname bleef er "de AI beantwoordt dit
-     gesprek automatisch" staan terwijl er niets meer werd verstuurd. */
+     gesprek automatisch" staan terwijl er niets meer werd verstuurd.
+     Sinds 11 oktober 2026 volgt ai_enabled van de groep de chatkanalen (migratie
+     inbox_groep_ai_vlag_volgt_chatkanalen): bij "Wacht op mens" is hij altijd
+     false, dus de zijbalk toont dan "Terug naar AI" en hieronder staat waarom. */
   const aiStil=['needs_human','closed','opted_out'].includes(cv.status);
   const aiOn=cv.ai_enabled && !aiStil;
   // Which channels can we reply on? Existing bindings + email/WhatsApp when we
@@ -9143,7 +9146,7 @@ function inboxDrawThread(data,keepDraft){
     <div class="ibx-msgs" id="ibx_msgs"></div>
     <div class="ibx-compose">
       ${aiOn?`<div class="ibx-aihint">🤖 De AI beantwoordt dit gesprek automatisch. Zodra jij een bericht stuurt, neem je het over en pauzeert de AI.</div>`
-        :(cv.ai_enabled&&aiStil?`<div class="ibx-aihint">✋ Dit gesprek staat op overname. De AI antwoordt hier niet meer, jij of een collega pakt het op.</div>`:'')}
+        :(cv.status==='needs_human'?`<div class="ibx-aihint">✋ Wacht op mens: de AI staat uit op dit gesprek, jij of een collega pakt het op. Mag de bot weer antwoorden, klik dan "Terug naar AI".</div>`:'')}
       ${edit?`
         <div class="ibx-modetabs" id="ibx_modetabs">
           <button data-mode="msg" class="on">Bericht</button>
