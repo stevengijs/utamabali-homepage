@@ -68,6 +68,8 @@ p{ margin:0; }
 .btn-sm{ min-height:44px; padding:0 18px; font-size:14px; }
 .btn-lg{ min-height:54px; padding:0 26px; font-size:16px; }
 .btn-block{ width:100%; }
+/* Telefoon: een lange knoptekst mag over twee regels in plaats van buiten de kaart te lopen (zie de P&L-knop onder het rekenvoorbeeld) */
+@media (max-width:759px){ .btn{ max-width:100%; white-space:normal; line-height:1.2; text-align:center; } }
 
 /* Rolchips: WIJ is inkt, JIJ is olijf, PARTNER is een open chip. Alles binnen het UTAMA-palet. */
 .role{
@@ -88,6 +90,7 @@ p{ margin:0; }
 }
 .tag-dark{ background:rgba(23,20,15,.55); color:#fff; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
 .tag-sm{ height:21px; padding:0 8px; font-size:9.5px; line-height:21px; left:10px; top:10px; }
+.fnode .tag-sm{ font-size:11px; }
 
 .ico{ position:relative; flex:none; width:38px; height:38px; border-radius:12px; display:grid; place-items:center; }
 .ico svg{ width:19px; height:19px; }
@@ -177,7 +180,7 @@ html.menu-open{ overflow:hidden; }
 .hero-cta .btn{ flex:1 1 auto; }
 .split{ margin-top:18px; font:700 16px/1.6 var(--display); letter-spacing:-.01em; color:var(--ink); }
 
-.hero-photo{ position:relative; margin:0; height:clamp(300px, 44svh, 420px); border-radius:22px; overflow:hidden; }
+.hero-photo{ position:relative; margin:0; height:clamp(260px, 38svh, 420px); border-radius:22px; overflow:hidden; }
 .hero-photo img{ width:100%; height:100%; object-fit:cover; object-position:46% 60%; }
 .hero-photo::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(23,20,15,.18) 0%, rgba(23,20,15,0) 30%, rgba(23,20,15,0) 70%, rgba(23,20,15,.3)); pointer-events:none; }
 .hero-photo .tag{ left:auto; right:12px; top:auto; bottom:12px; }
@@ -198,7 +201,7 @@ html.menu-open{ overflow:hidden; }
 .kpis{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin:0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .kpis > div{ padding:14px 8px 14px 0; min-width:0; }
 .kpis > div + div{ padding-left:12px; border-left:1px solid var(--line); }
-.kpis dt{ font:500 11px/1.3 var(--body); color:var(--muted); letter-spacing:.02em; margin-bottom:6px; }
+.kpis dt{ font:500 12px/1.3 var(--body); color:var(--muted); letter-spacing:.02em; margin-bottom:6px; }
 .kpis dd{ margin:0; font:800 17px/1.15 var(--display); letter-spacing:-.02em; }
 .kpis dd small, .kpis dd.sm{ display:block; font:500 11.5px/1.3 var(--body); color:var(--muted); letter-spacing:0; margin-top:3px; }
 .fine{ margin-top:12px; font-size:12px; line-height:1.5; color:var(--muted); }
@@ -227,6 +230,7 @@ html.menu-open{ overflow:hidden; }
 .flow-notes{ list-style:none; margin:14px 0 0; padding:0; display:grid; gap:8px; }
 .flow-notes li{ padding:10px 12px; border-radius:12px; background:var(--paper); box-shadow:0 0 0 1px var(--line); font:500 13px/1.45 var(--body); color:var(--muted); }
 .flow-notes b{ color:var(--ink); font-weight:700; }
+@media (max-width:759px){ .flow-notes li:first-child{ display:none; } }
 @media (min-width:900px){ .flow-notes{ grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin-top:18px; } }
 .t-axis span:first-child{ grid-column:1; }
 .t-axis .t-axis span:last-child{ grid-column:12; justify-self:end; }
@@ -270,7 +274,10 @@ html.menu-open{ overflow:hidden; }
 .sec-head{ margin-bottom:32px; max-width:780px; }
 .sec h2{ font-weight:800; font-size:clamp(31px, 4.4vw, 58px); line-height:1.04; letter-spacing:-.035em; text-wrap:balance; }
 .sec-sub{ margin-top:14px; font-size:17px; line-height:1.55; color:var(--muted); max-width:36em; }
+.sec-sub, .lead, .faq-a p{ text-wrap:pretty; } /* geen weduwe zoals "is." onder de FAQ-kop; browsers zonder steun negeren het */
 @media (min-width:1024px){ .sec-head{ margin-bottom:56px; } .sec-sub{ font-size:18.5px; } }
+/* Telefoon: 52 px boven en onder per sectie en 26 px onder de kop. Twaalf secties lang scheelt dat ruim 350 px. */
+@media (max-width:759px){ .sec{ padding:52px 0; } .sec-head{ margin-bottom:26px; } }
 
 /* ---------- 2. Product: de geldstroom ---------- */
 .product{ background:var(--paper); }
@@ -278,7 +285,7 @@ html.menu-open{ overflow:hidden; }
 .fnode{ position:relative; background:var(--sand); border-radius:20px; box-shadow:0 0 0 1px var(--line); }
 .fnode .tile{ position:relative; border-radius:14px; overflow:hidden; background:var(--sand-2); }
 .fnode .k{ display:flex; align-items:center; gap:10px; font:600 11px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
-.kn{ display:inline-grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--paper); box-shadow:0 0 0 1px var(--line); font:700 10.5px/1 var(--body); letter-spacing:0; color:var(--ink); }
+.kn{ display:inline-grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--paper); box-shadow:0 0 0 1px var(--line); font:700 11px/1 var(--body); letter-spacing:0; color:var(--ink); }
 .fnode h3{ font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-.025em; }
 .fnode > p:not(.k){ font-size:14px; line-height:1.45; color:var(--muted); }
 
@@ -294,7 +301,7 @@ html.menu-open{ overflow:hidden; }
 .fnode .roles{ grid-column:2; margin:4px 0 4px; }
 .fnode > p:not(.k){ display:none; }
 .fnode + .fnode::before{
-  content:""; position:absolute; left:64px; top:-12px; width:2px; height:12px; margin-left:-1px;
+  content:""; position:absolute; left:68px; top:-12px; width:2px; height:12px; margin-left:-1px;
   background-image:linear-gradient(180deg, var(--olive-deep) 55%, transparent 55%); background-size:2px 6px;
   animation:dashY .7s linear infinite;
 }
@@ -304,18 +311,20 @@ html.menu-open{ overflow:hidden; }
 .tile-img img{ width:100%; height:100%; object-fit:cover; }
 .tile-tx{ display:grid; place-items:center; padding:8px; background:linear-gradient(160deg, var(--sand-2), var(--sand-3)); }
 .tx{ width:100%; max-width:250px; background:var(--paper); border-radius:12px; padding:9px 8px 9px; box-shadow:var(--shadow); }
-.tx-top{ display:flex; justify-content:space-between; gap:6px; font:500 10.5px/1.2 var(--body); color:var(--muted); }
+.tx-top{ display:flex; justify-content:space-between; gap:6px; font:500 11px/1.2 var(--body); color:var(--muted); }
+.tx-top small{ font-size:inherit; }
 .tx-to{ color:var(--ink-soft); display:none; }
 .tx strong{ display:block; font:800 15px/1.1 var(--display); letter-spacing:-.03em; margin:6px 0 8px; white-space:nowrap; }
-.tx strong small{ display:block; font:500 10px/1 var(--body); color:var(--muted); letter-spacing:0; margin-bottom:3px; }
+.tx strong small{ display:block; font:500 11px/1 var(--body); color:var(--muted); letter-spacing:0; margin-bottom:3px; }
 .tx-bar{ display:block; height:5px; border-radius:5px; background:var(--sand-2); overflow:hidden; }
 .tx-bar i{ display:block; height:100%; width:100%; border-radius:5px; background:linear-gradient(90deg, var(--ink-soft), var(--ink)); }
 .tx-plus{ display:block; margin-top:7px; font:500 9.5px/1.25 var(--body); color:var(--muted); white-space:nowrap; letter-spacing:-.01em; }
 .tile-pf{ display:flex; align-items:center; padding:8px; background:var(--sand-2); }
-.pfs{ display:flex; flex-wrap:wrap; gap:4px; }
-.pf{ font:600 10px/1 var(--body); padding:6px 7px; border-radius:999px; background:var(--paper); color:var(--ink-soft); box-shadow:0 0 0 1px var(--line); white-space:nowrap; }
+.pfs{ display:flex; flex-wrap:wrap; gap:4px; min-width:0; width:100%; }
+.pf{ font:600 11px/1 var(--body); padding:6px 7px; border-radius:999px; background:var(--paper); color:var(--ink-soft); box-shadow:0 0 0 1px var(--line); white-space:nowrap; }
 .pf:nth-child(n+4){ display:none; }
 .pf.pf-goal{ display:inline-block; background:transparent; color:var(--olive-deep); box-shadow:none; border:1.5px dashed var(--olive-deep); }
+@media (max-width:599px){ .pf:nth-child(3){ display:none; } .pf.pf-goal{ white-space:normal; text-align:center; line-height:1.2; } }
 .fnode.pay{ background:var(--olive-deep); box-shadow:none; color:#fff; }
 .fnode.pay .k{ color:rgba(255,255,255,.78); }
 .fnode.pay .kn{ background:rgba(255,255,255,.14); box-shadow:none; color:#fff; }
@@ -333,10 +342,10 @@ html.menu-open{ overflow:hidden; }
 .tile-pay .ghost1, .tile-pay .ghost2{ position:absolute; height:44px; box-shadow:none; padding:0; }
 .tile-pay .ghost1{ width:calc(100% - 28px); background:rgba(254,251,246,.5); transform:translateY(-14px); z-index:1; }
 .tile-pay .ghost2{ width:calc(100% - 44px); background:rgba(254,251,246,.22); transform:translateY(-26px); z-index:0; }
-.tile-pay .mini-note{ flex-direction:column; align-items:flex-start; gap:6px; padding:9px; }
+.tile-pay .mini-note{ flex-direction:column; align-items:flex-start; gap:6px; padding:9px 8px; }
 .tile-pay .mini-note .ico{ display:none; }
 .tile-pay .mini-note b{ font-size:11.5px; }
-.tile-pay .mini-note small{ font-size:9.5px; }
+.tile-pay .mini-note small{ font-size:11px; }
 .tile-pay .mini-note em{ font-size:16px; }
 
 @media (min-width:600px){
@@ -384,7 +393,7 @@ html.menu-open{ overflow:hidden; }
 
 /* De rekensom */
 .calc{ display:grid; gap:14px; margin-top:16px; }
-.sum{ position:relative; overflow:hidden; border-radius:22px; padding:22px 20px 20px; background:var(--ink); color:var(--paper); }
+.sum{ position:relative; overflow:hidden; border-radius:22px; padding:20px 18px 18px; background:var(--ink); color:var(--paper); }
 .sum::after{ content:""; position:absolute; right:-120px; bottom:-140px; width:340px; height:340px; border-radius:50%; background:radial-gradient(circle, rgba(156,164,124,.32), rgba(156,164,124,0) 68%); pointer-events:none; }
 .sum-k{ font:600 11px/1.45 var(--body); letter-spacing:.12em; text-transform:uppercase; color:rgba(254,251,246,.66); }
 /* Drie losse feiten onder elkaar, elk met zijn bron. Geen pijl: het ene volgt niet uit het andere. */
@@ -395,7 +404,7 @@ html.menu-open{ overflow:hidden; }
 .big .num{ font:800 clamp(34px, 9vw, 50px)/.95 var(--display); letter-spacing:-.05em; white-space:nowrap; }
 .big dd{ display:grid; gap:3px; }
 .big dd b{ font:600 13.5px/1.3 var(--body); color:var(--paper); }
-.big dd small{ font:500 11.5px/1.3 var(--body); color:rgba(254,251,246,.58); }
+.big dd small{ font:500 12px/1.3 var(--body); color:rgba(254,251,246,.68); }
 .big.olive .num{ color:var(--olive-3); }
 .formula{
   position:relative; z-index:1; display:flex; flex-wrap:wrap; align-items:center; gap:6px;
@@ -412,6 +421,7 @@ html.menu-open{ overflow:hidden; }
 .year h3{ font-weight:800; font-size:18px; line-height:1.2; letter-spacing:-.02em; }
 .year-h p{ font-size:13px; color:var(--muted); margin-top:4px; }
 .year-pill{ flex:none; font:700 12px/1 var(--body); padding:8px 10px; border-radius:999px; background:var(--sage); color:var(--olive-deep); }
+@media (max-width:759px){ .year-pill{ display:none; } }
 .bars{
   --H:120px; position:relative; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)) auto; gap:4px; align-items:end;
   height:var(--H); border-bottom:1.5px solid var(--ink); margin:40px 0 26px;
@@ -421,7 +431,7 @@ html.menu-open{ overflow:hidden; }
 .bar.s-hoog{ background:var(--olive); }
 .bar.s-laag{ background:#E1E5CF; }
 .bar:hover, .bar:focus-visible, .bar.sel{ background:var(--olive-deep); }
-.seasons{ display:flex; flex-wrap:wrap; gap:4px 14px; margin:6px 0 12px; font:500 11.5px/1.4 var(--body); color:var(--muted); }
+.seasons{ display:flex; flex-wrap:wrap; gap:4px 14px; margin:6px 0 12px; font:500 12px/1.4 var(--body); color:var(--muted); }
 .seasons > span{ display:inline-flex; align-items:center; gap:6px; }
 .sw{ display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--olive-2); }
 .sw.hoog{ background:var(--olive); }
@@ -435,7 +445,7 @@ html.menu-open{ overflow:hidden; }
   opacity:0; transition:opacity .25s var(--ease), left .35s var(--ease), top .35s var(--ease);
 }
 .bar-tip.show{ opacity:1; }
-.bar-tip::after{ content:""; position:absolute; left:50%; top:100%; width:10px; height:10px; background:var(--ink); transform:translate(-50%, -55%) rotate(45deg); border-radius:2px; }
+.bar-tip::after{ content:""; position:absolute; left:var(--ax, 50%); top:100%; width:10px; height:10px; background:var(--ink); transform:translate(-50%, -55%) rotate(45deg); border-radius:2px; }
 .bar-tip b{ font:800 15px/1 var(--display); letter-spacing:-.02em; color:var(--olive-3); }
 .bar-tip small{ font:500 10.5px/1.2 var(--body); color:rgba(254,251,246,.72); }
 .year-split{ margin:4px 0 14px; padding:14px 16px 12px; border-radius:14px; background:var(--paper); box-shadow:0 0 0 1px var(--line); }
@@ -445,6 +455,11 @@ html.menu-open{ overflow:hidden; }
 .ys-toggle button{ appearance:none; border:0; margin:0; padding:6px 11px; white-space:nowrap; border-radius:999px; background:transparent; font:600 12px/1 var(--body); color:var(--muted); cursor:pointer; transition:background .2s, color .2s; }
 .ys-toggle button.on{ background:var(--ink); color:var(--paper); }
 .ys-toggle button:focus-visible{ outline:2px solid var(--olive-deep); outline-offset:2px; }
+@media (max-width:759px){
+  .ys-h{ flex-direction:column; align-items:stretch; gap:10px; margin-bottom:10px; }
+  .ys-toggle{ display:flex; }
+  .ys-toggle button{ flex:1; min-height:38px; padding:0 12px; font-size:13px; }
+}
 .year-split dl{ margin:0; display:grid; }
 .year-split dl > div{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:7px 0; border-top:1px solid var(--line); }
 .year-split dt{ font:500 13px/1.3 var(--body); color:var(--muted); }
@@ -452,15 +467,16 @@ html.menu-open{ overflow:hidden; }
 .year-split .ys-net{ border-top:1.5px solid var(--ink); margin-top:2px; padding-top:10px; }
 .year-split .ys-net dt{ color:var(--ink); font-weight:700; }
 .year-split .ys-net dd{ font:800 18px/1 var(--display); letter-spacing:-.02em; color:var(--olive-deep); }
-.bar > span{ position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:8px; font:500 10px/1 var(--body); color:var(--muted); white-space:nowrap; }
+.bar > span{ position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:8px; font:500 11px/1 var(--body); color:var(--muted); white-space:nowrap; }
 /* Smal: alleen elke derde maand zichtbaar, de rest visueel verborgen maar wel leesbaar voor hulptechnologie */
 .bar:not(.lbl) > span{ width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
 .bars-total{ align-self:start; display:grid; justify-items:end; padding-left:8px; margin-left:4px; border-left:1px dashed var(--line); height:100%; align-content:start; }
 .bars-total b{ font:800 15px/1 var(--display); letter-spacing:-.03em; color:var(--olive-deep); white-space:nowrap; }
-.bars-total small{ font:500 10.5px/1.2 var(--body); color:var(--muted); margin-top:4px; }
-.year-note{ font-size:12px; line-height:1.45; color:var(--muted); }
+@media (max-width:759px){ .bars-total{ display:none; } .bars{ grid-template-columns:repeat(12,minmax(0,1fr)); } }
+.bars-total small{ font:500 11px/1.2 var(--body); color:var(--muted); margin-top:4px; }
+.year-note{ font-size:13px; line-height:1.5; color:var(--muted); }
 
-.source{ margin-top:20px; font-size:12.5px; line-height:1.55; color:var(--muted); max-width:62em; }
+.source{ margin-top:20px; font-size:13px; line-height:1.55; color:var(--muted); max-width:62em; }
 .source a{ color:var(--ink-soft); text-underline-offset:2px; }
 
 @media (min-width:900px){
@@ -488,6 +504,11 @@ html.menu-open{ overflow:hidden; }
 .atoz-head{ max-width:none; display:grid; gap:20px; align-items:end; }
 .legend{ list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:10px 16px; }
 .legend li{ display:flex; align-items:center; gap:8px; font:500 13.5px/1 var(--body); color:var(--ink-soft); }
+@media (max-width:759px){
+  .legend{ display:grid; grid-template-columns:auto 1fr; gap:10px 8px; align-items:center; }
+  .legend li{ display:contents; }
+  .legend .role{ justify-self:start; }
+}
 @media (min-width:1024px){
   .atoz-head{ grid-template-columns:minmax(0,1fr) auto; }
   .legend{ flex-direction:column; gap:10px; padding:16px 18px; border-radius:16px; background:var(--paper); box-shadow:0 0 0 1px var(--line); }
@@ -569,7 +590,12 @@ html.menu-open{ overflow:hidden; }
 .soc-n{ position:absolute; left:10px; right:10px; top:40px; display:block; padding:7px 9px; border-radius:9px; background:rgba(23,20,15,.74); color:#fff; font:500 10.5px/1.35 var(--body); backdrop-filter:blur(3px); }
 .soc-n b{ font-weight:800; }
 .soc-n small{ display:block; margin-top:2px; font-size:9.5px; opacity:.72; }
+@media (max-width:759px){ .soc-n{ display:none; } }
 .soc-i svg{ width:17px; height:17px; }
+@media (max-width:759px){
+  .atoz .tag-sm{ font-size:11px; }
+  .ui-cap-dark{ font-size:11px; }
+}
 
 /* stap 9: Airbnb-listing (Steven, 9 oktober 2026). Schaalt mee met het vlak: foto vult, gegevens onderin. */
 .step-media.ui-airbnb{ padding:0; display:block; background:#fff; box-shadow:0 0 0 1px var(--line) inset; }
@@ -595,6 +621,7 @@ html.menu-open{ overflow:hidden; }
 
 .swipe-hint{ display:flex; align-items:center; gap:8px; margin-top:0; font:500 13px/1 var(--body); color:var(--muted); }
 .swipe-hint svg{ width:14px; height:14px; }
+@media (max-width:759px){ .atoz .sec-cta .btn{ width:100%; } }
 
 @media (min-width:640px){ .steps{ grid-auto-columns:46%; } }
 @media (min-width:768px){ .steps-vp{ margin:0 -32px; } .steps{ padding-inline:32px; scroll-padding-inline:32px; } }
@@ -649,6 +676,12 @@ html.menu-open{ overflow:hidden; }
 .reel-views{ position:absolute; z-index:2; left:8px; top:68px; padding:4px 8px; border-radius:999px; background:rgba(23,20,15,.62); color:#fff; font:600 9.5px/1 var(--body); backdrop-filter:blur(3px); }
 .reel-views b{ font-weight:800; }
 .reel-src{ grid-column:1; grid-row:2; align-self:start; margin:8px 2px 0; font:500 10.5px/1.35 var(--body); color:rgba(254,251,246,.55); }
+@media (max-width:759px){
+  .reel-views{ font-size:11px; }
+  .reel-rail span{ font-size:10.5px; }
+  .reel-src{ font-size:11.5px; color:rgba(254,251,246,.65); }
+  .guests .tag-sm{ font-size:11px; }
+}
 .m-src{ grid-template-rows:auto auto; }
 .m-src-t{ grid-column:2; grid-row:1 / span 2; }
 .reel-frame{ grid-column:1; grid-row:1; }
@@ -670,8 +703,10 @@ html.menu-open{ overflow:hidden; }
 .lane-a{ background:linear-gradient(150deg, rgba(156,164,124,.28), rgba(156,164,124,.1)); box-shadow:0 0 0 1px rgba(156,164,124,.55) inset; }
 .lane-a .m-k{ color:var(--olive-3); display:flex; align-items:center; gap:8px; }
 .lane-soon{ font:600 9.5px/1 var(--body); letter-spacing:.1em; padding:4px 7px; border-radius:999px; border:1px dashed rgba(201,209,166,.7); color:var(--olive-3); }
+@media (max-width:759px){ .lane-soon{ display:none; } }
 .lane-badge{ align-self:flex-start; display:inline-flex; align-items:center; gap:8px; margin-top:14px; font:700 12.5px/1 var(--body); padding:8px 12px; border-radius:999px; background:var(--olive); color:var(--ink); }
 .lane-badge svg{ width:14px; height:14px; }
+@media (max-width:759px){ .lane-badge{ line-height:1.3; } }
 .lane-b{ background:rgba(254,251,246,.04); box-shadow:0 0 0 1px rgba(254,251,246,.12) inset; }
 .chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
 .chips span{ font:600 12px/1 var(--body); padding:8px 10px; border-radius:999px; background:rgba(254,251,246,.08); color:rgba(254,251,246,.88); box-shadow:0 0 0 1px rgba(254,251,246,.1) inset; }
@@ -686,6 +721,8 @@ html.menu-open{ overflow:hidden; }
 .merge-k{ font:700 10.5px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; padding:6px 8px; border-radius:999px; background:rgba(255,255,255,.14); }
 .merge-arr{ width:28px; height:14px; color:rgba(255,255,255,.7); }
 .merge b{ font:800 16px/1.2 var(--display); letter-spacing:-.01em; }
+.merge-out{ display:inline-flex; align-items:center; gap:10px; min-width:0; }
+@media (max-width:759px){ .merge-k{ font-size:11px; } }
 .model-note{ margin-top:18px; font-size:13px; line-height:1.55; color:rgba(254,251,246,.62); max-width:56em; }
 @media (min-width:900px){
   .model{ grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr); gap:0; align-items:stretch; }
@@ -719,7 +756,7 @@ html.menu-open{ overflow:hidden; }
 .b-maison .bm-main img{ object-position:44% 60%; }
 .b-reload .bm-main img{ object-position:72% 50%; }
 .brand-body{ padding:8px 10px 12px; display:flex; flex-direction:column; align-items:flex-start; }
-.brand-mini{ display:grid; gap:14px; }
+.brand-mini{ display:grid; gap:12px; }
 .bmini{ display:block; border-radius:22px; background:var(--sand); box-shadow:0 0 0 1px var(--line); padding:8px; color:var(--ink); text-decoration:none; transition:transform .25s var(--ease), box-shadow .25s var(--ease); }
 .bmini:hover{ transform:translateY(-3px); box-shadow:0 0 0 1px var(--line), 0 18px 40px -18px rgba(23,20,15,.35); }
 .bmini-img{ position:relative; display:block; aspect-ratio:4/3; border-radius:16px; overflow:hidden; background:var(--ph); }
@@ -735,6 +772,9 @@ html.menu-open{ overflow:hidden; }
 .b-teaser .tz-bg{ position:absolute; inset:0; background-size:cover; background-position:30% 50%; transform:scale(1.06); }
 .b-teaser .tz-bg::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(23,21,18,.18), rgba(23,21,18,.66)); }
 .b-teaser .tz-c{ position:relative; z-index:1; display:grid; justify-items:center; gap:12px; max-width:300px; }
+@media (max-width:759px){
+  .bmini.b-teaser{ min-height:320px; }
+}
 .tz-tag{ font:700 11px/1.3 var(--body); letter-spacing:.16em; text-transform:uppercase; color:#f0c9a8; }
 .tz-t{ font:800 24px/1.2 var(--display); letter-spacing:-.01em; color:#fff; }
 .tz-price{ margin-top:2px; padding:8px 14px; border-radius:999px; background:rgba(254,251,246,.14); border:1px solid rgba(254,251,246,.4); font:700 14px/1.2 var(--body); color:#fff; }
@@ -753,14 +793,39 @@ html.menu-open{ overflow:hidden; }
 .bmini-mix span{ padding:5px 10px; border-radius:999px; background:var(--paper); box-shadow:0 0 0 1px var(--line); font:700 12px/1 var(--body); letter-spacing:.02em; color:var(--ink); }
 .bmini-go{ display:inline-flex; align-items:center; gap:8px; margin-top:12px; font:600 14px/1 var(--body); color:var(--ink); }
 .bmini-go .arr{ width:14px; height:14px; }
+@media (max-width:759px){
+  .bmini-go{ display:flex; justify-content:center; min-height:46px; margin-top:16px; border-radius:999px; box-shadow:inset 0 0 0 1.5px rgba(23,20,15,.2); }
+  .tz-go{ min-height:46px; padding:0 20px; border-radius:999px; box-shadow:inset 0 0 0 1.5px rgba(254,251,246,.45); margin-top:4px; }
+}
 .sec-cta{ display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; margin:36px 0 0; }
+/* De knop onder de tien stappen staat buiten .wrap (in .atoz-stage) en kreeg dus geen kantlijn: dezelfde maten als .wrap. */
+.atoz-stage > .sec-cta{ width:100%; max-width:1312px; margin-inline:auto; padding-inline:16px; }
+@media (min-width:768px){ .atoz-stage > .sec-cta{ padding-inline:32px; } }
+@media (min-width:1200px){ .atoz-stage > .sec-cta{ padding-inline:48px; } }
 .sec-cta .btn{ margin-top:0; }
 .sec-cta-note{ font:500 14px/1.4 var(--body); color:var(--muted); }
+/* Telefoon: de knop "Investeer mee" in de vaste nav staat altijd in beeld. Eén volle knop na de projecten en na het bewijs is genoeg;
+   de vier andere herhalingen en de zes keer dezelfde bijschriftregel gaan op de telefoon weg (het bijschrift blijft één keer, bij de projecten). */
+@media (max-width:759px){
+  .sec-cta{ margin-top:28px; }
+  .sec-cta .btn{ width:100%; }
+  .sec-cta-note{ display:none; }
+  .projects .sec-cta-note{ display:block; width:100%; text-align:center; font-size:13px; }
+  .atoz .sec-cta, .smart .sec-cta, .compact .sec-cta, .sure .sec-cta{ display:none; }
+}
 .sec-cta-big{ margin-top:28px; padding:22px 24px; border-radius:20px; background:var(--sage); box-shadow:0 0 0 1px var(--line); gap:14px 22px; }
 .sec-cta-txt{ display:grid; gap:4px; flex:1 1 320px; min-width:0; }
 .sec-cta-txt b{ font:800 18px/1.25 var(--display); letter-spacing:-.01em; color:var(--ink); }
 .sec-cta-txt span{ font:400 14.5px/1.5 var(--body); color:var(--ink-soft); }
 .sec-cta-link{ flex-basis:100%; font:600 13.5px/1.4 var(--body); color:var(--olive-deep); text-decoration:underline; text-underline-offset:3px; }
+@media (max-width:759px){
+  .projects .sec-cta .btn{ width:100%; }
+}
+@media (max-width:759px){
+  .sec-cta-big{ padding:20px 18px; }
+  .sec-cta-big .btn{ width:100%; white-space:normal; text-align:center; line-height:1.25; padding:12px 18px; }
+  .sec-cta-big .btn > span{ text-wrap:balance; }
+}
 @media (min-width:760px){ .brand-mini{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; } }
 /* eerder uitverkocht: bewijs onder de merkkaarten (Steven, 9 oktober 2026) */
 .sold-row{ margin-top:26px; }
@@ -790,6 +855,11 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .smini-status{ margin-top:4px; justify-self:start; }
 .smini-go{ display:inline-flex; align-items:center; gap:6px; margin-top:6px; font:600 13.5px/1 var(--body); color:var(--ink); }
 .smini-go svg{ width:13px; height:13px; }
+@media (max-width:759px){
+  .smini{ gap:12px; }
+  .smini-img{ flex-basis:40%; aspect-ratio:1/1; }
+  .smini-status{ padding:0; background:none; box-shadow:none; font-size:11.5px; }
+}
 /* videolaag */
 .vmodal{ position:fixed; inset:0; z-index:2147482000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(23,20,15,.78); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
 .vmodal[hidden]{ display:none; }
@@ -836,9 +906,18 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .mp.on{ background:var(--ink); color:var(--paper); box-shadow:none; }
 .mp.on small{ color:rgba(254,251,246,.7); }
 .mp:focus-visible{ outline:2px solid var(--olive-deep); outline-offset:2px; }
+@media (max-width:759px){
+  .map-list{ padding:12px 40px 6px 12px; scroll-snap-type:x proximity; scroll-padding-inline:12px; -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent); mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent); }
+  .mp{ scroll-snap-align:start; }
+  .mp small{ font-size:0; line-height:0; }
+  .mp small > span:first-child{ display:block; font-size:11px; line-height:1.2; }
+  .mp small > span + span{ display:none; }
+}
 .map-frame{ position:relative; aspect-ratio:4/3; background:#ECEEE2; }
 .gmap{ position:absolute; inset:0; width:100%; height:100%; border:0; display:block; }
+@media (hover:none) and (pointer:coarse){ .gmap{ pointer-events:none; } }
 .map-open{ position:absolute; right:10px; bottom:10px; padding:7px 11px; border-radius:999px; background:var(--ink); color:var(--paper); font:600 11.5px/1 var(--body); text-decoration:none; box-shadow:var(--shadow); }
+@media (max-width:759px){ .map-open{ display:inline-flex; align-items:center; min-height:44px; padding:0 16px; font-size:12.5px; } }
 @media (min-width:900px){
   .map-ui{ grid-template-columns:230px minmax(0,1fr); }
   .map-list{ flex-direction:column; gap:4px; padding:14px 10px 14px 14px; overflow:visible; border-right:1px solid var(--line); }
@@ -866,6 +945,7 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .bali .compass path{ fill:var(--ink); }
 .bali .compass text{ font:700 10px var(--body); fill:var(--ink); text-anchor:middle; }
 .map-card figcaption{ display:grid; gap:6px; padding:16px 18px 18px; border-top:1px solid var(--line); }
+@media (max-width:759px){ .map-card figcaption{ display:none; } }
 .mc-k{ font:600 10.5px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
 .mc-t{ font-size:14.5px; line-height:1.45; color:var(--ink-soft); }
 .smart-side{ display:grid; gap:14px; }
@@ -888,6 +968,7 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
   .map-card figcaption{ grid-template-columns:auto 1fr; align-items:baseline; gap:20px; padding:18px 24px 20px; }
   .auto-card, .compact-card{ padding:24px 26px; }
 }
+@media (max-width:759px){ .smart .sec-cta{ display:none; } }
 
 /* ---------- 7. Bewijs en mensen ---------- */
 .proof{ background:var(--paper); }
@@ -902,6 +983,12 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .pf-name{ font:800 15px/1.1 var(--display); color:#fff; letter-spacing:-.01em; margin-right:4px; }
 .pf-st{ font:600 10.5px/1 var(--body); padding:6px 8px; border-radius:999px; background:rgba(254,251,246,.92); color:var(--ink); }
 .pf-st.ok{ background:var(--ok); color:#fff; }
+/* Telefoon: chips op de brede kaarten naar 11px. In de smalle Calmaan-kaart past de chip net niet altijd op een regel (NL 145,9 px in 145,5 px, EN 152,7 px), dus iets meer ruimte en een nette tweede regel als het toch moet */
+@media (max-width:759px){
+  .pf-calma .pf-st, .pf-moka .pf-st{ font-size:11px; }
+  .pf-calmaan figcaption{ left:8px; right:8px; bottom:8px; }
+  .pf-calmaan .pf-st{ padding:5px 7px; line-height:1.3; }
+}
 .pf-calma{ grid-column:1 / -1; aspect-ratio:3/2; }
 .pf-calmaan{ aspect-ratio:3/4; }
 .pf-moka{ grid-column:1 / -1; aspect-ratio:3/2; }
@@ -921,6 +1008,11 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .track li + li{ border-top:1px solid var(--line); }
 .track em{ font-style:normal; font:600 11.5px/1 var(--body); padding:6px 9px; border-radius:999px; background:var(--sand-2); color:var(--ink-soft); white-space:nowrap; }
 .track em.ok{ background:rgba(46,125,91,.12); color:var(--ok); }
+@media (max-width:759px){
+  .pf-list{ padding:16px 16px 8px; }
+  .track li{ flex-wrap:wrap; }
+  .track em{ margin-left:auto; }
+}
 
 /* ---------- 11. De mensen ---------- */
 .people-sec{ background:var(--sand); }
@@ -928,7 +1020,17 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .site-ph{ position:relative; margin:0; aspect-ratio:4/3; border-radius:14px; overflow:hidden; }
 .site-ph img{ width:100%; height:100%; object-fit:cover; display:block; transition:transform 1.2s var(--ease); }
 .site-ph:hover img{ transform:scale(1.04); }
+/* Telefoon: vier van de acht bouwfoto's (Steven op de bouw, de voorman op de fundering, de opgeleverde villa en MOKA van boven); scheelt twee rijen, geen feit verloren */
+@media (max-width:759px){ .site-ph:nth-child(n+3):nth-child(-n+6){ display:none; } }
+@media (max-width:759px){ .site-grid .site-ph:nth-child(n+5){ display:none; } }
 .site-ph figcaption{ position:absolute; left:8px; bottom:8px; padding:4px 8px; border-radius:999px; background:rgba(23,20,15,.72); color:#fff; font:600 10px/1.2 var(--body); letter-spacing:.06em; text-transform:uppercase; }
+/* Telefoon: de pil houdt rechts dezelfde 8 px als links, een lang bijschrift loopt niet meer tot op de tegelrand */
+@media (max-width:759px){ .site-ph figcaption{ max-width:calc(100% - 16px); } }
+/* Telefoon: geen pil van twee regels op 10px, maar een leesbaar bijschrift op een verloop, zoals de bewijskaarten */
+@media (max-width:759px){
+  .site-ph::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(23,20,15,0) 48%, rgba(23,20,15,.62)); pointer-events:none; }
+  .site-ph figcaption{ left:10px; right:10px; bottom:9px; z-index:2; padding:0; border-radius:0; background:none; font:700 11.5px/1.25 var(--body); letter-spacing:.01em; text-transform:none; text-shadow:0 1px 2px rgba(23,20,15,.4); }
+}
 .team-line{ margin-top:14px; font-size:14px; line-height:1.55; color:var(--muted); max-width:62em; }
 .faq-cta{ display:grid; gap:12px; margin-top:12px; }
 .faq-cta > div{ display:grid; gap:6px; justify-items:start; }
@@ -948,6 +1050,12 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .person-t p:not(.m-k){ margin-top:6px; font-size:14.5px; line-height:1.5; color:var(--muted); }
 .person-t .m-k{ margin-bottom:6px; }
 .person-t .btn{ margin-top:14px; min-height:44px; }
+/* Telefoon: de foto vult de hele kaarthoogte, zodat hij niet los in het midden zweeft */
+@media (max-width:759px){
+  .person{ align-items:stretch; }
+  .person-img{ position:relative; aspect-ratio:auto; min-height:150px; }
+  .person-img img{ position:absolute; inset:0; }
+}
 @media (min-width:700px){
   .people{ grid-template-columns:1fr 1fr; }
 }
@@ -971,11 +1079,17 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .compact{ background:var(--paper); }
 .cmp-grid{ display:grid; gap:14px; }
 .cmp-card{ position:relative; margin:0; border-radius:22px; padding:16px; background:var(--sand); box-shadow:0 0 0 1px var(--line); }
+@media (max-width:759px){ .cmp-card{ padding:20px; } }
 /* inleg als label bovenaan de kaart, over de plattegrond (Steven, 9 oktober 2026) */
 .cmp-chips{ position:absolute; top:26px; left:26px; right:26px; z-index:1; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; }
 .cmp-price{ display:inline-flex; align-items:baseline; gap:7px; padding:8px 13px 8px 12px; border-radius:999px; background:var(--ink); color:#fff; box-shadow:0 8px 20px rgba(23,20,15,.18); }
-.cmp-price-l{ font:700 10.5px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; opacity:.78; }
+.cmp-price-l{ font:700 11px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; opacity:.78; }
 .cmp-price-v{ font:800 15px/1 var(--display); letter-spacing:-.01em; }
+@media (max-width:759px){
+  .cmp-chips{ position:static; margin:0 0 12px; }
+  .cmp-chips .cmp-price{ flex:1 1 0; min-width:max-content; flex-direction:column; align-items:flex-start; gap:5px; padding:10px 13px; border-radius:16px; }
+  .plan{ height:160px; }
+}
 .cmp-card.on .cmp-price{ background:var(--olive-deep); }
 /* rendement als tweede label rechtsboven, zodat inleg en rendement naast elkaar staan (Steven, 9 oktober 2026) */
 .cmp-roi{ background:var(--paper); color:var(--ink); box-shadow:0 0 0 1px var(--line), 0 8px 20px rgba(23,20,15,.12); }
@@ -1016,9 +1130,14 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .ams-v svg{ width:14px; height:14px; }
 .ams-v.up{ color:var(--olive-3); }
 .ams-v.down{ color:rgba(254,251,246,.6); }
+@media (max-width:759px){
+  .ams-v{ font-size:12.5px; line-height:1.35; align-items:flex-start; text-wrap:balance; }
+  .ams-v svg{ flex:none; margin-top:2px; }
+}
 .ams-p{ margin-top:14px; padding-top:12px; border-top:1px solid rgba(254,251,246,.14); font-size:14px; line-height:1.45; color:rgba(254,251,246,.82); }
 .cmp-photo{ position:relative; margin:0; border-radius:22px; overflow:hidden; aspect-ratio:3/2; }
 .cmp-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+@media (max-width:759px){ .cmp-photo .tag{ height:24px; padding:0 10px; font-size:10.5px; line-height:24px; } }
 @media (min-width:700px){ .cmp-grid{ grid-template-columns:1fr 1fr; } .cmp-ams, .cmp-photo{ grid-column:1 / -1; } .cmp-photo{ aspect-ratio:21/9; } }
 @media (min-width:1024px){
   .cmp-grid{ grid-template-columns:repeat(12,minmax(0,1fr)); gap:20px; }
@@ -1030,6 +1149,11 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
   .ams-l{ font-size:14.5px; }
   .ams-p{ font-size:15.5px; }
 }
+@media (max-width:759px){
+  .compact .sec-cta{ display:grid; gap:10px; }
+  .compact .sec-cta .btn{ width:100%; }
+  .compact .sec-cta-note{ text-align:center; }
+}
 
 /* ---------- 7. Gezond en in beeld ---------- */
 .wellness{ background:var(--sand); }
@@ -1037,14 +1161,25 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .well-hero{ position:relative; grid-column:1 / -1; margin:0; aspect-ratio:16/9; border-radius:22px; overflow:hidden; }
 .well-hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .well-hero .tag{ left:auto; right:12px; top:auto; bottom:12px; }
+@media (max-width:759px){
+  .well-hero .tag{ max-width:272px; height:auto; min-height:24px; white-space:normal; line-height:1.3; padding:5px 10px; text-align:right; font-size:11px; }
+}
 .wpin{ position:absolute; left:var(--x); top:var(--y); transform:translate(-50%,-50%); display:flex; align-items:center; gap:8px; z-index:3; }
 .wpin i{ display:block; flex:none; width:12px; height:12px; border-radius:50%; background:var(--paper); box-shadow:0 0 0 3px rgba(23,20,15,.4), 0 0 0 7px rgba(254,251,246,.35); }
 .wpin b{ font:700 10.5px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; padding:7px 9px; border-radius:999px; background:rgba(23,20,15,.74); color:#fff; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); white-space:nowrap; }
+@media (max-width:759px){
+  .wpin{ transform:translate(-6px,-50%); gap:6px; }
+  .wpin b{ font-size:11px; padding:5px 8px; }
+  .well-hero .wpin:nth-of-type(2){ flex-direction:row-reverse; transform:translate(calc(-100% + 6px),-50%); }
+}
 .well-tile{ position:relative; margin:0; border-radius:18px; overflow:hidden; aspect-ratio:4/5; }
 .well-tile img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .well-tile::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(23,20,15,0) 55%, rgba(23,20,15,.62)); pointer-events:none; }
 .well-tile figcaption{ position:absolute; inset:0; z-index:2; }
 .wt-cap{ position:absolute; left:12px; right:12px; bottom:12px; font:700 14px/1.25 var(--display); color:#fff; letter-spacing:-.01em; }
+@media (max-width:759px){
+  .well-tile .tag, .bmini-img .tag, .smini-img .tag{ height:24px; padding:0 10px; font-size:10.5px; line-height:24px; }
+}
 .well-partners{ grid-column:1 / -1; border-radius:22px; padding:20px; background:var(--paper); box-shadow:0 0 0 1px var(--line); }
 /* Naamchips. Het logo-slot (.plogo) staat in de markup en gaat aan zodra de klasse "names" van de lijst gaat. */
 .pchips{ list-style:none; margin:6px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:8px; }
@@ -1054,6 +1189,13 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .plogo img{ height:100%; width:auto; filter:brightness(0); opacity:.8; }
 .pchips.names .plogo{ display:none; }
 .wp-p{ margin-top:12px; font-size:13.5px; line-height:1.5; color:var(--muted); }
+@media (max-width:759px){
+  .pchips{ display:grid; gap:8px; }
+  .pchips li{ padding:9px 14px; white-space:normal; }
+  .plogo{ width:92px; display:flex; justify-content:center; }
+  .well-partners .m-k{ font-size:11.5px; }
+  .wp-p{ display:none; }
+}
 .well-stats{ display:grid; gap:10px; margin:14px 0 0; }
 .well-stats > div{ border-radius:20px; padding:18px 20px; background:var(--paper); box-shadow:0 0 0 1px var(--line); }
 .well-stats dt{ font:600 11px/1.4 var(--body); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
@@ -1061,6 +1203,13 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .well-stats dd .num{ font:800 clamp(32px, 6vw, 46px)/1 var(--display); letter-spacing:-.04em; color:var(--olive-deep); white-space:nowrap; }
 .well-stats small{ font:500 12.5px/1.45 var(--body); color:var(--muted); }
 @media (min-width:700px){ .well-stats{ grid-template-columns:repeat(3,1fr); } }
+@media (max-width:699px){
+  .well-stats{ gap:0; border-radius:20px; background:var(--paper); box-shadow:0 0 0 1px var(--line); overflow:hidden; }
+  .well-stats > div{ border-radius:0; box-shadow:none; padding:16px 20px; }
+  .well-stats > div + div{ border-top:1px solid var(--line); }
+  .well-stats dt{ font-size:11.5px; }
+  .well-stats dd{ margin-top:6px; gap:4px; }
+}
 @media (min-width:1024px){
   .well-grid{ grid-template-columns:repeat(12,minmax(0,1fr)); grid-template-rows:minmax(0,1fr) minmax(0,1fr) auto; gap:16px; }
   .well-hero{ grid-column:span 8; grid-row:span 2; }
@@ -1106,6 +1255,8 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .faq-aside p:not(.m-k){ margin-top:6px; font-size:14.5px; line-height:1.5; color:var(--muted); }
 .faq-aside .m-k{ margin-bottom:8px; }
 .faq-aside .btn{ margin-top:16px; }
+/* Telefoon: het label "Niet gevonden?" zegt hetzelfde als de kop eronder; de knop vult de kaart, net als de andere knoppen op de telefoon. */
+@media (max-width:759px){ .faq-aside .m-k{ display:none; } .faq-aside .btn{ width:100%; } }
 .faq-list{ display:grid; gap:8px; min-width:0; }
 .faq-item{ border-radius:16px; background:var(--sand); box-shadow:0 0 0 1px var(--line); }
 .faq-item summary{ list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px; font:700 16px/1.3 var(--display); letter-spacing:-.01em; border-radius:16px; }
@@ -1127,6 +1278,7 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 /* ---------- Afsluiter en footer ---------- */
 .cta{ background:var(--ink); color:var(--paper); padding:72px 0 56px; }
 .cta-in{ display:grid; gap:36px; }
+@media (max-width:759px){ .cta{ padding:56px 0 48px; } .cta-in{ gap:28px; } }
 .cta h2{ font-weight:800; font-size:clamp(38px, 5vw, 66px); line-height:1.03; letter-spacing:-.04em; }
 .cta .accent{ color:var(--olive-3); }
 .cta .eyebrow{ margin-bottom:14px; }
@@ -1155,9 +1307,16 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .foot-links{ display:flex; flex-wrap:wrap; gap:6px 20px; }
 .foot-links a{ text-decoration:none; font:500 14px/2.6 var(--body); color:rgba(254,251,246,.86); }
 .foot-links a:hover{ color:#fff; }
+/* Telefoon: tikdoelen van 44 px, en de Instagram-link weg omdat de chip @stevenbalivillas er al staat; zo past "Privacy" op dezelfde regel. */
+@media (max-width:759px){
+  .foot-ig{ min-height:44px; }
+  .foot-links{ gap:0 22px; }
+  .foot-links a{ line-height:3.15; }
+  .foot-links a[href*="instagram"]{ display:none; }
+}
 .foot-fine{ margin-top:24px; font-size:12px; color:rgba(254,251,246,.55); }
 @media (min-width:1024px){ .foot-in{ grid-template-columns:1fr auto; align-items:start; } }
-body.has-dock .foot{ padding-bottom:calc(104px + env(safe-area-inset-bottom)); }
+body.has-dock .foot{ padding-bottom:calc(40px + env(safe-area-inset-bottom)); } /* de dock verdwijnt zodra de footer in beeld is (main.js, footVisible), dus 104 px was dode ruimte */
 @media (min-width:1024px){ body.has-dock .foot{ padding-bottom:32px; } }
 
 /* ---------- De uitbetalingsteller (dock) ---------- */
@@ -1172,6 +1331,8 @@ body.has-dock .foot{ padding-bottom:calc(104px + env(safe-area-inset-bottom)); }
 .dock.enter:not(.off){ animation:dockIn .55s var(--ease); }
 @keyframes dockIn{ from{ transform:translateY(14px); } }
 .dock[hidden]{ display:none; }
+/* Telefoon en tablet: geen tweede vaste balk onder de vaste nav-knop. Hij bedekte de kop van "Ons model"; de rail "01 / 10" en de jaargrafiek dragen dezelfde informatie. */
+@media (max-width:1023px){ .dock{ display:none; } }
 .dock.off, .dock.tuck{ transform:translateY(calc(100% + 24px)); opacity:0; pointer-events:none; }
 html.menu-open .dock{ transform:translateY(calc(100% + 24px)); opacity:0; }
 /* Boven de donkere afsluiter: lichte variant, anders is hij donker op donker */
@@ -1230,6 +1391,13 @@ html.menu-open .dock{ transform:translateY(calc(100% + 24px)); opacity:0; }
 @keyframes noteIn{ from{ opacity:0; transform:translateY(-10px) scale(.97); } }
 @keyframes phoneIn{ from{ opacity:0; transform:translateY(24px); } }
 @keyframes barIn{ from{ transform:scaleY(0); } }
+
+/* Telefoon: geen leesbaar label onder 11 px. Hoofdletterchips met letterspatiëring (.role, .tag, .m-k, .cmp-price-l) blijven 10,5 tot 11 px, die lezen groter.
+   .pf en .lane-soon staan hier bewust niet in: die lopen nu al uit hun tegel en horen bij de fix van hun eigen sectie. Staat laat in het bestand zodat het wint van de regels per sectie. */
+@media (max-width:759px){
+  .tx-top, .tx-top small, .tx strong small, .tile-pay .mini-note small, .ui-cap-dark, .soc-n, .soc-n small, .bar > span, .site-ph figcaption, .kn, .reel-src{ font-size:11px; }
+  .tag-sm, .reel-views, .reel-rail span{ font-size:10.5px; }
+}
 
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }

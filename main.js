@@ -21,12 +21,12 @@
     tellerNote: 'Bar heights are an illustration: the amount varies by season.',
     heroEyebrow: 'Passive income from Bali',
     heroH: 'A villa in Bali.<br><span class="accent">A payout every month.</span>',
-    heroP: 'We develop and manage boutique villas in the south of Bali. Guests stay, you receive your share of the rent every month. MOKA in Kedungu: 14 of 15 sold, the last one reserved.',
+    heroP: 'We develop and manage boutique villas, you receive the rental income every month. MOKA in Kedungu: 14 of 15 sold, the last one reserved.',
     kpiRetK: 'Return', tot: 'to', kpiRetS: 'a year, scenario', kpiPayK: 'Payout', kpiPayV: 'Monthly', kpiPayS: 'rental income',
     kpiDoneK: 'Delivered', kpiDoneV: 'projects',
     heroFine: 'Worked example: realistic scenario The Maison. Returns are estimates, not guarantees.',
     prodEyebrow: 'What you buy', prodH: 'You buy a villa.<br><span class="accent">Every month you receive rent.</span>',
-    prodSub: 'Money goes in. The villa earns from guests. Every month a payout comes back, in euros to your own account. The example below is a real project: The Maison in Pererenan, two of six still available.',
+    prodSub: 'Paid out in euros, to your own account. Worked example: The Maison in Pererenan, two of six still available.',
     flowInleg: 'Investment', flowTo: 'to The Maison', vanaf: 'from', flowNotary: '+ notary fee 1%',
     flow1H: 'You invest', flow1P: 'At The Maison from €225,000.',
     flowVilla: 'The villa', flow2H: 'The villa works', flow2P: 'Delivered fully furnished and ready to rent.',
@@ -41,39 +41,39 @@
     mon1: 'Jan', mon2: 'Feb', mon3: 'Mar', mon4: 'Apr', mon5: 'May', mon6: 'Jun', mon7: 'Jul', mon8: 'Aug', mon9: 'Sep', mon10: 'Oct', mon11: 'Nov', mon12: 'Dec', seasHoog: 'High season: July, August and December', seasTussen: 'Shoulder season', seasLaag: 'Low season: rainy months, February, March and November',
     fn1B: 'Real project.', fn1: 'The worked example is The Maison, now on sale.', fn2B: 'Leasehold 30 + 30.', fn2: 'Thirty years, with a thirty-year extension, fixed by the notary.', fn3B: 'You can always sell.', fn3: 'Instead of renting on, also within our network. It has been done at a profit before.', fn4B: 'Stay yourself?', fn4: 'You can, by arrangement. Though these homes are made to be rented out every day.', tellerAria: 'Payout per month, worked example',
     ysMaand: 'Per month', ysJaar: 'Whole year', ysOmzet: 'Revenue of the home', ysKosten: 'Costs and management', ysUit: 'Payout to you',
-    yearH: 'What a year could look like later', yearP: 'Twelve payouts. The amount varies by season. Hover over a month for the amounts.', yearPill: '12 payouts',
+    yearH: 'What a year could look like later', yearP: 'Twelve payouts, varying by season. Pick a month for the amounts.', yearPill: '12 payouts',
     together: 'paid out a year',
-    yearNote: 'Illustration: the monthly figures follow the realistic scenario in The Maison brochure (€175 a night, 85% occupancy), spread over the seasons. Revenue is the rent the home earns. Costs and management are rental management, operations and other costs and tax.',
-    prodSource: 'Source: <a href="https://invest.utamabali.com/the-maison">invest.utamabali.com/the-maison</a>, from €225,000 and ±14% a year in the realistic scenario. Appreciation is separate. The notary fee of 1% and the monthly maintenance contribution come on top. No hidden costs. Returns are estimates, not guarantees.',
-    atozEyebrow: 'A to Z', atozH: 'From land to guest.<br><span class="accent">Arranged from A to Z.</span>',
-    atozSub: 'Each step shows who does it. We develop and manage, our partners build and rent out. You sign, and receive every month from the first guest on.',
+    yearNote: 'Illustration, realistic scenario from The Maison brochure: €175 a night, 85% occupancy, spread over the seasons.',
+    prodSource: 'Source: <a href="https://invest.utamabali.com/the-maison">invest.utamabali.com/the-maison</a>, realistic scenario, excluding appreciation. Plus 1% notary fee and maintenance contribution. Returns are estimates, not guarantees.',
+    atozEyebrow: 'Ten steps', atozH: 'From land to guest.<br><span class="accent">Arranged from A to Z.</span>',
+    atozSub: 'We develop and manage, our partners build and rent out. You sign and receive every month.',
     legPartner: 'Our partners', legJij: 'The investor',
     s1Card: 'Purchase agreement', s1Signed: 'Signed', s1Portal: 'Your portal is open', s1H: 'You step in',
     s1P: 'You choose a project and invest. From day one you follow everything in your portal.',
-    s2H: 'The land', s2P: 'Only land zoned for short-stay rental. We secure it on leasehold: 30 years plus a 30-year extension.',
+    s2H: 'The land', s2P: 'Only land zoned for short-stay rental, on leasehold: 30 years plus a 30-year extension.',
     s3Cap: 'Data on demand and rentals', s3H: 'The concept', s3P: 'We choose location and layout with data on demand and rentals.',
     s4a: 'Permits', s4b: 'Notarial deed', s4H: 'Permits', s4P: 'We handle the permits and the notary.',
     s5H: 'Design', s5P: 'With our partners for interior and exterior architecture.',
     s6H: 'Construction', s6P: 'An independent contractor builds. We fix the specifications and are on site every day.',
     s7H: 'Instagrammable', s7P: 'Furniture, decoration and architecture: designed to be photographed. Guests share it.',
     s8H: 'Key handover', s8P: 'Fully furnished and ready to rent. You choose: rent it out, use it yourself or sell.',
-    s9H: 'Fully managed', s9P: 'With our partners we take care of everything: the listing on the platforms, pricing, guest contact, check-in, cleaning and maintenance.', abType: 'Villa in Pererenan, Bali', abMeta: '2 guests · 1 bedroom · 1 bed · 1 bath', ariaAbListing: 'View the TEMAN Villas listing on Airbnb', altAbListing: 'TEMAN Villas, one of our delivered villas, as guests see it on Airbnb',
+    s9H: 'Fully managed', s9P: 'With our partners: listing, pricing, guest contact, check-in, cleaning and maintenance.', abType: 'Villa in Pererenan, Bali', abMeta: '2 guests · 1 bedroom · 1 bed · 1 bath', ariaAbListing: 'View the TEMAN Villas listing on Airbnb', altAbListing: 'TEMAN Villas, one of our delivered villas, as guests see it on Airbnb',
     s10Note: 'Payout', s10Cap: 'Month: June', s10H: 'The payout', s10P: 'The rental income every month, to your account in the Netherlands or Indonesia, in euros or rupiah.',
     swipe: 'Swipe for all ten steps',
     gEyebrow: 'Our model', gH: 'Guests book direct more and more.<br><span class="accent">Without the 15% platform commission.</span>',
-    gSub: 'Social media and content bring guests in. Whoever books direct on our website steps into the brand, with no platform commission. At MOKA this is live today. The big platforms stay alongside.',
+    gSub: 'Social media brings guests to our own website. Live at MOKA today, alongside the major platforms.',
     gAttract: 'Attract', gSmH: 'Social media first', gSmP: 'Video and stories about every villa. That is how guests find us.',
     gVideo: 'Video and content', gOther: 'Other channels', gGoal: 'Direct through our website', gSoon: 'own site per project',
     gDirectH: 'Book directly through the project\'s own website', gDirectP: 'More brand experience for the guest and less commission. That is better for the return.', gMore: '≈ 15% higher payout per direct booking', gAlso: 'Alongside', gPfH: 'On all major platforms', gBoth: 'Both', gRent: 'rental income', gPayout: 'your monthly payout',
-    gNote: 'This is our model for every project, combined with the major platforms. A direct booking carries no platform commission of 15%. At MOKA it is already live: <a href="https://www.mokavillas.com/" target="_blank" rel="noopener">mokavillas.com</a>. Our rental partners handle bookings, platforms and pricing. We set it up and manage it.',
+    gNote: 'Our model for every project, live at MOKA today: <a href="https://www.mokavillas.com/" target="_blank" rel="noopener">mokavillas.com</a>. We manage, our rental partners handle bookings, platforms and pricing.',
     navSure: 'Certainty', rating: '4.83', amtInleg: '€225,000', amtPay: '≈ €2,491',
     pEyebrow: 'Every project its own brand', pH: 'Guests book a brand.<br><span class="accent">Your villa is part of it.</span>',
     pSub: 'Own name, own design, own audience, a unique experience. That is why the nightly rate is higher.',
     bGoMaison: 'See The Maison', bGoMoka: 'See MOKA', bGoReload: 'Put me on the list', tzTag: 'Coming soon · new project', tzT: 'Next project to be revealed soon', tzPrice: 'Pre-sale: €125,000 to €235,000', tzNote: 'Limited places. Only those who register their interest and are ready to buy get access.', tzGo: 'Put me on the list', soldHead: 'Sold out before', soldStamp: 'Sold out', soldTemanSt: 'Delivered and rented out', soldPalmaSt: 'Every villa sold', palmaStatus: 'Handover November 2026', palmaGo: 'Watch the video', ariaPalmaVideo: 'Watch the video of Villa Palma', ariaClose: 'Close', mokaStatus: 'Handover November 2026', altSoldTeman: 'TEMAN Villas in Tumbak Bayuh, delivered', altSoldPalma: 'Impression of Villa Palma in Kedungu',
     mEyebrow: 'Data and automation', mH: 'Demand is moving west.<br><span class="accent">We are already there.</span>',
-    mSub: 'Seminyak, Canggu, Pererenan. Now Cemagi and Kedungu, where we already develop. We choose location and layout with data and AI. Prices move automatically, with our rental partners.',
+    mSub: 'Seminyak, Canggu, Pererenan, now Cemagi and Kedungu. Location, layout and nightly rate: data and AI weigh in.',
     mapK: 'Schematic, not to scale',
-    mapT: 'Bali keeps growing, and that growth moves west from Seminyak. Our projects sit where it is heading now.', mapK: 'Google Maps · click a place', mapKProj: 'Our projects · always close to the beach', mapKHot: 'Hotspots nearby', mapKTrend: 'The direction', mokaNote: '600 m from the beach, 2 min by scooter', approxNote: 'approximate location', maisonNote: '3 min by scooter to the beach, pin approximate', reloadNote: 'revealed soon', mpNext: 'Next project', hotSauna: 'sauna and ice bath', hotWell: 'wellness and social club', hotPadel: 'padel club', hotBeach: 'beach', trendNote: 'Seminyak, Canggu, Pererenan, Cemagi, Kedungu', mapOpen: 'Open in Google Maps', mapListAria: 'Places on the map', mapIframe: 'Google Maps: the southwest coast of Bali with our projects',
+    mapT: 'Bali keeps growing, and that growth moves west from Seminyak. Our projects sit where it is heading now.', mapK: 'Google Maps · pick a place', mapKProj: 'Our projects · always close to the beach', mapKHot: 'Hotspots nearby', mapKTrend: 'The direction', mokaNote: '600 m from the beach, 2 min by scooter', approxNote: 'approximate location', maisonNote: '3 min by scooter to the beach, pin approximate', reloadNote: 'revealed soon', mpNext: 'Next project', hotSauna: 'sauna and ice bath', hotWell: 'wellness and social club', hotPadel: 'padel club', hotBeach: 'beach', trendNote: 'Seminyak, Canggu, Pererenan, Cemagi, Kedungu', mapOpen: 'Open in Google Maps', mapListAria: 'Places on the map', mapIframe: 'Google Maps: the southwest coast of Bali with our projects',
     aiK: 'Data and AI',
     ai1: 'The place: where demand is heading, from data on demand and rentals.',
     ai2: 'The layout: the floor plan that earns the most per square metre.',
@@ -81,13 +81,13 @@
     autoK: 'What runs automatically', auto1: 'Nightly prices move with demand, together with our rental partners.',
     auto2: 'A construction update in your portal every week.',
     auto4: 'Your investor portal: contract, progress and documents in one place.',
-    auto3: 'At The Maison the construction camera already streams live in the brochure; at the next project soon too, with self check-in through a smart lock.',
+    auto3: 'Construction camera live in The Maison brochure. Soon at the next project too, with a smart lock for self check-in.',
     cmpEyebrow: 'Location first', cmpH: 'The place first.<br><span class="accent">The square metres second.</span>',
     cmpSub: 'A guest books a bedroom in a prime location, not extra square metres. So compact earns more per euro.',
     cmpBigK: 'Spacious villa, three bedrooms', cmpBigEx: 'Large pool, large garden, more upkeep', cmpPriceL: 'Investment', cmpRoiL: 'Yield', cmpBigRoi: '≈ 11.9% a year', cmpSmRoi: '≈ 16.4% a year', cmpBigPrice: '€325,000', cmpSmPrice: '€135,000', cmpSmEx: 'Lower entry, less upkeep and staff', cmpBig1: 'Payout ≈ €3,223 a month', cmpBig2: 'On an investment of €325,000', cmpBig3: '€195 a night, realistic scenario', cmpBig4: 'Large pool, large garden, more upkeep',
     cmpSmallK: '1 bedroom Suite', cmpSm1: 'Payout ≈ €1,842 a month', cmpSm2: 'On an investment of €135,000', cmpSm3: '€95 a night, realistic scenario', cmpSm4: 'Lower entry, less upkeep and staff',
     amsK: 'It works the same in the Netherlands', amsA: 'Studio, 40 m²', amsB: 'House, three bedrooms', amsUp: 'Buy €375,000 · rent €1,500 a month · 4.8% a year', amsDown: 'Buy €1,000,000 · rent €3,250 a month · 3.9% a year',
-    amsP: 'Per euro invested the studio brings in more rent. A tenant pays for a place to sleep, not for square metres. Bali works the same way.',
+    amsP: 'Per euro the studio brings in more rent. A tenant pays for a place to sleep, not for square metres.',
     cmpTag: 'MOKA, one bedroom', altCompact: 'Impression of the living room of a compact one-bedroom home in MOKA',
     lblInterieur: 'Interior',
     bMaisonLine: 'Six homes in a gated community, three minutes by scooter from the beach.',
@@ -95,7 +95,7 @@
     bReloadLine: 'Next project, revealed soon. From €125,000.',
     altMokaPoster: 'Impression of a villa in MOKA, Kedungu',
     ctaProjects: 'See the projects',
-    ctaProjectsNote: 'All projects, numbers and brochures are on invest.utamabali.com',
+    ctaProjectsNote: 'All numbers and brochures on invest.utamabali.com',
     altLocatie: 'Steven in a meeting on site, on the land of a new project',
     capLocatie: 'On site, discussing the land',
     capOpgZwembad: 'Delivered, ready for the first guests',
@@ -105,11 +105,11 @@
     pfResold: 'Delivered and resold',
     reelSrc: '@stevenbalivillas · real numbers from our most watched reel',
     ctaPnlH: 'Want to see all the numbers?',
-    ctaPnlP: 'The full brochure of The Maison with the complete P&L: revenue, costs, payout per month and the scenarios side by side.',
+    ctaPnlP: 'The Maison brochure with the complete P&L: revenue, costs, payout per month and scenarios.',
     ctaPnlBtn: 'View the full brochure and P&L',
     ctaPnlAll: 'Or see all projects on invest.utamabali.com',
     wEyebrow: 'Healthy and in the picture', wH: 'The new guest lives healthy.<br><span class="accent">Every concept is designed for it.</span>',
-    wSub: 'Less partying, more recovery. Guests want a home with an idea: sauna, ice bath, jacuzzi, sport, an interior worth sharing. Our concepts are designed around that.',
+    wSub: 'Less partying, more recovery: sauna, ice bath, jacuzzi and sport. Our concepts are designed around that.',
     wGym: 'Sport', wSauna: 'Sauna', wIce: 'Ice bath', wJac: 'Jacuzzi', wTag1: 'Next project, revealed soon',
     altReloadWell: 'Impression of a roof terrace from above: sauna, ice bath, jacuzzi, a gym corner and a lounge',
     altNissen: 'Open kitchen with wooden shelves, hob and rattan bar stools in a delivered villa', wT1: 'Interiors guests share',
@@ -119,22 +119,22 @@
     wS2K: 'Premium on homes with wellness', wS2S: 'International research. Source: Global Wellness Institute, 300+ studies',
     wS3K: 'Foreign visitors to Bali in 2025', wS3V: '6.95 m', wS3S: '9.7% more than in 2024. Source: BPS Bali',
     zEyebrow: 'Dutch and precise', zH: 'Agreements on paper.<br><span class="accent">No empty promises.</span>',
-    zSub: 'A Dutch party with a Dutch founder. Leasehold 30 + 30 years, permits included, paid out every month in euros. Agreements that hold, in writing.',
+    zSub: 'Dutch party, Dutch founder. Leasehold 30 + 30 years, permits included, paid out every month in euros.',
     altNotaris: 'Steven Gijsman signing a contract at the notary in Bali', tagNotaris: 'At the notary', altOpgWoon: 'Furnished living room with open kitchen of a delivered project, under a wooden roof structure',
     z1B: 'Dutch.', z1: 'Dutch party, Dutch founder, in Bali himself.',
     z2B: 'Permits included.', z2: 'We deliver every home including permits.',
     z3B: 'Only where renting is allowed.', z3: 'Only in places assigned for tourism and short-stay rental.',
     z4B: 'Warranty on the build.', z4: 'Five years on the structure, one year on the finishes, in your purchase agreement.',
-    z5B: 'Leasehold.', z5: 'Foreigners cannot own land in Bali, so you buy the right of use: with us 30 years plus a 30-year extension, fixed by the notary.',
+    z5B: 'Leasehold.', z5: 'Foreigners cannot own land in Bali. You buy the right of use: 30 + 30 years, fixed by the notary.',
     z6B: 'Paid in stages.', z6: 'You pay in steps that follow construction.',
     z7B: 'Own funds.', z7: 'You buy with your own money, no mortgage or bank in between.',
     z8B: 'What comes on top.', z8: 'Notary fee 1% and a maintenance contribution. No hidden costs.',
     bEyebrow: 'Delivered', bH: 'Four projects delivered.<br><span class="accent">Proof comes before promise.</span>', bSub: 'Real villas, real guests: photos, not renders. MOKA is now being handed over, 14 of 15 sold and the last one reserved.',
     stDone: 'Delivered', stSold: 'At a profit, February 2026', stMoka: '14 of 15 sold · last unit reserved', stHandover: 'Last unit reserved, in handover',
     rFrom: 'from', mpOn: 'on Airbnb', mpDone: 'delivered', rStand: 'as of 28 September 2026', trackK: 'Track record', stDoneSold: 'Delivered, sold', stBuild: 'Under construction',
-    peopleEyebrow: 'The team', peopleH: 'Steven leads the projects.<br><span class="accent">Ashley gets to know you.</span>', peopleSub: 'And a team that is on the building site every day, so you do not have to be.', capSteven: 'Steven on the build', altStevenBouw2: 'Steven in a helmet on the building site, among the rebar', capVoorman: 'With the foreman on the foundation', capBeton: 'Concrete pour at MOKA', capLach: 'The foreman and Steven', capOverleg: 'Meeting with the build team', capTeman: 'TEMAN Villas under construction', capZwembad: 'Pool under construction, Villa Calmaan', capLucht: 'MOKA today, from above', altVoorman: 'Steven and the foreman on the foundation, with the drawings', altBeton: 'Concrete pour at MOKA, the pump above the formwork', altLach: 'The MOKA foreman smiles at Steven', altOverleg: 'The build team in a meeting with the drawings', altTeman: 'Steven with two builders in the formwork of TEMAN Villas', altZwembad: 'The pool of Villa Calmaan under construction', altLucht: 'MOKA from above, between the rice fields', teamLine: 'Next to Steven and Ashley: a permanent site manager on every building site, a team for buyer communication, marketing and the guest experience, and our partners for architecture, interiors and permits.',
-    stevenK: 'Founder', stevenP: 'Dutch. Leads every project, from the land to the key handover, and is on the building site.',
-    ashleyK: 'Introduction', ashleyP: 'Runs the introduction calls. Your situation first, a project second.', ashleyCta: 'Book a call',
+    peopleEyebrow: 'The team', peopleH: 'Steven leads the projects.<br><span class="accent">Ashley gets to know you.</span>', peopleSub: 'And a team on the building site every day. You do not have to be.', capSteven: 'Steven on the build', altStevenBouw2: 'Steven in a helmet on the building site, among the rebar', capVoorman: 'With the foreman on the foundation', capBeton: 'Concrete pour at MOKA', capLach: 'The foreman and Steven', capOverleg: 'Meeting with the build team', capTeman: 'TEMAN Villas under construction', capZwembad: 'Pool under construction, Villa Calmaan', capLucht: 'MOKA today, from above', altVoorman: 'Steven and the foreman on the foundation, with the drawings', altBeton: 'Concrete pour at MOKA, the pump above the formwork', altLach: 'The MOKA foreman smiles at Steven', altOverleg: 'The build team in a meeting with the drawings', altTeman: 'Steven with two builders in the formwork of TEMAN Villas', altZwembad: 'The pool of Villa Calmaan under construction', altLucht: 'MOKA from above, between the rice fields', teamLine: 'Next to Steven and Ashley: a permanent site manager on every building site, a team for buyer communication, marketing and the guest experience, and our partners for architecture, interiors and permits.',
+    stevenK: 'Founder', stevenP: 'Dutch. Leads every project from land to key handover, on the building site himself.',
+    ashleyK: 'Introduction', ashleyP: 'Your situation first, a project second.', ashleyCta: 'Book a call',
     fEyebrow: 'Frequently asked', faqH: 'What investors ask,<br><span class="accent">before they step in.</span>', faqSub: 'In the order they are asked. From own funds to what is still available.',
     faqAsideK: 'Not found?', faqAsideH: 'Is your question not here?', faqAsideP: 'Send Ashley a WhatsApp message.',
     q1: 'Can I finance this?',
@@ -414,9 +414,9 @@
     if (!dock) return;
     var y = window.scrollY, dy = y - lastY;
     if (window.innerWidth >= 1024) { if (tucked) { tucked = false; dock.classList.remove('tuck'); } lastY = y; return; }
-    if (dy > 6 && !tucked && y > 120) { tucked = true; dock.classList.add('tuck'); }
-    else if (dy < -6 && tucked) { tucked = false; dock.classList.remove('tuck'); }
-    if (Math.abs(dy) > 6) lastY = y;
+    if (dy > 6 && !tucked && y > 120) { tucked = true; dock.classList.add('tuck'); lastY = y; }
+    else if (dy < -24 && tucked) { tucked = false; dock.classList.remove('tuck'); lastY = y; }
+    else if (tucked ? dy > 0 : dy < 0) lastY = y;
   }
 
   /* ---------- Scrollen: een rAF per frame ---------- */
@@ -535,10 +535,14 @@
     if (tip) {
       if (scope === 'maand') {
         var b = barEls[selMonth - 1], bb = b.getBoundingClientRect(), pb = barsBox.getBoundingClientRect();
-        tip.style.setProperty('--x', (bb.left - pb.left + bb.width / 2) + 'px');
-        tip.style.top = (bb.top - pb.top) + 'px';
         $('b', tip).textContent = eur(MONTHS[selMonth - 1].net);
         $('small', tip).textContent = (lang === 'en' ? 'payout ' + MEN[selMonth - 1] : 'uitbetaling ' + MNL[selMonth - 1]);
+        /* Binnen de grafiek houden: aan de randen schuift de tip op, het pijltje blijft boven de staaf */
+        var cx = bb.left - pb.left + bb.width / 2, half = tip.offsetWidth / 2 || 0;
+        var tx = clamp(cx, half, Math.max(half, pb.width - half));
+        tip.style.setProperty('--x', tx + 'px');
+        tip.style.setProperty('--ax', (cx - (tx - half)) + 'px');
+        tip.style.top = (bb.top - pb.top) + 'px';
         tip.classList.add('show');
       } else tip.classList.remove('show');
     }
