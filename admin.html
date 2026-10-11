@@ -10181,7 +10181,7 @@ async function openForm(resKey,row){
 let PEOPLE=[];
 async function renderPeople(){
   const v=$('#view');
-  v.innerHTML=`<div id="people_banner"></div><div class="panel"><div class="panel-head"><div><h3>People <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">Eén persoon per e-mailadres, gesorteerd op laatste activiteit (nieuwste bovenaan). NEW = activiteit of aanvraag in de laatste 7 dagen. Klik op een persoon voor alle gegevens, activiteit en geschiedenis.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Search people…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Loading…</div></div></div>`;
+  v.innerHTML=`<div id="people_banner"></div><div class="panel"><div class="panel-head"><div><h3>Contacten op laatste activiteit <span class="count-pill" id="cnt_people">…</span></h3><div class="desc">Iedereen die we kennen, één per e-mailadres, de nieuwste activiteit bovenaan. NEW: activiteit of aanvraag in de laatste 7 dagen. Klik op een persoon voor gegevens, activiteit en geschiedenis.</div></div><div class="toolbar"><input class="search" id="search_people" placeholder="Zoek een contact…"></div></div><div class="table-wrap" id="tw_people"><div class="empty">Laden…</div></div></div>`;
   const [cr,lr,dr,rv,wr,ws]=await Promise.all([
     sb.from('contacts').select('*').order('last_activity_at',{ascending:false,nullsFirst:false}),
     sb.from('leads').select('id,contact_id,type,project,unit,source_page,created_at,handled_at'),
