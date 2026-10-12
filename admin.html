@@ -1403,7 +1403,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-12-itp-excl-ppn-1';
+const APP_VERSIE='2026-10-12-kopieer-bericht-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -8689,7 +8689,7 @@ function kwalBronTag(b,hm){
 // conceptGevuld[groep] = id van het concept dat we al eens in het invoerveld
 // zetten; wis je die tekst, dan zetten we hem niet opnieuw terug.
 let INBOX={convos:[],sel:null,channel:'',status:'',search:'',drafts:{},onderwerpen:{},sendCh:'',channels:[],unreadOnly:false,onbeantwoord:false,showAuto:false,
-  concept:null,concepten:{},conceptOnly:false,conceptGevuld:{}};
+  concept:null,concepten:{},conceptOnly:false,conceptGevuld:{},conceptBezig:null,conceptAuto:{},conceptGeladen:null};
 // Wachten leads op ons? Dat is precies: de lead sprak als laatste. Anders dan
 // "ongelezen" verdwijnt dit niet zodra iemand het gesprek even opent, en dat is
 // de reden dat het bestaat: op 24 augustus 2026 stonden er veertien gesprekken
@@ -9063,6 +9063,11 @@ function inboxVensterTonen(){
   const h=(INBOX.cur&&INBOX.cur.igHandle)||'';
   const dmKnop=(k==='instagram'&&h)?`<a class="btn btn-sm" href="https://ig.me/m/${encodeURIComponent(h)}" target="_blank" rel="noopener">Open Instagram-DM ↗</a>`:'';
   const kopieKnop='<button class="btn btn-sm" id="ibx_v_kopie" type="button">Kopieer bericht</button>';
+  // Achter "Kopieer bericht" staat altijd een klaargemaakt bericht voor deze lead
+  // (Steven, 12 oktober 2026): Claude schrijft het op basis van het hele gesprek
+  // (edge function inbox-concept), /admin bewaart het als concept en vult het
+  // invoerveld. Ashley past het aan en plakt het in de app.
+  const nieuwKnop='<button class="btn btn-sm" id="ibx_v_nieuw" type="button">Nieuw concept</button>';
   let tekst='';let knoppen='';
   // Een weigering van zojuist gaat voor op onze eigen schatting: ManyChat of
   // Meta heeft het laatste woord. De uitleg blijft hier staan, want een toast
@@ -9093,17 +9098,41 @@ function inboxVensterTonen(){
       }else{
         tekst=`⏱ Het 24-uursvenster van ${naam} is volgens onze gegevens dicht sinds ${esc(fmt(tot))}, en ook de 7 dagen voor een menselijk antwoord via ManyChat zijn voorbij. Alleen ${app} zelf werkt nog. Schrijft de lead weer, dan werkt het portaal ook weer.`;
       }
-      knoppen=kopieKnop+dmKnop;
+      tekst+=' Hieronder staat een klaargemaakt bericht voor deze lead; pas het aan en kopieer het.';
+      knoppen=kopieKnop+nieuwKnop+dmKnop;
     }
   }
   el.innerHTML=tekst+(knoppen?`<div class="ibx-venster-k">${knoppen}</div>`:'');
   el.hidden=false;
+  const gid=INBOX.sel;
   const kop=$('#ibx_v_kopie');
   if(kop)kop.onclick=async()=>{
-    const t=($('#ibx_input')||{}).value||'';
-    if(!t.trim()){toast('Typ eerst je bericht, dan kopieer ik het','');return;}
+    let t=($('#ibx_input')||{}).value||'';
+    if(!t.trim()){
+      kop.disabled=true;kop.textContent='Bericht maken…';
+      const ok=await inboxConceptMaken(gid,false);
+      kop.disabled=false;kop.textContent='Kopieer bericht';
+      if(!ok)return;
+      t=($('#ibx_input')||{}).value||'';
+      if(!t.trim()){toast('Geen bericht om te kopieren','');return;}
+    }
     try{await navigator.clipboard.writeText(t);toast('Bericht gekopieerd','ok');}catch(e){toast('Kopieren lukte niet, selecteer de tekst zelf','err');}
   };
+  const nw=$('#ibx_v_nieuw');
+  if(nw)nw.onclick=async()=>{
+    const i=$('#ibx_input');
+    if(i&&i.value.trim()&&!confirm('Een nieuw concept laten schrijven en je tekst in het invoerveld vervangen?'))return;
+    if(i){i.value='';delete INBOX.drafts[gid];i.dispatchEvent(new Event('input'));}
+    nw.disabled=true;nw.textContent='Bezig…';
+    await inboxConceptMaken(gid,false);
+    nw.disabled=false;nw.textContent='Nieuw concept';
+  };
+  // Nog geen concept en een leeg invoerveld: dan meteen een bericht klaarzetten,
+  // een keer per gesprek, pas als het bestaande concept is geladen (anders zou
+  // een eerder concept van Claude worden overschreven).
+  if(knoppen&&!fout&&INBOX.conceptGeladen===gid&&!INBOX.concept&&!INBOX.conceptAuto[gid]&&!(($('#ibx_input')||{}).value||'').trim()&&canEdit('inbox')){
+    INBOX.conceptAuto[gid]=true;inboxConceptMaken(gid,true);
+  }
 }
 function inboxDrawThread(data,keepDraft){
   const cv=data.conversation,msgs=data.messages||[];const gid=data.group_id||cv.group_id||INBOX.sel;
@@ -9595,10 +9624,41 @@ async function inboxRefreshMessages(id){
   if(data&&data.messages&&$('#ibx_msgs'))inboxRenderMsgs(data.messages);
   // Zet Claude een concept klaar terwijl je kijkt, dan verschijnt de balk
   // vanzelf; kwam er na het concept een nieuw bericht, dan zegt de balk dat.
-  if(!kr.error&&INBOX.sel===id){INBOX.concept=(kr.data&&kr.data.tekst)?kr.data:null;inboxConceptTonen(id,(data&&data.messages)||[],false);}
+  if(!kr.error&&INBOX.sel===id){INBOX.concept=(kr.data&&kr.data.tekst)?kr.data:null;INBOX.conceptGeladen=id;inboxConceptTonen(id,(data&&data.messages)||[],false);}
   // Schrijft de lead terwijl je kijkt, dan gaat het venster open en moet de
   // waarschuwing weg; verloopt het, dan moet hij erbij.
   inboxVenstersLaden(id,true);
+}
+// Laat Claude een vervolgbericht voor deze lead schrijven (inbox-concept), bewaar
+// het als concept (inbox_concept_opslaan dwingt de huisregels af) en zet het in
+// het invoerveld. stil: zonder foutmeldingen in beeld (automatisch bij openen).
+async function inboxConceptMaken(gid,stil){
+  if(!gid||INBOX.conceptBezig===gid)return false;
+  INBOX.conceptBezig=gid;
+  try{
+    const kan=INBOX.sendCh||'instagram';
+    let {data,error}=await sb.functions.invoke('inbox-concept',{body:{group:gid,kanaal:kan}});
+    if(error&&!data&&error.context&&typeof error.context.json==='function'){try{data=await error.context.json();}catch(_e){}}
+    if(error||!data||data.ok===false||!data.tekst){
+      const msg=(data&&(data.note||data.error))||(error&&error.message)||'mislukt';
+      if(!stil)toast('Concept: '+esc(msg),'err');
+      return false;
+    }
+    const r=await sb.rpc('inbox_concept_opslaan',{p_id:gid,p_kanaal:data.kanaal||kan,p_tekst:data.tekst,p_onderwerp:null,p_vervangen:true});
+    if(r.error||(r.data&&r.data.ok===false)){
+      if(!stil)toast('Concept bewaren mislukt: '+esc((r.error&&r.error.message)||(r.data&&r.data.reden)||''),'err');
+      return false;
+    }
+    const kr=await sb.rpc('inbox_concept',{p_id:gid});
+    if(INBOX.sel!==gid)return true;
+    INBOX.concept=(kr.data&&kr.data.tekst)?kr.data:null;
+    delete INBOX.conceptGevuld[gid];delete INBOX.drafts[gid];
+    inboxConceptTonen(gid,[],false);
+    if(!stil)toast('Bericht klaargezet, lees het na','ok');
+    return true;
+  }finally{
+    if(INBOX.conceptBezig===gid)INBOX.conceptBezig=null;
+  }
 }
 async function inboxSend(id){
   const inp=$('#ibx_input');if(!inp)return;const body=inp.value.trim();if(!body){return;}
