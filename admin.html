@@ -1403,7 +1403,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-12-ai-gesprekken-1';
+const APP_VERSIE='2026-10-12-itp-excl-ppn-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -11431,7 +11431,7 @@ function itpDraft(r){
     +`<p><b>SUBJECT</b><br>Intent to Purchase – Leasehold (${proj}${unit?' · '+unit:''})</p>`
     +`<p>Dear Steven Gijsman / ${pt},<br>I, ${naam}, hereby express my intent to purchase a villa within project ${proj}, under the following terms and conditions. The definitive leasehold agreement and construction agreement are together referred to as the Agreements.</p>`
     +`<p><b>PROPERTY</b><br>Project: ${proj}<br>Unit: ${unit||'Villa selection to be determined.'}<br>Fully furnished, turn-key delivery<br>Leasehold: 30 + 30 years</p>`
-    +`<p><b>PURCHASE PRICE</b><br>Total Purchase Price: ${price}</p>`
+    +`<p><b>PURCHASE PRICE</b><br>Total Purchase Price: ${price}<br>The Purchase Price is stated exclusive of Indonesian VAT (PPN) on the development coordination fee (30% of the Purchase Price). If the coordinator is VAT-registered (PKP) when a fee instalment is invoiced, PPN at the rate then in force (currently 11%) is added to that instalment and shown on its tax invoice.</p>`
     +`<p><b>DEPOSIT</b><br>Buyer shall pay ${dep} as a deposit forming part of the Purchase Price (the “Deposit”).<br>The Deposit is credited against the amount due upon signing of the Agreements.<br>The Deposit shall be fully refundable in the event that:<br>– legal due diligence results in a negative outcome; or<br>– material discrepancies are identified relating to land title, leasehold rights, zoning, permits, or ownership structure.</p>`
     +`<p><b>PAYMENT TERMS</b><br>The total Purchase Price shall be paid in instalments as follows:<br>– ${dep} Deposit upon signing of this ITP;<br>– 60% of the Purchase Price, less the Deposit, upon signing of the Agreements;<br>– 20% payable after milestone 3 (as detailed in the notarised contracts);<br>– 10% payable after milestone 4 (as detailed in the notarised contracts);<br>– 10% payable upon final completion of the villa and key handover.<br>Notary costs amount to 1% of the transaction value and are payable by the Buyer, in addition to the Purchase Price.</p>`
     +`<p><b>FORMALISATION</b><br>The payment schedule, construction milestones, deliverables and timelines referred to in this Intent to Purchase are indicative only and shall be further detailed, formalised and become legally binding solely in the Agreements.</p>`

@@ -190,6 +190,7 @@ function itpText(r){
     <h3>Reserveringsdeposit</h3>
     <p>De koper betaalt een reserveringsdeposit van <b>${euro(r.deposit_amount)}</b> aan ${esc(ontvangerNaam(r))} om de bovengenoemde unit te reserveren. ${esc(DEPOSIT_UITLEG)} Deze aanbetaling is toegewezen aan de Development Coordination Agreement en wordt afgetrokken van de eerste factuur daaronder ("assigned to the Development Coordination Agreement and deducted from its first invoice").</p>
     <h3>Vervolg</h3>
+    <p>De koopsom is exclusief Indonesische btw (PPN) over de coördinatievergoeding (30% van de koopsom). Is de coördinator btw-plichtig (PKP) op de factuurdatum, dan komt PPN tegen het dan geldende tarief (nu 11%) op die termijn erbij en staat het op de belastingfactuur.</p>
     <p>Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle definitieve contracten (leasehold deed en construction agreement) zijn getekend bij de notaris. Deze ITP is een intentieverklaring en geen notariële, bindende koopakte.</p>
     <h3>Voorwaarden deposit</h3>
     <p>Restitutievoorwaarden worden vastgelegd in de definitieve overeenkomst. Deze tekst is een concept en kan door UTAMA worden aangepast.</p>
@@ -324,7 +325,7 @@ function makePdf(r,signer,sigData){
       "RESERVERINGSDEPOSIT","Reserveringsdeposit: €"+Number(r.deposit_amount||0).toLocaleString("nl-NL")+" aan "+ontvangerNaam(r)+". "+DEPOSIT_UITLEG,
       "Referentie: "+refText(r),
       "Deze aanbetaling is toegewezen aan de Development Coordination Agreement en wordt afgetrokken van de eerste factuur daaronder.","",
-      "VERVOLG","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
+      "VERVOLG","De koopsom is exclusief Indonesische btw (PPN) over de coördinatievergoeding (30% van de koopsom).","Is de coördinator btw-plichtig (PKP) op de factuurdatum, dan komt PPN tegen het dan geldende","tarief (nu 11%) op die termijn erbij en staat het op de belastingfactuur.","Het restant van de koopsom wordt voldaan volgens het betaalschema nadat alle","definitieve contracten zijn getekend bij de notaris. Deze ITP is een intentieverklaring","en geen notariële, bindende koopakte.","",
       "SIGNATURES",
       "Buyer: digitally signed by "+signer+" on "+new Date().toLocaleString("en-GB"),
       "Seller: digitally signed upon issuance of this ITP"
