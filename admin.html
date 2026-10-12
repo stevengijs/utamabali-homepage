@@ -1403,7 +1403,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-11-people-sortering-1';
+const APP_VERSIE='2026-10-12-ai-gesprekken-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3054,11 +3054,14 @@ async function wlLogPopup(ref){
   const {sectie,row}=wlRij(ref);if(!row)return;
   const d=WL.data;const kaart=row.kaart||null;
   let stages=d.stages||[];let pipelineNaam='Discovery pipeline';
-  if(kaart&&kaart.pipeline_id&&kaart.pipeline_id!==d.discovery_id){
+  if(kaart&&kaart.pipeline_id&&kaart.pipeline_id!==d.discovery_id&&kaart.pipeline_rol!=='ai'){
     const {data:p}=await sb.from('pipelines').select('name,stages').eq('id',kaart.pipeline_id).maybeSingle();
     if(p&&Array.isArray(p.stages)&&p.stages.length){stages=p.stages;pipelineNaam=p.name;}
   }
-  const inDisc=!kaart||kaart.pipeline_id===d.discovery_id;
+  // Een kaart op AI gesprekken (het bord van de bot) gaat bij opslaan naar
+  // Discovery: werklijst_log_call verplaatst hem. Dus Discovery-fasen en
+  // Discovery-standaarden, net als zonder kaart.
+  const inDisc=!kaart||kaart.pipeline_id===d.discovery_id||kaart.pipeline_rol==='ai';
   const std=uit=>{
     if(!inDisc)return kaart.stage;
     if(uit==='bereikt')return 'in-gesprek-sales';
@@ -3070,7 +3073,7 @@ async function wlLogPopup(ref){
   const naam=row.naam||'(naamloos)';
   afPopup(`<div style="max-width:540px">
     <h3 style="margin:0 0 4px">Belpoging bij ${esc(naam)}</h3>
-    <div class="muted" style="font-size:12.5px;margin-bottom:12px">Legt de call vast en zet de kaart op de gekozen fase. ${kaart?`Nu: ${esc(kaart.pipeline)}, ${esc(kaart.stage_label||kaart.stage)}.`:'Er komt een kaart in de Discovery pipeline op jouw naam.'}</div>
+    <div class="muted" style="font-size:12.5px;margin-bottom:12px">Legt de call vast en zet de kaart op de gekozen fase. ${kaart&&kaart.pipeline_rol==='ai'?`Nu: AI gesprekken, ${esc(kaart.stage_label||kaart.stage)}. Na opslaan staat de kaart in de Discovery pipeline.`:kaart?`Nu: ${esc(kaart.pipeline)}, ${esc(kaart.stage_label||kaart.stage)}.`:'Er komt een kaart in de Discovery pipeline op jouw naam.'}</div>
     <div class="pdr-field"><div class="pdr-label">Wanneer</div><input id="wl_d" type="datetime-local" class="pc-in" value="${nuVal}"></div>
     <div class="pdr-field"><div class="pdr-label">Uitkomst</div><div class="seg" id="wl_uit">${WL_UITKOMST.map(([k,l])=>`<button type="button" data-u="${k}" class="${k==='niet_bereikt'?'on':''}">${l}</button>`).join('')}</div></div>
     <div class="pdr-field"><div class="pdr-label">Fase daarna (${esc(pipelineNaam)})</div><select id="wl_st" class="pc-in">${stages.map(s=>`<option value="${esc(s.key)}">${esc(s.label)}</option>`).join('')}</select></div>
