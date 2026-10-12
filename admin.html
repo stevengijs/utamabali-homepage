@@ -165,6 +165,8 @@
   .dd-rij.lezen .dd-vink{cursor:default}
   .dd-open{flex:none}
   .kp-t-plan{margin-top:8px;font-size:11.5px;line-height:1.35;color:#4b3c7a;background:#f3f0fb;border-radius:7px;padding:5px 8px}
+  .kp-t-tip{margin-top:8px;font-size:11.5px;line-height:1.35;color:var(--muted)}
+  .kp-regel{font-size:14px;font-weight:650;line-height:1.4;padding:10px 14px;border-radius:10px;border:1px solid #c6ead9;background:#e7f6ef;color:#0f4f3a;margin:0 0 14px}
   .kp-t-dd{margin-top:8px;font-size:11.5px;font-weight:650;color:var(--muted);cursor:pointer}
   .kp-t-dd:empty{display:none}
   .kp-t-dd .af{color:#0f6b4f}
@@ -1403,7 +1405,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-12-kopieer-bericht-1';
+const APP_VERSIE='2026-10-12-kpi-ashley-2';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2196,7 +2198,10 @@ function kpiTeken(){
   const KLEUR=r=>(r==null||!isFinite(r))?'':(r>=.9?'groen':(r>=.6?'oranje':'rood'));
   // ---- Blok 1: het doel, één balk ----
   const binnen=(Number(g.getekend)||0)+(Number(g.itp_waarde)||0);
-  let h=`<div class="panel kp-held" style="margin-top:0">
+  // KPI 1 in een regel bovenaan de weergave van Ashley (Steven, 11 oktober 2026: "Maak duidelijk in KPI dashboard van
+  // Ashley"). Alleen als de database de nieuwe regel al kent (ashley.kpi1, migratie 20261012120000).
+  const kpi1Regel=filter==='ashley'&&a.kpi1?`Elke nieuwe lead: binnen 2 uur een WhatsApp van ${d.ik==='ashley'?'jou':'Ashley'}, 7 dagen per week, daarna altijd bellen, uiterlijk binnen 24 uur.`:'';
+  let h=`${kpi1Regel?`<div class="kp-regel">${esc(kpi1Regel)}</div>`:''}<div class="panel kp-held" style="margin-top:0">
     <div class="kp-held-kop"><div><span class="kp-held-n">${kpRond(binnen)}</span> <span class="kp-held-van">van ${kpRond(g.ambitie)}</span></div>
       <div class="kp-held-dagen"><b>${kpN(g.dagen_over,0)}</b> dagen te gaan</div></div>
     <div class="kp-held-balk" title="Donker: verkocht. Licht: gereserveerd (ITP of Reservering). Streep: waar we vandaag zouden moeten staan."><i class="res" style="width:${pc(binnen)}%"></i><i class="get" style="width:${pc(g.getekend)}%"></i><b style="left:${pc((Number(g.ambitie)||0)*verstreken)}%"></b></div>
@@ -2209,12 +2214,13 @@ function kpiTeken(){
   const KORT={'Nieuw aanbod':['🏗️','Nieuw aanbod'],"ITP's laten tekenen":['✍️',"ITP's tekenen"],
     'ITP met aanbetaling na een goede call':['🤝',"Nieuwe ITP's"],'Calls inplannen en houden':['📞','Intro-calls'],
     'Gehouden call op afgerond zetten':['✅','Calls afronden'],'Berichten en belpogingen':['💬','Berichten en bellen'],
-    'Nieuwe lead binnen 1 uur':['⚡','Binnen 1 uur reageren'],'Reels posten':['🎬','Reels'],
+    'Nieuwe lead binnen 1 uur':['⚡','Binnen 1 uur reageren'],'Eerst WhatsApp, dan bellen':['⚡','Eerst WhatsApp, dan bellen'],
+    'WhatsApp-status':['◐','WhatsApp-status'],'Investor Circle':['◎','Investor Circle'],'Reels posten':['🎬','Reels'],
     'WhatsApp-broadcast':['📣','WhatsApp-broadcast'],'E-mailcampagne':['✉️','E-mailcampagne'],'Advertenties':['💶','Advertenties']};
   const EENHEID={"ITP's tekenen of vrijgeven":'te tekenen','in 4 weken':'per 4 weken','per dag deze maand':'per dag'};
   // Per termijn (Steven, 6 oktober 2026: "Laten we wel duidelijk zijn wat er vandaag moet gebeuren, en deze week /
   // maand moet gebeuren. Er kan natuurlijk niet dagelijks een ITP worden getekend").
-  const TERMIJN={berichten:'dag',binnen_1u:'dag',calls_afronden:'dag',reels:'dag',ads:'dag',calls:'week',broadcast:'week',email:'week',
+  const TERMIJN={berichten:'dag',binnen_1u:'dag',whatsapp_status:'dag',calls_afronden:'dag',reels:'dag',ads:'dag',calls:'week',broadcast:'week',email:'week',investor_circle:'week',
     itp_nieuw:'maand',itp_tekenen:'maand',aanbod:'jaar'};
   const termijnVan=x=>TERMIJN[x.sleutel]||(/per (werk)?dag/.test(x.nodig_eenheid||'')?'dag':(/per week/.test(x.nodig_eenheid||'')?'week':'maand'));
   const TERMIJN_TEKST={dag:'elke dag',week:'deze week',maand:'deze maand',jaar:'dit jaar'};
@@ -2247,6 +2253,7 @@ function kpiTeken(){
       <div class="kp-t-n${x.nodig_tekst?' tekst':''}">${groot}${eenh?`<span>${esc(eenh)}</span>`:''}</div>
       <div class="kp-t-balk"><i style="width:${breed}%"></i></div>
       <div class="kp-t-nu"><span>${/^laatste /.test(nu)?'':'nu '}${esc(nu)}</span><span>${vanWie(x).length>1?'Samen':esc(x.eigenaar)}</span></div>
+      ${x.tip?`<div class="kp-t-tip">${esc(x.tip)}</div>`:''}
       ${x.plan?`<div class="kp-t-plan" title="Nog te bouwen">🛠 ${esc(x.plan)}</div>`:''}
       <div class="kp-t-dd" data-kpdd="${esc(x.sleutel||'')}"></div></div>`;
   };
@@ -2268,7 +2275,7 @@ function kpiTeken(){
   const toonCommissie=(filter==='alles'||filter==='ashley')&&a.commissie_pct!=null;
   // Vandaag (de dagdoelen per KPI) direct onder de tegels, zodat de rem en de tegels bovenaan blijven.
   h+='</div><div class="panel dd kp-dd" id="kp_vandaag"></div>';
-  h+=`<div class="panel"><div class="kp-taken"><div class="kp-takenkop">Meldingen</div>${taken.length?taken.map(t=>`<div class="kp-taak"><span>${filter==='alles'?`<b>${esc(t.wie)}</b> · `:''}${esc(t.tekst)}</span>${t.naar&&t.naar!=='kpi'&&canView(t.naar)?`<button class="btn btn-ghost btn-sm" data-naar="${esc(t.naar)}">Open</button>`:''}</div>`).join(''):'<div class="kp-taak"><span class="muted">Niets openstaand.</span></div>'}
+  h+=`<div class="panel"><div class="kp-taken"><div class="kp-takenkop">Meldingen</div>${taken.length?taken.map(t=>`<div class="kp-taak"><span>${filter==='alles'?`<b>${esc(t.wie)}</b> · `:''}${esc(t.tekst)}</span>${t.naar&&t.naar!=='kpi'&&canView(t.naar)?`<button class="btn btn-ghost btn-sm" data-naar="${esc(t.naar)}" data-bord="${esc(DD_BORD[t.regel]||'')}">Open</button>`:''}</div>`).join(''):'<div class="kp-taak"><span class="muted">Niets openstaand.</span></div>'}
     ${toonCommissie?`<div class="kp-taak"><span class="muted">Commissie Ashley: ${kpRond(a.commissie_verdiend)} verdiend · bij ${kpRond(g.ambitie)} ${kpRond(a.commissie_ambitie)}</span></div>`:''}</div></div>`;
   // ---- Blok 3: wat werkt ----
   // Per kanaal het deel van de warme leads, op volgorde van belang (kpi__data), met een paar zinnen
@@ -2340,7 +2347,7 @@ function kpiTeken(){
   $('#topRight').innerHTML='<button class="btn btn-ghost btn-sm" id="kp_ververs">Ververs</button>';
   $('#kp_ververs').onclick=()=>renderKpi();
   v.querySelectorAll('#kp_wie button').forEach(b=>b.onclick=()=>{KPI.filter=b.dataset.wie;kpiTeken();});
-  v.querySelectorAll('[data-naar]').forEach(b=>b.onclick=()=>go(b.dataset.naar));
+  v.querySelectorAll('[data-naar]').forEach(b=>b.onclick=()=>{if(b.dataset.bord)PENDING_PIPE_ROL=b.dataset.bord;go(b.dataset.naar);});
   // De bewerkbare tabellen pas laden als het blok opengaat, dan blijft de pagina licht.
   const det=$('#kp_det_aanbod');
   const laadAanbod=()=>{if(det&&det.open&&!det.dataset.geladen){det.dataset.geladen='1';renderResource('kpi_pijplijn',$('#kp_pijplijn'));renderResource('kpi_mijlpalen',$('#kp_mijlpalen'));}};
@@ -8009,13 +8016,21 @@ function ddDatumTekst(s){const [y,m,d]=String(s).split('-').map(Number);return n
 const DD_VLAM='<svg class="dd-vlam" viewBox="0 0 10 12" aria-hidden="true"><path d="M5.6 0C6 2 8.2 3.2 9 5.4c.9 2.6-.6 5.6-3.7 6.4C2.2 12.6 0 10.4 0 7.8 0 6 1 4.9 1.8 4.2c-.1 1 .4 1.8 1 2.1C2.5 4.3 4.6 3 5.6 0z"/></svg>';
 // De KPI-acties waar een taak bij kan horen (dagdoelen.kpi_actie, sleutel uit kpi__keten).
 const DD_KPI=[['reels','🎬','Reels'],['ads','💶','Advertenties'],['broadcast','📣','WhatsApp-broadcast'],['email','✉️','E-mailcampagne'],
-  ['binnen_1u','⚡','Binnen 1 uur reageren'],['berichten','💬','Berichten en bellen'],['calls','📞','Intro-calls'],['calls_afronden','✅','Calls afronden'],
+  ['binnen_1u','⚡','Eerst WhatsApp, dan bellen'],['whatsapp_status','◐','WhatsApp-status'],['investor_circle','◎','Investor Circle'],
+  ['berichten','💬','Berichten en bellen'],['calls','📞','Intro-calls'],['calls_afronden','✅','Calls afronden'],
   ['itp_nieuw','🤝',"Nieuwe ITP's"],['itp_tekenen','✍️',"ITP's tekenen"],['aanbod','🏗️','Nieuw aanbod']];
 // Waar je heen gaat om een automatische taak te doen (dezelfde plekken als de meldingen in Te doen).
 const DD_NAAR={nieuw_1u:'werklijst',nieuw_open:'werklijst',wacht_open:'werklijst',itp_open:'werklijst',webinar_open:'werklijst',calls_gelogd:'werklijst',reel_gepost:'content',
-  broadcast_te_laat:'broadcast',email_te_laat:'broadcast'};
+  broadcast_te_laat:'broadcast',email_te_laat:'broadcast',whatsapp_2u:'pipeline',bellen_24u:'werklijst'};
+// Welk bord Open kiest als het naar de pipeline gaat (12 oktober 2026: de wachtrij van KPI 1 staat in Discovery, kolom
+// Nieuw Ashley; de werklijst toont die kaarten niet). Het belletje log je op de werklijst, dus bellen_24u blijft daar.
+const DD_BORD={whatsapp_2u:'discovery'};
 // Klaar-bij-0-regels die geen aantal tellen maar zeggen of het tijd is (sinds 6 oktober 2026).
-const DD_TIJD={broadcast_te_laat:['nu versturen','op tijd'],email_te_laat:['nu versturen','op tijd']};
+const DD_TIJD={broadcast_te_laat:['nu versturen','op tijd'],email_te_laat:['nu versturen','op tijd'],investor_circle_te_laat:['nu plaatsen','op tijd']};
+// Taken die je afvinkt met een korte notitie, omdat de database het niet zelf kan zien (sinds 12 oktober 2026: de
+// WhatsApp-groep Investor Circle is niet uit te lezen). Afvinken legt het bericht vast, ook als de regel de taak al
+// als op tijd toont; nog een keer klikken op een vinkje van die dag zet het terug.
+const DD_NOTITIE={investor_circle_te_laat:'Wat deelde je in de Investor Circle? Een aanbieding, een prijsverhoging, of een korte tip of nieuws over Bali.'};
 // Eigen dagdoelen ophalen; met alleenEigen=false ook die van de anderen in het team (dat zijn er alleen
 // voor de eigenaar van de KPI's: dagdoelen() geeft een ander alleen zichzelf terug).
 async function ddLaden(datum,alleenEigen){
@@ -8042,18 +8057,20 @@ function ddTeken(box,opts){
   const rij=(t,lezen,kol,info,id)=>{
     const omg=!!t.omgekeerd, auto=!!t.regel, teller=t.doel>1&&!omg&&!lezen;
     let sub='';
-    if(omg&&DD_TIJD[t.regel])sub=t.auto>0?(t.klaar?'zelf afgevinkt':DD_TIJD[t.regel][0]):DD_TIJD[t.regel][1];
+    if(omg&&DD_NOTITIE[t.regel]&&t.handmatig>0)sub='geplaatst';
+    else if(omg&&DD_TIJD[t.regel])sub=t.auto>0?(t.klaar?'zelf afgevinkt':DD_TIJD[t.regel][0]):DD_TIJD[t.regel][1];
     else if(omg)sub=t.klaar?(t.auto>0?`${t.auto} open, zelf afgevinkt`:'niets open'):`${t.auto} open`;
     else if(auto)sub=`${t.auto} geteld`+(t.handmatig>t.auto?`, ${t.handmatig} zelf`:'');
     else if(lezen&&t.doel>1)sub=`${t.gedaan}/${t.doel}`;
     // Kort: de omschrijving staat in de tooltip van de titel. Bij een ander (alleen lezen) geen Open.
-    const subs=[sub,t.notitie].filter(Boolean).map(esc).join(' · ');
+    // Bij een taak met notitie hoort de notitie bij het vinkje: teruggezet, dan ook geen notitie meer tonen.
+    const subs=[sub,DD_NOTITIE[t.regel]&&!(t.handmatig>0)?'':t.notitie].filter(Boolean).map(esc).join(' · ');
     const naar=!lezen&&!t.klaar&&DD_NAAR[t.regel]&&canView(DD_NAAR[t.regel])?DD_NAAR[t.regel]:'';
     return `<div class="dd-rij${t.klaar?' klaar':''}${auto?' auto':''}${lezen?' lezen':''}" data-id="${esc(t.id)}"${id||''}>
-      <button class="dd-vink" data-vink="${esc(t.id)}" ${lezen?`disabled title="Alleen ${esc(kol.naam||'de eigenaar')} vinkt dit af"`:`title="${t.klaar?'Terugzetten':(omg?'Afvinken, ook al staat er iets open':'Afvinken')}"`}>${t.klaar?'✓':''}</button>
+      <button class="dd-vink" data-vink="${esc(t.id)}" ${lezen?`disabled title="Alleen ${esc(kol.naam||'de eigenaar')} vinkt dit af"`:`title="${DD_NOTITIE[t.regel]?(t.handmatig>0?'Terugzetten':'Bericht geplaatst? Afvinken met een korte notitie'):(t.klaar?'Terugzetten':(omg?'Afvinken, ook al staat er iets open':'Afvinken'))}"`}>${t.klaar?'✓':''}</button>
       <div class="dd-tekst"><div class="dd-titel"${t.omschrijving?` title="${esc(t.omschrijving)}"`:''}>${esc(t.titel)}</div>${subs?`<div class="dd-sub">${subs}</div>`:''}
         ${info?`<div class="dd-kpi"><span class="kp-stip ${info.kleur||''}"></span>helpt bij ${info.ico} ${esc(info.naam)}${info.termijn?` <span>· doel ${esc(info.termijn)}</span>`:''}</div>`:''}</div>
-      ${naar?`<button class="btn btn-ghost btn-sm dd-open" data-naar="${esc(naar)}">Open</button>`:''}
+      ${naar?`<button class="btn btn-ghost btn-sm dd-open" data-naar="${esc(naar)}" data-bord="${esc(DD_BORD[t.regel]||'')}">Open</button>`:''}
       ${teller?`<div class="dd-tel"><button data-min="${esc(t.id)}" title="Eén minder" ${t.gedaan<=0?'disabled':''}>−</button><span>${t.gedaan}/${t.doel}</span><button data-plus="${esc(t.id)}" title="Eén meer">+</button></div>`:''}</div>`;
   };
   const kolom=k=>{
@@ -8082,21 +8099,33 @@ function ddTeken(box,opts){
   };
   box.innerHTML=kop+`<div class="dd-kols${meer?' meer':''}">${kols.map(kolom).join('')}</div>`;
   // Afvinken: het antwoord is hetzelfde object als dagdoelen(), dus direct tekenen.
-  const vink=async(id,aantal)=>{
+  const vink=async(id,aantal,notitie)=>{
     if(DD_BEZIG||!eigen)return;DD_BEZIG=true;
     box.querySelectorAll('.dd-vink,.dd-tel button').forEach(b=>b.disabled=true);
     const voor=eigen;
-    const {data:d2,error:e2}=await sb.rpc('dagdoel_afvinken',{p_id:id,p_aantal:aantal,p_notitie:null,p_datum:voor.vandaag?null:voor.datum});
+    const {data:d2,error:e2}=await sb.rpc('dagdoel_afvinken',{p_id:id,p_aantal:aantal,p_notitie:notitie||null,p_datum:voor.vandaag?null:voor.datum});
     DD_BEZIG=false;
     if(e2){toast('Afvinken mislukt: '+e2.message,'err');opnieuw();return;}
-    DD.eigen=d2;if(d2.vandaag)ddBadge(d2);opnieuw();
+    DD.eigen=d2;if(d2.vandaag)ddBadge(d2);
+    // De tegels Investor Circle en WhatsApp-status leven alleen van deze vinkjes: op de KPI-pagina de cijfers meteen
+    // opnieuw halen, anders zegt de tegel nog "nog geen bericht" terwijl de taak af is (12 oktober 2026).
+    const tk=((voor.taken||[]).find(x=>x.id===id)||{}).kpi_actie;
+    if(typeof CURRENT!=='undefined'&&CURRENT==='kpi'&&typeof KPI!=='undefined'&&KPI.data&&['investor_circle','whatsapp_status'].includes(tk)){
+      const r=await sb.rpc('kpi_dashboard');if(!r.error&&r.data&&r.data.doel){KPI.data=r.data;kpiTeken();}else opnieuw();
+    }else opnieuw();
     if(d2.dag_af&&!voor.dag_af)toast('Dag afgerond. '+(Number(d2.streak)||0)+' op rij','ok');
   };
   const taak=id=>((eigen&&eigen.taken)||[]).find(x=>x.id===id);
-  box.querySelectorAll('[data-vink]').forEach(b=>b.onclick=()=>{const t=taak(b.dataset.vink);if(t)vink(t.id,t.klaar?0:null);});
+  box.querySelectorAll('[data-vink]').forEach(b=>b.onclick=()=>{const t=taak(b.dataset.vink);if(!t)return;
+    if(DD_NOTITIE[t.regel]){
+      if(t.handmatig>0){if(confirm('Bericht van deze dag terugzetten? Het telt dan niet meer.'))vink(t.id,0);return;}
+      const n=prompt(DD_NOTITIE[t.regel],t.notitie||'');if(n===null)return;
+      if(!n.trim()){toast('Schrijf kort wat je deelde, dan telt het bericht.','err');return;}
+      vink(t.id,null,n.trim().slice(0,200));return;}
+    vink(t.id,t.klaar?0:null);});
   box.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{const t=taak(b.dataset.plus);if(t)vink(t.id,Math.max(t.handmatig||0,t.auto||0)+1);});
   box.querySelectorAll('[data-min]').forEach(b=>b.onclick=()=>{const t=taak(b.dataset.min);if(t)vink(t.id,Math.max(0,(t.gedaan||0)-1));});
-  box.querySelectorAll('.dd-open[data-naar]').forEach(b=>b.onclick=()=>go(b.dataset.naar));
+  box.querySelectorAll('.dd-open[data-naar]').forEach(b=>b.onclick=()=>{if(b.dataset.bord)PENDING_PIPE_ROL=b.dataset.bord;go(b.dataset.naar);});
   box.querySelectorAll('[data-dd]').forEach(b=>b.onclick=async()=>{
     const a=b.dataset.dd;
     if(a==='gister'||a==='vandaag'){b.disabled=true;await ddLaden(a==='gister'?ddGisteren(eigen.datum):null,true);opnieuw();return;}
@@ -11810,7 +11839,7 @@ function showDetail(title,bodyHTML){
 
 /* ================= SALES PIPELINE (drag & drop) ================= */
 let PIPE={list:[],cur:null,cards:[],views:[],team:[],projects:[],enrich:{},tasks:{},filters:{project:'',assignee:'',q:''},dragId:null};
-let PENDING_PIPE=null;
+let PENDING_PIPE=null, PENDING_PIPE_ROL=null;
 const WA_SVG='<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" aria-hidden="true"><path d="M17.47 14.38c-.29-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.14-.19.29-.74.94-.9 1.13-.17.19-.33.21-.62.07-.29-.15-1.22-.45-2.33-1.44-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.59.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.14-.64-1.55-.88-2.12-.23-.56-.47-.48-.64-.49h-.55c-.19 0-.5.07-.76.36-.26.29-1 .98-1 2.38s1.02 2.76 1.17 2.95c.14.19 2.01 3.07 4.87 4.31.68.29 1.21.47 1.62.6.68.22 1.3.19 1.79.11.55-.08 1.7-.69 1.94-1.36.24-.67.24-1.24.17-1.36-.07-.12-.26-.19-.55-.34z"/><path d="M12 2.04c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.48 1.34 4.99L2 22l5.13-1.34c1.46.8 3.11 1.22 4.79 1.22 5.5 0 9.96-4.46 9.96-9.96S17.5 2.04 12 2.04zm0 18.19c-1.5 0-2.97-.4-4.25-1.16l-.3-.18-3.04.8.81-2.97-.2-.31a8.24 8.24 0 0 1-1.26-4.39c0-4.56 3.71-8.27 8.28-8.27 4.56 0 8.27 3.71 8.27 8.27 0 4.57-3.71 8.28-8.27 8.28z"/></svg>';
 
 async function renderPipeline(){
@@ -11831,6 +11860,8 @@ async function renderPipeline(){
   // Kwam je hier via "Open bord" op een contactkaart, dan is dat bord de keuze;
   // PIPE.list is dan mogelijk nog leeg geweest op het moment van klikken.
   if(PENDING_PIPE){const w=PIPE.list.find(p=>p.id===PENDING_PIPE);PENDING_PIPE=null;if(w)PIPE.cur=w;}
+  // Via Open bij een dagtaak of melding van KPI 1: het bord op rol (Discovery, met de kolom Nieuw Ashley).
+  if(PENDING_PIPE_ROL){const w=PIPE.list.find(p=>p.rol===PENDING_PIPE_ROL);PENDING_PIPE_ROL=null;if(w)PIPE.cur=w;}
   PIPE.cur=(PIPE.cur&&PIPE.list.find(p=>p.id===PIPE.cur.id))||PIPE.list[0];
   await loadPipelineData();
 }
