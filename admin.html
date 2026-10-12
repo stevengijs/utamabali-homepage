@@ -1405,7 +1405,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-12-kpi-ashley-2';
+const APP_VERSIE='2026-10-12-wa-bezorging-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2864,6 +2864,8 @@ function wlKaart(k){
   if(!k)return '<span class="muted">geen kaart</span>';
   return `<span class="badge blue">${esc(String(k.pipeline||'').replace(' pipeline',''))}: ${esc(k.stage_label||k.stage)}</span><div class="muted" style="font-size:11px">sinds ${wlRel(k.sinds)}</div>`;
 }
+// De werklijst leest de vlag uit de kaart (werklijst_kaart geeft hem mee).
+function wlWaBadge(k){return k&&k.whatsapp_onbereikbaar_at?` <span class="badge red" title="${esc(waOnbereikbaarTitel(k.whatsapp_onbereikbaar_at,k.whatsapp_onbereikbaar_reden))}">WhatsApp-nummer werkt niet</span>`:'';}
 function wlWie(k){return k&&k.assignee_naam?esc(k.assignee_naam):'<span class="muted">niemand</span>';}
 function wlLaatste(r){
   const l=r.laatste;if(!l)return 'geen';
@@ -2904,7 +2906,7 @@ function drawWerklijst(){
   const perGroep=g=>open.filter(r=>r.groep===g);
   const rijen1=perGroep(WL.tab);
   const rij1=r=>`<tr>
-    <td><button class="wl-naam" data-wl-crm="wacht:${r._i}" title="Open de CRM-kaart">${esc(r.naam||'(naamloos)')}</button>${r.is_customer?' <span class="badge green">klant</span>':''}</td>
+    <td><button class="wl-naam" data-wl-crm="wacht:${r._i}" title="Open de CRM-kaart">${esc(r.naam||'(naamloos)')}</button>${r.is_customer?' <span class="badge green">klant</span>':''}${wlWaBadge(r.kaart)}</td>
     <td class="muted">${esc(r.bereikbaar||'')}</td>
     <td>${wlKanaal(r.kanaal)}${esc(r.kanalen||r.kanaal||'')}</td>
     <td>${wlLaatste(r)}</td>
@@ -2940,7 +2942,7 @@ function drawWerklijst(){
   const nieuw=d.nieuw||[];
   const rij3=(r,i)=>`<tr>
     <td>${wlDT(r.created_at)}<div class="muted" style="font-size:11px">${wlRel(r.created_at)}</div></td>
-    <td><button class="wl-naam" data-wl-crm="nieuw:${i}" title="Open de CRM-kaart">${esc(r.naam||'(naamloos)')}</button><div class="muted" style="font-size:11px">${esc(r.phone||'')}${r.phone&&r.email?' · ':''}${esc(r.email||'')}</div></td>
+    <td><button class="wl-naam" data-wl-crm="nieuw:${i}" title="Open de CRM-kaart">${esc(r.naam||'(naamloos)')}</button>${wlWaBadge(r.kaart)}<div class="muted" style="font-size:11px">${esc(r.phone||'')}${r.phone&&r.email?' · ':''}${esc(r.email||'')}</div></td>
     <td><span class="badge ${r.type==='reservation'?'amber':r.type==='dataroom_request'?'blue':''}">${esc(r.type||'')}</span></td>
     <td>${esc(r.project||'')}${r.unit?' '+esc(r.unit):''}${r.budget?`<div class="muted" style="font-size:11px">${esc(r.budget)}${r.timeline?' · '+esc(r.timeline):''}</div>`:''}</td>
     <td class="muted">${esc(r.source_page||'')}${r.lang?' · '+esc(r.lang):''}</td>
@@ -8836,6 +8838,18 @@ function inboxStatusPill(c){
   const m=mens?map.mens:(map[c.status]||map.active);
   return `<span class="ibx-pill" style="color:${m[1]};background:${m[2]};border-color:${m[3]}">${m[0]}</span>`;
 }
+// WhatsApp-nummer werkt niet (Steven, 12 oktober 2026). De brochure kwam via
+// WhatsApp niet aan: Meta meldde "Message undeliverable", meestal omdat er op
+// dat nummer geen WhatsApp is. De vlag staat op het contact
+// (contacts.whatsapp_onbereikbaar_at, gezet door wa-webhook) en gaat er vanzelf
+// af zodra de lead via WhatsApp schrijft of een later WhatsApp-bericht aankomt.
+function waOnbereikbaarTitel(at,reden){
+  return 'De brochure kwam via WhatsApp niet aan'+(reden?' ('+reden+')':'')+(at?', '+new Date(at).toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'')+'. Bel of mail deze lead. Verdwijnt vanzelf zodra de lead via WhatsApp schrijft of een later WhatsApp-bericht aankomt.';
+}
+function waOnbereikbaarPill(at,reden){
+  if(!at)return '';
+  return `<span class="ibx-pill" style="color:#b91c1c;background:#fef2f2;border-color:#fecaca" title="${esc(waOnbereikbaarTitel(at,reden))}">WhatsApp-nummer werkt niet</span>`;
+}
 function inboxConceptPill(k){
   return `<span class="ibx-pill" style="color:#0f6b4f;background:#e7f4ee;border-color:#bfe3d1" title="Claude zette een antwoord klaar${k&&k.door_naam?' voor '+esc(k.door_naam):''}. Er gaat pas iets weg als iemand het naleest en op Sturen klikt.">Concept</span>`;
 }
@@ -8913,14 +8927,16 @@ async function inboxLoad(){
   // Purely-automated conversations (sequence/outreach mails, geen mens erin) worden standaard
   // verborgen zodat de échte gesprekken overzichtelijk blijven. Optioneel te tonen.
   // Een gesprek met een concept van Claude verbergen we nooit: dat moet iemand zien.
-  const autoHidden=INBOX.convos.filter(c=>c.automated_only&&!INBOX.concepten[c.id]).length;
+  // Een lead van wie het WhatsApp-nummer niet werkt ook niet: dat is juist een
+  // gesprek met alleen de brochure erin, en het team moet bellen of mailen.
+  const autoHidden=INBOX.convos.filter(c=>c.automated_only&&!INBOX.concepten[c.id]&&!c.whatsapp_onbereikbaar_at).length;
   let list=INBOX.convos;
   // automated_only betekent: geen inkomend bericht én geen menselijk antwoord.
   // Een gesprek dat binnenkwam zonder tekst valt daar ook onder, en dat is nou
   // net het geval dat iemand moet zien. In de onbeantwoord-weergave slaan we
   // die verberging dus over. Ruis levert dat niet op: zodra een lead iets
   // stuurt is automated_only sowieso onwaar.
-  if(!INBOX.showAuto&&!INBOX.onbeantwoord)list=list.filter(c=>!c.automated_only||INBOX.concepten[c.id]);
+  if(!INBOX.showAuto&&!INBOX.onbeantwoord)list=list.filter(c=>!c.automated_only||INBOX.concepten[c.id]||c.whatsapp_onbereikbaar_at);
   if(INBOX.unreadOnly)list=list.filter(c=>(c.unread_count||0)>0);
   if(INBOX.onbeantwoord)list=list.filter(inboxWachtOpOns);
   // Concepten-weergave: ook een concept op een gesprek buiten de 300 nieuwste
@@ -8961,7 +8977,7 @@ async function inboxLoad(){
       <div class="ibx-rmain">
         <div class="ibx-rtop"><span class="ibx-rname">${esc(nm)}</span><span class="ibx-rtime">${inboxRel(c.last_message_at)}</span></div>
         <div class="ibx-rprev">${c.last_direction==='out'?'<span class="ibx-you">Jij/AI:</span> ':''}${esc((c.last_message_preview||'').slice(0,80))}</div>
-        <div class="ibx-rmeta">${inboxStatusPill(c)}${INBOX.concepten[c.id]?inboxConceptPill(INBOX.concepten[c.id]):''}${c.warmth!=null?warmthBadge(c.warmth):''}${chIcons}${unread?`<span class="ibx-unread">${c.unread_count}</span>`:''}</div>
+        <div class="ibx-rmeta">${inboxStatusPill(c)}${waOnbereikbaarPill(c.whatsapp_onbereikbaar_at,c.whatsapp_onbereikbaar_reden)}${INBOX.concepten[c.id]?inboxConceptPill(INBOX.concepten[c.id]):''}${c.warmth!=null?warmthBadge(c.warmth):''}${chIcons}${unread?`<span class="ibx-unread">${c.unread_count}</span>`:''}</div>
       </div>
     </div>`;
   }).join('');
@@ -9385,6 +9401,7 @@ function inboxDrawInfo(ctx){
     ?`<button class="btn btn-sm ibx-rel" id="ibx_deblok" title="Toegang weer toestaan. Het gesprek blijft op overname staan.">🔓 Deblokkeren</button>`
     :`<button class="btn btn-sm ibx-rel" id="ibx_blok" title="Sluit dit contact volledig buiten: geen berichten meer in of uit, dataroom ingetrokken, e-mailsequenties gestopt.">🚫 Blokkeren</button>`):'';
   const blokNoot=geblokkeerd?`<div class="ibx-ip-note" style="color:#b91c1c;font-weight:600">🚫 ACCESS BLOCKED${cv.geblokkeerd_reden?' · '+esc(cv.geblokkeerd_reden):''}</div>`:'';
+  const waNoot=cv.whatsapp_onbereikbaar_at?`<div class="ibx-ip-note">${waOnbereikbaarPill(cv.whatsapp_onbereikbaar_at,cv.whatsapp_onbereikbaar_reden)}${cv.whatsapp_onbereikbaar_reden?` <span class="muted" style="font-size:11.5px">${esc(cv.whatsapp_onbereikbaar_reden)}</span>`:''}</div>`:'';
   const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
   // De groepskop geeft per veld de bron mee (bronnen), net als lead_kwalificatie:
   // wat het team na een gesprek vastlegde wint van wat de bot of het formulier zei.
@@ -9425,6 +9442,7 @@ function inboxDrawInfo(ctx){
     </div>
     <div class="ibx-ip-actions">${actsHtml}</div>
     ${blokNoot}
+    ${waNoot}
     ${(aiCtrl||relCtrl||geenAntwCtrl||blokCtrl)?`<div class="ibx-ip-ai">${aiCtrl}${relCtrl}${geenAntwCtrl}${blokCtrl}</div>`:''}
     <div class="ibx-ip-scroll">
       <div class="ibx-ip-sec"><div class="ibx-ip-h" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>AI-samenvatting</span>${edit?`<button class="ibx-sum-btn" id="ibx_sum_btn">${ctx.summary&&ctx.summary.summary?'↻ Vernieuwen':'✨ Genereren'}</button>`:''}</div><div id="ibx_sum_body">${inboxSummaryHtml(ctx.summary)}</div></div>
