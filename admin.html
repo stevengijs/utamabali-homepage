@@ -899,6 +899,11 @@
   .ibx-note-h{font-size:10.5px;font-weight:800;letter-spacing:.02em;color:#9a7a06;text-transform:uppercase;margin-bottom:3px}
   .ibx-note-b{font-size:13px;line-height:1.5;color:#4a3d0a;white-space:pre-wrap;word-wrap:break-word}
   .ibx-ip-note{font-size:12px;color:var(--muted);line-height:1.5}
+  /* Waarschuwing bovenin het zijpaneel (nummer werkt niet, geblokkeerd), in
+     lijn met de knoppen erboven (15 oktober 2026: stond tegen de rand en liep scheef). */
+  .ibx-ip-alert{margin:0 16px 12px;padding:10px 12px;border:1px solid #fecaca;background:#fef2f2;border-radius:10px;font-size:12.5px;line-height:1.45;color:#7f1d1d;display:flex;flex-direction:column;gap:3px;overflow-wrap:anywhere}
+  .ibx-ip-alert b{color:#b91c1c;font-weight:700}
+  .ibx-ip-alert .klein{font-size:11.5px;color:#9f5f5f}
   .ibx-autoem{align-self:stretch;margin:3px 0;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;overflow:hidden}
   .ibx-autoem .ibx-autoem-h{width:100%;background:none;border:0;font:inherit;text-align:left;list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 12px;min-height:32px;font-size:12px;color:#64748b}
   .ibx-autoem>summary::-webkit-details-marker{display:none}
@@ -1409,7 +1414,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-13-bord-waarheid-1';
+const APP_VERSIE='2026-10-15-wa-noot-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -9457,8 +9462,8 @@ function inboxDrawInfo(ctx){
   const blokCtrl=edit?(geblokkeerd
     ?`<button class="btn btn-sm ibx-rel" id="ibx_deblok" title="Toegang weer toestaan. Het gesprek blijft op overname staan.">🔓 Deblokkeren</button>`
     :`<button class="btn btn-sm ibx-rel" id="ibx_blok" title="Sluit dit contact volledig buiten: geen berichten meer in of uit, dataroom ingetrokken, e-mailsequenties gestopt.">🚫 Blokkeren</button>`):'';
-  const blokNoot=geblokkeerd?`<div class="ibx-ip-note" style="color:#b91c1c;font-weight:600">🚫 ACCESS BLOCKED${cv.geblokkeerd_reden?' · '+esc(cv.geblokkeerd_reden):''}</div>`:'';
-  const waNoot=cv.whatsapp_onbereikbaar_at?`<div class="ibx-ip-note">${waOnbereikbaarPill(cv.whatsapp_onbereikbaar_at,cv.whatsapp_onbereikbaar_reden)}${cv.whatsapp_onbereikbaar_reden?` <span class="muted" style="font-size:11.5px">${esc(cv.whatsapp_onbereikbaar_reden)}</span>`:''}</div>`:'';
+  const blokNoot=geblokkeerd?`<div class="ibx-ip-alert"><b>🚫 ACCESS BLOCKED</b>${cv.geblokkeerd_reden?`<span>${esc(cv.geblokkeerd_reden)}</span>`:''}</div>`:'';
+  const waNoot=cv.whatsapp_onbereikbaar_at?`<div class="ibx-ip-alert" title="${esc(waOnbereikbaarTitel(cv.whatsapp_onbereikbaar_at,cv.whatsapp_onbereikbaar_reden))}"><b>WhatsApp-nummer werkt niet</b><span>De brochure kwam via WhatsApp niet aan. Bel of mail deze lead.</span>${cv.whatsapp_onbereikbaar_reden?`<span class="klein">${esc(cv.whatsapp_onbereikbaar_reden)}</span>`:''}</div>`:'';
   const tlmap={now:'Nu kopen',['3-6m']:'3–6 maanden',exploring:'Oriënteert'};
   // De groepskop geeft per veld de bron mee (bronnen), net als lead_kwalificatie:
   // wat het team na een gesprek vastlegde wint van wat de bot of het formulier zei.
