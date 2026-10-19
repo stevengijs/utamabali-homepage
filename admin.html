@@ -1444,6 +1444,111 @@
     .kp-t-n{font-size:26px}
     .kp-kan-r{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"naam pct" "balk balk" "w o"}
   }
+  /* Mijn WhatsApp (19 oktober 2026): Stevens eigen WhatsApp, alleen voor hem.
+     Bubbels en dagscheiders lenen de klassen van de inbox (ibx-). */
+  .mw-status{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;padding:10px 14px;border:1px solid #c6ead9;background:#e7f6ef;color:#0f6b4f;border-radius:10px;font-size:13px}
+  .mw-status.rood{background:#fbeeec;border-color:#f0d3ce;color:#8f2a20}
+  .mw-status .mw-fout{flex-basis:100%;font-size:12.5px;word-break:break-word}
+  .mw-stip{display:inline-block;width:9px;height:9px;border-radius:50%;background:#16a34a;margin-right:7px;vertical-align:0}
+  .mw-status.rood .mw-stip{background:#d0473a}
+  .mw-tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:14px 0 2px;scrollbar-width:none}
+  .mw-tabs::-webkit-scrollbar{display:none}
+  .mw-tabs .ibx-chip{flex:none;font-size:13px;padding:6px 14px}
+  .mw-body{margin-top:12px}
+  .mw-balk{margin-bottom:12px}
+  .mw-kaart{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:12px;min-width:0}
+  .mw-kop{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;min-width:0}
+  .mw-chatnaam{font-weight:700;color:var(--brand);background:none;border:none;padding:0;font-size:14px;text-align:left;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  .mw-chatnaam:hover{text-decoration:underline}
+  .mw-titel{font-weight:650;margin-top:6px}
+  .mw-tijd{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+  .mw-bericht{margin-top:8px;padding:8px 11px;border:1px solid #dcefe5;background:#f6faf8;border-radius:8px;font-size:13.5px}
+  .mw-bericht-kop{font-size:11.5px;color:var(--muted);margin-bottom:2px}
+  .mw-tekst{white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+  .mw-toel{margin-top:6px;font-size:12.5px;color:var(--muted)}
+  .mw-voorstel{margin-top:10px}
+  .mw-in,.mw-voorstel textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:14px;outline:none;background:#fff;font-family:inherit}
+  .mw-voorstel textarea{min-height:78px;resize:vertical;line-height:1.5}
+  .mw-in:focus,.mw-voorstel textarea:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(20,179,125,.15)}
+  .mw-vs-voet{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px;font-size:11.5px;color:var(--muted)}
+  .mw-knoppen{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .mw-leeg{padding:28px;text-align:center;color:var(--muted);background:var(--panel);border:1px dashed var(--line);border-radius:var(--radius)}
+  .mw-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto;gap:8px;align-items:start}
+  .mw-kiezer{position:relative}
+  .mw-kiezer-lijst{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);max-height:280px;overflow-y:auto}
+  .mw-kiezer-item{display:block;width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:8px 11px;font-size:13px;color:var(--ink)}
+  .mw-kiezer-item:last-child{border-bottom:none}
+  button.mw-kiezer-item:hover{background:#f2f7f4}
+  .mw-kiezer-item small{color:var(--muted);margin-left:6px}
+  .mw-kiezer-gekozen{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #c6ead9;background:#e7f6ef;color:#0f6b4f;border-radius:9px;font-size:13px;font-weight:600;max-width:100%}
+  .mw-kiezer-gekozen span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mw-kiezer-gekozen button{border:none;background:none;color:inherit;font-size:16px;line-height:1;padding:0 2px}
+  .mw-zoekform{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) auto auto auto auto;gap:8px;align-items:center}
+  .mw-veld{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+  .mw-zoekform input[type=date],.mw-zoekform select{padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:13px;font-family:inherit}
+  .mw-res{padding:11px 16px;border-bottom:1px solid var(--line)}
+  .mw-res:last-child{border-bottom:none}
+  .mw-res mark,.mw-doc mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 1px}
+  .mw-omgeving{margin-top:6px;padding:8px 10px;border-radius:8px;background:#f6f8f7;font-size:12.5px}
+  .mw-om-r{padding:2px 0;white-space:pre-wrap;word-wrap:break-word}
+  .mw-mini{border:none;background:none;color:var(--brand);font-size:12px;font-weight:600;padding:2px 0;cursor:pointer}
+  .mw-mini:hover{text-decoration:underline}
+  .mw-doc{display:inline-flex;align-items:center;gap:8px;margin:4px 0 2px;padding:6px 9px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:12.5px;max-width:100%;color:var(--ink)}
+  .mw-doc b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:650}
+  .mw-ext{flex:none;font-size:9.5px;font-weight:800;letter-spacing:.04em;padding:3px 5px;border-radius:5px;background:#0f6b4f;color:#fff}
+  .mw-doc-st{flex:none;color:var(--muted);font-size:11.5px;white-space:nowrap}
+  .mw-doc .btn{flex:none;padding:4px 9px;font-size:12px}
+  .mw-label{font-style:italic;opacity:.8}
+  .mw-wacht{margin-top:12px;padding:12px 14px;border-radius:10px;background:#f6f8f7;color:var(--muted);font-size:13px}
+  .mw-wacht.fout{background:#fbeeec;color:#8f2a20}
+  .mw-antwoord{white-space:pre-wrap;word-wrap:break-word;font-size:14px;line-height:1.55}
+  .mw-bronnen{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .mw-bron{padding:4px 10px;border:1px solid #c6ead9;background:#e7f6ef;color:#0f6b4f;border-radius:999px;font-size:12px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mw-bron:hover{background:#d5efe3}
+  .mw-vraag-oud{border-bottom:1px solid var(--line)}
+  .mw-vraag-oud:last-child{border-bottom:none}
+  .mw-vraag-oud>summary{cursor:pointer;list-style:none;padding:11px 16px;display:flex;gap:10px;align-items:baseline}
+  .mw-vraag-oud>summary::-webkit-details-marker{display:none}
+  .mw-vraag-oud>summary b{flex:1;min-width:0;font-weight:650}
+  .mw-vraag-oud[open]>summary{background:#fafbfa}
+  .mw-vraag-oud .mw-vo-a{padding:4px 16px 14px}
+  .mw-chatrij{display:flex;align-items:center;gap:8px 14px;padding:10px 16px;border-bottom:1px solid var(--line)}
+  .mw-chatrij:last-child{border-bottom:none}
+  .mw-chatrij.uit .mw-chatinfo{opacity:.55}
+  .mw-chatinfo{flex:1;min-width:0}
+  .mw-chatinfo[data-mw-open]{cursor:pointer}
+  .mw-chatinfo[data-mw-open]:hover .mw-cn{color:var(--brand)}
+  .mw-cn{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mw-cs{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mw-schak{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;cursor:pointer}
+  .mw-schak input{accent-color:var(--brand);width:15px;height:15px;margin:0}
+  .mw-gesprek-kop{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .mw-gesprek-kop b{font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .mw-samenv{padding:12px 16px;border-bottom:1px solid var(--line);background:#fafbfa;font-size:13px}
+  .mw-feiten{display:grid;gap:5px;margin-top:8px}
+  .mw-feit{display:flex;gap:6px 8px;align-items:baseline;flex-wrap:wrap}
+  .mw-msgs{position:relative;display:flex;flex-direction:column;gap:8px;padding:14px;background:#fbfcfb;max-height:68vh;overflow-y:auto}
+  .mw-msgs>*{flex:0 0 auto}
+  .mw-msgs .ibx-mrow.in .ibx-btime{padding-left:2px}
+  .mw-msgs .ibx-mline{max-width:82%}
+  .mw-afz{font-size:11px;font-weight:700;color:#0f6b4f;margin:4px 0 1px 2px}
+  .mw-sys{align-self:center;font-size:11.5px;color:var(--muted);background:#eef2f0;border-radius:8px;padding:4px 10px;max-width:90%;text-align:center}
+  .mw-doel .ibx-bub{box-shadow:0 0 0 3px #fde68a}
+  .mw-taakknop{border:none;background:none;color:inherit;font-size:10.5px;font-weight:600;padding:0 2px;cursor:pointer;text-decoration:underline}
+  .mw-taakknop:hover{color:var(--brand)}
+  .mw-taakform{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;width:min(440px,100%)}
+  .mw-taakform input{flex:1;min-width:150px}
+  @media(max-width:720px){
+    .mw-form,.mw-zoekform{grid-template-columns:1fr}
+    .mw-veld{display:flex}
+    .mw-veld input{flex:1;min-width:0}
+    .mw-kaart{padding:12px}
+    .mw-chatrij{flex-wrap:wrap;padding:10px 12px}
+    .mw-chatinfo{flex-basis:100%}
+    .mw-msgs{padding:10px;max-height:62vh}
+    .mw-msgs .ibx-mline{max-width:92%}
+    .mw-in,.mw-voorstel textarea,.mw-zoekform input,.mw-zoekform select{font-size:16px}
+  }
 </style>
 </head>
 <body>
@@ -1513,7 +1618,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-19-bezorgstatus-1';
+const APP_VERSIE='2026-10-19-mijn-whatsapp-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1548,8 +1653,14 @@ const PAGES = [
   {key:'projects', label:'Projects',               icon:'🏗️'},
   {key:'portal',   label:'Portal & Investors',     icon:'🏝️'},
   {key:'referrals',label:'Referrals',              icon:'🎁'},
+  // Geen recht in adm_permissions: alleen zichtbaar als MW.eigenaar waar is (Steven).
+  {key:'mijn_whatsapp',label:'Mijn WhatsApp',      icon:'🟢'},
   {key:'users',    label:'Team & Users',           icon:'👥'},
 ];
+// Pagina's waarvoor je in Team & Users rechten kunt geven. Mijn WhatsApp hoort
+// daar niet bij: de toegang hangt aan Stevens gebruikers-id in de database, en
+// adm_permissions weigert onbekende paginasleutels (check-constraint).
+function permPages(){return PAGES.filter(p=>p.key!=='mijn_whatsapp');}
 /* Which live tables render under each page (stacked) */
 const PAGE_RES = {
   leads:    ['leads','contacts'],
@@ -1834,6 +1945,12 @@ const RES = {
 /* ================= STATE ================= */
 let ME=null, PERMS={}, SESSION=null, CURRENT='dashboard';
 let _cache={};
+/* Mijn WhatsApp: eigenaar is null tot mwPeil() klaar is, daarna true (Steven)
+   of false (iedereen anders, ook andere admins). Zie renderMijnWhatsapp(). */
+let MW={eigenaar:null,peil:null,overzicht:null,kanaal:null,tab:'open',taken:null,
+  chatQ:'',chats:null,chatsVolg:0,gesprek:null,
+  zoek:{q:'',chat:null,van:'',tot:'',soort:'alles',res:null},zoekVolg:0,
+  vraag:{bezig:false,tekst:'',start:0,klok:null,fout:null,laatste:null},opMac:{}};
 
 /* ================= HELPERS ================= */
 const $ = s => document.querySelector(s);
@@ -2048,6 +2165,7 @@ async function boot(){
   $('#meName').textContent=ME.full_name||ME.email;
   $('#meRole').textContent=isAdmin()?'Admin':'Team member';
   buildNav();
+  mwPeil();  // Mijn WhatsApp: het menu-item verschijnt pas als dit Steven blijkt
   gzInit();  // globale leadzoeker in de kop, ook met Cmd/Ctrl+K
   if(!handleDeepLink())go('dashboard');
   window.addEventListener('hashchange',handleDeepLink);
@@ -2105,6 +2223,9 @@ function handleDeepLink(){
     if(!canView('broadcast')){toast('Je hebt geen toegang tot Broadcast','err');return true;}
     closeOverlay();go('broadcast');return true;
   }
+  // Op de telefoon is er geen zijbalk; #mijn-whatsapp opent de pagina direct.
+  // go() wacht zelf op mwPeil() en toont anders de gewone geen-toegang-melding.
+  if(/^#mijn[-_]whatsapp\/?$/i.test(h)){closeOverlay();go('mijn_whatsapp');return true;}
   const m=h.match(/^#contact\/([0-9a-fA-F-]{8,})/);
   if(!m)return false;
   const id=m[1];
@@ -2121,7 +2242,8 @@ function buildNav(){
   // dagdoelen sinds 6 oktober 2026 staan; wie die pagina niet ziet, heeft hem bij Dashboard.
   const badge='<span class="dd-nav" id="dd_nav" hidden></span>', kpiZicht=canView('kpi');
   const dash=el('button','nav-item','<span class="ic">▚</span> Dashboard'+(kpiZicht?'':badge));dash.onclick=()=>go('dashboard');dash.dataset.k='dashboard';nav.append(dash);
-  PAGES.forEach(p=>{if(!canView(p.key))return;const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${p.label}`+(p.key==='kpi'?badge:''));b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);});
+  // Mijn WhatsApp telt niet via canView (ook een admin ziet het niet) maar via MW.eigenaar.
+  PAGES.forEach(p=>{if(p.key==='mijn_whatsapp'?MW.eigenaar!==true:!canView(p.key))return;const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${p.label}`+(p.key==='kpi'?badge:''));b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);});
 }
 function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>n.classList.toggle('active',n.dataset.k===k));}
 
@@ -2220,13 +2342,24 @@ function gzInit(){
 
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
-  const titles={dashboard:'Dashboard',kpi:'KPI',werklijst:'Werklijst',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users',ads:'Ads'};
+  const titles={dashboard:'Dashboard',kpi:'KPI',werklijst:'Werklijst',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users',ads:'Ads',mijn_whatsapp:'Mijn WhatsApp'};
   $('#pageTitle').textContent=titles[k]||k;
   versieCheck();
   if(k==='dashboard')return renderDashboard();
   if(k==='analytics')return renderAnalytics();
   if(k==='revenue')return renderRevenue();
   if(k==='users')return renderUsers();
+  // Mijn WhatsApp: niet canView maar MW.eigenaar. Loopt mwPeil() nog (direct na
+  // het inloggen, of via #mijn-whatsapp), dan eerst daarop wachten.
+  if(k==='mijn_whatsapp'){
+    if(MW.eigenaar===true)return renderMijnWhatsapp();
+    if(MW.eigenaar===null&&MW.peil){
+      $('#view').innerHTML='<div class="muted" style="padding:8px">Laden…</div>';
+      MW.peil.then(()=>{if(CURRENT==='mijn_whatsapp')go('mijn_whatsapp');});
+      return;
+    }
+    $('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;
+  }
   if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;}
   if(k==='werklijst')return renderWerklijst();
   if(k==='kpi')return renderKpi();
@@ -2240,6 +2373,831 @@ function go(k){
   if(k==='ads')return renderAds();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
+}
+
+/* ================= MIJN WHATSAPP =================
+   Stevens zakelijke WhatsApp (de app op zijn Mac), op een pagina die alleen hij
+   ziet. Een lezer op de Mac (tools/wa-mac-sync) zet chats, berichten en
+   documenten in de mw_-tabellen. Deze pagina leest en schrijft die via de RPC's
+   van migratie 20261019200000_mijn_whatsapp.sql; alleen voor het werk van Claude
+   (vraag, voorstel) en voor documenten (document_url, opruimen) roept ze de edge
+   function mijn-whatsapp aan. Toegang hangt aan Stevens gebruikers-id
+   (mw_is_eigenaar in de database), niet aan de admin-rol: Ashley is ook admin en
+   ziet dit menu-item niet. Staat volledig los van de leadinbox: niets hier raakt
+   leads, contacten of de inbox. Ontwerp:
+   docs/superpowers/specs/2026-10-19-mijn-whatsapp-design.md. */
+const MW_TABS=[['open','Open'],['zoeken','Zoeken'],['vragen','Vragen'],['chats','Chats']];
+const MW_SOORT={persoon:'Persoon',groep:'Groep',overig:'Overig'};
+const MW_BRON={automatisch:['grey','Automatisch'],claude:['blue','Claude'],handmatig:['green','Handmatig']};
+const MW_FEIT={afspraak:'Afspraak',toezegging:'Toezegging',bedrag:'Bedrag',deadline:'Deadline',contact:'Contact'};
+const MW_ZOEKSOORT=[['alles','Alles'],['documenten','Documenten'],['afspraken','Afspraken'],['bedragen','Bedragen']];
+const MW_SOORTLABEL={afbeelding:'Foto',video:'Video',audio:'Spraakbericht',contact:'Contactkaart',locatie:'Locatie',gif:'GIF',sticker:'Sticker',verwijderd:'Bericht verwijderd',document:'Document',link:'Link',overig:'Bericht zonder tekst'};
+try{const t=localStorage.getItem('mw_tab');if(MW_TABS.some(x=>x[0]===t))MW.tab=t;}catch(e){}
+
+// Staat de gebruiker nog op deze pagina en dit tabblad? Een trage aanroep mag
+// niet over een ander scherm heen tekenen.
+function mwHier(tab){return CURRENT==='mijn_whatsapp'&&MW.tab===tab&&!!$('#mw_body');}
+
+// Na het inloggen: is dit Steven? Eerst mw_is_eigenaar, die voor iedereen gewoon
+// true of false teruggeeft (dus geen 400 in de console bij Ashley), dan
+// mw_overzicht, dat alleen voor de eigenaar slaagt. Elke fout telt stil als nee.
+function mwPeil(){
+  MW.peil=(async()=>{
+    let ok=false;
+    try{
+      const e=await sb.rpc('mw_is_eigenaar');
+      if(!e.error&&e.data===true){
+        const {data,error}=await sb.rpc('mw_overzicht');
+        ok=!error&&!!data&&data.eigenaar===true;
+        if(ok)MW.overzicht=data;
+      }
+    }catch(e){ok=false;}
+    MW.eigenaar=ok;
+    // Het menu-item verschijnt pas nu; de dagdoelen-badge zit in de zijbalk en
+    // moet na het opnieuw opbouwen opnieuw gevuld worden.
+    if(ok){buildNav();setActive(CURRENT);ddBadge();}
+    return ok;
+  })();
+  return MW.peil;
+}
+
+/* ---------- Pure hulpjes (getest met node, zie de review van 19 oktober) ---------- */
+// Naam van een chat; zonder naam het nummer van een persoon, anders een vaste tekst.
+function mwNaam(c){
+  c=c||{};const n=String(c.naam||c.chat_naam||'').trim();if(n)return n;
+  const m=String(c.jid||c.chat_jid||'').match(/^(\d+)(?::\d+)?@s\.whatsapp\.net$/);
+  return m?'+'+m[1]:'Onbekende chat';
+}
+// Link naar de WhatsApp-app. Een persoon (@s.whatsapp.net) opent direct met de
+// tekst ingevuld; een groep, een @lid-chat of iets anders kan dat niet, daar gaat
+// de tekst via het klembord.
+function mwWaLink(jid,tekst){
+  const m=String(jid||'').match(/^(\d+)(?::\d+)?@s\.whatsapp\.net$/);
+  if(m)return {url:'whatsapp://send?phone='+m[1]+'&text='+encodeURIComponent(tekst||''),klembord:false};
+  return {url:'whatsapp://',klembord:true};
+}
+// Zoektermen uit de zoektekst zoals mw_zoeken ze leest (websearch): een frase
+// tussen aanhalingstekens blijft heel, -woord en "or" tellen niet mee.
+function mwTermen(q){
+  const uit=[];
+  String(q||'').replace(/"([^"]+)"|(\S+)/g,(m,frase,woord)=>{
+    let t=(frase!=null?frase:woord).trim();
+    if(frase==null){
+      if(/^-/.test(t)||/^or$/i.test(t))return m;
+      t=t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,'');
+    }
+    if(t.length>=2&&!uit.some(x=>x.toLowerCase()===t.toLowerCase()))uit.push(t);
+    return m;
+  });
+  return uit.sort((a,b)=>b.length-a.length).slice(0,10);
+}
+// Tekst veilig tonen met de zoektermen gemarkeerd: de treffers worden in de
+// ruwe tekst gezocht en elk stuk apart ge-escaped, zodat een term nooit in een
+// HTML-entiteit kan vallen en er geen HTML uit de tekst doorkomt.
+function mwMarkeer(tekst,q){
+  const s=String(tekst==null?'':tekst),termen=mwTermen(q);
+  if(!termen.length||!s)return esc(s);
+  const re=new RegExp(termen.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'gi');
+  let uit='',laatst=0,m;
+  while((m=re.exec(s))!==null){
+    if(!m[0].length){re.lastIndex++;continue;}
+    uit+=esc(s.slice(laatst,m.index))+'<mark>'+esc(m[0])+'</mark>';
+    laatst=m.index+m[0].length;
+  }
+  return uit+esc(s.slice(laatst));
+}
+// Begin of einde van een dag (jjjj-mm-dd uit een datumveld) in lokale tijd, als ISO.
+function mwDagGrens(d,eind){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d||''))return null;
+  const t=new Date(d+(eind?'T23:59:59.999':'T00:00:00'));
+  return isNaN(t)?null:t.toISOString();
+}
+// Een milliseconde na een tijdstip, als ISO; null bij een ongeldig tijdstip.
+// mw_gesprek leest p_tot exclusief: met deze grens vallen berichten met
+// hetzelfde tijdstip als het grensbericht er niet tussenuit. De overlap (het
+// grensbericht zelf) haalt mwUniek er weer uit.
+function mwNaMs(ts){
+  const t=ts?new Date(ts):null;
+  return (t&&!isNaN(t))?new Date(t.getTime()+1).toISOString():null;
+}
+// Zoektekst voor mw_chats_lijst, die in naam en jid zoekt. Lijkt de invoer op
+// een telefoonnummer (alleen cijfers, spaties, plus, streepjes en haakjes,
+// minstens 6 cijfers), dan alleen de cijfers, met de landcode zoals in de jid:
+// 06... wordt 316..., 08... wordt 628..., 00 vooraan valt weg en een (0) na de
+// landcode ook. Anders de tekst zoals getypt; leeg geeft null.
+function mwChatZoekQ(q){
+  const s=String(q==null?'':q).trim();
+  if(!s)return null;
+  if(!/^[\d\s+()\-\u2010-\u2015]+$/.test(s))return s;
+  let d=s.replace(/\(\s*0\s*\)/g,'').replace(/\D/g,'');
+  if(d.length<6)return s;
+  if(/^00/.test(d))d=d.slice(2);
+  else if(/^06/.test(d))d='31'+d.slice(1);
+  else if(/^08/.test(d))d='62'+d.slice(1);
+  return d;
+}
+// Hoe de herinneringen aankomen (mw_instellingen, sleutel herinnering_kanaal).
+// Standaard per e-mail; alleen als het kanaal op whatsapp staat eerst WhatsApp.
+function mwHerinneringKanaal(k){return k==='whatsapp'?'per WhatsApp, anders per e-mail':'per e-mail';}
+// Berichten op volgorde, elk maar een keer (ouder laden en "rond een moment" overlappen).
+function mwUniek(lijst){
+  const gezien=new Set();
+  return (lijst||[]).filter(m=>{if(!m||gezien.has(String(m.mac_pk)))return false;gezien.add(String(m.mac_pk));return true;})
+    .sort((a,b)=>(new Date(a.tijdstip)-new Date(b.tijdstip))||(Number(a.mac_pk)-Number(b.mac_pk)));
+}
+// Statusbalk: rood als de Mac een fout meldt of zich langer dan een uur niet meldde.
+function mwStatus(o,nu){
+  const s=(o&&o.sync)||{},n=x=>Number(x||0).toLocaleString('nl-NL');
+  const t=s.laatste_sync_at?new Date(s.laatste_sync_at):null,geldig=!!t&&!isNaN(t);
+  const oud=!geldig||(nu-t.getTime())>60*60*1000;
+  let gezien='Mac nog niet gezien';
+  if(geldig){
+    const vandaag=new Date(nu).toDateString()===t.toDateString();
+    gezien='Mac laatst gezien '+(vandaag?'':t.toLocaleDateString('nl-NL',{day:'numeric',month:'short'})+' ')+t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+  }
+  const delen=[gezien,n(o&&o.chats)+' chats',n(o&&o.berichten)+' berichten'];
+  const mis=Number(s.documenten_mislukt)||0,op=Number(s.documenten_opgegeven)||0;
+  if(mis>0)delen.push(n(mis)+(mis===1?' document':' documenten')+' nog niet geüpload, de Mac probeert het opnieuw');
+  if(op>0)delen.push(n(op)+(op===1?' document':' documenten')+' opgegeven');
+  const fout=s.fout?String(s.fout):null;
+  return {rood:oud||!!fout,oud,fout,delen};
+}
+// Voorgestelde titel voor "Taak van maken".
+function mwTaakTitel(m){
+  if(!m)return '';
+  const t=String(m.tekst||'').replace(/\s+/g,' ').trim();
+  const kort=t.length>60?t.slice(0,57).trimEnd()+'…':t;
+  return m.van_mij?(kort?'Opvolgen: '+kort:'Opvolgen'):(kort?'Antwoorden op: '+kort:'Antwoorden');
+}
+function mwTijd(ts){return ts?fmtDateTime(ts):'';}
+function mwDatumKort(ts){const d=new Date(ts);return isNaN(d)?'':d.toLocaleDateString('nl-NL');}
+
+/* ---------- Edge function mijn-whatsapp ---------- */
+// Een fout komt terug als HTTP 4xx/5xx met {error}; supabase-js zegt dan alleen
+// "non-2xx", de echte tekst staat in error.context. Anders de eigen tekst.
+async function mwFunctieFout(error,standaard){
+  try{
+    const c=error&&error.context;
+    if(c&&typeof c.json==='function'){const j=await (c.clone?c.clone():c).json();if(j&&typeof j.error==='string'&&j.error.trim())return j.error.trim();}
+  }catch(e){}
+  return standaard;
+}
+async function mwInvoke(actie,extra,standaard){
+  let res;
+  try{res=await sb.functions.invoke('mijn-whatsapp',{body:Object.assign({actie},extra||{})});}
+  catch(e){throw new Error(standaard);}
+  if(res.error)throw new Error(await mwFunctieFout(res.error,standaard));
+  if(res.data&&res.data.error)throw new Error(String(res.data.error));
+  return res.data||{};
+}
+
+/* ---------- Documenten ---------- */
+// mw_zoeken en mw_gesprek geven op_mac niet mee. Voor documenten zonder
+// opslag_pad halen we het hier op (RLS laat alleen Steven toe), zodat de pagina
+// "alleen op de telefoon" kan onderscheiden van "nog niet geüpload".
+async function mwOpMacLaden(lijst){
+  const pks=[...new Set((lijst||[]).filter(b=>b&&b.soort==='document'&&!b.opslag_pad&&b.mac_pk!=null&&!(b.mac_pk in MW.opMac)).map(b=>b.mac_pk))];
+  for(let i=0;i<pks.length;i+=150){
+    try{
+      const {data,error}=await sb.from('mw_media').select('bericht_mac_pk,op_mac').in('bericht_mac_pk',pks.slice(i,i+150));
+      if(error)return;
+      (data||[]).forEach(r=>{MW.opMac[r.bericht_mac_pk]=r.op_mac;});
+    }catch(e){return;}
+  }
+}
+function mwDocHtml(b,q){
+  const naam=String(b.bestandsnaam||'Document');
+  const ext=((naam.match(/\.([a-z0-9]{1,5})$/i)||[])[1]||'doc').toUpperCase();
+  const actie=b.opslag_pad
+    ?`<button class="btn btn-ghost btn-sm" data-mw-doc="${esc(b.opslag_pad)}">Openen</button>`
+    :`<span class="mw-doc-st">${MW.opMac[b.mac_pk]===false?'alleen op de telefoon':'nog niet geüpload'}</span>`;
+  return `<div class="mw-doc"><span class="mw-ext">${esc(ext)}</span><b title="${esc(naam)}">${q?mwMarkeer(naam,q):esc(naam)}</b>${actie}</div>`;
+}
+// Ondertekende URL (10 minuten) uit de edge function. Het venster gaat meteen
+// open, anders houdt de popupblokker het tegen na het wachten.
+async function mwDocOpen(pad,knop){
+  const w=window.open('about:blank','_blank');
+  if(knop)knop.disabled=true;
+  try{
+    const d=await mwInvoke('document_url',{pad},'Het document openen lukte niet.');
+    if(!d.url||!/^https:\/\//i.test(String(d.url)))throw new Error('Het document openen lukte niet.');
+    if(w&&!w.closed){try{w.opener=null;}catch(e){}w.location.href=d.url;}
+    else window.open(d.url,'_blank','noopener');
+  }catch(e){
+    if(w&&!w.closed)w.close();
+    toast(esc(e.message),'err');
+  }finally{if(knop&&knop.isConnected)knop.disabled=false;}
+}
+function mwBerichtTekstHtml(b,q){
+  const t=String((b&&b.tekst)||'');
+  if(t.trim())return q?mwMarkeer(t,q):esc(t);
+  return `<span class="mw-label">${esc(MW_SOORTLABEL[b&&b.soort]||'Geen tekst')}</span>`;
+}
+// Klik op een chatnaam of bron opent het gesprek (rond dat moment); een knop
+// Openen haalt het document op.
+function mwLinksBind(box){
+  box.querySelectorAll('[data-mw-chat]').forEach(x=>x.onclick=()=>mwOpenGesprek(x.dataset.mwChat,{rond:x.dataset.mwRond||null,pk:x.dataset.mwPk||null}));
+  box.querySelectorAll('[data-mw-doc]').forEach(x=>x.onclick=()=>mwDocOpen(x.dataset.mwDoc,x));
+}
+
+/* ---------- WhatsApp openen ---------- */
+async function mwKopieer(tekst){
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(tekst);return true;}}catch(e){}
+  try{
+    const t=document.createElement('textarea');t.value=tekst;t.style.position='fixed';t.style.opacity='0';
+    document.body.appendChild(t);t.select();const ok=document.execCommand('copy');t.remove();return ok;
+  }catch(e){return false;}
+}
+async function mwOpenWhatsapp(jid,tekst){
+  const l=mwWaLink(jid,tekst);
+  if(!l.klembord){location.href=l.url;return;}
+  if(tekst){
+    if(await mwKopieer(tekst))toast('Tekst staat op het klembord, plak hem in de chat','ok',6000);
+    else prompt('Kopieer deze tekst en plak hem in de chat:',tekst);
+  }else toast('WhatsApp gaat open. Zoek daar de chat op naam.','ok');
+  location.href=l.url;
+}
+
+/* ---------- Chat kiezen (zoekveld met keuzelijst) ---------- */
+function mwChatKiezer(box,opts){
+  opts=opts||{};let gekozen=opts.gekozen||null,timer=null,volg=0;
+  const kies=c=>{gekozen=c;teken();if(opts.onKies)opts.onKies(c);};
+  function teken(){
+    if(gekozen){
+      box.innerHTML=`<span class="mw-kiezer-gekozen" title="${esc(gekozen.naam)}"><span>${esc(gekozen.naam)}</span><button type="button" aria-label="Chat wissen">×</button></span>`;
+      box.querySelector('button').onclick=()=>{kies(null);const i=box.querySelector('input');if(i)i.focus();};
+      return;
+    }
+    box.innerHTML=`<div class="mw-kiezer"><input class="mw-in" type="search" placeholder="${esc(opts.placeholder||'Chat zoeken')}" autocomplete="off" spellcheck="false" aria-label="${esc(opts.placeholder||'Chat zoeken')}"><div class="mw-kiezer-lijst" hidden></div></div>`;
+    const inp=box.querySelector('input'),lijst=box.querySelector('.mw-kiezer-lijst');
+    const zoek=async()=>{
+      const mijn=++volg;
+      const {data,error}=await sb.rpc('mw_chats_lijst',{p_q:mwChatZoekQ(inp.value),p_limiet:40});
+      if(mijn!==volg||!inp.isConnected)return;
+      let rijen=(!error&&Array.isArray(data))?data:[];
+      if(opts.alleenIn)rijen=rijen.filter(c=>!c.uitgesloten);
+      rijen=rijen.slice(0,15);
+      lijst.innerHTML=rijen.length
+        ?rijen.map((c,i)=>`<button type="button" class="mw-kiezer-item" data-i="${i}">${esc(mwNaam(c))}<small>${esc(MW_SOORT[c.soort]||'')}</small></button>`).join('')
+        :`<div class="mw-kiezer-item muted">${error?'Chats niet beschikbaar':'Geen chat gevonden'}</div>`;
+      lijst.hidden=false;
+      lijst.querySelectorAll('[data-i]').forEach(b=>{
+        b.onmousedown=e=>e.preventDefault();   // focus in het veld houden tot de klik er is
+        b.onclick=()=>{const c=rijen[+b.dataset.i];if(c)kies({jid:c.jid,naam:mwNaam(c)});};
+      });
+    };
+    inp.oninput=()=>{clearTimeout(timer);timer=setTimeout(zoek,200);};
+    inp.onfocus=()=>zoek();
+    inp.onblur=()=>setTimeout(()=>{if(lijst.isConnected)lijst.hidden=true;},200);
+    inp.onkeydown=e=>{if(e.key==='Escape'){lijst.hidden=true;inp.blur();}};
+  }
+  teken();
+  return {waarde:()=>gekozen};
+}
+
+/* ---------- Pagina, statusbalk en tabbladen ---------- */
+function renderMijnWhatsapp(){
+  $('#view').innerHTML=`<div id="mw_status" class="mw-status"><span>Status laden…</span></div>
+    <div class="mw-tabs" id="mw_tabs" role="tablist" aria-label="Mijn WhatsApp"></div>
+    <div class="mw-body" id="mw_body"></div>`;
+  if(MW.overzicht)mwStatusTeken();
+  mwTab(MW.tab);
+  mwStatusLaden();
+  mwKanaalLaden();
+}
+// Het kanaal van de herinneringen, een keer per bezoek aan de pagina. Ontbreekt
+// de sleutel of lukt het lezen niet, dan geldt de standaard: e-mail. Alleen de
+// woorden met data-mw-kanaal hangen ervan af.
+async function mwKanaalLaden(){
+  let k='email';
+  try{
+    const {data,error}=await sb.from('mw_instellingen').select('waarde').eq('sleutel','herinnering_kanaal').maybeSingle();
+    if(!error&&data&&String(data.waarde||'').trim()==='whatsapp')k='whatsapp';
+  }catch(e){}
+  const anders=mwHerinneringKanaal(k)!==mwHerinneringKanaal(MW.kanaal);
+  MW.kanaal=k;
+  if(!anders)return;
+  document.querySelectorAll('[data-mw-kanaal]').forEach(x=>{x.textContent=mwHerinneringKanaal(k);});
+  // De schakelaars Belangrijk dragen het kanaal in hun title.
+  if(mwHier('chats')&&!MW.gesprek&&MW.chats)mwChatsLijstTeken();
+}
+async function mwStatusLaden(){
+  const {data,error}=await sb.rpc('mw_overzicht');
+  if(!error&&data)MW.overzicht=data;
+  if(CURRENT!=='mijn_whatsapp')return;
+  if(error){mwStatusTeken(error.message||'onbekende fout');return;}
+  mwStatusTeken();mwTabsTeken();
+}
+function mwStatusTeken(fout){
+  const box=$('#mw_status');if(!box)return;
+  if(fout){box.className='mw-status rood';box.innerHTML=`<span><span class="mw-stip"></span>Status niet beschikbaar: ${esc(fout)}</span>`;return;}
+  const s=mwStatus(MW.overzicht,Date.now());
+  box.className='mw-status'+(s.rood?' rood':'');
+  box.innerHTML=`<span><span class="mw-stip"></span>${esc(s.delen[0])}</span>${s.delen.slice(1).map(d=>`<span>${esc(d)}</span>`).join('')}`
+    +`<span>Herinneringen <span data-mw-kanaal>${esc(mwHerinneringKanaal(MW.kanaal))}</span></span>`
+    +(s.fout?`<span class="mw-fout">Fout van de Mac: ${esc(s.fout)}</span>`
+      :(s.oud?'<span class="mw-fout">De Mac heeft zich langer dan een uur niet gemeld. Staat hij aan, met WhatsApp open?</span>':''));
+}
+function mwTabsTeken(){
+  const b=$('#mw_tabs');if(!b)return;
+  const open=(MW.overzicht&&Number(MW.overzicht.open))||0;
+  b.innerHTML=MW_TABS.map(([k,l])=>`<button class="ibx-chip ${MW.tab===k?'on':''}" data-mwtab="${k}" role="tab" aria-selected="${MW.tab===k}">${l}${k==='open'&&open?`<span class="ibx-chip-n">${open}</span>`:''}</button>`).join('');
+  // Nog eens op Chats tikken terwijl een gesprek openstaat: terug naar de lijst.
+  b.querySelectorAll('[data-mwtab]').forEach(x=>x.onclick=()=>{if(x.dataset.mwtab==='chats'&&MW.tab==='chats')MW.gesprek=null;mwTab(x.dataset.mwtab);});
+}
+function mwTab(k){
+  if(!MW_TABS.some(x=>x[0]===k))k='open';
+  MW.tab=k;try{localStorage.setItem('mw_tab',k);}catch(e){}
+  mwTabsTeken();
+  if(!$('#mw_body'))return;
+  if(k==='open')return mwOpenLaden();
+  if(k==='zoeken')return mwZoekenTeken();
+  if(k==='vragen')return mwVragenTeken();
+  return MW.gesprek?mwGesprekTeken():mwChatsTeken();
+}
+
+/* ---------- Open: de takenlijst ---------- */
+async function mwOpenLaden(){
+  const b=$('#mw_body');if(!b)return;
+  b.innerHTML='<div id="mw_nieuw" class="mw-balk"></div><div id="mw_taken"><div class="muted" style="padding:8px">Open punten laden…</div></div>';
+  mwNieuwTaakTeken(false);
+  const {data,error}=await sb.rpc('mw_open');
+  if(!mwHier('open'))return;
+  if(error){$('#mw_taken').innerHTML=`<div class="mw-leeg">Open punten niet beschikbaar: ${esc(error.message)}</div>`;return;}
+  MW.taken=Array.isArray(data)?data:[];
+  mwTakenTeken();
+}
+function mwNieuwTaakTeken(open){
+  const box=$('#mw_nieuw');if(!box)return;
+  if(!open){
+    box.className='mw-balk';
+    box.innerHTML='<button class="btn btn-ghost btn-sm" id="mw_nt_open">Taak toevoegen</button>';
+    $('#mw_nt_open').onclick=()=>mwNieuwTaakTeken(true);
+    return;
+  }
+  box.className='mw-kaart';
+  box.innerHTML=`<div style="font-weight:700;margin-bottom:8px">Taak toevoegen</div>
+    <div class="mw-form"><div id="mw_nt_chat"></div>
+      <input class="mw-in" id="mw_nt_titel" placeholder="Wat moet er gebeuren?" maxlength="200" autocomplete="off" aria-label="Titel">
+      <div class="mw-knoppen" style="margin-top:0"><button class="btn btn-primary btn-sm" id="mw_nt_ok">Toevoegen</button><button class="btn btn-ghost btn-sm" id="mw_nt_weg">Annuleren</button></div></div>`;
+  const titel=$('#mw_nt_titel'),ok=$('#mw_nt_ok');
+  const kiezer=mwChatKiezer($('#mw_nt_chat'),{placeholder:'Kies een chat',alleenIn:true,onKies:c=>{if(c&&titel.isConnected)titel.focus();}});
+  $('#mw_nt_weg').onclick=()=>mwNieuwTaakTeken(false);
+  const doe=async()=>{
+    const c=kiezer.waarde(),tt=titel.value.trim();
+    if(!c){toast('Kies eerst een chat','err');return;}
+    if(!tt){toast('Geef de taak een titel','err');titel.focus();return;}
+    ok.disabled=true;
+    const {error}=await sb.rpc('mw_taak_toevoegen',{p_chat_jid:c.jid,p_titel:tt});
+    if(error){ok.disabled=false;toast('Taak toevoegen lukte niet: '+esc(error.message),'err');return;}
+    toast('Taak toegevoegd','ok');
+    if(mwHier('open'))mwOpenLaden();
+    mwStatusLaden();
+  };
+  ok.onclick=doe;
+  titel.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doe();}};
+}
+function mwTaakHtml(t){
+  const br=MW_BRON[t.bron]||['grey',t.bron||'Taak'],b=t.bericht,naam=mwNaam({naam:t.chat_naam,jid:t.chat_jid});
+  const wie=b?(b.van_mij?'jij':(b.afzender_naam||naam)):'';
+  return `<div class="mw-kaart" data-mw-taak="${esc(t.id)}">
+    <div class="mw-kop"><button class="mw-chatnaam" data-mw-chat="${esc(t.chat_jid)}" data-mw-rond="${esc(b?b.tijdstip:'')}" data-mw-pk="${esc(b&&b.mac_pk!=null?b.mac_pk:'')}" title="Open het gesprek">${esc(naam)}</button>
+      <span class="badge ${br[0]}">${esc(br[1])}</span>${t.status==='later'?'<span class="badge amber">Was uitgesteld</span>':''}
+      <span class="mw-tijd" title="${esc(mwTijd(t.aangemaakt_at))}">${esc(inboxRel(t.aangemaakt_at))}</span></div>
+    ${t.titel?`<div class="mw-titel">${esc(t.titel)}</div>`:''}
+    ${b?`<div class="mw-bericht"><div class="mw-bericht-kop">${esc(mwTijd(b.tijdstip))} · ${esc(wie)}</div><div class="mw-tekst">${mwBerichtTekstHtml(b)}</div></div>`:''}
+    ${t.toelichting?`<div class="mw-toel mw-tekst">${esc(t.toelichting)}</div>`:''}
+    <div class="mw-voorstel" data-mw-vs>${mwVoorstelHtml(t.voorstel_antwoord||'',false)}</div>
+    <div class="mw-knoppen">
+      <button class="btn btn-primary btn-sm" data-mw-wa>Open in WhatsApp</button>
+      <button class="btn btn-ghost btn-sm" data-mw-af>Afgehandeld</button>
+      <button class="btn btn-ghost btn-sm" data-mw-later title="Komt morgen om 09:00 (Bali) terug">Later</button>
+    </div></div>`;
+}
+function mwVoorstelHtml(vs,open){
+  if(!vs&&!open)return '<div class="mw-knoppen" style="margin-top:0;align-items:center"><button class="btn btn-ghost btn-sm" data-mw-maak>Voorstel maken</button><button class="mw-mini" data-mw-zelf>Zelf schrijven</button></div>';
+  return `<textarea data-mw-voorstel placeholder="Je antwoord" aria-label="Antwoord">${esc(vs)}</textarea>
+    <div class="mw-vs-voet"><span data-mw-opgeslagen></span><button class="mw-mini" data-mw-maak>${vs?'Nieuw voorstel':'Voorstel maken'}</button></div>`;
+}
+function mwTakenTeken(){
+  const box=$('#mw_taken');if(!box)return;
+  const lijst=MW.taken||[];
+  if(!lijst.length){box.innerHTML='<div class="mw-leeg">Niets open.</div>';return;}
+  box.innerHTML=lijst.map(mwTaakHtml).join('');
+  box.querySelectorAll('[data-mw-taak]').forEach(k=>{const t=lijst.find(x=>String(x.id)===k.dataset.mwTaak);if(t)mwTaakBind(k,t);});
+  mwLinksBind(box);
+}
+function mwTaakBind(k,t){
+  const vak=k.querySelector('[data-mw-vs]');
+  const teken=open=>{vak.innerHTML=mwVoorstelHtml(t.voorstel_antwoord||'',open);bind();};
+  const bind=()=>{
+    const maak=vak.querySelector('[data-mw-maak]');if(maak)maak.onclick=()=>mwVoorstelMaken(t,vak,maak,teken);
+    const zelf=vak.querySelector('[data-mw-zelf]');if(zelf)zelf.onclick=()=>{teken(true);const ta=vak.querySelector('textarea');if(ta)ta.focus();};
+    const ta=vak.querySelector('[data-mw-voorstel]');if(ta)ta.onblur=()=>mwVoorstelOpslaan(t,ta,vak);
+  };
+  bind();
+  k.querySelector('[data-mw-wa]').onclick=()=>{
+    const ta=vak.querySelector('[data-mw-voorstel]');
+    mwOpenWhatsapp(t.chat_jid,String((ta?ta.value:t.voorstel_antwoord)||'').trim());
+  };
+  k.querySelector('[data-mw-af]').onclick=e=>mwTaakStatus(t,'afgehandeld',e.currentTarget);
+  k.querySelector('[data-mw-later]').onclick=e=>mwTaakStatus(t,'later',e.currentTarget);
+}
+// Claude schrijft een antwoord in Stevens toon; de function zet het ook op de taak.
+async function mwVoorstelMaken(t,vak,knop,teken){
+  const ta=vak.querySelector('[data-mw-voorstel]');
+  if(ta&&ta.value.trim()&&!confirm('Het antwoord in het tekstvak wordt vervangen door een nieuw voorstel. Doorgaan?'))return;
+  const oud=knop.textContent;knop.disabled=true;knop.textContent='Claude schrijft…';
+  try{
+    const d=await mwInvoke('voorstel',{taak_id:t.id},'Een voorstel maken lukte nu niet. Probeer het zo nog eens.');
+    const vs=String(d.voorstel||'').trim();
+    if(!vs)throw new Error('Claude gaf geen voorstel terug.');
+    t.voorstel_antwoord=vs;
+    if(vak.isConnected)teken(true);
+  }catch(e){
+    toast(esc(e.message),'err');
+    if(knop.isConnected){knop.disabled=false;knop.textContent=oud;}
+  }
+}
+// Bewerken slaat op bij het verlaten van het tekstvak; een leeg vak wist het voorstel.
+async function mwVoorstelOpslaan(t,ta,vak){
+  const nieuw=ta.value.trim();
+  if(nieuw===String(t.voorstel_antwoord||'').trim())return;
+  const {error}=await sb.rpc('mw_taak_bijwerken',{p_id:t.id,p_status:null,p_later_tot:null,p_voorstel:nieuw});
+  if(error){toast('Opslaan lukte niet: '+esc(error.message),'err');return;}
+  t.voorstel_antwoord=nieuw||null;
+  const st=vak.querySelector('[data-mw-opgeslagen]');if(st)st.textContent='Opgeslagen';
+}
+// Later zonder tijd: de RPC kiest morgen 09:00 Bali.
+async function mwTaakStatus(t,status,knop){
+  knop.disabled=true;
+  const {data,error}=await sb.rpc('mw_taak_bijwerken',{p_id:t.id,p_status:status});
+  if(error){if(knop.isConnected)knop.disabled=false;toast('Bijwerken lukte niet: '+esc(error.message),'err');return;}
+  MW.taken=(MW.taken||[]).filter(x=>x.id!==t.id);
+  if(mwHier('open'))mwTakenTeken();
+  toast(status==='later'?'Uitgesteld tot '+mwTijd(data&&data.later_tot):'Afgehandeld','ok');
+  mwStatusLaden();
+}
+
+/* ---------- Zoeken ---------- */
+function mwZoekenTeken(){
+  const b=$('#mw_body');if(!b)return;const z=MW.zoek;
+  b.innerHTML=`<div class="mw-kaart"><div class="mw-zoekform">
+      <input class="mw-in" id="mw_z_q" type="search" placeholder="Zoek in berichten en bestandsnamen" value="${esc(z.q)}" autocomplete="off" spellcheck="false" aria-label="Zoekterm">
+      <div id="mw_z_chat"></div>
+      <label class="mw-veld">Van <input type="date" id="mw_z_van" value="${esc(z.van)}"></label>
+      <label class="mw-veld">Tot <input type="date" id="mw_z_tot" value="${esc(z.tot)}"></label>
+      <select id="mw_z_soort" aria-label="Soort">${MW_ZOEKSOORT.map(([k,l])=>`<option value="${k}"${z.soort===k?' selected':''}>${l}</option>`).join('')}</select>
+      <button class="btn btn-primary btn-sm" id="mw_z_go">Zoeken</button>
+    </div></div>
+    <div id="mw_z_res"></div>`;
+  mwChatKiezer($('#mw_z_chat'),{placeholder:'Alle chats',gekozen:z.chat,onKies:c=>{z.chat=c;if(z.res)mwZoek();}});
+  $('#mw_z_go').onclick=mwZoek;
+  $('#mw_z_q').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();mwZoek();}};
+  $('#mw_z_soort').onchange=()=>{if(z.res)mwZoek();};
+  if(z.res)mwZoekResTeken();
+}
+async function mwZoek(){
+  const z=MW.zoek,q=$('#mw_z_q');if(!q)return;
+  z.q=q.value.trim();z.van=$('#mw_z_van').value;z.tot=$('#mw_z_tot').value;z.soort=$('#mw_z_soort').value;
+  const box=$('#mw_z_res');box.innerHTML='<div class="muted" style="padding:8px">Zoeken…</div>';
+  const mijn=++MW.zoekVolg;
+  const {data,error}=await sb.rpc('mw_zoeken',{p_q:z.q||null,p_chat:z.chat?z.chat.jid:null,
+    p_van:mwDagGrens(z.van,false),p_tot:mwDagGrens(z.tot,true),p_soort:z.soort,p_limiet:100});
+  if(mijn!==MW.zoekVolg||!mwHier('zoeken'))return;
+  if(error){box.innerHTML=`<div class="mw-leeg">Zoeken lukte niet: ${esc(error.message)}</div>`;return;}
+  z.res={q:z.q,lijst:Array.isArray(data)?data:[]};
+  await mwOpMacLaden(z.res.lijst);
+  if(mijn!==MW.zoekVolg||!mwHier('zoeken'))return;
+  mwZoekResTeken();
+}
+function mwZoekResTeken(){
+  const box=$('#mw_z_res'),r=MW.zoek.res;if(!box)return;
+  if(!r){box.innerHTML='';return;}
+  if(!r.lijst.length){box.innerHTML='<div class="mw-leeg">Niets gevonden.</div>';return;}
+  const n=r.lijst.length;
+  box.innerHTML=`<div class="panel" style="margin-top:0"><div class="panel-head"><h3>${n===1?'1 resultaat':n+' resultaten'}${n>=100?' <span class="muted" style="font-weight:500;font-size:12.5px">(de nieuwste 100)</span>':''}</h3></div>${r.lijst.map((x,i)=>mwResHtml(x,i,r.q)).join('')}</div>`;
+  box.querySelectorAll('[data-mw-om]').forEach(k=>k.onclick=()=>{
+    const d=box.querySelector(`[data-mw-omb="${k.dataset.mwOm}"]`);if(!d)return;
+    d.hidden=!d.hidden;k.textContent=d.hidden?'Ervoor en erna':'Inklappen';
+  });
+  mwLinksBind(box);
+}
+function mwResHtml(x,i,q){
+  const naam=mwNaam({naam:x.chat_naam,jid:x.chat_jid});
+  const chat=`<button class="mw-chatnaam" data-mw-chat="${esc(x.chat_jid)}" data-mw-rond="${esc(x.tijdstip||'')}" data-mw-pk="${esc(x.mac_pk==null?'':x.mac_pk)}" title="Open het gesprek op dit moment">${esc(naam)}</button>`;
+  if(x.soort==='feit'){
+    const nk=x.nagekomen===true?'<span class="badge green">Nagekomen</span>':(x.nagekomen===false?'<span class="badge red">Nog niet nagekomen</span>':'');
+    return `<div class="mw-res"><div class="mw-kop"><span class="badge amber">${esc(MW_FEIT[x.feit_soort]||x.feit_soort||'Feit')}</span>${x.datum?`<b>${esc(kpDatum(x.datum))}</b>`:''}${chat}${nk}</div>
+      <div class="mw-tekst" style="margin-top:4px">${mwMarkeer(x.tekst||'',q)}</div></div>`;
+  }
+  const wie=x.van_mij?'jij':(x.afzender_naam||naam);
+  const om=(x.ervoor||x.erna)
+    ?`<button class="mw-mini" data-mw-om="${i}">Ervoor en erna</button><div class="mw-omgeving" data-mw-omb="${i}" hidden>${x.ervoor?mwOmHtml(x.ervoor,'Ervoor',naam):''}<div class="mw-om-r"><b>Dit bericht</b></div>${x.erna?mwOmHtml(x.erna,'Erna',naam):''}</div>`
+    :'';
+  return `<div class="mw-res"><div class="mw-kop">${chat}<span class="muted" style="font-size:12.5px">${esc(wie)}</span><span class="mw-tijd">${esc(mwTijd(x.tijdstip))}</span></div>
+    ${x.soort==='document'?mwDocHtml(x,q):''}${(x.soort!=='document'||(x.tekst&&String(x.tekst).trim()))?`<div class="mw-tekst" style="margin-top:4px">${mwBerichtTekstHtml(x,q)}</div>`:''}${om}</div>`;
+}
+function mwOmHtml(m,label,naam){
+  const wie=m.van_mij?'jij':(m.afzender_naam||naam);
+  return `<div class="mw-om-r"><span class="muted">${label} · ${esc(mwTijd(m.tijdstip))} · ${esc(wie)}:</span> ${m.tekst&&String(m.tekst).trim()?esc(m.tekst):'<span class="mw-label">Geen tekst</span>'}</div>`;
+}
+
+/* ---------- Vragen aan Claude ---------- */
+function mwVragenTeken(){
+  const b=$('#mw_body');if(!b)return;
+  b.innerHTML=`<div class="mw-kaart">
+      <div style="font-weight:700">Vraag het Claude</div>
+      <div class="muted" style="font-size:12.5px;margin:2px 0 8px">Over wat er in je gesprekken is gezegd of afgesproken. Bij elk antwoord staan de chat en de datum.</div>
+      <textarea class="mw-in" id="mw_v_in" rows="3" maxlength="1000" placeholder="Bijvoorbeeld: wat hebben we vorige maand afgesproken over de betaling?" aria-label="Vraag"></textarea>
+      <div class="mw-knoppen"><button class="btn btn-primary btn-sm" id="mw_v_go">Vraag</button></div>
+      <div id="mw_v_uit"></div></div>
+    <div id="mw_v_oud"></div>`;
+  const inp=$('#mw_v_in');inp.value=MW.vraag.tekst||'';
+  $('#mw_v_go').onclick=mwVraag;
+  inp.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();mwVraag();}};
+  mwVraagUitTeken();
+  mwVragenOudLaden();
+}
+async function mwVraag(){
+  const V=MW.vraag,inp=$('#mw_v_in'),vraag=String((inp&&inp.value)||'').trim();
+  if(V.bezig)return;
+  if(!vraag){toast('Typ eerst een vraag','err');return;}
+  V.bezig=true;V.start=Date.now();V.tekst=vraag;V.fout=null;V.laatste=null;
+  mwVraagUitTeken();
+  try{
+    const d=await mwInvoke('vraag',{vraag},'Claude kon de vraag nu niet beantwoorden. Probeer het zo nog eens.');
+    V.laatste={vraag,antwoord:String(d.antwoord||''),bronnen:Array.isArray(d.bronnen)?d.bronnen:[]};
+  }catch(e){V.fout=e.message;}
+  finally{V.bezig=false;}
+  if(mwHier('vragen')){mwVraagUitTeken();mwVragenOudLaden();}
+}
+function mwVraagUitTeken(){
+  const V=MW.vraag,box=$('#mw_v_uit');
+  clearInterval(V.klok);
+  if(!box)return;
+  const knop=$('#mw_v_go');if(knop){knop.disabled=V.bezig;knop.textContent=V.bezig?'Bezig…':'Vraag';}
+  if(V.bezig){
+    box.innerHTML='<div class="mw-wacht">Claude leest je gesprekken. Dat duurt meestal 20 tot 40 seconden. <b data-mw-sec></b></div>';
+    const zet=()=>{const s=box.querySelector('[data-mw-sec]');if(!s||!s.isConnected){clearInterval(V.klok);return;}s.textContent=Math.round((Date.now()-V.start)/1000)+' s';};
+    zet();V.klok=setInterval(zet,1000);
+    return;
+  }
+  if(V.fout){box.innerHTML=`<div class="mw-wacht fout">${esc(V.fout)}</div>`;return;}
+  if(V.laatste){box.innerHTML=`<div style="margin-top:14px">${mwAntwoordHtml(V.laatste)}</div>`;mwLinksBind(box);return;}
+  box.innerHTML='';
+}
+function mwAntwoordHtml(v){
+  return `<div class="mw-antwoord">${esc(v.antwoord||'')}</div>${mwBronnenHtml(v.bronnen)}`;
+}
+// Bronnen als chips; een klik opent het gesprek rond dat moment.
+function mwBronnenHtml(bronnen){
+  const gezien=new Set();
+  const lijst=(Array.isArray(bronnen)?bronnen:[]).filter(b=>{
+    if(!b||!b.chat_jid)return false;
+    const k=b.chat_jid+'|'+(b.mac_pk!=null?b.mac_pk:(b.tijdstip||''));
+    if(gezien.has(k))return false;gezien.add(k);return true;
+  }).slice(0,20);
+  if(!lijst.length)return '';
+  return `<div class="mw-bronnen">${lijst.map(b=>`<button class="mw-bron" data-mw-chat="${esc(b.chat_jid)}" data-mw-rond="${esc(b.tijdstip||'')}" data-mw-pk="${esc(b.mac_pk==null?'':b.mac_pk)}" title="Open het gesprek op dit moment">${esc(mwNaam({naam:b.naam,jid:b.chat_jid}))}${b.tijdstip?' · '+esc(mwDatumKort(b.tijdstip)):''}</button>`).join('')}</div>`;
+}
+// De laatste tien vragen, direct uit mw_vragen (RLS laat alleen Steven toe).
+async function mwVragenOudLaden(){
+  const {data,error}=await sb.from('mw_vragen').select('id,vraag,antwoord,bronnen,gesteld_at').order('gesteld_at',{ascending:false}).limit(10);
+  const box=$('#mw_v_oud');if(!box||!mwHier('vragen'))return;
+  if(error){box.innerHTML=`<div class="muted" style="padding:8px;font-size:13px">Eerdere vragen niet beschikbaar: ${esc(error.message)}</div>`;return;}
+  const rijen=data||[];
+  if(!rijen.length){box.innerHTML='';return;}
+  box.innerHTML=`<div class="panel" style="margin-top:8px"><div class="panel-head"><h3>Eerdere vragen</h3></div>${rijen.map(r=>`<details class="mw-vraag-oud"><summary><b>${esc(r.vraag||'')}</b><span class="mw-tijd">${esc(mwTijd(r.gesteld_at))}</span></summary><div class="mw-vo-a">${mwAntwoordHtml({antwoord:r.antwoord||'',bronnen:r.bronnen})}</div></details>`).join('')}</div>`;
+  mwLinksBind(box);
+}
+
+/* ---------- Chats: lijst, schakelaars en het gesprek ---------- */
+function mwChatsTeken(){
+  const b=$('#mw_body');if(!b)return;
+  b.innerHTML=`<div class="panel" style="margin-top:0"><div class="panel-head"><div><h3>Chats</h3><div class="desc">Buiten houden wist een chat uit dit systeem; in WhatsApp zelf blijft alles staan. Belangrijk: wacht een bericht in die chat langer dan 4 uur op jouw antwoord, dan krijg je een herinnering <span data-mw-kanaal>${esc(mwHerinneringKanaal(MW.kanaal))}</span>.</div></div>
+      <input class="search" id="mw_c_q" type="search" placeholder="Zoek op naam of nummer" value="${esc(MW.chatQ)}" autocomplete="off" spellcheck="false" aria-label="Chat zoeken"></div>
+    <div id="mw_c_lijst"><div class="muted" style="padding:14px">Chats laden…</div></div></div>`;
+  const inp=$('#mw_c_q');let t=null;
+  inp.oninput=()=>{clearTimeout(t);t=setTimeout(()=>{MW.chatQ=inp.value.trim();mwChatsLaden();},220);};
+  mwChatsLaden();
+}
+async function mwChatsLaden(){
+  const mijn=++MW.chatsVolg;
+  const {data,error}=await sb.rpc('mw_chats_lijst',{p_q:mwChatZoekQ(MW.chatQ),p_limiet:300});
+  if(mijn!==MW.chatsVolg||!mwHier('chats')||MW.gesprek)return;
+  const box=$('#mw_c_lijst');if(!box)return;
+  if(error){box.innerHTML=`<div class="empty">Chats niet beschikbaar: ${esc(error.message)}</div>`;return;}
+  MW.chats=Array.isArray(data)?data:[];
+  mwChatsLijstTeken();
+}
+function mwChatsLijstTeken(){
+  const box=$('#mw_c_lijst');if(!box)return;
+  const lijst=MW.chats||[];
+  if(!lijst.length){box.innerHTML=`<div class="empty">${MW.chatQ?'Geen chat gevonden.':'Nog geen chats.'}</div>`;return;}
+  box.innerHTML=lijst.map((c,i)=>{
+    const sub=[MW_SOORT[c.soort]||'',c.uitgesloten?'buiten gehouden':(c.aantal_berichten!=null?Number(c.aantal_berichten).toLocaleString('nl-NL')+' berichten':''),c.laatste_bericht_at?inboxRel(c.laatste_bericht_at):''].filter(Boolean).join(' · ');
+    return `<div class="mw-chatrij${c.uitgesloten?' uit':''}" data-i="${i}">
+      <div class="mw-chatinfo"${c.uitgesloten?'':' data-mw-open role="button" tabindex="0"'}><div class="mw-cn">${esc(mwNaam(c))}${c.belangrijk?' <span class="badge amber">Belangrijk</span>':''}</div>
+        <div class="mw-cs">${esc(sub)}${c.laatste_tekst&&!c.uitgesloten?' · '+esc(c.laatste_tekst):''}</div></div>
+      <label class="mw-schak" title="Herinnering ${esc(mwHerinneringKanaal(MW.kanaal))} als een bericht hier langer dan 4 uur op antwoord wacht"><input type="checkbox" data-mw-bel${c.belangrijk?' checked':''}${c.uitgesloten?' disabled':''}> Belangrijk</label>
+      <label class="mw-schak"><input type="checkbox" data-mw-uit${c.uitgesloten?' checked':''}> Buiten houden</label>
+    </div>`;
+  }).join('')+(lijst.length>=300?'<div class="muted" style="padding:10px 16px;font-size:12px">De 300 meest recente chats. Zoek om een andere te vinden.</div>':'');
+  box.querySelectorAll('.mw-chatrij').forEach(r=>{
+    const c=lijst[+r.dataset.i];if(!c)return;
+    const info=r.querySelector('[data-mw-open]');
+    if(info){info.onclick=()=>mwOpenGesprek(c.jid);info.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();mwOpenGesprek(c.jid);}};}
+    r.querySelector('[data-mw-bel]').onchange=e=>mwBelangrijk(c,e.currentTarget);
+    r.querySelector('[data-mw-uit]').onchange=e=>mwBuitenHouden(c,e.currentTarget);
+  });
+}
+async function mwBelangrijk(c,vak){
+  const aan=vak.checked;vak.disabled=true;
+  const {error}=await sb.rpc('mw_chat_instellen',{p_jid:c.jid,p_uitgesloten:null,p_belangrijk:aan});
+  vak.disabled=false;
+  if(error){vak.checked=!aan;toast('Opslaan lukte niet: '+esc(error.message),'err');return;}
+  c.belangrijk=aan;
+  toast(aan?'Gemarkeerd als belangrijk. Herinneringen voor deze chat komen '+esc(mwHerinneringKanaal(MW.kanaal))+'.':'Niet meer belangrijk','ok',aan?6000:undefined);
+  if(mwHier('chats')&&!MW.gesprek)mwChatsLijstTeken();
+}
+// Buiten houden wist alles van de chat op de server (de RPC zet de
+// documentpaden ook in mw_opruimen en wist de eerdere vragen met deze chat als
+// bron). Daarna haalt de function de documenten meteen uit de bucket; lukt dat
+// niet, dan doet de Mac-lezer het bij zijn volgende run. Weer aanzetten zet
+// alleen de vlag terug: oude berichten komen pas bij een herimport terug.
+async function mwBuitenHouden(c,vak){
+  const uit=vak.checked;
+  if(uit&&!confirm('Dit wist alle berichten en documenten van deze chat uit het systeem, en de eerdere vragen aan Claude met deze chat als bron. In WhatsApp zelf blijft alles staan. Doorgaan?')){vak.checked=false;return;}
+  vak.disabled=true;
+  const {data,error}=await sb.rpc('mw_chat_instellen',{p_jid:c.jid,p_uitgesloten:uit,p_belangrijk:null});
+  vak.disabled=false;
+  if(error){vak.checked=!uit;toast('Opslaan lukte niet: '+esc(error.message),'err');return;}
+  c.uitgesloten=uit;
+  if(uit){c.aantal_berichten=0;c.laatste_tekst=null;}
+  MW.taken=null;MW.zoek.res=null;
+  if(mwHier('chats')&&!MW.gesprek)mwChatsLijstTeken();
+  mwStatusLaden();
+  if(!uit){toast('Berichten komen terug bij de volgende herimport','ok',6000);return;}
+  // Het laatste antwoord op Vragen kan uit deze chat komen; de rij is dan
+  // gewist, dus ook hier weg. De lijst Eerdere vragen opnieuw ophalen; staat
+  // Vragen nu niet open, dan haalt dat tabblad hem bij openen vers op.
+  const V=MW.vraag;
+  if(V.laatste&&Array.isArray(V.laatste.bronnen)&&V.laatste.bronnen.some(b=>b&&b.chat_jid===c.jid))V.laatste=null;
+  if(mwHier('vragen')){mwVraagUitTeken();mwVragenOudLaden();}
+  const n=Number(data&&data.gewiste_berichten)||0,nv=Number(data&&data.gewiste_vragen)||0;
+  toast('Chat buiten gehouden'+(n?', '+n.toLocaleString('nl-NL')+(n===1?' bericht':' berichten')+' gewist':'')
+    +(nv>0?', ook '+nv.toLocaleString('nl-NL')+(nv===1?' eerdere vraag':' eerdere vragen')+' gewist':''),'ok',nv>0?6000:undefined);
+  const paden=Array.isArray(data&&data.gewiste_documenten)?data.gewiste_documenten.filter(p=>typeof p==='string'&&p):[];
+  if(!paden.length)return;
+  try{await mwInvoke('opruimen',{paden},'');}
+  catch(e){toast('De documenten worden bij de volgende run van de Mac opgeruimd.','ok',6000);}
+}
+
+// Een gesprek openen, eventueel rond een moment (uit een zoekresultaat, een bron
+// of een taak): dan de berichten tot en met dat moment en een stuk erna, met het
+// bericht zelf gemarkeerd.
+function mwOpenGesprek(jid,opts){
+  if(!jid)return;
+  opts=opts||{};
+  const pk=(opts.pk!=null&&opts.pk!=='')?Number(opts.pk):null;
+  MW.gesprek={jid,rond:opts.rond||null,doelPk:isFinite(pk)?pk:null,laden:true,fout:null,chat:null,samenvatting:null,feiten:[],
+    berichten:[],ouderKlaar:false,nieuwsteKlaar:!opts.rond,gescrold:false};
+  mwTab('chats');
+  mwGesprekLaden(MW.gesprek);
+}
+async function mwGesprekLaden(G){
+  const t=G.rond?new Date(G.rond):null;
+  if(t&&!isNaN(t)){
+    // p_tot is exclusief en p_van inclusief: een milliseconde na het moment.
+    const na=mwNaMs(G.rond),tot=new Date(t.getTime()+7*864e5).toISOString();
+    const [a,b]=await Promise.all([
+      sb.rpc('mw_gesprek',{p_jid:G.jid,p_van:null,p_tot:na,p_limiet:60}),
+      sb.rpc('mw_gesprek',{p_jid:G.jid,p_van:na,p_tot:tot,p_limiet:1000})]);
+    if(MW.gesprek!==G)return;
+    const err=a.error||b.error;
+    if(err){G.laden=false;G.fout=err.message;return mwGesprekTeken();}
+    const voor=(a.data&&a.data.berichten)||[],erna=((b.data&&b.data.berichten)||[]).slice(0,80);
+    mwGesprekVul(G,a.data);
+    G.berichten=mwUniek(voor.concat(erna));
+    G.ouderKlaar=voor.length<60;
+    G.nieuwsteKlaar=false;
+  }else{
+    G.rond=null;G.nieuwsteKlaar=true;
+    const {data,error}=await sb.rpc('mw_gesprek',{p_jid:G.jid,p_van:null,p_tot:null,p_limiet:200});
+    if(MW.gesprek!==G)return;
+    if(error){G.laden=false;G.fout=error.message;return mwGesprekTeken();}
+    mwGesprekVul(G,data);
+    const rauw=(data&&data.berichten)||[];
+    G.berichten=mwUniek(rauw);
+    G.ouderKlaar=rauw.length<200;
+  }
+  await mwOpMacLaden(G.berichten);
+  if(MW.gesprek!==G)return;
+  G.laden=false;
+  if(mwHier('chats'))mwGesprekTeken();
+}
+function mwGesprekVul(G,d){
+  d=d||{};G.chat=d.chat||null;G.samenvatting=d.samenvatting||null;G.feiten=Array.isArray(d.feiten)?d.feiten:[];
+}
+async function mwOuderLaden(knop){
+  const G=MW.gesprek;if(!G||!G.berichten.length)return;
+  knop.disabled=true;knop.textContent='Laden…';
+  const box=$('#mw_msgs'),hoogte=box?box.scrollHeight:0,top=box?box.scrollTop:0;
+  // p_tot is exclusief: een milliseconde na het oudste bericht dat er al staat,
+  // zodat berichten met precies hetzelfde tijdstip (en een lagere mac_pk) niet
+  // wegvallen. Dat oudste bericht komt dan zelf ook terug; mwUniek haalt het
+  // eruit. Of er nog meer is, hangt aan het ruwe aantal, voor het ontdubbelen.
+  const oudste=G.berichten[0].tijdstip;
+  const {data,error}=await sb.rpc('mw_gesprek',{p_jid:G.jid,p_van:null,p_tot:mwNaMs(oudste)||oudste,p_limiet:200});
+  if(MW.gesprek!==G)return;
+  if(error){toast('Ouder laden lukte niet: '+esc(error.message),'err');if(knop.isConnected){knop.disabled=false;knop.textContent='Ouder laden';}return;}
+  const oud=(data&&data.berichten)||[];
+  G.ouderKlaar=oud.length<200;
+  G.berichten=mwUniek(oud.concat(G.berichten));
+  await mwOpMacLaden(oud);
+  if(MW.gesprek!==G||!mwHier('chats'))return;
+  mwGesprekTeken({hoogte,top});
+}
+function mwFeitHtml(f){
+  f=f||{};
+  const datum=/^\d{4}-\d{2}-\d{2}/.test(String(f.datum||''))?`<b>${esc(kpDatum(String(f.datum).slice(0,10)))}</b>`:'';
+  const nk=f.nagekomen===true?'<span class="badge green">Nagekomen</span>':(f.nagekomen===false?'<span class="badge red">Nog niet nagekomen</span>':'');
+  return `<div class="mw-feit"><span class="badge amber">${esc(MW_FEIT[f.soort]||f.soort||'Feit')}</span>${datum}<span>${esc(f.tekst||'')}</span>${nk}</div>`;
+}
+function mwBubbelsHtml(G){
+  const groep=G.chat&&G.chat.soort==='groep';let dag='';
+  return G.berichten.map((m,i)=>{
+    const dk=inboxDayKey(m.tijdstip);let sep='';
+    if(dk&&dk!==dag){sep=`<div class="ibx-daysep"><span>${esc(inboxDayLabel(m.tijdstip))}</span></div>`;dag=dk;}
+    if(m.soort==='systeem')return `${sep}<div class="mw-sys">${m.tekst&&String(m.tekst).trim()?esc(m.tekst):'Systeembericht'} · ${esc(inboxClock(m.tijdstip))}</div>`;
+    const uit=!!m.van_mij,vorige=G.berichten[i-1];
+    // In een groep de naam boven de bubbel, alleen als de afzender wisselt.
+    const afz=(!uit&&groep&&(sep||!vorige||vorige.van_mij||vorige.soort==='systeem'||vorige.afzender_naam!==m.afzender_naam))
+      ?`<div class="mw-afz">${esc(m.afzender_naam||'Onbekend')}</div>`:'';
+    const heeftTekst=!!(m.tekst&&String(m.tekst).trim());
+    const label=(m.soort&&m.soort!=='tekst'&&m.soort!=='document'&&MW_SOORTLABEL[m.soort])
+      ?`<div class="mw-label"${heeftTekst?' style="font-size:11.5px"':''}>${esc(MW_SOORTLABEL[m.soort])}</div>`:'';
+    const inhoud=label+(m.soort==='document'?mwDocHtml(m):'')+(heeftTekst?`<div class="ibx-btext">${esc(m.tekst)}</div>`:'')
+      +(!label&&m.soort!=='document'&&!heeftTekst?'<div class="mw-label">Geen tekst</div>':'');
+    const doel=G.doelPk!=null&&Number(m.mac_pk)===G.doelPk;
+    return `${sep}<div class="ibx-mrow ${uit?'out':'in'}${doel?' mw-doel':''}">${afz}
+      <div class="ibx-mline"><div class="ibx-bub ${uit?'human':'lead'} ch-whatsapp">${inhoud}</div></div>
+      <div class="ibx-btime">${esc(inboxClock(m.tijdstip))} · <button class="mw-taakknop" data-mw-taakvan="${esc(m.mac_pk)}">Taak van maken</button></div></div>`;
+  }).join('');
+}
+function mwGesprekTeken(scroll){
+  const b=$('#mw_body'),G=MW.gesprek;if(!b||!G||!mwHier('chats'))return;
+  const c=G.chat||{jid:G.jid};
+  const kop=`<div class="mw-gesprek-kop"><button class="btn btn-ghost btn-sm" id="mw_g_terug">Alle chats</button><b>${esc(mwNaam(c))}</b>${c.soort?`<span class="badge grey">${esc(MW_SOORT[c.soort]||c.soort)}</span>`:''}${c.belangrijk?'<span class="badge amber">Belangrijk</span>':''}${c.uitgesloten?'<span class="badge red">Buiten gehouden</span>':''}</div>`;
+  let midden;
+  if(G.laden)midden='<div class="muted" style="padding:14px 16px">Gesprek laden…</div>';
+  else if(G.fout)midden=`<div class="empty">Gesprek niet beschikbaar: ${esc(G.fout)}</div>`;
+  else{
+    const samenv=(G.samenvatting||G.feiten.length)
+      ?`<div class="mw-samenv">${G.samenvatting?`<div class="mw-tekst">${esc(G.samenvatting)}</div>`:''}${G.feiten.length?`<div class="mw-feiten">${G.feiten.map(mwFeitHtml).join('')}</div>`:''}</div>`:'';
+    const ouder=G.ouderKlaar?'<div class="muted" style="text-align:center;font-size:12px">Begin van het gesprek</div>'
+      :'<div style="text-align:center"><button class="btn btn-ghost btn-sm" id="mw_g_ouder">Ouder laden</button></div>';
+    const nieuwer=G.nieuwsteKlaar?'':'<div style="text-align:center"><button class="btn btn-ghost btn-sm" id="mw_g_nieuw">Naar de nieuwste berichten</button></div>';
+    const leeg=c.uitgesloten?'Deze chat wordt buiten gehouden.':'Geen berichten.';
+    midden=samenv+`<div class="mw-msgs" id="mw_msgs">${G.berichten.length?ouder+mwBubbelsHtml(G)+nieuwer:`<div class="muted" style="text-align:center;padding:20px">${leeg}</div>`}</div>`;
+  }
+  b.innerHTML=`<div class="panel" style="margin-top:0">${kop}${midden}</div>`;
+  $('#mw_g_terug').onclick=()=>{MW.gesprek=null;mwChatsTeken();};
+  const ou=$('#mw_g_ouder');if(ou)ou.onclick=()=>mwOuderLaden(ou);
+  const nw=$('#mw_g_nieuw');if(nw)nw.onclick=()=>mwOpenGesprek(G.jid);
+  const box=$('#mw_msgs');if(!box)return;
+  mwLinksBind(box);
+  box.querySelectorAll('[data-mw-taakvan]').forEach(k=>k.onclick=()=>mwTaakVanBericht(k));
+  // Scrollen: na "Ouder laden" op dezelfde plek blijven, rond een moment naar
+  // dat bericht, anders naar het nieuwste onderaan.
+  if(scroll&&scroll.hoogte!=null){box.scrollTop=box.scrollHeight-scroll.hoogte+scroll.top;return;}
+  const doel=!G.gescrold&&box.querySelector('.mw-doel');
+  if(doel){box.scrollTop=Math.max(0,doel.offsetTop-box.clientHeight/2+doel.offsetHeight/2);G.gescrold=true;return;}
+  if(!G.rond)box.scrollTop=box.scrollHeight;
+}
+// Een taak van een bericht: titel invullen onder de bubbel, dan mw_taak_toevoegen
+// met dat bericht erbij.
+function mwTaakVanBericht(k){
+  const rij=k.closest('.ibx-mrow'),G=MW.gesprek;if(!rij||!G)return;
+  const er=rij.querySelector('.mw-taakform');if(er){er.remove();return;}
+  const pk=Number(k.dataset.mwTaakvan),m=G.berichten.find(x=>Number(x.mac_pk)===pk);
+  const f=el('div','mw-taakform',`<input class="mw-in" maxlength="200" placeholder="Titel van de taak" aria-label="Titel van de taak"><button class="btn btn-primary btn-sm">Toevoegen</button><button class="btn btn-ghost btn-sm">Annuleren</button>`);
+  rij.append(f);
+  const inp=f.querySelector('input'),[ok,weg]=f.querySelectorAll('button');
+  inp.value=mwTaakTitel(m);inp.focus();inp.select();
+  weg.onclick=()=>f.remove();
+  const doe=async()=>{
+    const titel=inp.value.trim();
+    if(!titel){toast('Geef de taak een titel','err');inp.focus();return;}
+    ok.disabled=true;
+    const {error}=await sb.rpc('mw_taak_toevoegen',{p_chat_jid:G.jid,p_titel:titel,p_bericht_mac_pk:pk});
+    if(error){if(ok.isConnected)ok.disabled=false;toast('Taak toevoegen lukte niet: '+esc(error.message),'err');return;}
+    f.remove();toast('Taak staat bij Open','ok');
+    MW.taken=null;mwStatusLaden();
+  };
+  ok.onclick=doe;
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doe();}else if(e.key==='Escape')f.remove();};
 }
 
 /* ================= KPI =================
@@ -13034,7 +13992,7 @@ async function loadUsers(){
 }
 function permGridHTML(existing,disabled){
   let h=`<table class="perm-table"><thead><tr><th>Page</th><th class="center">View</th><th class="center">Edit</th></tr></thead><tbody>`;
-  PAGES.forEach(p=>{const e=existing&&existing[p.key];
+  permPages().forEach(p=>{const e=existing&&existing[p.key];
     h+=`<tr><td>${p.icon} ${p.label}</td>
       <td class="center"><input type="checkbox" data-view="${p.key}" ${e&&e.can_view?'checked':''} ${disabled?'disabled':''}></td>
       <td class="center"><input type="checkbox" data-edit="${p.key}" ${e&&e.can_edit?'checked':''} ${disabled?'disabled':''}></td></tr>`;});
@@ -13053,7 +14011,7 @@ function openUserForm(){
   showModal('Add user',body,async()=>{
     const email=$('#u_email').value.trim();const password=$('#u_pass').value;const full_name=$('#u_name').value.trim();
     if(!email||!password){toast('Email and password are required','err');return false;}
-    const permissions=PAGES.map(p=>{const view=$(`[data-view="${p.key}"]`).checked;const edit=$(`[data-edit="${p.key}"]`).checked;return {page:p.key,can_view:view||edit,can_edit:edit};});
+    const permissions=permPages().map(p=>{const view=$(`[data-view="${p.key}"]`).checked;const edit=$(`[data-edit="${p.key}"]`).checked;return {page:p.key,can_view:view||edit,can_edit:edit};});
     const makeAdmin=$('#u_admin').checked;
     try{const r=await callFn('create',{email,password,full_name,permissions});
       if(makeAdmin){await sb.from('adm_profiles').update({is_admin:true}).eq('id',r.id);}
@@ -13076,7 +14034,7 @@ function openPermForm(user,existing){
     const makeAdmin=$('#p_admin').checked;
     if(makeAdmin!==admin && user.id!==ME.id){await sb.from('adm_profiles').update({is_admin:makeAdmin}).eq('id',user.id);}
     if(!makeAdmin){
-      const rows=PAGES.map(p=>{const view=$(`[data-view="${p.key}"]`).checked;const edit=$(`[data-edit="${p.key}"]`).checked;return {user_id:user.id,page:p.key,can_view:view||edit,can_edit:edit};});
+      const rows=permPages().map(p=>{const view=$(`[data-view="${p.key}"]`).checked;const edit=$(`[data-edit="${p.key}"]`).checked;return {user_id:user.id,page:p.key,can_view:view||edit,can_edit:edit};});
       const {error}=await sb.from('adm_permissions').upsert(rows,{onConflict:'user_id,page'});
       if(error){toast(error.message,'err');return false;}
     }
