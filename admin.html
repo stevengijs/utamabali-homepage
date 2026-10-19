@@ -449,6 +449,14 @@
   .ads-rt-naam b{font-weight:700}
   .ads-rt-naam>div,.ads-rt-adkaart>div{min-width:0;flex:1}
   .ads-rt-sub{font-size:11px;color:var(--muted);margin-top:2px;white-space:normal;line-height:1.35}
+  /* Advies per regel (Steven, 19 oktober 2026): korte chip, de uitleg in de tooltip. */
+  .ads-advies{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;border:1px solid;cursor:help;white-space:nowrap;vertical-align:middle}
+  .ads-advies.groen{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}
+  .ads-advies.oranje{color:#b45309;background:#fffbeb;border-color:#fcd34d}
+  .ads-advies.rood{color:#b91c1c;background:#fef2f2;border-color:#fca5a5}
+  .ads-advies.grijs{color:#64748b;background:#f1f5f9;border-color:#e2e8f0}
+  .ads-conclusie{margin:0 18px 12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fafbfa;font-size:13px;line-height:1.55}
+  .ads-conclusie b{font-weight:800}
   .ads-rt-aantal{font-size:11px;color:var(--muted);margin-left:6px;white-space:nowrap}
   .ads-rt-adkaart{display:flex;gap:10px;align-items:flex-start;min-width:0}
   .ads-rt-adkaart img,.ads-rt-geenbeeld{width:64px;height:64px;border-radius:8px;object-fit:cover;flex:none;background:#e9edeb;display:block}
@@ -1478,7 +1486,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-19-ads-detail-2';
+const APP_VERSIE='2026-10-19-ads-detail-3';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2937,6 +2945,42 @@ function adsKwaliteit(k){
   const uitleg={boven:'boven gemiddeld',gemiddeld:'gemiddeld',onder:'onder gemiddeld'};
   return `<span class="ads-kw">${[['q','Kwaliteit','Q'],['e','Betrokkenheid','E'],['c','Conversie','C']].map(([s,l,letter])=>`<i class="${k[s]||'geen'}" title="${l}: ${k[s]?uitleg[k[s]]:'nog geen oordeel van Meta'}">${letter}</i>`).join('')}</span>`;
 }
+// Advies per regel, uit de cijfers zelf (Steven, 19 oktober 2026: "geef ook een
+// conclusie / advies in kort, mag in tooltip"). Eerste regel die raak is, wint.
+function adsAdvies(r,niveau){
+  const G=ADS_GRENS, C=ADS_CPL_GRENS; const act=r.status==='ACTIVE';
+  if(!act&&!(r.besteding>0)) return null;
+  if((r.vertoningen||0)<G.minVertoningen) return {kort:'Nog te vroeg',kleur:'grijs',uitleg:`Minder dan ${adsInt(G.minVertoningen)} vertoningen. Laat hem een paar dagen lopen voor je iets besluit.`};
+  const leads=r.leads||0, cpl=r.cpl, ctr=r.ctr_link, freq=r.frequentie, cpm=r.cpm, q=r.kwaliteit&&r.kwaliteit.q;
+  if(leads>=2&&cpl!=null&&cpl<C.groen&&ctr!=null&&ctr>=G.ctr.groen) return {kort:'Opschalen',kleur:'groen',uitleg:`Goedkope leads (${adsEuro(cpl)}) en een goede CTR (${adsPct(ctr)}). Verhoog het dagbudget met zo'n 20% en kijk of de prijs per lead gelijk blijft.`};
+  if(leads>=2&&cpl!=null&&cpl<C.groen) return {kort:'Goed, laten lopen',kleur:'groen',uitleg:`Goedkope leads (${adsEuro(cpl)}). Niets veranderen. Wil je meer, verhoog het budget in kleine stappen.`};
+  if(leads===0&&(r.linkklikken||0)>=40) return {kort:'Landing checken',kleur:'rood',uitleg:`${adsInt(r.linkklikken)} klikken, geen lead. Kijk naar de pagina of het formulier achter de link, of de advertentie belooft iets anders dan de pagina laat zien.`};
+  if(cpl!=null&&cpl>=C.oranje) return {kort:'Pauzeren of wisselen',kleur:'rood',uitleg:`Leads te duur (${adsEuro(cpl)}). Pauzeer, of test een nieuwe creative of een andere doelgroep.`};
+  if(freq!=null&&freq>=G.freq.rood) return {kort:'Publiek verzadigd',kleur:'oranje',uitleg:`Dezelfde mensen zien hem gemiddeld ${adsDec(freq)} keer. Verbreed de doelgroep of wissel de creative.`};
+  if(niveau==='ad'&&q==='onder') return {kort:'Creative vervangen',kleur:'oranje',uitleg:'Meta beoordeelt deze creative onder gemiddeld, dus je betaalt meer per vertoning. Nieuwe beelden of een andere kop.'};
+  if(ctr!=null&&ctr<G.ctr.oranje) return {kort:'Creative vervangen',kleur:'oranje',uitleg:`Weinig mensen klikken (CTR ${adsPct(ctr)}). Een andere kop, een ander beeld, of bij video de eerste seconden.`};
+  if(cpm!=null&&cpm>=G.cpm.oranje) return {kort:'Duur bereik',kleur:'oranje',uitleg:`${adsEuro2(cpm)} per duizend vertoningen. Vaak een te smalle doelgroep, of een creative die Meta liever niet toont.`};
+  if(cpl!=null&&cpl>=C.groen) return {kort:'Houden, bijsturen',kleur:'oranje',uitleg:`Leads zijn aan de prijs (${adsEuro(cpl)}). Laat lopen, maar test ernaast een variant.`};
+  return {kort:'Laten lopen',kleur:'groen',uitleg:'Binnen de grenzen. Niets veranderen.'};
+}
+function adsAdviesChip(r,niveau){ const a=adsAdvies(r,niveau); return a?`<span class="ads-advies ${a.kleur}" title="${esc(a.uitleg)}">${esc(a.kort)}</span>`:''; }
+// Een conclusie voor de hele account, uit de advertenties met genoeg vertoningen.
+function adsConclusie(d){
+  const acc=d.account||{}; const ads=(d.ads||[]).filter(a=>(a.vertoningen||0)>=ADS_GRENS.minVertoningen);
+  if(!ads.length) return '';
+  const beste=ads.filter(a=>(a.leads||0)>=2&&a.cpl!=null).sort((x,y)=>x.cpl-y.cpl)[0];
+  const verspiller=ads.filter(a=>!(a.leads||0)&&(a.besteding||0)>=50).sort((x,y)=>y.besteding-x.besteding)[0];
+  const onder=ads.filter(a=>(a.besteding||0)>=50&&a.kwaliteit&&a.kwaliteit.q==='onder').length;
+  const verzadigd=ads.filter(a=>a.status==='ACTIVE'&&a.frequentie!=null&&a.frequentie>=ADS_GRENS.freq.rood).length;
+  const k=adsKleurNaam('cpl',acc.cpl);
+  const delen=[];
+  delen.push(acc.cpl!=null?`Gemiddeld <b style="${k?'color:'+ADS_KLEUR[k]:''}">${adsEuro(acc.cpl)} per lead</b> over ${adsInt(acc.leads)} leads.`:'Nog geen leads in deze periode.');
+  delen.push(beste?`Beste advertentie: <b>${esc(beste.naam)}</b> (${adsEuro(beste.cpl)} per lead, CTR ${adsPct(beste.ctr_link)}).`:'Nog geen advertentie met minstens 2 leads.');
+  if(verspiller) delen.push(`Grootste besteding zonder lead: <b>${esc(verspiller.naam)}</b> (${adsEuro(verspiller.besteding)}). Pauzeer die, of kijk naar de pagina erachter.`);
+  if(onder) delen.push(`${onder} advertentie${onder===1?'':'s'} met echte besteding scoor${onder===1?'t':'en'} bij Meta onder gemiddeld op kwaliteit. Daar gaat de CPM omlaag met nieuwe creatives.`);
+  if(verzadigd) delen.push(`${verzadigd} actieve advertentie${verzadigd===1?'':'s'} zit${verzadigd===1?'':'ten'} op een frequentie van ${adsDec(ADS_GRENS.freq.rood)} of hoger: dat publiek is op.`);
+  return `<div class="ads-conclusie"><b>Conclusie.</b> ${delen.join(' ')}</div>`;
+}
 function adsRijHtml(r,niveau,kinderen,mag){
   const zwak=r.vertoningen<ADS_GRENS.minVertoningen; const open=ADS.open.has(r.id);
   const kan=kinderen>0; const eigenAan=r.status==='ACTIVE'||r.status==='CAMPAIGN_PAUSED'||r.status==='ADSET_PAUSED';
@@ -2945,11 +2989,11 @@ function adsRijHtml(r,niveau,kinderen,mag){
   let naam;
   if(niveau==='ad'){
     const c=r.creative||{}; const snip=[c.kop,c.tekst].filter(Boolean).join(' · ');
-    naam=`<div class="ads-rt-adkaart">${c.thumb?`<img src="${esc(c.thumb)}" loading="lazy" alt="">`:'<span class="ads-rt-geenbeeld"></span>'}<div><b>${esc(r.naam)}</b>${adsStatusChip(r.status)}${snip?`<div class="ads-rt-sub">${esc(snip.slice(0,90))}${snip.length>90?'…':''}</div>`:''}${actie}</div></div>`;
+    naam=`<div class="ads-rt-adkaart">${c.thumb?`<img src="${esc(c.thumb)}" loading="lazy" alt="">`:'<span class="ads-rt-geenbeeld"></span>'}<div><b>${esc(r.naam)}</b>${adsStatusChip(r.status)}${adsAdviesChip(r,niveau)}${snip?`<div class="ads-rt-sub">${esc(snip.slice(0,90))}${snip.length>90?'…':''}</div>`:''}${actie}</div></div>`;
   }else{
     const e=niveau==='campagne'?ADS.eigen.get(r.id):null;
     const sub=niveau==='adset'?[r.targeting,r.doel?String(r.doel).toLowerCase().replace(/_/g,' '):''].filter(Boolean).join(' · '):(e&&e.koppen&&e.koppen.length?e.koppen.join(' · '):'');
-    naam=`<div class="ads-rt-naam"><span class="ads-rt-pijl ${open?'open':''}" style="${kan?'':'visibility:hidden'}">▸</span><div><b>${esc(r.naam)}</b>${adsStatusChip(r.status)}${kan?`<span class="ads-rt-aantal">${kinderen} ${niveau==='campagne'?(kinderen===1?'ad set':'ad sets'):(kinderen===1?'advertentie':'advertenties')}</span>`:''}${sub?`<div class="ads-rt-sub">${esc(sub)}</div>`:''}${actie}</div></div>`;
+    naam=`<div class="ads-rt-naam"><span class="ads-rt-pijl ${open?'open':''}" style="${kan?'':'visibility:hidden'}">▸</span><div><b>${esc(r.naam)}</b>${adsStatusChip(r.status)}${adsAdviesChip(r,niveau)}${kan?`<span class="ads-rt-aantal">${kinderen} ${niveau==='campagne'?(kinderen===1?'ad set':'ad sets'):(kinderen===1?'advertentie':'advertenties')}</span>`:''}${sub?`<div class="ads-rt-sub">${esc(sub)}</div>`:''}${actie}</div></div>`;
   }
   const cellen=ADS_KOLOMMEN.map(([k])=>{
     if(k==='dagbudget_eur'){
@@ -2964,7 +3008,7 @@ function adsRijHtml(r,niveau,kinderen,mag){
     <td>${naam}</td>${cellen}<td>${niveau==='ad'?adsKwaliteit(r.kwaliteit):''}</td></tr>`;
 }
 function adsVoetnoot(){
-  return `<div class="muted" style="font-size:12px;line-height:1.5;padding:12px 18px 16px;max-width:900px">Alles komt rechtstreeks uit Meta, voor de gekozen periode. Klik op een campagne voor de ad sets, op een ad set voor de advertenties. Klik op een kolomkop om te sorteren.
+  return `<div class="muted" style="font-size:12px;line-height:1.5;padding:12px 18px 16px;max-width:900px">Alles komt rechtstreeks uit Meta, voor de gekozen periode. Klik op een campagne voor de ad sets, op een ad set voor de advertenties. Klik op een kolomkop om te sorteren. Het advies achter de naam komt uit de cijfers (de regel die als eerste raak is); houd de muis erop voor de uitleg.
     CTR is linkklikken gedeeld door vertoningen: groen vanaf ${adsPct(ADS_GRENS.ctr.groen)}, oranje vanaf ${adsPct(ADS_GRENS.ctr.oranje)}, rood daaronder. CPC is wat een linkklik kost: groen onder ${adsEuro2(ADS_GRENS.cpc.groen)}, oranje tot ${adsEuro2(ADS_GRENS.cpc.oranje)}. CPM is de prijs per duizend vertoningen: groen onder ${adsEuro(ADS_GRENS.cpm.groen)}, oranje tot ${adsEuro(ADS_GRENS.cpm.oranje)}.
     Frequentie is hoe vaak dezelfde persoon de advertentie zag: oranje vanaf ${adsDec(ADS_GRENS.freq.oranje)}, rood vanaf ${adsDec(ADS_GRENS.freq.rood)}, dan is het publiek op. Per lead: groen onder ${adsEuro(ADS_CPL_GRENS.groen)}, oranje tot ${adsEuro(ADS_CPL_GRENS.oranje)}, rood daarboven. Leads zijn wat Meta telt (formulieren en leadgebeurtenissen van de site).
     Kwaliteit (Q, E, C) is hoe Meta een advertentie vergelijkt met concurrenten die op hetzelfde publiek bieden: kwaliteit, betrokkenheid en conversie; een gestippeld blokje betekent dat Meta nog geen oordeel heeft. Grijze rijen hebben minder dan ${adsInt(ADS_GRENS.minVertoningen)} vertoningen, daar zegt een percentage nog niets.</div>`;
@@ -3000,7 +3044,7 @@ function adsDetailTekenen(){
   const kop=ADS_KOLOMMEN.map(([k,l])=>`<th class="ads-sort ${ADS.sort.kol===k?'on':''}" data-sort="${k}" style="text-align:right" title="Sorteer op ${l.replace(/­/g,'').toLowerCase()}">${l}${ADS.sort.kol===k?(ADS.sort.richting<0?' ↓':' ↑'):''}</th>`).join('');
   const totaal=`<tr class="ads-rt-tot"><td>Totaal account</td>${ADS_KOLOMMEN.map(([k])=>k==='dagbudget_eur'?'<td></td>':`<td style="text-align:right"><span style="${adsStijl(k,acc[k])}">${adsWaarde(k,acc[k])}</span></td>`).join('')}<td></td></tr>`;
   const waarsch=(d.waarschuwingen||[]).length?`<div class="bc-hint" style="margin:10px 18px 0;color:#b45309">Niet alles kwam binnen bij Meta: ${esc(d.waarschuwingen.join('; '))}. De rest staat er wel.</div>`:'';
-  t.innerHTML=adsTegels(acc)+waarsch+((d.campagnes||[]).length
+  t.innerHTML=adsTegels(acc)+adsConclusie(d)+waarsch+((d.campagnes||[]).length
     ?`<div class="ads-rt-schuif">Schuif opzij voor meer kolommen; de naam en de knoppen blijven staan.</div><div class="ads-rt-wrap"><table class="live-tbl ads-rt"><thead><tr><th>Naam</th>${kop}<th title="Kwaliteit, betrokkenheid en conversie, zoals Meta ze rangschikt">Kwali­teit</th></tr></thead><tbody>${rijen.join('')}${totaal}</tbody></table></div>`
     :'<div class="muted" style="padding:18px">Geen campagnes met verkeer in deze periode.</div>')+adsVoetnoot();
   t.querySelectorAll('[data-sort]').forEach(h=>h.onclick=()=>{ const k=h.dataset.sort; if(ADS.sort.kol===k) ADS.sort.richting*=-1; else ADS.sort={kol:k,richting:-1}; adsDetailTekenen(); });
