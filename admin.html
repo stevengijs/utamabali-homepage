@@ -539,6 +539,17 @@
   .ibx-mrow.in .ibx-btime{padding-left:33px}
   .ibx-mrow.out .ibx-btime{padding-right:2px}
   .ibx-undel{font-size:10.5px;margin-top:4px;color:#b45309;font-weight:700}
+  .ibx-undel .ibx-undel-r{display:block;font-weight:500;opacity:.9;margin-top:1px}
+  /* Bezorgstatus onder een uitgaand bericht (19 oktober 2026): verzonden, afgeleverd,
+     gelezen, of "geen bevestiging" als het kanaal niets terugmeldde. */
+  .ibx-bz{font-weight:700;white-space:nowrap}
+  .ibx-bz.gelezen{color:#1d9bf0}
+  .ibx-bz.afgeleverd{color:#128c7e}
+  .ibx-bz.onbekend{color:#b45309;font-weight:600}
+  .ibx-bz.verzonden{color:#4b5563}
+  .ibx-bz.fout{color:#b91c1c}
+  /* De regel onder de bubbel staat op 55 procent; met een status erin moet hij leesbaar zijn. */
+  .ibx-mrow.out .ibx-btime:has(.ibx-bz),.pdc-time:has(.ibx-bz){opacity:.9}
   .ibx-venster{margin:6px 0 8px;padding:8px 10px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;border-radius:8px;font-size:12.5px;line-height:1.45}
   .ibx-venster .ibx-venster-k{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
   /* Eigen klasse, niet .ibx-concept: die draagt de chip Concepten al, en dan
@@ -981,6 +992,11 @@
   .ibx-note{align-self:center;max-width:82%;background:#fffdf2;border:1px solid #f0e2a8;border-radius:10px;padding:8px 12px;margin:2px 0}
   .ibx-note-h{font-size:10.5px;font-weight:800;letter-spacing:.02em;color:#9a7a06;text-transform:uppercase;margin-bottom:3px}
   .ibx-note-b{font-size:13px;line-height:1.5;color:#4a3d0a;white-space:pre-wrap;word-wrap:break-word}
+  /* Een mislukte verzending staat in de database als notitie met "Niet afgeleverd" (wa_bezorgstatus). Rood, geen gele notitie. */
+  .ibx-note.fout{background:#fef2f2;border-color:#fecaca}
+  .ibx-note.fout .ibx-note-h{color:#b91c1c}
+  .ibx-note.fout .ibx-note-b{color:#7f1d1d}
+  .ibx-note.fout .ibx-note-r{font-size:11px;color:#b91c1c;margin-top:4px}
   .ibx-ip-note{font-size:12px;color:var(--muted);line-height:1.5}
   /* Waarschuwing bovenin het zijpaneel (nummer werkt niet, geblokkeerd), in
      lijn met de knoppen erboven (15 oktober 2026: stond tegen de rand en liep scheef). */
@@ -1497,7 +1513,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-19-ads-detail-3';
+const APP_VERSIE='2026-10-19-bezorgstatus-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -9099,6 +9115,47 @@ const INBOX_CH={
   whatsapp:{label:'WhatsApp',icon:CH_ICON.whatsapp,color:'#128c7e',bg:'#f0fdf4',bd:'#bbf7d0'},
   email:{label:'E-mail',icon:CH_ICON.email,color:'#334155',bg:'#f1f5f9',bd:'#e2e8f0'},
 };
+// Een mislukte verzending wordt in de database een notitie met deze aanhef
+// (wa_bezorgstatus, migratie 20261012150000). In de inbox hoort die rood en met
+// de juiste kop, niet als "interne notitie".
+const isNietAfgeleverdNotitie=m=>!!m.is_note&&/^⚠︎ Niet afgeleverd/.test(String(m.body||''));
+// De body is "⚠︎ Niet afgeleverd via WhatsApp: <tekst>" (inbox__niet_afgeleverd_tekst).
+// Kanaal en tekst apart, zodat de kop het kanaal draagt en de body de tekst zelf is.
+function nietAfgeleverdDelen(m){
+  const mm=String(m.body||'').match(/^⚠︎ Niet afgeleverd(?: via ([^:]+))?:?\s*([\s\S]*)$/);
+  return {via:mm&&mm[1]?mm[1].trim():'',tekst:mm?mm[2]:String(m.body||'')};
+}
+// Kop van een rode "Niet afgeleverd"-notitie: wie het stuurde, via welk kanaal, wanneer.
+function nietAfgeleverdKop(m,tijd){
+  const d=nietAfgeleverdDelen(m);
+  const wie=m.sender==='ai'?'UTAMA-bot':(m.sender==='human'?teamName(m.sender_name):'');
+  return `⚠︎ Niet afgeleverd${d.via?' via '+esc(d.via):''}${wie?' · '+esc(wie):''} · ${esc(tijd)}`;
+}
+// Bezorgstatus van een uitgaand bericht, voor de regel onder de bubbel. Meta meldt
+// per WhatsApp-bericht sent, delivered, read of failed (wa-webhook, wa_bezorgstatus),
+// op het bericht-id (external_id). Zonder dat id kon er nooit een status komen
+// (botbubbels en opvolgberichten van voor 19 oktober 2026): dan "Geen bevestiging",
+// zodat het bericht niet op een afgeleverd bericht lijkt (Steven, 19 oktober 2026).
+// Berichten met id van voor 12 oktober 2026 (teamberichten via de inbox) hebben
+// wel een id, maar toen werd de status nog niet op het bericht vastgelegd.
+// Instagram en Messenger melden niet terug of iets aankwam; daar alleen mislukt
+// of niet verzonden tonen. Levert de bron het veld external_id niet (undefined),
+// dan weten we het ook niet: dan ook "Geen bevestiging".
+const BEZORGSTATUS_SINDS=new Date('2026-10-12T00:00:00+08:00');
+function bezorgLabel(m,mch){
+  const st=m.delivery_status||null;
+  if(st==='failed')return {cls:'fout',txt:'⚠︎ Niet afgeleverd',title:m.delivery_error||'Niet afgeleverd'};
+  if(st==='pending')return {cls:'fout',txt:'⏳ Niet verzonden',title:'Kanaal nog niet gekoppeld'};
+  if(mch!=='whatsapp')return null;
+  if(st==='read')return {cls:'gelezen',txt:'✓✓ Gelezen',title:'Gelezen door de lead, bevestigd door WhatsApp'};
+  if(st==='delivered')return {cls:'afgeleverd',txt:'✓✓ Afgeleverd',title:'Aangekomen op de telefoon van de lead, bevestigd door WhatsApp'};
+  if(m.external_id==null)return {cls:'onbekend',txt:'Geen bevestiging',title:'Dit bericht heeft geen bericht-id van WhatsApp, dus WhatsApp kon niet terugmelden of het aankwam. Dat geldt voor botberichten en opvolgberichten van voor 19 oktober 2026.'};
+  if(st==='sent'){
+    const oud=m.created_at&&new Date(m.created_at)<BEZORGSTATUS_SINDS;
+    return {cls:'verzonden',txt:'✓ Verzonden',title:oud?'Door WhatsApp aangenomen. Van voor 12 oktober 2026, toen werd afgeleverd of gelezen nog niet op het bericht vastgelegd.':'Door WhatsApp aangenomen; afgeleverd of gelezen is niet gemeld'};
+  }
+  return {cls:'onbekend',txt:'Geen bevestiging',title:'WhatsApp heeft voor dit bericht geen bezorgstatus gemeld'};
+}
 /* Vanaf welk eigen account UTAMA per kanaal verzendt — getoond bij uitgaande
    berichten zodat het team ziet vanuit welk account/nummer/e-mail iets gaat.
    Vul whatsapp/email in zodra die kanalen live gaan. */
@@ -9934,6 +9991,7 @@ function inboxRenderMsgs(msgs){
     if(day&&day!==lastDay){sep=`<div class="ibx-daysep"><span>${esc(inboxDayLabel(m.created_at))}</span></div>`;lastDay=day;}
     // Internal note — a team-only sticky in the same thread; never sent to the lead.
     if(m.is_note){
+      if(isNietAfgeleverdNotitie(m))return `${sep}<div class="ibx-note fout"><div class="ibx-note-h">${nietAfgeleverdKop(m,inboxClock(m.created_at))}</div><div class="ibx-note-b">${esc(nietAfgeleverdDelen(m).tekst)}</div>${m.delivery_error?`<div class="ibx-note-r">${esc(m.delivery_error)}</div>`:''}</div>`;
       return `${sep}<div class="ibx-note"><div class="ibx-note-h">📝 Interne notitie · ${esc((m.sender_name||'Team').split('@')[0])} · ${esc(inboxClock(m.created_at))}</div><div class="ibx-note-b">${esc(m.body||'')}</div></div>`;
     }
     const out=m.direction==='out';const who=m.sender;
@@ -9985,7 +10043,11 @@ function inboxRenderMsgs(msgs){
       tag=`<div class="ibx-bhead" style="border:none;padding-bottom:2px;margin-bottom:3px">${kanaalChip(med)}</div>`;
     }
     const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
-    const undelNote=undel?`<div class="ibx-undel">${m.delivery_status==='failed'?'⚠︎ Niet afgeleverd':'⏳ Niet verzonden — kanaal nog niet gekoppeld'}</div>`:'';
+    // Mislukt of niet verzonden: in de bubbel zelf, met de reden van Meta erbij.
+    const undelNote=undel?`<div class="ibx-undel">${m.delivery_status==='failed'?'⚠︎ Niet afgeleverd':'⏳ Niet verzonden, kanaal nog niet gekoppeld'}${m.delivery_status==='failed'&&m.delivery_error?`<span class="ibx-undel-r">${esc(m.delivery_error)}</span>`:''}</div>`:'';
+    // De andere statussen (verzonden, afgeleverd, gelezen, geen bevestiging) op de
+    // regel onder de bubbel, zie bezorgLabel.
+    const bz=(out&&!undel)?bezorgLabel(m,mch):null;
     // Instagram-style: a small avatar next to the LEAD's messages, shown only on
     // the last of a consecutive incoming run; hover shows the name.
     let avatar='';
@@ -10012,7 +10074,7 @@ function inboxRenderMsgs(msgs){
     const showTime=!nx||inboxClock(nx.created_at)!==inboxClock(m.created_at)||inboxDayKey(nx.created_at)!==day;
     // Meta line under each bubble: the message's medium icon always (so it's
     // clear which channel it came via), plus the time once per minute-cluster.
-    const metaHtml=`<div class="ibx-btime"><span class="ibx-medico" title="${esc(med.label)}">${med.icon}${gemengd?' '+esc(med.label):''}</span>${showTime?' '+esc(inboxClock(m.created_at)):''}</div>`;
+    const metaHtml=`<div class="ibx-btime"><span class="ibx-medico" title="${esc(med.label)}">${med.icon}${gemengd?' '+esc(med.label):''}</span>${showTime?' '+esc(inboxClock(m.created_at)):''}${bz?` · <span class="ibx-bz ${bz.cls}" title="${esc(bz.title)}">${bz.txt}</span>`:''}</div>`;
     return `${sep}<div class="ibx-mrow ${out?'out':'in'}">
       <div class="ibx-mline">${avatar}<div class="ibx-bub ${out?(who==='human'?'human':'ai'):'lead'}${chCls}">${tag}${bijl.length?bijlHtml(bijl):''}${media.length?imgHtml(media):''}${bodyTxt?`<div class="ibx-btext">${esc(bodyTxt)}</div>`:''}${undelNote}</div></div>
       ${metaHtml}</div>`;
@@ -11816,13 +11878,14 @@ async function inboxRenderContactChat(contactId){
   const bubbles=alle.map(m=>{
     // Interne notitie: dezelfde gele kaart als in de Inbox, nooit als bericht van een kanaal. Ze heeft kanaal
     // "note" en viel daardoor terug op het Instagram-icoon, zodat hij las als een Instagram-bericht (Steven, 8 okt 2026).
+    if(isNietAfgeleverdNotitie(m)) return `<div class="ibx-note fout" style="max-width:88%"><div class="ibx-note-h">${nietAfgeleverdKop(m,inboxRel(m.created_at))}</div><div class="ibx-note-b">${esc(nietAfgeleverdDelen(m).tekst)}</div>${m.delivery_error?`<div class="ibx-note-r">${esc(m.delivery_error)}</div>`:''}</div>`;
     if(m.is_note) return `<div class="ibx-note" style="max-width:88%"><div class="ibx-note-h">📝 Interne notitie · ${esc((m.sender_name||'Team').split('@')[0])} · ${esc(inboxRel(m.created_at))}</div><div class="ibx-note-b">${esc(m.body||'')}</div></div>`;
     const out=m.direction==='out',who=m.sender;
     const mch=INBOX_CH[m.channel]||INBOX_CH.instagram;
     const chip=gemengdPd?`<span class="ibx-chtag" style="color:${mch.color};background:${mch.bg};border-color:${mch.bd};font-size:10px;padding:1px 7px;margin-right:6px">${mch.icon} ${mch.label}</span>`:'';
     const tag=who==='ai'?'AI':who==='human'?esc((m.sender_name||'Team').split('@')[0]):'';
-    const undel=out&&(m.delivery_status==='pending'||m.delivery_status==='failed');
-    return `<div class="pdc-row ${out?'out':'in'}"><div class="pdc-bub ${out?(who==='human'?'human':'ai'):'lead'}">${(chip||tag)?`<span class="pdc-tag">${chip}${tag}</span>`:''}<span class="pdc-txt">${esc(m.body||'')}</span><span class="pdc-time">${mch.icon}${gemengdPd?' '+esc(mch.label):''} · ${inboxRel(m.created_at)}${undel?' · niet geleverd':''}</span></div></div>`;
+    const bzPd=out?bezorgLabel(m,m.channel||'instagram'):null;
+    return `<div class="pdc-row ${out?'out':'in'}"><div class="pdc-bub ${out?(who==='human'?'human':'ai'):'lead'}">${(chip||tag)?`<span class="pdc-tag">${chip}${tag}</span>`:''}<span class="pdc-txt">${esc(m.body||'')}</span><span class="pdc-time">${mch.icon}${gemengdPd?' '+esc(mch.label):''} · ${inboxRel(m.created_at)}${bzPd?` · <span class="ibx-bz ${bzPd.cls}" title="${esc(bzPd.title)}">${bzPd.txt}</span>`:''}</span></div></div>`;
   }).join('')||'<div class="muted" style="font-size:12px">Geen berichten.</div>';
   cur.innerHTML=`<div class="pdc-thread">
     <div class="pdc-head">${kanalen}
