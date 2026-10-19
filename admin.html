@@ -793,6 +793,18 @@
   .bc-camp{display:flex;flex-wrap:wrap;align-items:center;gap:7px 12px;padding:7px 11px;
            border:1px solid var(--line);border-radius:8px;background:#fff}
   .bc-camp.loopt{border-color:var(--warn);background:#fffbeb}
+  /* Automatisch versturen (WhatsApp, 15 oktober 2026): een blok per lopende
+     campagne met de kwaliteitsscore, de volgende golf of waarom hij stopte. */
+  .bc-auto{border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.5;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+  .bc-auto.aan{border-color:#a7d7bf;background:#effaf4}
+  .bc-auto.gestopt{border-color:#fecaca;background:#fef2f2;color:#7f1d1d}
+  .bc-auto .bc-auto-t{flex:1 1 320px;min-width:0}
+  .bc-auto .bc-auto-t b{display:block;font-size:13.5px}
+  .bc-auto .bc-score{display:inline-block;font-weight:700;padding:1px 8px;border-radius:999px;font-size:11.5px;border:1px solid}
+  .bc-score.groen{color:#0f6b4f;background:#e7f4ee;border-color:#a7d7bf}
+  .bc-score.geel{color:#92400e;background:#fffbeb;border-color:#fcd34d}
+  .bc-score.rood{color:#b91c1c;background:#fef2f2;border-color:#fecaca}
+  .bc-score.onbekend{color:var(--muted);background:#f6f5f2;border-color:var(--line)}
   .bc-camp-naam{font-weight:600;font-size:12.5px;flex:1 1 200px;min-width:0;
                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .bc-camp-kan{flex:none;font-size:10px;font-weight:600;letter-spacing:.04em;padding:1px 7px;
@@ -1414,7 +1426,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-15-wa-noot-1';
+const APP_VERSIE='2026-10-16-broadcast-auto-1';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -3542,10 +3554,11 @@ function bcCampagnesHtml(data){
     </div>`;
   };
   // Lopende campagnes en concepten bovenaan het paneel; alles wat af of oud is
-  // als apart blok onderaan, onder de adressenlijst.
+  // als apart blok onderaan, onder de adressenlijst. Een lopende WhatsApp-
+  // campagne krijgt erboven het blok voor automatisch versturen (bcAutoBlok).
   return {
     boven: (lopend.length
-      ? `<div class="bc-lab" style="margin:0">Lopende campagnes</div>`+lopend.map(kaart).join('')
+      ? `<div class="bc-lab" style="margin:0">Lopende campagnes</div>`+lopend.map(c=>(c.kanaal==='whatsapp'?bcAutoBlok(c):'')+kaart(c)).join('')
       : '')+(concepten.length
       ? `<div class="bc-lab" style="margin:${lopend.length?'8px':'0'} 0 0">Concepten (${concepten.length})</div>`+concepten.map(conceptKaart).join('')
       : ''),
@@ -3554,6 +3567,39 @@ function bcCampagnesHtml(data){
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rest.map(kaart).join('')}</div></details>`
       : '',
   };
+}
+/* Automatisch versturen (Steven, 15 oktober 2026): de cron broadcast-wa-auto
+   stuurt elke 10 minuten de volgende golf zolang de schakelaar aan staat.
+   broadcast-wa zet hem zelf uit bij een kwaliteitsscore die niet groen is,
+   veel mislukte berichten of een fout, en stuurt Steven dan een WhatsApp.
+   Dit blok laat zien wat er gebeurt; zonder de nieuwe velden (oudere
+   database) toont het niets. */
+const BC_SCORE={GREEN:['groen','Groen'],YELLOW:['geel','Geel'],RED:['rood','Rood']};
+function bcScore(k){const s=BC_SCORE[String(k||'').toUpperCase()]||['onbekend','Onbekend'];return `<span class="bc-score ${s[0]}">${s[1]}</span>`;}
+function bcScoreTekst(t){return String(t||'').replace(/\bGREEN\b/g,'groen').replace(/\bYELLOW\b/g,'geel').replace(/\bRED\b/g,'rood');}
+function bcTijd(t){try{return new Date(t).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});}catch(e){return '';}}
+function bcAutoBlok(c){
+  if(!('auto' in c)) return '';
+  const k=BC.waStatus&&BC.waStatus.kwaliteit;
+  const groen=String(k||'').toUpperCase()==='GREEN';
+  const score=`<span>Kwaliteitsscore WhatsApp-nummer: ${bcScore(k)}</span>`;
+  const golf=c.golf_grootte||50;
+  if(c.auto){
+    return `<div class="bc-auto aan"><div class="bc-auto-t"><b>Automatisch versturen staat aan</b>Volgende golf${c.auto_volgende?` rond ${esc(bcTijd(c.auto_volgende))}`:''}, ${esc(String(golf))} per keer, tot iedereen hem heeft. Zakt de kwaliteitsscore van groen, dan stopt het vanzelf en krijg je een WhatsApp.</div>${score}
+      <button type="button" class="btn btn-sm" data-auto-uit="${esc(c.id)}">Zet uit</button></div>`;
+  }
+  if(c.auto_reden&&!/^klaar/.test(c.auto_reden)){
+    return `<div class="bc-auto gestopt"><div class="bc-auto-t"><b>Automatisch versturen gestopt${c.auto_gestopt_at?` om ${esc(bcTijd(c.auto_gestopt_at))}`:''}</b>${esc(bcScoreTekst(c.auto_reden))}. Er gaat niets meer uit tot jij hem weer aanzet.</div>${score}
+      <button type="button" class="btn btn-primary btn-sm" data-auto-aan="${esc(c.id)}"${groen?'':' disabled title="Kan pas weer als de kwaliteitsscore groen is"'}>Weer aanzetten</button></div>`;
+  }
+  return `<div class="bc-auto"><div class="bc-auto-t"><b>Automatisch versturen</b>Elke 10 minuten gaat de volgende golf van 50 vanzelf, tot iedereen hem heeft. Zakt de kwaliteitsscore van groen, dan stopt het en krijg je een WhatsApp.</div>${score}
+    <button type="button" class="btn btn-primary btn-sm" data-auto-aan="${esc(c.id)}"${groen||!k?'':' disabled title="Kan pas als de kwaliteitsscore groen is"'}>Automatisch versturen aanzetten</button></div>`;
+}
+async function bcAutoZetten(id,aan){
+  const {data,error}=await sb.rpc('broadcast_campagne_auto',{p_id:id,p_aan:aan,p_golf_grootte:aan?50:null});
+  if(error||!data||data.ok===false){toast('Lukt niet: '+esc((error&&error.message)||(data&&data.reden)||'onbekend'),'err');return;}
+  toast(aan?'Automatisch versturen staat aan. De volgende golf gaat binnen 10 minuten.':'Automatisch versturen staat uit.','ok');
+  BC.campHtml=null; bcCampagnesLaden();
 }
 async function bcCampagnesLaden(){
   const teken=(boven,onder)=>{
@@ -3572,6 +3618,11 @@ async function bcCampagnesLaden(){
     if(!r.ok){ const b=await r.text().catch(()=>String(r.status)); throw new Error(`server gaf ${r.status}: ${b.slice(0,140)}`); }
     const data=await r.json();
     if(!Array.isArray(data)||!data.length){ teken(`<div class="muted" style="padding:0 18px 8px;font-size:12px">Nog geen campagnes verstuurd.</div>`, ''); return; }
+    // De kwaliteitsscore voor het blok automatisch versturen, alleen als er een
+    // WhatsApp-campagne loopt. Mislukt het, dan toont het blok "Onbekend".
+    if(data.some(c=>c.status==='bezig'&&c.kanaal==='whatsapp')){
+      try{ const {data:st}=await sb.functions.invoke('broadcast-wa',{body:{actie:'status'}}); if(st&&st.ok!==false) BC.waStatus=st; }catch(e){}
+    }
     const h=bcCampagnesHtml(data);
     teken(h.boven, h.onder);
     // Open-en-klikcijfers van recente e-mailcampagnes één keer per paginabezoek
@@ -3604,7 +3655,11 @@ document.addEventListener('click',e=>{
   const a=e.target.closest&&e.target.closest('[data-annuleer]');
   if(a){ bcCampagneAnnuleren(a.dataset.annuleer, !!a.dataset.concept); return; }
   const vv=e.target.closest&&e.target.closest('[data-vervolg]');
-  if(vv) bcVervolgStarten(vv.dataset.vervolg);
+  if(vv){ bcVervolgStarten(vv.dataset.vervolg); return; }
+  const aa=e.target.closest&&e.target.closest('[data-auto-aan]');
+  if(aa&&!aa.disabled){ bcAutoZetten(aa.dataset.autoAan,true); return; }
+  const au=e.target.closest&&e.target.closest('[data-auto-uit]');
+  if(au) bcAutoZetten(au.dataset.autoUit,false);
 });
 /* Vervolgcampagne: dezelfde mail nog een keer klaarzetten, maar dan alleen
    voor wie hem nog niet kreeg. Dit is het antwoord op de vaste situatie dat de
