@@ -416,6 +416,58 @@
   .field .ads-rij input[type=text]{flex:1;min-width:0;padding:8px 12px}
   .field .ads-rij textarea{flex:1;min-width:0;min-height:74px;padding:8px 12px;resize:vertical}
   .ads-teller{font-size:11px;color:var(--muted);width:40px;text-align:right;margin-top:11px}
+  /* Resultaten: tegels met lijntje, een tabel die per niveau openvouwt */
+  .ads-tegels{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;padding:14px 18px 4px}
+  .ads-tegel{border:1px solid var(--line);border-radius:12px;padding:10px 12px 6px;background:#fff;min-width:0}
+  .ads-tegel-l{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .ads-tegel-w{font-size:19px;font-weight:700;margin:2px 0 4px;white-space:nowrap;letter-spacing:-.01em}
+  .ads-spark{display:block;width:100%;height:28px}
+  .ads-rt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
+  /* Past in 984px (laptop van 1280 met zijbalk); daarboven schuift de tabel, met een regel die dat zegt */
+  .ads-rt{min-width:960px;font-size:12px}
+  .ads-rt th,.ads-rt td{white-space:nowrap}
+  /* Koppen mogen op twee regels (zacht afbreekstreepje in de labels), de cijfers eronder zijn smal */
+  .ads-rt th{padding:8px 5px;letter-spacing:.2px;white-space:normal;line-height:1.15;vertical-align:bottom}
+  .ads-rt td{padding:8px 5px}
+  .ads-rt th.ads-sort{cursor:pointer;user-select:none}
+  .ads-rt th.ads-sort:hover{color:var(--ink)}
+  .ads-rt th.ads-sort.on{color:var(--brand)}
+  .ads-rt th:first-child,.ads-rt td:first-child{position:sticky;left:0;z-index:1;background:#fff;min-width:230px;max-width:270px;white-space:normal;padding-left:18px;box-shadow:1px 0 0 var(--line)}
+  .ads-rt-schuif{display:none;font-size:11px;color:var(--muted);padding:10px 18px 0}
+  @media(max-width:1260px){.ads-rt-schuif{display:block}}
+  .ads-rt tr.ads-rt-camp td:first-child{padding-left:18px}
+  .ads-rt tr.ads-rt-adset td{background:#fafbfa}
+  .ads-rt tr.ads-rt-adset td:first-child{padding-left:30px}
+  .ads-rt tr.ads-rt-ad td{background:#f4f6f5}
+  .ads-rt tr.ads-rt-ad td:first-child{padding-left:40px}
+  .ads-rt tr.ads-rt-klik{cursor:pointer}
+  .ads-rt tr.ads-rt-klik:hover td{background:#eef7f3}
+  .ads-rt tr.ads-rt-tot td{background:#fafbfa;font-weight:700;border-top:2px solid var(--line)}
+  .ads-rt-pijl{display:inline-block;width:14px;color:var(--muted);font-size:12px;transition:transform .12s;vertical-align:1px;flex:none;margin-top:1px}
+  .ads-rt-pijl.open{transform:rotate(90deg)}
+  .ads-rt-naam{display:flex;gap:8px;align-items:flex-start}
+  .ads-rt-naam b{font-weight:700}
+  .ads-rt-naam>div,.ads-rt-adkaart>div{min-width:0;flex:1}
+  .ads-rt-sub{font-size:11px;color:var(--muted);margin-top:2px;white-space:normal;line-height:1.35}
+  .ads-rt-aantal{font-size:11px;color:var(--muted);margin-left:6px;white-space:nowrap}
+  .ads-rt-adkaart{display:flex;gap:10px;align-items:flex-start;min-width:0}
+  .ads-rt-adkaart img,.ads-rt-geenbeeld{width:64px;height:64px;border-radius:8px;object-fit:cover;flex:none;background:#e9edeb;display:block}
+  /* Pauzeren/Aanzetten staat in de vaste naamkolom, op een eigen regel onder de naam, zodat het ook zichtbaar is als de tabel opzij geschoven is */
+  .ads-rt-actie{display:inline-block;margin-top:4px;padding:0}
+  .ads-rt .ibx-chtag{margin-left:6px;vertical-align:1px}
+  .ads-rt tr.ads-rt-zwak td{color:var(--muted)}
+  .ads-rt tr.ads-rt-zwak td b{font-weight:600}
+  .ads-rt tr.ads-rt-zwak .ads-k{opacity:.45}
+  .ads-k{font-weight:700}
+  .ads-kw{display:inline-flex;gap:3px}
+  .ads-kw i{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;font-size:10px;font-weight:700;font-style:normal;cursor:help}
+  .ads-kw i.geen{background:transparent;border:1px dashed #cfd6d2;color:#b4bdb8}
+  .ads-kw i.boven{background:#e7f6ef;color:#0f6b4f}
+  .ads-kw i.gemiddeld{background:#eef0ef;color:#5f6f68}
+  .ads-kw i.onder{background:#fbeeec;color:#b0362a}
+  .ads-rt input[type=number]{width:60px;text-align:right;padding:4px 5px;font-size:12.5px}
+  .ads-rt .bc-zoekactie{text-transform:none;letter-spacing:0}
+  @media(max-width:720px){.ads-tegels{grid-template-columns:repeat(2,1fr);padding:12px 12px 0}.ads-rt th:first-child,.ads-rt td:first-child{min-width:200px;max-width:220px;padding-left:12px}.ads-rt tr.ads-rt-adset td:first-child{padding-left:22px}.ads-rt tr.ads-rt-ad td:first-child{padding-left:30px}.ads-rt-adkaart img,.ads-rt-geenbeeld{width:44px;height:44px}.ads-rt-schuif{padding-left:12px}}
   .ibx-thead-r{display:flex;align-items:center;gap:8px;flex:0 1 auto;min-width:0;max-width:55%;justify-content:flex-end}
   /* Sinds 13 oktober 2026 kan hier een lang label staan ("Ashley probeert te
      bereiken"): laat het afbreken in plaats van over de naam te lopen. */
@@ -1426,7 +1478,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-16-broadcast-auto-1';
+const APP_VERSIE='2026-10-19-ads-detail-2';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2431,7 +2483,9 @@ const ADS_INVALSHOEKEN=[['waardegroei','Waardegroei'],['rendement','Rendement'],
 const ADS_CPL_GRENS={groen:50, oranje:100}; // euro per lead; eerste aanname, zie spec
 const ADS_MAX_ADS=16;
 let ADS={tab:'nieuw', stap:1, projecten:[], project:null, invalshoek:'rendement', bestemming:{type:'website',url:''}, formulieren:[],
-  copy:null, koppen:[], tekst:'', beschrijving:'', fotos:[], gekozenFotos:[], stijl:'balk', creatives:[], naam:'', dagbudget:25, periode:30, bezig:false};
+  copy:null, koppen:[], tekst:'', beschrijving:'', fotos:[], gekozenFotos:[], stijl:'balk', creatives:[], naam:'', dagbudget:25, periode:30, bezig:false,
+  // Resultaten: welke campagnes en ad sets open staan (blijft staan bij verversen), sortering, laatste antwoord en een teller tegen late antwoorden.
+  open:new Set(), sort:{kol:'besteding',richting:-1}, detail:null, eigen:new Map(), laadNr:0};
 
 async function renderAds(){
   const v=$('#view');
@@ -2811,45 +2865,193 @@ async function adsPubliceer(){
   finally{ ADS.bezig=false; const k=$('#ads_publiceer'); if(k)k.disabled=false; }
 }
 
+/* ---- Resultaten ----
+   Een call (insights_detail) levert account, campagnes, ad sets en advertenties
+   met alle cijfers plus de dagreeks voor de tegels; de tabel vouwt per niveau
+   open. Faalt die call, dan valt de pagina terug op de oude insights-call met
+   alleen campagnes, zodat er altijd iets staat. De kleurgrenzen staan hier als
+   constanten, net als ADS_CPL_GRENS, zodat Steven ze kan bijstellen. */
+const ADS_GRENS={ctr:{groen:1.5,oranje:0.8}, cpc:{groen:1,oranje:2.5}, cpm:{groen:8,oranje:15}, freq:{oranje:2.5,rood:3.5}, minVertoningen:500};
+const ADS_KLEUR={groen:'#15803d',oranje:'#b45309',rood:'#b91c1c',grijs:'#64748b'};
+// ­ is een zacht afbreekstreepje: de kop mag daar op twee regels, zodat de tabel op een laptop past.
+const ADS_KOLOMMEN=[['dagbudget_eur','Dag­budget'],['besteding','Be­steding'],['vertoningen','Ver­toningen'],['bereik','Bereik'],['frequentie','Freq.'],['linkklikken','Link­klikken'],['ctr_link','CTR'],['cpc_link','CPC'],['cpm','CPM'],['leads','Leads'],['cpl','Per lead']];
+const ADS_STATUS={ACTIVE:['actief','#15803d','#f0fdf4','#bbf7d0'],PAUSED:['gepauzeerd','#64748b','#f1f5f9','#e2e8f0'],CAMPAIGN_PAUSED:['campagne uit','#64748b','#f1f5f9','#e2e8f0'],ADSET_PAUSED:['ad set uit','#64748b','#f1f5f9','#e2e8f0'],
+  PENDING_REVIEW:['in beoordeling','#b45309','#fffbeb','#fcd34d'],IN_PROCESS:['bezig','#b45309','#fffbeb','#fcd34d'],PREAPPROVED:['voorlopig goed','#b45309','#fffbeb','#fcd34d'],DISAPPROVED:['afgekeurd','#b91c1c','#fef2f2','#fca5a5'],WITH_ISSUES:['probleem','#b91c1c','#fef2f2','#fca5a5'],ONBEKEND:['onbekend','#64748b','#f1f5f9','#e2e8f0']};
 const adsEuro=n=>n==null?'—':'€ '+Number(n).toLocaleString('nl-NL',{minimumFractionDigits:0,maximumFractionDigits:0});
-function adsCplKleur(cpl){ if(cpl==null)return ''; return cpl<ADS_CPL_GRENS.groen?'color:#15803d;font-weight:700':cpl<ADS_CPL_GRENS.oranje?'color:#b45309;font-weight:700':'color:#b91c1c;font-weight:700'; }
+const adsEuro2=n=>n==null?'—':'€ '+Number(n).toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
+// Aantallen Nederlands (41.280), net als de bedragen; anInt elders in de admin is Engels (41,280).
+const adsInt=n=>n==null?'—':Number(n).toLocaleString('nl-NL');
+const adsPct=n=>n==null?'—':Number(n).toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+const adsDec=n=>n==null?'—':Number(n).toLocaleString('nl-NL',{minimumFractionDigits:1,maximumFractionDigits:1});
+// Kleur per kolom: hoger is beter (CTR) of lager is beter (CPC, CPM, per lead); frequentie waarschuwt alleen.
+function adsKleurNaam(kol,v){
+  if(v==null) return null;
+  if(kol==='ctr_link') return v>=ADS_GRENS.ctr.groen?'groen':v>=ADS_GRENS.ctr.oranje?'oranje':'rood';
+  if(kol==='cpc_link') return v<ADS_GRENS.cpc.groen?'groen':v<ADS_GRENS.cpc.oranje?'oranje':'rood';
+  if(kol==='cpm') return v<ADS_GRENS.cpm.groen?'groen':v<ADS_GRENS.cpm.oranje?'oranje':'rood';
+  if(kol==='frequentie') return v>=ADS_GRENS.freq.rood?'rood':v>=ADS_GRENS.freq.oranje?'oranje':null;
+  if(kol==='cpl') return v<ADS_CPL_GRENS.groen?'groen':v<ADS_CPL_GRENS.oranje?'oranje':'rood';
+  return null;
+}
+function adsStijl(kol,v){ const k=adsKleurNaam(kol,v); return k?`color:${ADS_KLEUR[k]};font-weight:700`:''; }
+function adsCplKleur(cpl){ return adsStijl('cpl',cpl); }
+function adsWaarde(kol,v){
+  if(kol==='dagbudget_eur'||kol==='besteding'||kol==='cpl') return adsEuro(v);
+  if(kol==='cpc_link'||kol==='cpm') return adsEuro2(v);
+  if(kol==='ctr_link') return adsPct(v);
+  if(kol==='frequentie') return adsDec(v);
+  return adsInt(v);
+}
+function adsStatusChip(status){
+  const s=ADS_STATUS[status]||[String(status||'').toLowerCase().replace(/_/g,' '),'#64748b','#f1f5f9','#e2e8f0'];
+  return `<span class="ibx-chtag" style="color:${s[1]};background:${s[2]};border-color:${s[3]}">${esc(s[0])}</span>`;
+}
+// Klein lijntje uit de dagreeks, zonder bibliotheek: 100 bij 28, met een licht vlak eronder.
+function adsSparkline(reeks,kleur){
+  const w=100,h=28; const vals=(reeks||[]).map(v=>Number(v)||0);
+  if(vals.length<2) return `<svg class="ads-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><line x1="0" y1="${h-2}" x2="${w}" y2="${h-2}" stroke="#e3e7e4" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>`;
+  const max=Math.max(...vals,0.000001); const stap=w/(vals.length-1);
+  const pts=vals.map((v,i)=>`${(i*stap).toFixed(1)},${(h-2-(v/max)*(h-6)).toFixed(1)}`).join(' ');
+  return `<svg class="ads-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polygon points="0,${h} ${pts} ${w},${h}" fill="${kleur}" opacity=".12"/><polyline points="${pts}" fill="none" stroke="${kleur}" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function adsTegels(acc){
+  const d=acc.dagen||[]; const reeks=k=>d.map(x=>x[k]);
+  const t=[
+    ['Besteding',adsEuro(acc.besteding),reeks('besteding'),null],
+    ['Leads',adsInt(acc.leads),reeks('leads'),null],
+    ['Per lead',adsEuro(acc.cpl),reeks('leads'),adsKleurNaam('cpl',acc.cpl)],
+    ['Link-CTR',adsPct(acc.ctr_link),reeks('linkklikken'),adsKleurNaam('ctr_link',acc.ctr_link)],
+    ['CPC',adsEuro2(acc.cpc_link),reeks('linkklikken'),adsKleurNaam('cpc_link',acc.cpc_link)],
+    ['CPM',adsEuro2(acc.cpm),reeks('vertoningen'),adsKleurNaam('cpm',acc.cpm)],
+    ['Bereik',adsInt(acc.bereik),reeks('vertoningen'),null],
+    ['Frequentie',adsDec(acc.frequentie),reeks('vertoningen'),adsKleurNaam('frequentie',acc.frequentie)],
+  ];
+  return `<div class="ads-tegels">${t.map(([l,w,r,k])=>`<div class="ads-tegel"><div class="ads-tegel-l">${l}</div><div class="ads-tegel-w" style="${k?'color:'+ADS_KLEUR[k]:''}">${w}</div>${adsSparkline(r,k?ADS_KLEUR[k]:'#0f6b4f')}</div>`).join('')}</div>`;
+}
+function adsSorteer(lijst){
+  const {kol,richting}=ADS.sort;
+  return lijst.slice().sort((a,b)=>{const x=a[kol],y=b[kol]; if(x==null&&y==null)return b.besteding-a.besteding; if(x==null)return 1; if(y==null)return -1; return (x-y)*richting||b.besteding-a.besteding;});
+}
+function adsKwaliteit(k){
+  if(!k) return '';
+  const uitleg={boven:'boven gemiddeld',gemiddeld:'gemiddeld',onder:'onder gemiddeld'};
+  return `<span class="ads-kw">${[['q','Kwaliteit','Q'],['e','Betrokkenheid','E'],['c','Conversie','C']].map(([s,l,letter])=>`<i class="${k[s]||'geen'}" title="${l}: ${k[s]?uitleg[k[s]]:'nog geen oordeel van Meta'}">${letter}</i>`).join('')}</span>`;
+}
+function adsRijHtml(r,niveau,kinderen,mag){
+  const zwak=r.vertoningen<ADS_GRENS.minVertoningen; const open=ADS.open.has(r.id);
+  const kan=kinderen>0; const eigenAan=r.status==='ACTIVE'||r.status==='CAMPAIGN_PAUSED'||r.status==='ADSET_PAUSED';
+  // Pauzeren/Aanzetten staat in de vaste naamkolom (campagnes en advertenties), onder de naam, dus altijd in beeld.
+  const actie=mag&&niveau!=='adset'?`<div><button class="bc-zoekactie ads-rt-actie" data-status="${esc(r.id)}" data-niveau="${niveau}" data-naar="${eigenAan?'PAUSED':'ACTIVE'}">${eigenAan?'Pauzeren':'Aanzetten'}</button></div>`:'';
+  let naam;
+  if(niveau==='ad'){
+    const c=r.creative||{}; const snip=[c.kop,c.tekst].filter(Boolean).join(' · ');
+    naam=`<div class="ads-rt-adkaart">${c.thumb?`<img src="${esc(c.thumb)}" loading="lazy" alt="">`:'<span class="ads-rt-geenbeeld"></span>'}<div><b>${esc(r.naam)}</b>${adsStatusChip(r.status)}${snip?`<div class="ads-rt-sub">${esc(snip.slice(0,90))}${snip.length>90?'…':''}</div>`:''}${actie}</div></div>`;
+  }else{
+    const e=niveau==='campagne'?ADS.eigen.get(r.id):null;
+    const sub=niveau==='adset'?[r.targeting,r.doel?String(r.doel).toLowerCase().replace(/_/g,' '):''].filter(Boolean).join(' · '):(e&&e.koppen&&e.koppen.length?e.koppen.join(' · '):'');
+    naam=`<div class="ads-rt-naam"><span class="ads-rt-pijl ${open?'open':''}" style="${kan?'':'visibility:hidden'}">▸</span><div><b>${esc(r.naam)}</b>${adsStatusChip(r.status)}${kan?`<span class="ads-rt-aantal">${kinderen} ${niveau==='campagne'?(kinderen===1?'ad set':'ad sets'):(kinderen===1?'advertentie':'advertenties')}</span>`:''}${sub?`<div class="ads-rt-sub">${esc(sub)}</div>`:''}${actie}</div></div>`;
+  }
+  const cellen=ADS_KOLOMMEN.map(([k])=>{
+    if(k==='dagbudget_eur'){
+      if(niveau==='campagne'&&mag) return `<td style="text-align:right"><input type="number" min="5" step="5" value="${r.dagbudget_eur==null?'':Math.round(r.dagbudget_eur)}" data-budget="${esc(r.id)}" title="${r.budget_op_campagne?'Budget op de campagne':'Budget op de ad set'}"></td>`;
+      if(niveau==='ad') return '<td></td>';
+      return `<td style="text-align:right">${adsEuro(r.dagbudget_eur)}</td>`;
+    }
+    const st=adsStijl(k,r[k]); const w=adsWaarde(k,r[k]);
+    return `<td style="text-align:right">${st?`<span class="ads-k" style="${st}">${w}</span>`:(k==='leads'?`<b>${w}</b>`:w)}</td>`;
+  }).join('');
+  return `<tr class="ads-rt-${niveau==='campagne'?'camp':niveau} ${kan?'ads-rt-klik':''} ${zwak?'ads-rt-zwak':''}" ${kan?`data-open="${esc(r.id)}"`:''} ${zwak?'title="te weinig vertoningen om te beoordelen"':''}>
+    <td>${naam}</td>${cellen}<td>${niveau==='ad'?adsKwaliteit(r.kwaliteit):''}</td></tr>`;
+}
+function adsVoetnoot(){
+  return `<div class="muted" style="font-size:12px;line-height:1.5;padding:12px 18px 16px;max-width:900px">Alles komt rechtstreeks uit Meta, voor de gekozen periode. Klik op een campagne voor de ad sets, op een ad set voor de advertenties. Klik op een kolomkop om te sorteren.
+    CTR is linkklikken gedeeld door vertoningen: groen vanaf ${adsPct(ADS_GRENS.ctr.groen)}, oranje vanaf ${adsPct(ADS_GRENS.ctr.oranje)}, rood daaronder. CPC is wat een linkklik kost: groen onder ${adsEuro2(ADS_GRENS.cpc.groen)}, oranje tot ${adsEuro2(ADS_GRENS.cpc.oranje)}. CPM is de prijs per duizend vertoningen: groen onder ${adsEuro(ADS_GRENS.cpm.groen)}, oranje tot ${adsEuro(ADS_GRENS.cpm.oranje)}.
+    Frequentie is hoe vaak dezelfde persoon de advertentie zag: oranje vanaf ${adsDec(ADS_GRENS.freq.oranje)}, rood vanaf ${adsDec(ADS_GRENS.freq.rood)}, dan is het publiek op. Per lead: groen onder ${adsEuro(ADS_CPL_GRENS.groen)}, oranje tot ${adsEuro(ADS_CPL_GRENS.oranje)}, rood daarboven. Leads zijn wat Meta telt (formulieren en leadgebeurtenissen van de site).
+    Kwaliteit (Q, E, C) is hoe Meta een advertentie vergelijkt met concurrenten die op hetzelfde publiek bieden: kwaliteit, betrokkenheid en conversie; een gestippeld blokje betekent dat Meta nog geen oordeel heeft. Grijze rijen hebben minder dan ${adsInt(ADS_GRENS.minVertoningen)} vertoningen, daar zegt een percentage nog niets.</div>`;
+}
 async function adsResultaten(){
-  const b=$('#ads_body');
-  b.innerHTML=`<div style="display:flex;gap:6px;padding:14px 18px 0">${[7,30,90].map(p=>`<button class="ibx-chip ${ADS.periode===p?'on':''}" data-per="${p}">${p} dagen</button>`).join('')}</div><div id="ads_tabel"><div class="muted" style="padding:18px">Cijfers ophalen bij Meta…</div></div>`;
+  const b=$('#ads_body'); if(!b)return;
+  b.innerHTML=`<div style="display:flex;gap:6px;padding:14px 18px 0">${[7,30,90].map(p=>`<button class="ibx-chip ${ADS.periode===p?'on':''}" data-per="${p}">${p} dagen</button>`).join('')}</div><div id="ads_tabel"><div class="muted" style="padding:18px">Cijfers ophalen bij Meta: account, campagnes, ad sets en advertenties…</div></div>`;
   b.querySelectorAll('[data-per]').forEach(x=>x.onclick=()=>{ADS.periode=Number(x.dataset.per);adsResultaten();});
+  const nr=++ADS.laadNr;
   const [{data,error},{data:eigen}]=await Promise.all([
-    sb.functions.invoke('meta-ads',{body:{actie:'insights',periode:ADS.periode}}),
+    sb.functions.invoke('meta-ads',{body:{actie:'insights_detail',periode:ADS.periode}}),
     sb.from('ads_campagnes').select('meta_campaign_id,koppen,project_id,status').limit(200),
   ]);
+  if(nr!==ADS.laadNr) return; // er is al een nieuwere aanvraag onderweg
   const t=$('#ads_tabel'); if(!t)return;
-  if(error||!data||!data.ok){t.innerHTML=`<div class="bc-hint err" style="margin:14px 18px">Niet beschikbaar: ${esc((data&&(data.fout||data.error))||(error&&error.message)||'onbekend')}</div>`;return;}
-  const rijen=data.rijen||[]; const eigenMap=new Map((eigen||[]).map(r=>[r.meta_campaign_id,r]));
-  if(!rijen.length){t.innerHTML='<div class="muted" style="padding:18px">Geen campagnes met verkeer in deze periode.</div>';return;}
-  const tot=rijen.reduce((a,r)=>({besteding:a.besteding+r.besteding,bereik:a.bereik+r.bereik,klikken:a.klikken+r.klikken,leads:a.leads+r.leads}),{besteding:0,bereik:0,klikken:0,leads:0});
-  const totCpl=tot.leads?tot.besteding/tot.leads:null;
+  ADS.eigen=new Map((eigen||[]).map(r=>[r.meta_campaign_id,r]));
+  if(error||!data||!data.ok){ return adsResultatenOud((data&&(data.fout||data.error))||(await adsFoutTekst(error))||'onbekend'); }
+  ADS.detail=data; adsDetailTekenen();
+}
+function adsDetailTekenen(){
+  const t=$('#ads_tabel'); const d=ADS.detail; if(!t||!d)return;
   const mag=canEdit('ads');
-  t.innerHTML=`<div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Campagne</th><th>Status</th><th style="text-align:right">Dagbudget</th><th style="text-align:right">Besteding</th><th style="text-align:right">Bereik</th><th style="text-align:right">Klikken</th><th style="text-align:right">Leads</th><th style="text-align:right">Per lead</th>${mag?'<th></th>':''}</tr></thead><tbody>
-    ${rijen.map(r=>{const e=eigenMap.get(r.campaign_id); const actief=r.status==='ACTIVE'; return `<tr>
-      <td><b>${esc(r.naam)}</b>${e&&e.koppen&&e.koppen.length?`<div class="muted" style="font-size:11px;white-space:normal;max-width:360px">${esc(e.koppen.join(' · '))}</div>`:''}</td>
-      <td><span class="ibx-chtag" style="color:${actief?'#15803d':'#64748b'};background:${actief?'#f0fdf4':'#f1f5f9'};border-color:${actief?'#bbf7d0':'#e2e8f0'}">${esc(r.status)}</span></td>
-      <td style="text-align:right">${mag?`<input type="number" min="5" step="5" value="${r.dagbudget_eur==null?'':Math.round(r.dagbudget_eur)}" data-budget="${r.campaign_id}" style="width:74px;text-align:right">`:adsEuro(r.dagbudget_eur)}</td>
-      <td style="text-align:right">${adsEuro(r.besteding)}</td><td style="text-align:right">${anInt(r.bereik)}</td><td style="text-align:right">${anInt(r.klikken)}</td><td style="text-align:right"><b>${anInt(r.leads)}</b></td>
-      <td style="text-align:right;${adsCplKleur(r.cpl)}">${adsEuro(r.cpl)}</td>
-      ${mag?`<td><button class="bc-zoekactie" style="text-transform:none" data-status="${r.campaign_id}" data-naar="${actief?'PAUSED':'ACTIVE'}">${actief?'Pauzeren':'Aanzetten'}</button></td>`:''}</tr>`;}).join('')}
-    <tr style="background:#fafbfa"><td><b>Totaal</b></td><td></td><td></td><td style="text-align:right"><b>${adsEuro(tot.besteding)}</b></td><td style="text-align:right">${anInt(tot.bereik)}</td><td style="text-align:right">${anInt(tot.klikken)}</td><td style="text-align:right"><b>${anInt(tot.leads)}</b></td><td style="text-align:right;${adsCplKleur(totCpl)}">${adsEuro(totCpl)}</td>${mag?'<td></td>':''}</tr>
-  </tbody></table></div>
-  <div class="muted" style="font-size:12px;padding:12px 18px 16px">Leads zijn wat Meta telt (formulieren en leadgebeurtenissen van de site). Per lead: groen onder ${ADS_CPL_GRENS.groen} euro, oranje tot ${ADS_CPL_GRENS.oranje}, rood daarboven. Kosten per afspraak volgen zodra DM-leads aan campagnes zijn te koppelen.</div>`;
+  const perCamp=new Map(), perSet=new Map();
+  (d.adsets||[]).forEach(a=>{ if(!perCamp.has(a.campagne_id))perCamp.set(a.campagne_id,[]); perCamp.get(a.campagne_id).push(a); });
+  (d.ads||[]).forEach(a=>{ if(!perSet.has(a.adset_id))perSet.set(a.adset_id,[]); perSet.get(a.adset_id).push(a); });
+  const rijen=[];
+  adsSorteer(d.campagnes||[]).forEach(c=>{
+    const sets=adsSorteer(perCamp.get(c.id)||[]); rijen.push(adsRijHtml(c,'campagne',sets.length,mag));
+    if(!ADS.open.has(c.id)) return;
+    sets.forEach(s=>{ const kids=adsSorteer(perSet.get(s.id)||[]); rijen.push(adsRijHtml(s,'adset',kids.length,mag)); if(ADS.open.has(s.id)) kids.forEach(a=>rijen.push(adsRijHtml(a,'ad',0,mag))); });
+  });
+  const acc=d.account||{};
+  const kop=ADS_KOLOMMEN.map(([k,l])=>`<th class="ads-sort ${ADS.sort.kol===k?'on':''}" data-sort="${k}" style="text-align:right" title="Sorteer op ${l.replace(/­/g,'').toLowerCase()}">${l}${ADS.sort.kol===k?(ADS.sort.richting<0?' ↓':' ↑'):''}</th>`).join('');
+  const totaal=`<tr class="ads-rt-tot"><td>Totaal account</td>${ADS_KOLOMMEN.map(([k])=>k==='dagbudget_eur'?'<td></td>':`<td style="text-align:right"><span style="${adsStijl(k,acc[k])}">${adsWaarde(k,acc[k])}</span></td>`).join('')}<td></td></tr>`;
+  const waarsch=(d.waarschuwingen||[]).length?`<div class="bc-hint" style="margin:10px 18px 0;color:#b45309">Niet alles kwam binnen bij Meta: ${esc(d.waarschuwingen.join('; '))}. De rest staat er wel.</div>`:'';
+  t.innerHTML=adsTegels(acc)+waarsch+((d.campagnes||[]).length
+    ?`<div class="ads-rt-schuif">Schuif opzij voor meer kolommen; de naam en de knoppen blijven staan.</div><div class="ads-rt-wrap"><table class="live-tbl ads-rt"><thead><tr><th>Naam</th>${kop}<th title="Kwaliteit, betrokkenheid en conversie, zoals Meta ze rangschikt">Kwali­teit</th></tr></thead><tbody>${rijen.join('')}${totaal}</tbody></table></div>`
+    :'<div class="muted" style="padding:18px">Geen campagnes met verkeer in deze periode.</div>')+adsVoetnoot();
+  t.querySelectorAll('[data-sort]').forEach(h=>h.onclick=()=>{ const k=h.dataset.sort; if(ADS.sort.kol===k) ADS.sort.richting*=-1; else ADS.sort={kol:k,richting:-1}; adsDetailTekenen(); });
+  t.querySelectorAll('tr[data-open]').forEach(tr=>tr.onclick=e=>{ if(e.target.closest('button,input,a,select'))return; const id=tr.dataset.open; if(ADS.open.has(id))ADS.open.delete(id); else ADS.open.add(id); adsDetailTekenen(); });
+  adsActiesKoppelen(t);
+}
+// Pauzeren, aanzetten en dagbudget; gedeeld door de uitgebreide en de beperkte weergave.
+function adsActiesKoppelen(t){
   t.querySelectorAll('[data-status]').forEach(x=>x.onclick=async()=>{
-    x.disabled=true; const {data:d}=await sb.functions.invoke('meta-ads',{body:{actie:'status',campaign_id:x.dataset.status,status:x.dataset.naar}});
+    x.disabled=true; const id=x.dataset.status; const niv=x.dataset.niveau||'campagne';
+    const {data:d}=await sb.functions.invoke('meta-ads',{body:{actie:'status',id,campaign_id:id,status:x.dataset.naar}});
     if(!d||!d.ok){toast((d&&(d.fout||d.error))||'Status wijzigen mislukt','err');x.disabled=false;return;}
-    toast(x.dataset.naar==='ACTIVE'?'Campagne aangezet':'Campagne gepauzeerd','ok'); adsResultaten();
+    const wat=niv==='ad'?'Advertentie':'Campagne';
+    toast(x.dataset.naar==='ACTIVE'?wat+' aangezet':wat+' gepauzeerd','ok'); adsResultaten();
   });
   t.querySelectorAll('[data-budget]').forEach(x=>x.onchange=async()=>{
     const v=Number(x.value)||0; if(v<5){toast('Dagbudget minimaal 5 euro','err');return;}
     const {data:d}=await sb.functions.invoke('meta-ads',{body:{actie:'budget',campaign_id:x.dataset.budget,dagbudget_eur:v}});
     if(!d||!d.ok){toast((d&&(d.fout||d.error))||'Budget wijzigen mislukt','err');return;}
     toast('Dagbudget aangepast','ok');
+    // Ook in de cache, anders springt het veld terug bij openvouwen of sorteren.
+    // Zonder budget op de campagne zet de function hetzelfde bedrag op elke ad set (zetBudget).
+    const det=ADS.detail; if(det){ const c=(det.campagnes||[]).find(c=>c.id===x.dataset.budget); if(c){ c.dagbudget_eur=v; if(!c.budget_op_campagne) (det.adsets||[]).filter(a=>a.campagne_id===c.id).forEach(a=>a.dagbudget_eur=v); } }
   });
+}
+// Beperkte weergave: de oude insights-call met alleen campagnes. Alleen als
+// insights_detail niet lukt, zodat de pagina nooit leeg blijft.
+async function adsResultatenOud(reden){
+  const nr=ADS.laadNr;
+  const {data,error}=await sb.functions.invoke('meta-ads',{body:{actie:'insights',periode:ADS.periode}});
+  if(nr!==ADS.laadNr) return;
+  const t=$('#ads_tabel'); if(!t)return;
+  const hint=`<div class="bc-hint" style="margin:14px 18px 0;color:#b45309">Uitgebreide cijfers niet beschikbaar (${esc(reden)}). Dit is de beperkte weergave met alleen campagnes.</div>`;
+  if(error||!data||!data.ok){t.innerHTML=`<div class="bc-hint err" style="margin:14px 18px">Niet beschikbaar: ${esc((data&&(data.fout||data.error))||(error&&error.message)||'onbekend')}</div>`;return;}
+  const rijen=data.rijen||[];
+  if(!rijen.length){t.innerHTML=hint+'<div class="muted" style="padding:18px">Geen campagnes met verkeer in deze periode.</div>';return;}
+  const tot=rijen.reduce((a,r)=>({besteding:a.besteding+r.besteding,bereik:a.bereik+r.bereik,klikken:a.klikken+r.klikken,leads:a.leads+r.leads}),{besteding:0,bereik:0,klikken:0,leads:0});
+  const totCpl=tot.leads?tot.besteding/tot.leads:null;
+  const mag=canEdit('ads');
+  t.innerHTML=hint+`<div style="overflow-x:auto"><table class="live-tbl"><thead><tr><th>Campagne</th><th>Status</th><th style="text-align:right">Dagbudget</th><th style="text-align:right">Besteding</th><th style="text-align:right">Bereik</th><th style="text-align:right">Klikken</th><th style="text-align:right">Leads</th><th style="text-align:right">Per lead</th>${mag?'<th></th>':''}</tr></thead><tbody>
+    ${rijen.map(r=>{const e=ADS.eigen.get(r.campaign_id); const actief=r.status==='ACTIVE'; return `<tr>
+      <td><b>${esc(r.naam)}</b>${e&&e.koppen&&e.koppen.length?`<div class="muted" style="font-size:11px;white-space:normal;max-width:360px">${esc(e.koppen.join(' · '))}</div>`:''}</td>
+      <td>${adsStatusChip(r.status)}</td>
+      <td style="text-align:right">${mag?`<input type="number" min="5" step="5" value="${r.dagbudget_eur==null?'':Math.round(r.dagbudget_eur)}" data-budget="${r.campaign_id}" style="width:74px;text-align:right">`:adsEuro(r.dagbudget_eur)}</td>
+      <td style="text-align:right">${adsEuro(r.besteding)}</td><td style="text-align:right">${adsInt(r.bereik)}</td><td style="text-align:right">${adsInt(r.klikken)}</td><td style="text-align:right"><b>${adsInt(r.leads)}</b></td>
+      <td style="text-align:right;${adsCplKleur(r.cpl)}">${adsEuro(r.cpl)}</td>
+      ${mag?`<td><button class="bc-zoekactie" style="text-transform:none" data-status="${r.campaign_id}" data-niveau="campagne" data-naar="${actief?'PAUSED':'ACTIVE'}">${actief?'Pauzeren':'Aanzetten'}</button></td>`:''}</tr>`;}).join('')}
+    <tr style="background:#fafbfa"><td><b>Totaal</b></td><td></td><td></td><td style="text-align:right"><b>${adsEuro(tot.besteding)}</b></td><td style="text-align:right">${adsInt(tot.bereik)}</td><td style="text-align:right">${adsInt(tot.klikken)}</td><td style="text-align:right"><b>${adsInt(tot.leads)}</b></td><td style="text-align:right;${adsCplKleur(totCpl)}">${adsEuro(totCpl)}</td>${mag?'<td></td>':''}</tr>
+  </tbody></table></div>
+  <div class="muted" style="font-size:12px;padding:12px 18px 16px">Leads zijn wat Meta telt (formulieren en leadgebeurtenissen van de site). Per lead: groen onder ${ADS_CPL_GRENS.groen} euro, oranje tot ${ADS_CPL_GRENS.oranje}, rood daarboven.</div>`;
+  adsActiesKoppelen(t);
 }
 
 /* ================= WERKLIJST =================
