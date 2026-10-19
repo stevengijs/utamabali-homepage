@@ -1538,6 +1538,25 @@
   .mw-taakknop:hover{color:var(--brand)}
   .mw-taakform{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;width:min(440px,100%)}
   .mw-taakform input{flex:1;min-width:150px}
+  /* Tabblad Open: de agenda (mw_agenda) boven de takenlijst Te doen. */
+  .mw-sectiekop{display:flex;align-items:baseline;gap:8px;margin:4px 0 10px;font-size:14px;font-weight:700;color:var(--ink)}
+  .mw-sectie-n,.mw-sectie-sub{font-size:12px;font-weight:600;color:var(--muted)}
+  .mw-agenda{padding:12px 16px 6px}
+  .mw-agenda .mw-sectiekop{margin:0}
+  .mw-ag-dag{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.03em;margin:10px 0 0}
+  .mw-ag-r{display:flex;align-items:baseline;gap:4px 10px;width:100%;min-width:0;text-align:left;border:none;border-top:1px solid var(--line);background:none;padding:7px 0;font-size:13.5px;font-family:inherit;color:var(--ink);cursor:pointer}
+  .mw-ag-dag+.mw-ag-r{border-top:none}
+  .mw-ag-r:hover .mw-ag-naam{text-decoration:underline}
+  .mw-ag-r:focus-visible{outline:2px solid var(--brand-2);outline-offset:2px;border-radius:4px}
+  .mw-ag-naam{flex:0 1 auto;max-width:38%;font-weight:650;color:var(--brand);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mw-ag-tekst{flex:1 1 0;min-width:0;overflow-wrap:anywhere}
+  .mw-ag-r .badge{flex:none}
+  @media(max-width:720px){
+    .mw-agenda{padding:10px 12px 4px}
+    .mw-ag-r{flex-wrap:wrap}
+    .mw-ag-naam{max-width:calc(100% - 50px)}
+    .mw-ag-tekst{order:2;flex-basis:100%}
+  }
   @media(max-width:720px){
     .mw-form,.mw-zoekform{grid-template-columns:1fr}
     .mw-veld{display:flex}
@@ -1618,7 +1637,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-19-mijn-whatsapp-1';
+const APP_VERSIE='2026-10-20-mijn-whatsapp-2';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1947,7 +1966,7 @@ let ME=null, PERMS={}, SESSION=null, CURRENT='dashboard';
 let _cache={};
 /* Mijn WhatsApp: eigenaar is null tot mwPeil() klaar is, daarna true (Steven)
    of false (iedereen anders, ook andere admins). Zie renderMijnWhatsapp(). */
-let MW={eigenaar:null,peil:null,overzicht:null,kanaal:null,tab:'open',taken:null,
+let MW={eigenaar:null,peil:null,overzicht:null,kanaal:null,tab:'open',taken:null,agenda:null,
   chatQ:'',chats:null,chatsVolg:0,gesprek:null,
   zoek:{q:'',chat:null,van:'',tot:'',soort:'alles',res:null},zoekVolg:0,
   vraag:{bezig:false,tekst:'',start:0,klok:null,fout:null,laatste:null},opMac:{}};
@@ -2531,6 +2550,53 @@ function mwTaakTitel(m){
 }
 function mwTijd(ts){return ts?fmtDateTime(ts):'';}
 function mwDatumKort(ts){const d=new Date(ts);return isNaN(d)?'':d.toLocaleDateString('nl-NL');}
+// Vandaag in Bali (Asia/Makassar) als jjjj-mm-dd: de datums in de agenda zijn
+// Bali-datums, ook als de browser in een andere tijdzone staat.
+function mwBaliVandaag(nu){
+  const d=new Date(nu==null?Date.now():nu);
+  try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Makassar',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);}
+  catch(e){const b=new Date(d.getTime()+8*36e5);return b.toISOString().slice(0,10);}
+}
+// Kop van een dag in de agenda: Vandaag, Morgen, anders weekdag en datum
+// ("Woensdag 21 oktober"). Leeg bij een ongeldige datum.
+function mwDagLabel(datum,vandaag){
+  const m=String(datum||'').match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return '';
+  const d=Date.UTC(+m[1],+m[2]-1,+m[3]);
+  const v=String(vandaag||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(v){
+    const verschil=Math.round((d-Date.UTC(+v[1],+v[2]-1,+v[3]))/864e5);
+    if(verschil===0)return 'Vandaag';
+    if(verschil===1)return 'Morgen';
+  }
+  const s=new Date(d).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'});
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+// De agenda per dag, op datum (de volgorde van mw_agenda blijft binnen een dag).
+// Regels zonder chat of geldige datum vallen weg.
+function mwAgendaGroepen(lijst,vandaag){
+  const groepen=[];
+  (Array.isArray(lijst)?lijst:[]).filter(x=>x&&x.chat_jid&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.datum||'').slice(0,10)))
+    .map((x,i)=>({x,i,d:String(x.datum).slice(0,10)}))
+    .sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:a.i-b.i)
+    .forEach(({x,d})=>{
+      let g=groepen[groepen.length-1];
+      if(!g||g.datum!==d){g={datum:d,label:mwDagLabel(d,vandaag),regels:[]};groepen.push(g);}
+      g.regels.push(x);
+    });
+  return groepen;
+}
+// Het blok Agenda: per dag de chatnaam, de tekst en "jij" als Steven aan zet
+// is. Een klik opent het gesprek rond het bericht, zoals een bron. Leeg: geen blok.
+function mwAgendaHtml(lijst,vandaag){
+  const groepen=mwAgendaGroepen(lijst,vandaag);
+  if(!groepen.length)return '';
+  const soort={afspraak:'Afspraak',deadline:'Deadline'};
+  return `<section class="mw-kaart mw-agenda" aria-label="Agenda"><h3 class="mw-sectiekop">Agenda <span class="mw-sectie-sub">komende 14 dagen</span></h3>${groepen.map(g=>
+    `<div class="mw-ag-dag">${esc(g.label)}</div>${g.regels.map(x=>{
+      const naam=mwNaam({naam:x.chat_naam,jid:x.chat_jid});
+      return `<button type="button" class="mw-ag-r" data-mw-chat="${esc(x.chat_jid)}" data-mw-rond="${esc(x.tijdstip||'')}" data-mw-pk="${esc(x.bericht_mac_pk==null?'':x.bericht_mac_pk)}" title="${esc((soort[x.soort]||'Agenda')+': open het gesprek bij dit bericht')}"><span class="mw-ag-naam">${esc(naam)}</span><span class="mw-ag-tekst">${esc(x.tekst||'')}</span>${x.actie_voor==='steven'?'<span class="badge amber">jij</span>':''}</button>`;
+    }).join('')}`).join('')}</section>`;
+}
 
 /* ---------- Edge function mijn-whatsapp ---------- */
 // Een fout komt terug als HTTP 4xx/5xx met {error}; supabase-js zegt dan alleen
@@ -2716,16 +2782,56 @@ function mwTab(k){
   return MW.gesprek?mwGesprekTeken():mwChatsTeken();
 }
 
-/* ---------- Open: de takenlijst ---------- */
+/* ---------- Open: de agenda en de takenlijst Te doen ---------- */
+// Boven de taken de agenda (mw_agenda): afspraken en deadlines van de komende
+// 14 dagen, ook die van anderen. Die zijn geen taak; taken zijn alleen wat
+// Steven zelf moet doen. Lukt de agenda niet, dan geen blok.
 async function mwOpenLaden(){
   const b=$('#mw_body');if(!b)return;
-  b.innerHTML='<div id="mw_nieuw" class="mw-balk"></div><div id="mw_taken"><div class="muted" style="padding:8px">Open punten laden…</div></div>';
+  b.innerHTML='<div id="mw_agenda"></div><h3 class="mw-sectiekop" id="mw_te_doen">Te doen</h3><div id="mw_nieuw" class="mw-balk"></div><div id="mw_taken"><div class="muted" style="padding:8px">Laden…</div></div><div id="mw_afgerond"></div>';
   mwNieuwTaakTeken(false);
+  const agenda=(async()=>{try{return await sb.rpc('mw_agenda',{p_dagen:14});}catch(e){return {data:null,error:e};}})();
   const {data,error}=await sb.rpc('mw_open');
+  const ag=await agenda;
   if(!mwHier('open'))return;
-  if(error){$('#mw_taken').innerHTML=`<div class="mw-leeg">Open punten niet beschikbaar: ${esc(error.message)}</div>`;return;}
+  MW.agenda=(!ag.error&&Array.isArray(ag.data))?ag.data:[];
+  mwAgendaTeken();
+  if(error){$('#mw_taken').innerHTML=`<div class="mw-leeg">Te doen niet beschikbaar: ${esc(error.message)}</div>`;return;}
   MW.taken=Array.isArray(data)?data:[];
   mwTakenTeken();
+  mwAfgerondLaden();
+}
+// Wat Claude de afgelopen 7 dagen zelf afrondde, met de reden en het bewijs in de
+// toelichting, zodat Steven het kan nalezen en heropenen (review 19 oktober 2026).
+async function mwAfgerondLaden(){
+  const box=$('#mw_afgerond');if(!box)return;
+  const sinds=new Date(Date.now()-7*86400000).toISOString();
+  const {data,error}=await sb.from('mw_taken').select('id,chat_jid,titel,toelichting,afgehandeld_at,mw_chats(naam)')
+    .eq('bron','claude').eq('status','afgehandeld').like('toelichting','%Afgerond volgens Claude:%')
+    .gte('afgehandeld_at',sinds).order('afgehandeld_at',{ascending:false}).limit(30);
+  if(!mwHier('open')||!box.isConnected)return;
+  const lijst=(!error&&Array.isArray(data))?data:[];
+  if(!lijst.length){box.innerHTML='';return;}
+  const reden=t=>{const m=String(t.toelichting||'').split('Afgerond volgens Claude: ');return m.length>1?m[m.length-1]:'';};
+  box.innerHTML=`<button type="button" class="mw-mini" id="mw_af_toggle" style="margin-top:14px">Door Claude afgerond (7 dagen): ${lijst.length}</button>
+    <div id="mw_af_lijst" hidden>${lijst.map(t=>`<div class="mw-kaart" style="opacity:.85">
+      <div style="font-weight:700">${esc((t.mw_chats&&t.mw_chats.naam)||t.chat_jid)}</div>
+      <div>${esc(t.titel||'')}</div>
+      <div class="muted" style="font-size:12px;margin-top:3px">${esc(reden(t))} · ${esc(mwTijd(t.afgehandeld_at))}</div>
+      <div class="mw-knoppen"><button class="btn btn-ghost btn-sm" data-mw-heropen="${esc(t.id)}">Heropenen</button></div>
+    </div>`).join('')}</div>`;
+  $('#mw_af_toggle').onclick=()=>{const l=$('#mw_af_lijst');if(l)l.hidden=!l.hidden;};
+  box.querySelectorAll('[data-mw-heropen]').forEach(k=>k.onclick=async()=>{
+    k.disabled=true;
+    const {error:e}=await sb.rpc('mw_taak_bijwerken',{p_id:k.dataset.mwHeropen,p_status:'open',p_later_tot:null,p_voorstel:null});
+    if(e){toast(esc(e.message),'err');k.disabled=false;return;}
+    toast('Weer open gezet.');mwOpenLaden();
+  });
+}
+function mwAgendaTeken(){
+  const box=$('#mw_agenda');if(!box)return;
+  box.innerHTML=mwAgendaHtml(MW.agenda,mwBaliVandaag(Date.now()));
+  mwLinksBind(box);
 }
 function mwNieuwTaakTeken(open){
   const box=$('#mw_nieuw');if(!box)return;
@@ -2782,7 +2888,8 @@ function mwVoorstelHtml(vs,open){
 function mwTakenTeken(){
   const box=$('#mw_taken');if(!box)return;
   const lijst=MW.taken||[];
-  if(!lijst.length){box.innerHTML='<div class="mw-leeg">Niets open.</div>';return;}
+  const kop=$('#mw_te_doen');if(kop)kop.innerHTML='Te doen'+(lijst.length?` <span class="mw-sectie-n">${lijst.length}</span>`:'');
+  if(!lijst.length){box.innerHTML='<div class="mw-leeg">Niets te doen.</div>';return;}
   box.innerHTML=lijst.map(mwTaakHtml).join('');
   box.querySelectorAll('[data-mw-taak]').forEach(k=>{const t=lijst.find(x=>String(x.id)===k.dataset.mwTaak);if(t)mwTaakBind(k,t);});
   mwLinksBind(box);
