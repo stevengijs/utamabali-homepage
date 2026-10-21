@@ -1653,6 +1653,8 @@
 .pv-tabs button i { font-style:normal; font-size:11px; opacity:.7; margin-left:3px; font-variant-numeric:tabular-nums; }
 .pv-tabs button.kind .sw { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--kc); margin-right:6px; vertical-align:0; }
 .pv-tabs button.kind.on { background:var(--kc); border-color:var(--kc); color:#fff; }
+.pv-filters .pv-lang { flex:none; }
+.pv-lang button { padding:7px 12px; font-size:12.5px; }
 .pv-tabs button.kind.on .sw { background:#fff; }
 .pv-filters input[type=search] { flex:1; min-width:200px; font:14px var(--pv-body); padding:8px 12px; border-radius:999px; border:1px solid var(--pv-line); background:var(--pv-sand); color:var(--pv-ink); }
 .pv-toggle { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--pv-muted); cursor:pointer; }
@@ -1690,6 +1692,23 @@
 .pv-checks li { background:var(--pv-olive-soft); border-radius:10px; padding:10px 12px 10px 34px; position:relative; font-size:13px; }
 .pv-checks li::before { content:'✓'; position:absolute; left:12px; top:9px; color:var(--pv-olive); font-weight:700; }
 @media (max-width:560px) { .pv-flabel { width:100%; } .pv-filters { position:static; } }
+/* timeline zoom and tooltips (Steven, 21 Oct 2026) */
+.pv-zoom { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:0 0 8px; }
+.pv-zoom button { font:500 12.5px var(--pv-body); padding:6px 12px; border-radius:999px; border:1px solid var(--pv-line); background:var(--pv-paper); color:var(--pv-ink); cursor:pointer; }
+.pv-zoom button.on { background:var(--pv-ink); color:var(--pv-paper); border-color:var(--pv-ink); }
+.pv-zoom span { font-size:12px; color:var(--pv-muted); margin-left:6px; }
+.pv-gwrap { display:flex; align-items:flex-start; }
+.pv-gwrap .pv-gscroll { flex:1; min-width:0; overflow-x:auto; }
+.pv-gwrap.split .pv-gnames { flex:none; border-right:1px solid var(--pv-line); background:var(--pv-paper); }
+.pv-gantt:has(.pv-gwrap) { overflow:hidden; }
+.pv-gantt svg.pv-z-q { min-width:980px; width:100%; height:auto; }
+.pv-gantt svg.pv-z-m, .pv-gantt svg.pv-z-w { min-width:0; width:auto; max-width:none; height:auto; }
+.pv-gantt svg.pv-gnames { min-width:0; width:200px; height:auto; flex:none; }
+.pv-hit { cursor:pointer; }
+.pv-hit:hover { opacity:1 !important; stroke:var(--pv-ink); stroke-width:1.5; }
+.pv-tipbox { position:fixed; z-index:50; max-width:320px; background:#17140F; color:#FEFBF6; font:13px/1.4 'Inter',system-ui,sans-serif; padding:9px 12px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); pointer-events:none; }
+.pv-tipbox small { opacity:.75; }
+.pv-tipbox b { font-weight:700; }
 </style>
 </head>
 <body>
@@ -1759,7 +1778,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-21-planning-filters';
+const APP_VERSIE='2026-10-21-planning-team';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2524,11 +2543,42 @@ function go(k){
    Bron is de UTAMA brain (_cockpit/planning/data.json); bijwerken kan hier via "Planning bijwerken (JSON)". */
 /* Planning view, shared by the portal artifact and /admin. PV.render(container, data, {today, editable, onSave, state, onState}).
    Filters: project (all or one) x work stream (all or one kind), plus search and "show past".
+   Language (21 Oct 2026, Steven: Dutch, English as an option): state.lang 'nl' (default) or 'en'. Every text field in
+   the data is Dutch; an English twin sits next to it as <field>_en (label_en, text_en, rows_en, columns_en, content_en,
+   name_en, status_en, ...). Without a twin the Dutch text shows.
    data = {projects:[{key,name,status,phases:[{label,start,end,kind}],milestones:[{date,label,kind}],table,notes,sources}],
            marketing:{flow,rules,rhythm,gates,ads,channels,content,calendar:[{date,label,project,kind}]}} */
 var PV = (function () {
-  var KINDS = { marketing: 'Marketing', build: 'Bouw', design: 'Ontwerp', sales: 'Verkoop', permit: 'Vergunning', finance: 'Financieel', legal: 'Juridisch', ops: 'Operatie' };
-  var MON = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  var KINDS_T = {
+    nl: { marketing: 'Marketing', build: 'Bouw', design: 'Ontwerp', sales: 'Verkoop', permit: 'Vergunning', finance: 'Financieel', legal: 'Juridisch', ops: 'Operatie' },
+    en: { marketing: 'Marketing', build: 'Build', design: 'Design', sales: 'Sales', permit: 'Permit', finance: 'Finance', legal: 'Legal', ops: 'Operations' }
+  };
+  var MON_T = {
+    nl: ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'],
+    en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  };
+  var UI = {
+    nl: { to: 'tot', thisWeek: 'deze week', item: 'punt', items: 'punten', today: 'vandaag', now: 'nu', launch: 'Launchfases', rules: 'Spelregels', gates: 'Beslismomenten', rhythm: 'Ritme per week', ads: 'Advertenties', channels: 'Vijf kanalen', content: 'Content',
+      project: 'Project', allProjects: 'Alle projecten', work: 'Werk', all: 'Alles', search: 'Zoek', searchPh: 'Zoek in alle punten, bijv. whisper, renders, KAMU', past: 'Toon ook afgerond', lang: 'Taal',
+      next: 'Volgende', noOpen: 'Geen open punten', inDays: function (n) { return n === 0 ? 'vandaag' : 'over ' + n + ' dag' + (n === 1 ? '' : 'en'); }, in30: 'in 30 dagen',
+      statWeek: 'deze week', stat4: 'in 4 weken', statOpen: 'open in totaal', heroSub: function (d, w) { return 'Vandaag ' + d + ', week ' + w + '. Kies een project en een soort werk om in te zoomen.'; },
+      projects: 'Projecten', tlKinds: 'Tijdlijn per soort werk', tlAll: 'Tijdlijn, oktober 2026 tot maart 2028', weekByWeek: 'Week voor week', important: 'Belangrijk',
+      next4: 'Komende vier weken', none4: 'Niets gepland in de komende vier weken voor deze selectie.', allPast: 'Alle punten, ook afgerond', allOpen: 'Alle open punten', noneSel: 'Geen punten voor deze selectie.',
+      hint: 'Kies <b>Marketing</b> bij Werk voor de launchfases, spelregels, beslismomenten, ritme, advertenties en kanalen.', source: 'Bron in de brain: ', updated: function (u) { return 'Bijgewerkt ' + u + '. Bron: de UTAMA brain.'; },
+      edit: 'Planning bijwerken (JSON)', save: 'Opslaan', cancel: 'Annuleren', badJson: 'Geen geldige JSON: ' },
+    en: { to: 'to', thisWeek: 'this week', item: 'item', items: 'items', today: 'today', now: 'now', launch: 'Launch phases', rules: 'Rules', gates: 'Decision points', rhythm: 'Weekly rhythm', ads: 'Ads', channels: 'Five channels', content: 'Content',
+      project: 'Project', allProjects: 'All projects', work: 'Work', all: 'All', search: 'Search', searchPh: 'Search all items, e.g. whisper, renders, KAMU', past: 'Show completed too', lang: 'Language',
+      next: 'Next', noOpen: 'No open items', inDays: function (n) { return n === 0 ? 'today' : 'in ' + n + ' day' + (n === 1 ? '' : 's'); }, in30: 'in 30 days',
+      statWeek: 'this week', stat4: 'in 4 weeks', statOpen: 'open in total', heroSub: function (d, w) { return 'Today ' + d + ', week ' + w + '. Pick a project and a type of work to zoom in.'; },
+      projects: 'Projects', tlKinds: 'Timeline by type of work', tlAll: 'Timeline, October 2026 to March 2028', weekByWeek: 'Week by week', important: 'Important',
+      next4: 'Next four weeks', none4: 'Nothing planned in the next four weeks for this selection.', allPast: 'All items, including completed', allOpen: 'All open items', noneSel: 'No items for this selection.',
+      hint: 'Choose <b>Marketing</b> under Work for the launch phases, rules, decision points, rhythm, ads and channels.', source: 'Source in the brain: ', updated: function (u) { return 'Updated ' + u + '. Source: the UTAMA brain.'; },
+      edit: 'Update planning (JSON)', save: 'Save', cancel: 'Cancel', badJson: 'Not valid JSON: ' }
+  };
+  var LANG = 'nl', KINDS = KINDS_T.nl, MON = MON_T.nl, L = UI.nl;
+  function setLang(l) { LANG = l === 'en' ? 'en' : 'nl'; KINDS = KINDS_T[LANG]; MON = MON_T[LANG]; L = UI[LANG]; }
+  // The text of a field in the chosen language: <field>_en in English when it exists, else the Dutch field.
+  function T(o, f) { if (!o) return ''; return LANG === 'en' && o[f + '_en'] != null && o[f + '_en'] !== '' ? o[f + '_en'] : o[f]; }
   function esc(s) { return (s == null ? '' : String(s)).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function D(s) { return new Date(s + 'T00:00:00Z'); }
   function iso(d) { return d.toISOString().slice(0, 10); }
@@ -2549,12 +2599,12 @@ var PV = (function () {
   function byWeek(items, today, showProj) {
     var g = {}, order = [];
     items.slice().sort(sortD).forEach(function (m) { var k = monday(m.date); if (!g[k]) { g[k] = []; order.push(k); } g[k].push(m); });
-    return order.map(function (k) { var e = D(k); e.setUTCDate(e.getUTCDate() + 6); var now = today >= k && today <= iso(e); return '<div class="pv-week' + (now ? ' now' : '') + '"><h4>Week ' + isoWeek(k) + ' <span>' + fmt(k) + ' tot ' + fmt(iso(e)) + (now ? ' · deze week' : '') + '</span></h4>' + g[k].map(function (m) { return row(m, today, showProj); }).join('') + '</div>'; }).join('');
+    return order.map(function (k) { var e = D(k); e.setUTCDate(e.getUTCDate() + 6); var now = today >= k && today <= iso(e); return '<div class="pv-week' + (now ? ' now' : '') + '"><h4>Week ' + isoWeek(k) + ' <span>' + fmt(k) + ' ' + L.to + ' ' + fmt(iso(e)) + (now ? ' · ' + L.thisWeek : '') + '</span></h4>' + g[k].map(function (m) { return row(m, today, showProj); }).join('') + '</div>'; }).join('');
   }
   function byMonth(items, today, showProj) {
     var g = {}, order = [];
     items.slice().sort(sortD).forEach(function (m) { var k = m.date.slice(0, 7); if (!g[k]) { g[k] = []; order.push(k); } g[k].push(m); });
-    return order.map(function (k) { return '<div class="pv-week"><h4>' + fmtY(k + '-01') + ' <span>' + g[k].length + ' punt' + (g[k].length > 1 ? 'en' : '') + '</span></h4>' + g[k].map(function (m) { return row(m, today, showProj); }).join('') + '</div>'; }).join('');
+    return order.map(function (k) { return '<div class="pv-week"><h4>' + fmtY(k + '-01') + ' <span>' + g[k].length + ' ' + (g[k].length > 1 ? L.items : L.item) + '</span></h4>' + g[k].map(function (m) { return row(m, today, showProj); }).join('') + '</div>'; }).join('');
   }
   function lanes(phases) {
     var ends = [], out = [];
@@ -2562,85 +2612,119 @@ var PV = (function () {
     return { items: out, n: Math.max(1, ends.length) };
   }
   // rows: [{name, phases, milestones}]
-  function gantt(rows, today, from, to) {
-    var start = D(from), end = D(to), span = end - start, W = 1180, L = 200, R = 14, TOP = 34, LH = 16;
-    function X(s) { return L + (D(s) - start) / span * (W - L - R); }
-    var rr = rows.map(function (r) { var lz = lanes(r.phases || []); return { r: r, lz: lz, h: 22 + (r.phases && r.phases.length ? lz.n * LH : 0) + 12 }; });
+  // Timeline. zoom: 'q' (whole range fits), 'm' (about 6 px a day, week ticks with dates), 'w' (about 26 px a day, every day).
+  // Every bar and dot carries data-tip for the hover tooltip; milestones on the same day in one row share one dot.
+  function gantt(rows, today, from, to, zoom) {
+    zoom = zoom || 'q';
+    var split = zoom !== 'q', NW = 200, start = D(from), end = D(to), nd = Math.max(1, days(from, to)), Lw = split ? 0 : NW, R = 18, LH = 16, ns = '';
+    var ppd = zoom === 'w' ? 26 : zoom === 'm' ? 6 : (1180 - NW - R) / nd;
+    var W = Math.round(Lw + nd * ppd + R), TOP = zoom === 'q' ? 34 : 50;
+    function X(s) { return Lw + days(from, s) * ppd; }
+    var rr = rows.map(function (r) { var lz = lanes(r.phases || []); return { r: r, lz: lz, h: 22 + (r.phases && r.phases.length ? lz.n * LH : 0) + 14 }; });
     var H = TOP + rr.reduce(function (a, x) { return a + x.h; }, 0) + 20;
-    var g = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif" font-size="11">';
-    for (var d = new Date(start); d < end; d.setUTCMonth(d.getUTCMonth() + 1)) {
-      var x = X(iso(d)), jan = d.getUTCMonth() === 0;
-      g += '<line x1="' + x.toFixed(1) + '" y1="' + (TOP - 8) + '" x2="' + x.toFixed(1) + '" y2="' + (H - 8) + '" stroke="var(--pv-line)" stroke-width="' + (jan ? 1.6 : 1) + '"/>';
-      g += '<text x="' + (x + 4).toFixed(1) + '" y="' + (TOP - 14) + '" fill="var(--pv-muted)" font-weight="' + (jan ? 700 : 400) + '">' + MON[d.getUTCMonth()] + (jan || iso(d) === from ? ' ' + d.getUTCFullYear() : '') + '</text>';
+    var g = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif" font-size="11" class="pv-svg pv-z-' + zoom + '">';
+    if (zoom !== 'q') {
+      for (var dd = new Date(start); dd < end; dd.setUTCDate(dd.getUTCDate() + 1)) {
+        var s = iso(dd), x = X(s), mon = dd.getUTCDay() === 1;
+        if (zoom === 'w' || mon) {
+          g += '<line x1="' + x.toFixed(1) + '" y1="' + (TOP - 10) + '" x2="' + x.toFixed(1) + '" y2="' + (H - 8) + '" stroke="var(--pv-line)" stroke-width="' + (mon ? 1 : 0.5) + '" opacity="' + (mon ? 0.9 : 0.6) + '"/>';
+          var lab = zoom === 'w' ? String(dd.getUTCDate()) : (mon ? String(dd.getUTCDate()) : '');
+          if (lab) g += '<text x="' + (x + (zoom === 'w' ? ppd / 2 : 3)).toFixed(1) + '" y="' + (TOP - 14) + '" fill="var(--pv-muted)" font-size="10" text-anchor="' + (zoom === 'w' ? 'middle' : 'start') + '"' + (zoom === 'w' && (dd.getUTCDay() === 0 || dd.getUTCDay() === 6) ? ' opacity="0.55"' : '') + '>' + lab + '</text>';
+          if (zoom === 'w' && mon) g += '<text x="' + (x + 3).toFixed(1) + '" y="' + (H - 10) + '" fill="var(--pv-muted)" font-size="9.5">wk ' + isoWeek(s) + '</text>';
+        }
+      }
+    }
+    for (var d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)); d < end; d.setUTCMonth(d.getUTCMonth() + 1)) {
+      var ms = iso(d) < from ? from : iso(d), xm = X(ms), jan = d.getUTCMonth() === 0;
+      g += '<line x1="' + xm.toFixed(1) + '" y1="' + (zoom === 'q' ? TOP - 8 : 6) + '" x2="' + xm.toFixed(1) + '" y2="' + (H - 8) + '" stroke="var(--pv-line)" stroke-width="' + (jan ? 1.8 : 1.2) + '"/>';
+      g += '<text x="' + (xm + 4).toFixed(1) + '" y="' + (zoom === 'q' ? TOP - 14 : 18) + '" fill="var(--pv-ink)" font-weight="' + (jan || zoom !== 'q' ? 700 : 400) + '" opacity="' + (zoom === 'q' ? 0.7 : 1) + '">' + MON[d.getUTCMonth()] + (jan || ms === from || zoom !== 'q' ? ' ' + d.getUTCFullYear() : '') + '</text>';
     }
     var y = TOP;
     rr.forEach(function (x0, i) {
       var r = x0.r;
-      if (i % 2 === 0) g += '<rect x="0" y="' + y + '" width="' + W + '" height="' + x0.h + '" fill="var(--pv-sand)" opacity="0.55"/>';
+      if (i % 2 === 0) { g += '<rect x="0" y="' + y + '" width="' + W + '" height="' + x0.h + '" fill="var(--pv-sand)" opacity="0.55"/>'; ns += '<rect x="0" y="' + y + '" width="' + NW + '" height="' + x0.h + '" fill="var(--pv-sand)" opacity="0.55"/>'; }
       var nm = r.name.length > 26 ? r.name.slice(0, 25) + '…' : r.name;
-      g += '<text x="14" y="' + (y + 18) + '" fill="var(--pv-ink)" font-size="12.5" font-weight="600"><title>' + esc(r.name) + '</title>' + esc(nm) + '</text>';
+      var nt = '<text x="14" y="' + (y + 18) + '" fill="var(--pv-ink)" font-size="12.5" font-weight="600" data-tip="' + esc(r.name) + '">' + esc(nm) + '</text>';
+      if (split) ns += nt; else g += nt;
       x0.lz.items.forEach(function (it) {
         var ph = it.ph, a = ph.start < from ? from : ph.start, b = ph.end > to ? to : ph.end; if (b < from || a > to) return;
         var x1 = X(a), x2 = Math.max(X(b), x1 + 5), by = y + 8 + it.lane * LH;
-        g += '<rect x="' + x1.toFixed(1) + '" y="' + by + '" width="' + (x2 - x1).toFixed(1) + '" height="12" rx="6" fill="' + kc(ph.kind) + '" opacity="0.85"><title>' + esc(ph.label) + ': ' + fmt(ph.start) + ' ' + ph.start.slice(0, 4) + ' tot ' + fmt(ph.end) + ' ' + ph.end.slice(0, 4) + '</title></rect>';
+        var tip = esc(ph.label) + '<br><small>' + fmt(ph.start) + ' ' + ph.start.slice(0, 4) + ' ' + L.to + ' ' + fmt(ph.end) + ' ' + ph.end.slice(0, 4) + ' · ' + esc(KINDS[ph.kind] || ph.kind) + '</small>';
+        g += '<rect x="' + x1.toFixed(1) + '" y="' + by + '" width="' + (x2 - x1).toFixed(1) + '" height="12" rx="6" fill="' + kc(ph.kind) + '" opacity="0.85" class="pv-hit" data-tip="' + esc(tip) + '"/>';
         var maxc = Math.floor((x2 - x1 - 10) / 5.4);
         if (maxc >= 6) g += '<text x="' + (x1 + 6).toFixed(1) + '" y="' + (by + 9.3) + '" fill="#fff" font-size="9.5" font-weight="600" pointer-events="none">' + esc(ph.label.length > maxc ? ph.label.slice(0, maxc - 1) + '…' : ph.label) + '</text>';
         else g += '<text x="' + (x2 + 4).toFixed(1) + '" y="' + (by + 9.3) + '" fill="var(--pv-muted)" font-size="9.5" pointer-events="none">' + esc(ph.label) + '</text>';
       });
-      var my = y + x0.h - 9;
-      (r.milestones || []).forEach(function (m) {
-        if (m.date < from || m.date > to) return;
-        g += '<circle cx="' + X(m.date).toFixed(1) + '" cy="' + my + '" r="4" fill="' + kc(m.kind) + '" stroke="var(--pv-paper)" stroke-width="1.5"><title>' + fmt(m.date) + ' ' + m.date.slice(0, 4) + ': ' + esc(m.label) + '</title></circle>';
+      var my = y + x0.h - 10, byDay = {}, order = [];
+      (r.milestones || []).forEach(function (m) { if (m.date < from || m.date > to) return; if (!byDay[m.date]) { byDay[m.date] = []; order.push(m.date); } byDay[m.date].push(m); });
+      order.sort();
+      order.forEach(function (dt, oi) {
+        var list = byDay[dt], x = X(dt) + (zoom === 'w' ? ppd / 2 : 0), past = dt < today;
+        var room = oi + 1 < order.length ? X(order[oi + 1]) - X(dt) - 16 : 400, fit = Math.floor(room / 5.6);
+        var tip = '<b>' + fmt(dt) + ' ' + dt.slice(0, 4) + '</b>' + list.map(function (m) { return '<br>' + esc(m.label) + (m.pname && r.multi ? ' <small>· ' + esc(m.pname) + '</small>' : '') + ' <small>· ' + esc(KINDS[m.kind] || m.kind) + '</small>'; }).join('');
+        g += '<circle cx="' + x.toFixed(1) + '" cy="' + my + '" r="' + (list.length > 1 ? 6 : 4.5) + '" fill="' + kc(list[0].kind) + '" stroke="var(--pv-paper)" stroke-width="1.5" opacity="' + (past ? 0.5 : 1) + '"/>';
+        if (list.length > 1) g += '<text x="' + x.toFixed(1) + '" y="' + (my + 3.3) + '" fill="#fff" font-size="8.5" font-weight="700" text-anchor="middle" pointer-events="none">' + list.length + '</text>';
+        if (zoom === 'w' && fit >= 5) { var lt = list[0].label + (list.length > 1 ? ' +' + (list.length - 1) : ''), mx = Math.min(fit, 36); g += '<text x="' + (x + 9).toFixed(1) + '" y="' + (my + 3.5) + '" fill="var(--pv-ink)" font-size="10" pointer-events="none">' + esc(lt.length > mx ? lt.slice(0, mx - 1) + '…' : lt) + '</text>'; }
+        g += '<circle cx="' + x.toFixed(1) + '" cy="' + my + '" r="11" fill="transparent" class="pv-hit" data-tip="' + esc(tip) + '"/>';
       });
       y += x0.h;
     });
-    var tx = X(today);
     if (today >= from && today <= to) {
-      g += '<line x1="' + tx.toFixed(1) + '" y1="' + (TOP - 8) + '" x2="' + tx.toFixed(1) + '" y2="' + (H - 18) + '" stroke="var(--pv-today)" stroke-width="2"/>';
-      g += '<rect x="' + (tx - 26).toFixed(1) + '" y="' + (H - 18) + '" width="52" height="15" rx="7.5" fill="var(--pv-today)"/><text x="' + tx.toFixed(1) + '" y="' + (H - 7.5) + '" fill="#fff" font-size="9.5" font-weight="700" text-anchor="middle">vandaag</text>';
+      var tx = X(today) + (zoom === 'w' ? ppd / 2 : 0);
+      g += '<line x1="' + tx.toFixed(1) + '" y1="' + (TOP - 8) + '" x2="' + tx.toFixed(1) + '" y2="' + (H - 18) + '" stroke="var(--pv-today)" stroke-width="2" pointer-events="none"/>';
+      g += '<rect x="' + (tx - 26).toFixed(1) + '" y="' + (H - 18) + '" width="52" height="15" rx="7.5" fill="var(--pv-today)"/><text x="' + tx.toFixed(1) + '" y="' + (H - 7.5) + '" fill="#fff" font-size="9.5" font-weight="700" text-anchor="middle">' + L.today + '</text>';
     }
-    return g + '</svg>';
+    var tdx = today >= from && today <= to ? Math.round(X(today)) : 0;
+    if (!split) return '<div class="pv-gwrap"><div class="pv-gscroll" data-todayx="0">' + g + '</svg></div></div>';
+    var names = '<svg class="pv-gnames" viewBox="0 0 ' + NW + ' ' + H + '" width="' + NW + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">' + ns + '</svg>';
+    return '<div class="pv-gwrap split">' + names + '<div class="pv-gscroll" data-todayx="' + tdx + '">' + g + '</svg></div></div>';
   }
-  function legend(kinds) { return '<div class="pv-legend">' + kinds.map(function (k) { return '<span><i style="background:' + kc(k) + '"></i>' + KINDS[k] + '</span>'; }).join('') + '<span><i style="background:var(--pv-today);width:3px"></i>vandaag</span></div>'; }
+  function legend(kinds) { return '<div class="pv-legend">' + kinds.map(function (k) { return '<span><i style="background:' + kc(k) + '"></i>' + KINDS[k] + '</span>'; }).join('') + '<span><i style="background:var(--pv-today);width:3px"></i>' + L.today + '</span></div>'; }
 
   function marketingBlock(mk, today, pkey) {
     var h = '';
     if (mk.flow && mk.flow.length && (!pkey || pkey === 'reload')) {
-      h += eyebrow('Launchfases') + '<div class="pv-flow">' + mk.flow.map(function (f, i) { var now = today >= f.start && today <= f.end, done = today > f.end; return '<div class="pv-step' + (now ? ' now' : '') + (done ? ' done' : '') + '"><div class="pv-step-n">' + (i + 1) + '</div><b>' + esc(f.label) + '</b><span>' + fmt(f.start) + ' tot ' + fmt(f.end) + (now ? ' · nu' : '') + '</span><p>' + esc(f.text || '') + '</p></div>'; }).join('') + '</div>';
+      h += eyebrow(L.launch) + '<div class="pv-flow">' + mk.flow.map(function (f, i) { var now = today >= f.start && today <= f.end, done = today > f.end; return '<div class="pv-step' + (now ? ' now' : '') + (done ? ' done' : '') + '"><div class="pv-step-n">' + (i + 1) + '</div><b>' + esc(T(f, 'label')) + '</b><span>' + fmt(f.start) + ' ' + L.to + ' ' + fmt(f.end) + (now ? ' · ' + L.now : '') + '</span><p>' + esc(T(f, 'text') || '') + '</p></div>'; }).join('') + '</div>';
     }
-    if (mk.rules && mk.rules.length) h += eyebrow('Spelregels') + '<div class="pv-rules">' + mk.rules.map(function (r) { return '<div class="pv-rule"><b>' + esc(r.title) + '</b><span>' + esc(r.text) + '</span></div>'; }).join('') + '</div>';
+    if (mk.rules && mk.rules.length) h += eyebrow(L.rules) + '<div class="pv-rules">' + mk.rules.map(function (r) { return '<div class="pv-rule"><b>' + esc(T(r, 'title')) + '</b><span>' + esc(T(r, 'text')) + '</span></div>'; }).join('') + '</div>';
     if (mk.gates && mk.gates.length) {
-      h += eyebrow('Gates: hier beslissen we') + '<div class="pv-gates">' + mk.gates.map(function (g) { var st = g.date < today ? 'past' : (days(today, g.date) <= 14 ? 'soon' : ''); return '<div class="pv-gate ' + st + '"><span class="pv-gate-d">' + fmt(g.date) + '</span><span class="pv-gate-l">' + esc(g.label) + '</span>' + (g.rule ? '<span class="pv-gate-r">' + esc(g.rule) + '</span>' : '') + '</div>'; }).join('') + '</div>';
+      h += eyebrow(L.gates) + '<div class="pv-gates">' + mk.gates.map(function (g) { var st = g.date < today ? 'past' : (days(today, g.date) <= 14 ? 'soon' : ''); return '<div class="pv-gate ' + st + '"><span class="pv-gate-d">' + fmt(g.date) + '</span><span class="pv-gate-l">' + esc(T(g, 'label')) + '</span>' + (g.rule ? '<span class="pv-gate-r">' + esc(T(g, 'rule')) + '</span>' : '') + '</div>'; }).join('') + '</div>';
     }
-    if (mk.rhythm && mk.rhythm.length) h += eyebrow('Ritme per week') + '<div class="pv-tiles">' + mk.rhythm.map(function (t) { return '<div class="pv-tile"><b>' + esc(t.n) + '</b><span>' + esc(t.label) + '</span></div>'; }).join('') + '</div>';
+    if (mk.rhythm && mk.rhythm.length) h += eyebrow(L.rhythm) + '<div class="pv-tiles">' + mk.rhythm.map(function (t) { return '<div class="pv-tile"><b>' + esc(t.n) + '</b><span>' + esc(T(t, 'label')) + '</span></div>'; }).join('') + '</div>';
     if (mk.ads && mk.ads.length) {
       var from = '2026-10-01', to = '2027-07-01';
-      h += eyebrow('Advertenties') + '<div class="pv-gantt">' + gantt(mk.ads.map(function (a) { return { name: a.amount || '', phases: [{ label: a.label, start: a.start, end: a.end, kind: a.kind || 'marketing' }], milestones: [] }; }), today, from, to) + '</div>';
+      h += eyebrow(L.ads) + '<div class="pv-gantt">' + gantt(mk.ads.map(function (a) { return { name: T(a, 'amount') || '', phases: [{ label: T(a, 'label'), start: a.start, end: a.end, kind: a.kind || 'marketing' }], milestones: [] }; }), today, from, to) + '</div>';
     }
-    if (mk.channels && mk.channels.length) h += eyebrow('Vijf kanalen') + '<div class="pv-channels">' + mk.channels.map(function (c) { return '<div class="pv-channel"><b>' + esc(c.name) + '</b><span>' + esc(c.role) + '</span></div>'; }).join('') + '</div>';
-    if (mk.content && mk.content.length) h += eyebrow('Content') + '<ul class="pv-checks">' + mk.content.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul>';
+    if (mk.channels && mk.channels.length) h += eyebrow(L.channels) + '<div class="pv-channels">' + mk.channels.map(function (c) { return '<div class="pv-channel"><b>' + esc(T(c, 'name')) + '</b><span>' + esc(T(c, 'role')) + '</span></div>'; }).join('') + '</div>';
+    var content = T(mk, 'content');
+    if (content && content.length) h += eyebrow(L.content) + '<ul class="pv-checks">' + content.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul>';
     return h;
   }
 
   function render(el, data, opts) {
     opts = opts || {};
     var today = opts.today || iso(new Date());
-    var st = Object.assign({ proj: 'all', stream: 'all', q: '', past: false }, opts.state || {});
-    var projects, mk, items, phases, byKey;
+    var st = Object.assign({ proj: 'all', stream: 'all', q: '', past: false, lang: 'nl', zoom: 'q' }, opts.state || {});
+    setLang(st.lang);
+    var projects, mk, items, phases, byKey, USED;
     function index() {
       projects = data.projects || []; mk = data.marketing || {}; byKey = {};
       projects.forEach(function (p) { byKey[p.key] = p; });
       items = []; phases = [];
       var calKeys = {};
       (mk.calendar || []).forEach(function (m) {
-        var p = projects.filter(function (x) { return x.name === m.project || x.key === m.project; })[0];
-        var it = { date: m.date, label: m.label, kind: m.kind || 'marketing', pkey: p ? p.key : 'company', pname: p ? p.name : (m.project || 'UTAMA') };
+        var p = projects.filter(function (x) { return x.name === m.project || x.name_en === m.project || x.key === m.project; })[0];
+        var it = { date: m.date, label: T(m, 'label'), kind: m.kind || 'marketing', pkey: p ? p.key : 'company', pname: p ? T(p, 'name') : (m.project || 'UTAMA') };
         calKeys[it.pkey + it.date + it.kind] = true; items.push(it);
       });
       projects.forEach(function (p) {
-        (p.milestones || []).forEach(function (m) { if (m.kind === 'marketing' && calKeys[p.key + m.date + 'marketing']) return; items.push({ date: m.date, label: m.label, kind: m.kind, pkey: p.key, pname: p.name }); });
-        (p.phases || []).forEach(function (ph) { phases.push(Object.assign({ pkey: p.key, pname: p.name }, ph)); });
+        (p.milestones || []).forEach(function (m) { if (m.kind === 'marketing' && calKeys[p.key + m.date + 'marketing']) return; items.push({ date: m.date, label: T(m, 'label'), kind: m.kind, pkey: p.key, pname: T(p, 'name') }); });
+        (p.phases || []).forEach(function (ph) { phases.push(Object.assign({ pkey: p.key, pname: T(p, 'name') }, ph, { label: T(ph, 'label') })); });
       });
+      // Only the kinds of work that occur in the data get a filter button and a legend entry.
+      USED = Object.keys(KINDS).filter(function (k) { return items.some(function (m) { return m.kind === k; }) || phases.some(function (x) { return x.kind === k; }); });
+      if (st.stream !== 'all' && USED.indexOf(st.stream) < 0) st.stream = 'all';
+      if (st.proj !== 'all' && !byKey[st.proj]) st.proj = 'all';
     }
     function pass(x) {
       if (st.proj !== 'all' && x.pkey !== st.proj) return false;
@@ -2651,11 +2735,12 @@ var PV = (function () {
     function filters() {
       var counts = {}; items.forEach(function (m) { if ((st.proj === 'all' || m.pkey === st.proj) && m.date >= today) counts[m.kind] = (counts[m.kind] || 0) + 1; });
       var pc = {}; items.forEach(function (m) { if ((st.stream === 'all' || m.kind === st.stream) && m.date >= today) pc[m.pkey] = (pc[m.pkey] || 0) + 1; });
-      var h = '<div class="pv-filters"><div class="pv-frow"><span class="pv-flabel">Project</span><div class="pv-tabs"><button data-proj="all" class="' + (st.proj === 'all' ? 'on' : '') + '">Alle projecten</button>' +
-        projects.map(function (p) { return '<button data-proj="' + esc(p.key) + '" class="' + (st.proj === p.key ? 'on' : '') + '">' + esc(p.name) + (pc[p.key] ? ' <i>' + pc[p.key] + '</i>' : '') + '</button>'; }).join('') + '</div></div>';
-      h += '<div class="pv-frow"><span class="pv-flabel">Werk</span><div class="pv-tabs"><button data-stream="all" class="' + (st.stream === 'all' ? 'on' : '') + '">Alles</button>' +
-        Object.keys(KINDS).map(function (k) { return '<button data-stream="' + k + '" class="kind ' + (st.stream === k ? 'on' : '') + '" style="--kc:' + kc(k) + '"><span class="sw"></span>' + KINDS[k] + (counts[k] ? ' <i>' + counts[k] + '</i>' : '') + '</button>'; }).join('') + '</div></div>';
-      h += '<div class="pv-frow"><span class="pv-flabel">Zoek</span><input id="pv-q" type="search" placeholder="Zoek in alle punten, bijv. Bayu, PBG, renders" value="' + esc(st.q) + '"><label class="pv-toggle"><input id="pv-past" type="checkbox"' + (st.past ? ' checked' : '') + '> Toon ook afgerond</label></div></div>';
+      var h = '<div class="pv-filters"><div class="pv-frow"><span class="pv-flabel">' + L.lang + '</span><div class="pv-tabs pv-lang"><button data-lang="nl" class="' + (LANG === 'nl' ? 'on' : '') + '" lang="nl">Nederlands</button><button data-lang="en" class="' + (LANG === 'en' ? 'on' : '') + '" lang="en">English</button></div></div>' +
+        '<div class="pv-frow"><span class="pv-flabel">' + L.project + '</span><div class="pv-tabs"><button data-proj="all" class="' + (st.proj === 'all' ? 'on' : '') + '">' + L.allProjects + '</button>' +
+        projects.map(function (p) { return '<button data-proj="' + esc(p.key) + '" class="' + (st.proj === p.key ? 'on' : '') + '">' + esc(T(p, 'name')) + (pc[p.key] ? ' <i>' + pc[p.key] + '</i>' : '') + '</button>'; }).join('') + '</div></div>';
+      h += '<div class="pv-frow"><span class="pv-flabel">' + L.work + '</span><div class="pv-tabs"><button data-stream="all" class="' + (st.stream === 'all' ? 'on' : '') + '">' + L.all + '</button>' +
+        USED.map(function (k) { return '<button data-stream="' + k + '" class="kind ' + (st.stream === k ? 'on' : '') + '" style="--kc:' + kc(k) + '"><span class="sw"></span>' + KINDS[k] + (counts[k] ? ' <i>' + counts[k] + '</i>' : '') + '</button>'; }).join('') + '</div></div>';
+      h += '<div class="pv-frow"><span class="pv-flabel">' + L.search + '</span><input id="pv-q" type="search" placeholder="' + esc(L.searchPh) + '" value="' + esc(st.q) + '"><label class="pv-toggle"><input id="pv-past" type="checkbox"' + (st.past ? ' checked' : '') + '> ' + L.past + '</label></div></div>';
       return h;
     }
     function cards(list) {
@@ -2669,21 +2754,21 @@ var PV = (function () {
         var pct = last > first ? Math.max(0, Math.min(100, Math.round(days(first, today) / days(first, last) * 100))) : 100;
         var n30 = ms.filter(function (m) { return m.date >= today && days(today, m.date) <= 30; }).length;
         var dn = next ? days(today, next.date) : null;
-        return '<button class="pv-card" data-proj="' + esc(p.key) + '"><h3>' + esc(p.name) + '</h3><div class="pv-next">' + (next ? 'Volgende: <b>' + esc(next.label) + '</b>' : 'Geen open punten') + '</div>' +
-          (next ? '<div><span class="pv-days' + (dn <= 7 ? ' soon' : '') + '">' + (dn === 0 ? 'vandaag' : 'over ' + dn + ' dag' + (dn === 1 ? '' : 'en')) + ' · ' + fmt(next.date) + '</span> ' + chip(next.kind) + '</div>' : '') +
-          '<div class="pv-bar"><i style="width:' + pct + '%"></i></div><div class="pv-meta"><span>' + fmtY(first) + '</span><span>' + n30 + ' in 30 dagen</span><span>' + fmtY(last) + '</span></div></button>';
+        return '<button class="pv-card" data-proj="' + esc(p.key) + '"><h3>' + esc(T(p, 'name')) + '</h3><div class="pv-next">' + (next ? L.next + ': <b>' + esc(next.label) + '</b>' : L.noOpen) + '</div>' +
+          (next ? '<div><span class="pv-days' + (dn <= 7 ? ' soon' : '') + '">' + L.inDays(dn) + ' · ' + fmt(next.date) + '</span> ' + chip(next.kind) + '</div>' : '') +
+          '<div class="pv-bar"><i style="width:' + pct + '%"></i></div><div class="pv-meta"><span>' + fmtY(first) + '</span><span>' + n30 + ' ' + L.in30 + '</span><span>' + fmtY(last) + '</span></div></button>';
       }).join('') + '</div>';
     }
     function body() {
       var list = items.filter(pass);
       var ph = phases.filter(function (x) { return (st.proj === 'all' || x.pkey === st.proj) && (st.stream === 'all' || x.kind === st.stream); });
       var p = st.proj !== 'all' ? byKey[st.proj] : null;
-      var title = (p ? p.name : 'Alle projecten') + (st.stream !== 'all' ? ' · ' + KINDS[st.stream] : '');
+      var title = (p ? T(p, 'name') : L.allProjects) + (st.stream !== 'all' ? ' · ' + KINDS[st.stream] : '');
       var open = list.filter(function (m) { return m.date >= today; });
       var wk = open.filter(function (m) { return days(today, m.date) <= 7; }).length, w4 = open.filter(function (m) { return days(today, m.date) <= 28; }).length;
-      var sub = p ? (p.status || '') : 'Vandaag ' + fmt(today) + ' ' + today.slice(0, 4) + ', week ' + isoWeek(today) + '. Kies een project en een soort werk om in te zoomen.';
-      var h = '<div class="pv-hero"><div><h2>' + esc(title) + '</h2><p>' + esc(sub) + '</p></div><div class="pv-stats"><div class="pv-stat"><b>' + wk + '</b><span>deze week</span></div><div class="pv-stat"><b>' + w4 + '</b><span>in 4 weken</span></div><div class="pv-stat"><b>' + open.length + '</b><span>open in totaal</span></div></div></div>';
-      if (!p) h += eyebrow('Projecten') + cards(list);
+      var sub = p ? (T(p, 'status') || '') : L.heroSub(fmt(today) + ' ' + today.slice(0, 4), isoWeek(today));
+      var h = '<div class="pv-hero"><div><h2>' + esc(title) + '</h2><p>' + esc(sub) + '</p></div><div class="pv-stats"><div class="pv-stat"><b>' + wk + '</b><span>' + L.statWeek + '</span></div><div class="pv-stat"><b>' + w4 + '</b><span>' + L.stat4 + '</span></div><div class="pv-stat"><b>' + open.length + '</b><span>' + L.statOpen + '</span></div></div></div>';
+      if (!p) h += eyebrow(L.projects) + cards(list);
       // timeline
       var from = '2026-10-01', to = '2028-03-01', rows;
       if (p) {
@@ -2691,25 +2776,30 @@ var PV = (function () {
         rows = kinds.map(function (k) { return { name: KINDS[k], phases: ph.filter(function (x) { return x.kind === k; }), milestones: list.filter(function (m) { return m.kind === k; }) }; });
         list.concat(ph.map(function (x) { return { date: x.start }; })).forEach(function (m) { if (m.date < from) from = m.date.slice(0, 7) + '-01'; });
       } else {
-        rows = projects.map(function (pp) { return { name: pp.name, phases: ph.filter(function (x) { return x.pkey === pp.key; }), milestones: list.filter(function (m) { return m.pkey === pp.key; }) }; }).filter(function (r) { return r.phases.length || r.milestones.length; });
+        rows = projects.map(function (pp) { return { name: T(pp, 'name'), phases: ph.filter(function (x) { return x.pkey === pp.key; }), milestones: list.filter(function (m) { return m.pkey === pp.key; }) }; }).filter(function (r) { return r.phases.length || r.milestones.length; });
       }
-      if (rows.length) h += eyebrow(p ? 'Tijdlijn per soort werk' : 'Tijdlijn, oktober 2026 tot maart 2028') + '<div class="pv-gantt">' + gantt(rows, today, from, to) + '</div>' + legend(st.stream === 'all' ? Object.keys(KINDS) : [st.stream]);
+      if (rows.length) h += eyebrow(p ? L.tlKinds : L.tlAll) + '<div class="pv-zoom" role="group">' + [['q', LANG === 'en' ? 'Overview' : 'Overzicht'], ['m', LANG === 'en' ? 'Month' : 'Maand'], ['w', LANG === 'en' ? 'Week, per day' : 'Week, per dag']].map(function (z) { return '<button data-zoom="' + z[0] + '" class="' + (st.zoom === z[0] ? 'on' : '') + '">' + z[1] + '</button>'; }).join('') + '<span>' + (LANG === 'en' ? 'Hover a dot or bar for details; scroll sideways when zoomed in.' : 'Ga met de muis over een stip of balk; schuif opzij als je inzoomt.') + '</span></div><div class="pv-gantt">' + gantt(rows, today, from, to, st.zoom) + '</div>' + legend(st.stream === 'all' ? USED : [st.stream]);
       if (st.stream === 'marketing') h += marketingBlock(mk, today, st.proj === 'all' ? null : st.proj);
-      if (p && st.stream === 'all' && p.table) h += eyebrow('Week voor week') + '<div class="pv-tablewrap"><table><thead><tr>' + p.table.columns.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' + p.table.rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
-      if (p && p.notes && p.notes.length && st.stream === 'all') h += eyebrow('Belangrijk') + '<div class="pv-notes">' + p.notes.map(function (n) { return '<div class="pv-note"><b>' + esc(n.title) + '</b>' + esc(n.text) + '</div>'; }).join('') + '</div>';
+      if (p && st.stream === 'all' && p.table) h += eyebrow(L.weekByWeek) + '<div class="pv-tablewrap"><table><thead><tr>' + T(p.table, 'columns').map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' + T(p.table, 'rows').map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+      if (p && p.notes && p.notes.length && st.stream === 'all') h += eyebrow(L.important) + '<div class="pv-notes">' + p.notes.map(function (n) { return '<div class="pv-note"><b>' + esc(T(n, 'title')) + '</b>' + esc(T(n, 'text')) + '</div>'; }).join('') + '</div>';
       var soon = open.filter(function (m) { return days(today, m.date) <= 28; });
-      h += eyebrow('Komende vier weken', soon.length + ' punten') + (soon.length ? byWeek(soon, today, !p) : '<p class="pv-empty">Niets gepland in de komende vier weken voor deze selectie.</p>');
+      h += eyebrow(L.next4, soon.length + ' ' + (soon.length === 1 ? L.item : L.items)) + (soon.length ? byWeek(soon, today, !p) : '<p class="pv-empty">' + L.none4 + '</p>');
       var rest = list.filter(function (m) { return st.past ? true : m.date >= today; });
-      h += eyebrow(st.past ? 'Alle punten, ook afgerond' : 'Alle open punten', rest.length + '') + (rest.length ? byMonth(rest, today, !p) : '<p class="pv-empty">Geen punten voor deze selectie.</p>');
-      if (st.stream === 'all' && !p && (mk.flow || mk.rules)) h += '<div class="pv-hint">Kies <b>Marketing</b> bij Werk voor de launchfases, spelregels, gates, ritme, ads en kanalen.</div>';
-      if (p && p.sources) h += '<p class="pv-foot">Bron in de brain: ' + esc(p.sources) + '</p>';
+      h += eyebrow(st.past ? L.allPast : L.allOpen, rest.length + '') + (rest.length ? byMonth(rest, today, !p) : '<p class="pv-empty">' + L.noneSel + '</p>');
+      if (st.stream === 'all' && !p && (mk.flow || mk.rules)) h += '<div class="pv-hint">' + L.hint + '</div>';
+      if (p && p.sources) h += '<p class="pv-foot">' + L.source + esc(p.sources) + '</p>';
       return h;
     }
     function draw(keepFocus) {
-      var tool = opts.editable ? '<div class="pv-tool"><button data-act="json">Planning bijwerken (JSON)</button></div><div class="pv-tool" id="pv-json" hidden><textarea id="pv-json-text" spellcheck="false"></textarea><button data-act="save">Opslaan</button><button data-act="cancel">Annuleren</button></div>' : '';
-      el.innerHTML = filters() + '<div id="pv-body">' + body() + '</div>' + (data.updated ? '<p class="pv-foot">Bijgewerkt ' + esc(data.updated) + '. Bron: de UTAMA brain.</p>' : '') + tool;
+      var tool = opts.editable ? '<div class="pv-tool"><button data-act="json">' + L.edit + '</button></div><div class="pv-tool" id="pv-json" hidden><textarea id="pv-json-text" spellcheck="false"></textarea><button data-act="save">' + L.save + '</button><button data-act="cancel">' + L.cancel + '</button></div>' : '';
+      el.setAttribute('lang', LANG);
+      el.innerHTML = filters() + '<div id="pv-body">' + body() + '</div>' + (data.updated ? '<p class="pv-foot">' + esc(L.updated(T(data, 'updated'))) + '</p>' : '') + tool;
+      el.querySelectorAll('[data-lang]').forEach(function (b) { b.onclick = function () { st.lang = b.dataset.lang; setLang(st.lang); index(); changed(); }; });
       el.querySelectorAll('[data-proj]').forEach(function (b) { b.onclick = function () { st.proj = b.dataset.proj; changed(); }; });
       el.querySelectorAll('[data-stream]').forEach(function (b) { b.onclick = function () { st.stream = b.dataset.stream; changed(); }; });
+      el.querySelectorAll('[data-zoom]').forEach(function (b) { b.onclick = function () { st.zoom = b.dataset.zoom; changed(); }; });
+      el.querySelectorAll('.pv-gscroll').forEach(function (sc) { var tx = +sc.dataset.todayx || 0; if (tx && sc.scrollWidth > sc.clientWidth) sc.scrollLeft = Math.max(0, tx - sc.clientWidth / 3); });
+      tipWire();
       var q = el.querySelector('#pv-q'); var timer;
       q.oninput = function () { clearTimeout(timer); timer = setTimeout(function () { st.q = q.value.trim(); changed(true); }, 200); };
       el.querySelector('#pv-past').onchange = function (e) { st.past = e.target.checked; changed(); };
@@ -2718,11 +2808,23 @@ var PV = (function () {
       if (j) {
         j.onclick = function () { el.querySelector('#pv-json').hidden = false; el.querySelector('#pv-json-text').value = JSON.stringify(data, null, 1); };
         el.querySelector('[data-act="cancel"]').onclick = function () { el.querySelector('#pv-json').hidden = true; };
-        el.querySelector('[data-act="save"]').onclick = function () { var nd; try { nd = JSON.parse(el.querySelector('#pv-json-text').value); } catch (e) { note('Geen geldige JSON: ' + e.message); return; } if (opts.onSave) opts.onSave(nd, function () { data = nd; index(); draw(); }); };
+        el.querySelector('[data-act="save"]').onclick = function () { var nd; try { nd = JSON.parse(el.querySelector('#pv-json-text').value); } catch (e) { note(L.badJson + e.message); return; } if (opts.onSave) opts.onSave(nd, function () { data = nd; index(); draw(); }); };
       }
     }
     function note(msg) { var t = el.querySelector('#pv-json'); if (t) { var p = document.createElement('p'); p.className = 'pv-foot'; p.textContent = msg; t.append(p); } }
-    function changed(keepFocus) { if (opts.onState) opts.onState({ proj: st.proj, stream: st.stream, past: st.past }); draw(keepFocus); }
+    function tipWire() {
+      var box = document.getElementById('pv-tipbox');
+      if (!box) { box = document.createElement('div'); box.id = 'pv-tipbox'; box.className = 'pv-tipbox'; box.hidden = true; document.body.appendChild(box); }
+      function place(e) { var x = e.clientX + 14, y = e.clientY + 14, w = box.offsetWidth, h = box.offsetHeight; if (x + w > window.innerWidth - 8) x = e.clientX - w - 14; if (y + h > window.innerHeight - 8) y = e.clientY - h - 14; box.style.left = Math.max(8, x) + 'px'; box.style.top = Math.max(8, y) + 'px'; }
+      el.querySelectorAll('[data-tip]').forEach(function (n) {
+        n.addEventListener('mouseenter', function (e) { box.innerHTML = n.getAttribute('data-tip'); box.hidden = false; place(e); });
+        n.addEventListener('mousemove', place);
+        n.addEventListener('mouseleave', function () { box.hidden = true; });
+        n.addEventListener('click', function (e) { box.innerHTML = n.getAttribute('data-tip'); box.hidden = false; place(e); e.stopPropagation(); });
+      });
+      document.addEventListener('click', function () { box.hidden = true; }, { once: true });
+    }
+    function changed(keepFocus) { if (opts.onState) opts.onState({ proj: st.proj, stream: st.stream, past: st.past, lang: st.lang, zoom: st.zoom }); draw(keepFocus); }
     index(); draw();
   }
   return { render: render, KINDS: KINDS };
