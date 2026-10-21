@@ -1786,7 +1786,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-21-taal-nl-en';
+const APP_VERSIE='2026-10-21-tijdlijn-op-maat';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2715,6 +2715,18 @@ var PV = (function () {
   }
   function legend(kinds) { return '<div class="pv-legend">' + kinds.map(function (k) { return '<span><i style="background:' + kc(k) + '"></i>' + KINDS[k] + '</span>'; }).join('') + '<span><i style="background:var(--pv-today);width:3px"></i>' + L.today + '</span></div>'; }
 
+  // Timeline range that fits what is shown: from the month of the earliest item (or today) to the month after the last item,
+  // at least three months (Steven, 21 Oct 2026: "De timeline hoeft helemaal niet tot january 2028 te tonen ... Enkel voor de bouw").
+  function fitRange(rows, today) {
+    var ds = [today];
+    rows.forEach(function (r) { (r.phases || []).forEach(function (x) { ds.push(x.start, x.end); }); (r.milestones || []).forEach(function (m) { ds.push(m.date); }); });
+    ds.sort();
+    var a = D(ds[0]), b = D(ds[ds.length - 1]);
+    var from = iso(new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), 1)));
+    var end = new Date(Date.UTC(b.getUTCFullYear(), b.getUTCMonth() + 1, 1));
+    var min = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth() + 3, 1));
+    return [from, iso(end < min ? min : end)];
+  }
   function hasMk(mk) { return !!mk && ['flow', 'rules', 'gates', 'rhythm', 'ads', 'channels', 'content'].some(function (k) { return mk[k] && mk[k].length; }); }
   function marketingBlock(mk, today) {
     var h = '';
@@ -2727,8 +2739,9 @@ var PV = (function () {
     }
     if (mk.rhythm && mk.rhythm.length) h += eyebrow(L.rhythm) + '<div class="pv-tiles">' + mk.rhythm.map(function (t) { return '<div class="pv-tile"><b>' + esc(t.n) + '</b><span>' + esc(T(t, 'label')) + '</span></div>'; }).join('') + '</div>';
     if (mk.ads && mk.ads.length) {
-      var from = '2026-10-01', to = '2027-07-01';
-      h += eyebrow(L.ads) + '<div class="pv-gantt">' + gantt(mk.ads.map(function (a) { return { name: T(a, 'amount') || '', phases: [{ label: T(a, 'label'), start: a.start, end: a.end, kind: a.kind || 'marketing' }], milestones: [] }; }), today, from, to) + '</div>';
+      var adRows = mk.ads.map(function (a) { return { name: T(a, 'amount') || '', phases: [{ label: T(a, 'label'), start: a.start, end: a.end, kind: a.kind || 'marketing' }], milestones: [] }; });
+      var ar = fitRange(adRows, today);
+      h += eyebrow(L.ads) + '<div class="pv-gantt">' + gantt(adRows, today, ar[0], ar[1]) + '</div>';
     }
     if (mk.channels && mk.channels.length) h += eyebrow(L.channels) + '<div class="pv-channels">' + mk.channels.map(function (c) { return '<div class="pv-channel"><b>' + esc(T(c, 'name')) + '</b><span>' + esc(T(c, 'role')) + '</span></div>'; }).join('') + '</div>';
     var content = T(mk, 'content');
@@ -2816,10 +2829,10 @@ var PV = (function () {
       if (p) {
         var kinds = Object.keys(KINDS).filter(function (k) { return (st.stream === 'all' || k === st.stream) && (ph.some(function (x) { return x.kind === k; }) || list.some(function (m) { return m.kind === k; })); });
         rows = kinds.map(function (k) { return { name: KINDS[k], phases: ph.filter(function (x) { return x.kind === k; }), milestones: list.filter(function (m) { return m.kind === k; }) }; });
-        list.concat(ph.map(function (x) { return { date: x.start }; })).forEach(function (m) { if (m.date < from) from = m.date.slice(0, 7) + '-01'; });
       } else {
         rows = projects.map(function (pp) { return { name: T(pp, 'name'), phases: ph.filter(function (x) { return x.pkey === pp.key; }), milestones: list.filter(function (m) { return m.pkey === pp.key; }) }; }).filter(function (r) { return r.phases.length || r.milestones.length; });
       }
+      if (rows.length) { var fr = fitRange(rows, today); from = fr[0]; to = fr[1]; }
       if (rows.length) h += eyebrow(p ? L.tlKinds : L.tlAll) + '<div class="pv-zoom" role="group">' + [['q', LANG === 'en' ? 'Overview' : 'Overzicht'], ['m', LANG === 'en' ? 'Month' : 'Maand'], ['w', LANG === 'en' ? 'Week, per day' : 'Week, per dag']].map(function (z) { return '<button data-zoom="' + z[0] + '" class="' + (st.zoom === z[0] ? 'on' : '') + '">' + z[1] + '</button>'; }).join('') + '<span>' + (LANG === 'en' ? 'Hover a dot or bar for details; scroll sideways when zoomed in.' : 'Ga met de muis over een stip of balk; schuif opzij als je inzoomt.') + '</span></div><div class="pv-gantt">' + gantt(rows, today, from, to, st.zoom) + '</div>' + legend(st.stream === 'all' ? USED : [st.stream]);
       if (st.stream === 'marketing') {
         // Each project shows only its own marketing; "all projects" shows them one by one under their own name.
