@@ -1709,6 +1709,9 @@
 .pv-tipbox { position:fixed; z-index:50; max-width:320px; background:#17140F; color:#FEFBF6; font:13px/1.4 'Inter',system-ui,sans-serif; padding:9px 12px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.25); pointer-events:none; }
 .pv-tipbox small { opacity:.75; }
 .pv-tipbox b { font-weight:700; }
+
+/* Per-project marketing under "all projects" (21 Oct 2026) */
+.pv-mk-title { font:800 22px/1.2 var(--pv-display); letter-spacing:-.01em; margin:34px 0 -6px; padding-top:18px; border-top:1px solid var(--pv-line); }
 </style>
 </head>
 <body>
@@ -1778,7 +1781,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-21-planning-team';
+const APP_VERSIE='2026-10-21-planning-per-project';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2547,7 +2550,8 @@ function go(k){
    the data is Dutch; an English twin sits next to it as <field>_en (label_en, text_en, rows_en, columns_en, content_en,
    name_en, status_en, ...). Without a twin the Dutch text shows.
    data = {projects:[{key,name,status,phases:[{label,start,end,kind}],milestones:[{date,label,kind}],table,notes,sources}],
-           marketing:{flow,rules,rhythm,gates,ads,channels,content,calendar:[{date,label,project,kind}]}} */
+           and per project marketing:{flow,rules,rhythm,gates,ads,channels,content,calendar:[{date,label,kind}]}}.
+   A top-level data.marketing (old shape, calendar items carry a project name) is still read. */
 var PV = (function () {
   var KINDS_T = {
     nl: { marketing: 'Marketing', build: 'Bouw', design: 'Ontwerp', sales: 'Verkoop', permit: 'Vergunning', finance: 'Financieel', legal: 'Juridisch', ops: 'Operatie' },
@@ -2564,7 +2568,7 @@ var PV = (function () {
       statWeek: 'deze week', stat4: 'in 4 weken', statOpen: 'open in totaal', heroSub: function (d, w) { return 'Vandaag ' + d + ', week ' + w + '. Kies een project en een soort werk om in te zoomen.'; },
       projects: 'Projecten', tlKinds: 'Tijdlijn per soort werk', tlAll: 'Tijdlijn, oktober 2026 tot maart 2028', weekByWeek: 'Week voor week', important: 'Belangrijk',
       next4: 'Komende vier weken', none4: 'Niets gepland in de komende vier weken voor deze selectie.', allPast: 'Alle punten, ook afgerond', allOpen: 'Alle open punten', noneSel: 'Geen punten voor deze selectie.',
-      hint: 'Kies <b>Marketing</b> bij Werk voor de launchfases, spelregels, beslismomenten, ritme, advertenties en kanalen.', source: 'Bron in de brain: ', updated: function (u) { return 'Bijgewerkt ' + u + '. Bron: de UTAMA brain.'; },
+      noMk: 'Voor dit project staat nog geen marketingplan in de planning.', hint: 'Kies <b>Marketing</b> bij Werk voor de launchfases, spelregels, beslismomenten, ritme, advertenties en kanalen.', source: 'Bron in de brain: ', updated: function (u) { return 'Bijgewerkt ' + u + '. Bron: de UTAMA brain.'; },
       edit: 'Planning bijwerken (JSON)', save: 'Opslaan', cancel: 'Annuleren', badJson: 'Geen geldige JSON: ' },
     en: { to: 'to', thisWeek: 'this week', item: 'item', items: 'items', today: 'today', now: 'now', launch: 'Launch phases', rules: 'Rules', gates: 'Decision points', rhythm: 'Weekly rhythm', ads: 'Ads', channels: 'Five channels', content: 'Content',
       project: 'Project', allProjects: 'All projects', work: 'Work', all: 'All', search: 'Search', searchPh: 'Search all items, e.g. whisper, renders, KAMU', past: 'Show completed too', lang: 'Language',
@@ -2572,7 +2576,7 @@ var PV = (function () {
       statWeek: 'this week', stat4: 'in 4 weeks', statOpen: 'open in total', heroSub: function (d, w) { return 'Today ' + d + ', week ' + w + '. Pick a project and a type of work to zoom in.'; },
       projects: 'Projects', tlKinds: 'Timeline by type of work', tlAll: 'Timeline, October 2026 to March 2028', weekByWeek: 'Week by week', important: 'Important',
       next4: 'Next four weeks', none4: 'Nothing planned in the next four weeks for this selection.', allPast: 'All items, including completed', allOpen: 'All open items', noneSel: 'No items for this selection.',
-      hint: 'Choose <b>Marketing</b> under Work for the launch phases, rules, decision points, rhythm, ads and channels.', source: 'Source in the brain: ', updated: function (u) { return 'Updated ' + u + '. Source: the UTAMA brain.'; },
+      noMk: 'No marketing plan for this project in the planning yet.', hint: 'Choose <b>Marketing</b> under Work for the launch phases, rules, decision points, rhythm, ads and channels.', source: 'Source in the brain: ', updated: function (u) { return 'Updated ' + u + '. Source: the UTAMA brain.'; },
       edit: 'Update planning (JSON)', save: 'Save', cancel: 'Cancel', badJson: 'Not valid JSON: ' }
   };
   var LANG = 'nl', KINDS = KINDS_T.nl, MON = MON_T.nl, L = UI.nl;
@@ -2681,9 +2685,10 @@ var PV = (function () {
   }
   function legend(kinds) { return '<div class="pv-legend">' + kinds.map(function (k) { return '<span><i style="background:' + kc(k) + '"></i>' + KINDS[k] + '</span>'; }).join('') + '<span><i style="background:var(--pv-today);width:3px"></i>' + L.today + '</span></div>'; }
 
-  function marketingBlock(mk, today, pkey) {
+  function hasMk(mk) { return !!mk && ['flow', 'rules', 'gates', 'rhythm', 'ads', 'channels', 'content'].some(function (k) { return mk[k] && mk[k].length; }); }
+  function marketingBlock(mk, today) {
     var h = '';
-    if (mk.flow && mk.flow.length && (!pkey || pkey === 'reload')) {
+    if (mk.flow && mk.flow.length) {
       h += eyebrow(L.launch) + '<div class="pv-flow">' + mk.flow.map(function (f, i) { var now = today >= f.start && today <= f.end, done = today > f.end; return '<div class="pv-step' + (now ? ' now' : '') + (done ? ' done' : '') + '"><div class="pv-step-n">' + (i + 1) + '</div><b>' + esc(T(f, 'label')) + '</b><span>' + fmt(f.start) + ' ' + L.to + ' ' + fmt(f.end) + (now ? ' · ' + L.now : '') + '</span><p>' + esc(T(f, 'text') || '') + '</p></div>'; }).join('') + '</div>';
     }
     if (mk.rules && mk.rules.length) h += eyebrow(L.rules) + '<div class="pv-rules">' + mk.rules.map(function (r) { return '<div class="pv-rule"><b>' + esc(T(r, 'title')) + '</b><span>' + esc(T(r, 'text')) + '</span></div>'; }).join('') + '</div>';
@@ -2716,6 +2721,12 @@ var PV = (function () {
         var p = projects.filter(function (x) { return x.name === m.project || x.name_en === m.project || x.key === m.project; })[0];
         var it = { date: m.date, label: T(m, 'label'), kind: m.kind || 'marketing', pkey: p ? p.key : 'company', pname: p ? T(p, 'name') : (m.project || 'UTAMA') };
         calKeys[it.pkey + it.date + it.kind] = true; items.push(it);
+      });
+      projects.forEach(function (p) {
+        ((p.marketing || {}).calendar || []).forEach(function (m) {
+          var it = { date: m.date, label: T(m, 'label'), kind: m.kind || 'marketing', pkey: p.key, pname: T(p, 'name') };
+          calKeys[it.pkey + it.date + it.kind] = true; items.push(it);
+        });
       });
       projects.forEach(function (p) {
         (p.milestones || []).forEach(function (m) { if (m.kind === 'marketing' && calKeys[p.key + m.date + 'marketing']) return; items.push({ date: m.date, label: T(m, 'label'), kind: m.kind, pkey: p.key, pname: T(p, 'name') }); });
@@ -2779,14 +2790,20 @@ var PV = (function () {
         rows = projects.map(function (pp) { return { name: T(pp, 'name'), phases: ph.filter(function (x) { return x.pkey === pp.key; }), milestones: list.filter(function (m) { return m.pkey === pp.key; }) }; }).filter(function (r) { return r.phases.length || r.milestones.length; });
       }
       if (rows.length) h += eyebrow(p ? L.tlKinds : L.tlAll) + '<div class="pv-zoom" role="group">' + [['q', LANG === 'en' ? 'Overview' : 'Overzicht'], ['m', LANG === 'en' ? 'Month' : 'Maand'], ['w', LANG === 'en' ? 'Week, per day' : 'Week, per dag']].map(function (z) { return '<button data-zoom="' + z[0] + '" class="' + (st.zoom === z[0] ? 'on' : '') + '">' + z[1] + '</button>'; }).join('') + '<span>' + (LANG === 'en' ? 'Hover a dot or bar for details; scroll sideways when zoomed in.' : 'Ga met de muis over een stip of balk; schuif opzij als je inzoomt.') + '</span></div><div class="pv-gantt">' + gantt(rows, today, from, to, st.zoom) + '</div>' + legend(st.stream === 'all' ? USED : [st.stream]);
-      if (st.stream === 'marketing') h += marketingBlock(mk, today, st.proj === 'all' ? null : st.proj);
+      if (st.stream === 'marketing') {
+        // Each project shows only its own marketing; "all projects" shows them one by one under their own name.
+        var mks = (p ? [p] : projects).filter(function (pp) { return hasMk(pp.marketing); });
+        mks.forEach(function (pp) { if (!p) h += '<h3 class="pv-mk-title">' + esc(T(pp, 'name')) + '</h3>'; h += marketingBlock(pp.marketing, today); });
+        if (!p && hasMk(mk)) h += marketingBlock(mk, today);
+        if (p && !mks.length) h += '<p class="pv-empty">' + L.noMk + '</p>';
+      }
       if (p && st.stream === 'all' && p.table) h += eyebrow(L.weekByWeek) + '<div class="pv-tablewrap"><table><thead><tr>' + T(p.table, 'columns').map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' + T(p.table, 'rows').map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
       if (p && p.notes && p.notes.length && st.stream === 'all') h += eyebrow(L.important) + '<div class="pv-notes">' + p.notes.map(function (n) { return '<div class="pv-note"><b>' + esc(T(n, 'title')) + '</b>' + esc(T(n, 'text')) + '</div>'; }).join('') + '</div>';
       var soon = open.filter(function (m) { return days(today, m.date) <= 28; });
       h += eyebrow(L.next4, soon.length + ' ' + (soon.length === 1 ? L.item : L.items)) + (soon.length ? byWeek(soon, today, !p) : '<p class="pv-empty">' + L.none4 + '</p>');
       var rest = list.filter(function (m) { return st.past ? true : m.date >= today; });
       h += eyebrow(st.past ? L.allPast : L.allOpen, rest.length + '') + (rest.length ? byMonth(rest, today, !p) : '<p class="pv-empty">' + L.noneSel + '</p>');
-      if (st.stream === 'all' && !p && (mk.flow || mk.rules)) h += '<div class="pv-hint">' + L.hint + '</div>';
+      if (st.stream === 'all' && !p && (hasMk(mk) || projects.some(function (pp) { return hasMk(pp.marketing); }))) h += '<div class="pv-hint">' + L.hint + '</div>';
       if (p && p.sources) h += '<p class="pv-foot">' + L.source + esc(p.sources) + '</p>';
       return h;
     }
