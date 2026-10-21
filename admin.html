@@ -56,6 +56,11 @@
   .side-brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
   .side-brand b{color:#fff;font-size:15px;letter-spacing:.3px}
   .side-brand small{display:block;color:#6f8c81;font-size:11px;font-weight:600}
+  /* Taalschakelaar naast het logo (21 oktober 2026): Nederlands standaard, Engels te kiezen */
+  .lang-sw{margin-left:auto;display:flex;gap:2px;background:#12271f;border-radius:99px;padding:2px}
+  .lang-sw button{border:none;background:none;color:#8fb3a5;font:700 10.5px/1 Inter,system-ui,sans-serif;letter-spacing:.05em;padding:5px 8px;border-radius:99px;cursor:pointer}
+  .lang-sw button.on{background:#2f6b55;color:#fff}
+  .brand-row .lang-sw{background:#eef1ee}.brand-row .lang-sw button{color:#5b6b63}.brand-row .lang-sw button.on{background:#1f4a3b;color:#fff}
   nav{display:flex;flex-direction:column;gap:2px;flex:1}
   .nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--sidebar-ink);text-decoration:none;font-weight:500;border:none;background:none;width:100%;text-align:left;font-size:14px}
   .nav-item:hover{background:#12271f}
@@ -1718,13 +1723,13 @@
 
 <div id="login">
   <div class="login-card">
-    <div class="brand-row"><div class="logo">U</div><div><b style="font-size:15px">UTAMA</b><div style="font-size:11px;color:var(--muted);font-weight:600">TEAM ADMIN</div></div></div>
-    <h1>Sign in</h1>
-    <p class="sub">Access the team admin backend.</p>
+    <div class="brand-row"><div class="logo">U</div><div><b style="font-size:15px">UTAMA</b><div style="font-size:11px;color:var(--muted);font-weight:600">TEAM ADMIN</div></div><div class="lang-sw" role="group" aria-label="Taal / Language"><button type="button" data-admlang="nl">NL</button><button type="button" data-admlang="en">EN</button></div></div>
+    <h1 data-nl="Inloggen" data-en="Sign in">Inloggen</h1>
+    <p class="sub" data-nl="Toegang tot de team-admin." data-en="Access the team admin backend.">Toegang tot de team-admin.</p>
     <form id="loginForm">
-      <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="username" required></div>
-      <div class="field"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" required></div>
-      <button class="btn btn-primary btn-block" type="submit" id="loginBtn">Sign in</button>
+      <div class="field"><label data-nl="E-mail" data-en="Email">E-mail</label><input id="loginEmail" type="email" autocomplete="username" required></div>
+      <div class="field"><label data-nl="Wachtwoord" data-en="Password">Wachtwoord</label><input id="loginPass" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-primary btn-block" type="submit" id="loginBtn" data-nl="Inloggen" data-en="Sign in">Inloggen</button>
       <div class="login-err" id="loginErr"></div>
     </form>
     <!-- Inloggen met een link (of code) per e-mail. Alleen voor bestaande
@@ -1733,15 +1738,15 @@
          Handig op de telefoon, waar een wachtwoordbeheerder vaak niet bij de
          admin kan. -->
     <form id="otpForm" style="display:none" novalidate>
-      <div class="field"><label>Email</label><input id="otpEmail" type="email" autocomplete="username" required></div>
-      <div class="field" id="otpCodeField" style="display:none"><label>Got a code instead of a link? Enter it here</label><input id="otpCode" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="8"></div>
-      <button class="btn btn-primary btn-block" type="submit" id="otpBtn">Send sign-in link</button>
+      <div class="field"><label data-nl="E-mail" data-en="Email">E-mail</label><input id="otpEmail" type="email" autocomplete="username" required></div>
+      <div class="field" id="otpCodeField" style="display:none"><label data-nl="Een code gekregen in plaats van een link? Vul die hier in" data-en="Got a code instead of a link? Enter it here">Een code gekregen in plaats van een link? Vul die hier in</label><input id="otpCode" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="8"></div>
+      <button class="btn btn-primary btn-block" type="submit" id="otpBtn" data-nl="Stuur inloglink" data-en="Send sign-in link">Stuur inloglink</button>
       <div class="login-err" id="otpErr"></div>
       <div class="login-hint" id="otpHint"></div>
     </form>
     <div class="login-switch">
-      <a href="#" id="toOtp">Sign in with a link by email</a>
-      <a href="#" id="toPw" style="display:none">Sign in with password</a>
+      <a href="#" id="toOtp" data-nl="Inloggen met een link per e-mail" data-en="Sign in with a link by email">Inloggen met een link per e-mail</a>
+      <a href="#" id="toPw" style="display:none" data-nl="Inloggen met wachtwoord" data-en="Sign in with password">Inloggen met wachtwoord</a>
     </div>
   </div>
 </div>
@@ -1749,16 +1754,16 @@
 <div id="app">
   <div class="shell">
     <aside>
-      <div class="side-brand"><div class="logo">U</div><div><b>UTAMA</b><small>TEAM ADMIN</small></div></div>
+      <div class="side-brand"><div class="logo">U</div><div><b>UTAMA</b><small>TEAM ADMIN</small></div><div class="lang-sw" role="group" aria-label="Taal / Language"><button type="button" data-admlang="nl">NL</button><button type="button" data-admlang="en">EN</button></div></div>
       <nav id="nav"></nav>
       <div class="side-foot">
         <div class="side-user"><b id="meName">—</b><span id="meRole"></span></div>
-        <button class="nav-item" id="changePwBtn"><span class="ic">🔑</span> Change password</button>
-        <button class="nav-item" id="logoutBtn"><span class="ic">⎋</span> Sign out</button>
+        <button class="nav-item" id="changePwBtn"><span class="ic">🔑</span> <span data-nl="Wachtwoord wijzigen" data-en="Change password">Wachtwoord wijzigen</span></button>
+        <button class="nav-item" id="logoutBtn"><span class="ic">⎋</span> <span data-nl="Uitloggen" data-en="Sign out">Uitloggen</span></button>
       </div>
     </aside>
     <main>
-      <div class="topbar"><div><div class="crumb" id="crumb">UTAMA</div><h2 id="pageTitle">Dashboard</h2></div><div style="display:flex;align-items:center;gap:14px"><div class="gz-wrap"><input id="gz_q" class="gz-in" type="search" placeholder="Zoek een lead… naam, nummer of e-mail" autocomplete="off" spellcheck="false"><kbd class="gz-kbd">⌘K</kbd><div id="gz_res" class="gz-res" hidden></div></div><button id="notifBell" class="notif-bell" title="Notificaties">🔔<span class="notif-count" id="notifCount"></span></button><div id="topRight"></div></div></div>
+      <div class="topbar"><div><div class="crumb" id="crumb">UTAMA</div><h2 id="pageTitle">Dashboard</h2></div><div style="display:flex;align-items:center;gap:14px"><div class="gz-wrap"><input id="gz_q" class="gz-in" type="search" placeholder="Zoek een lead… naam, nummer of e-mail" data-ph-nl="Zoek een lead… naam, nummer of e-mail" data-ph-en="Find a lead… name, number or e-mail" autocomplete="off" spellcheck="false"><kbd class="gz-kbd">⌘K</kbd><div id="gz_res" class="gz-res" hidden></div></div><button id="notifBell" class="notif-bell" title="Notificaties" data-title-nl="Notificaties" data-title-en="Notifications">🔔<span class="notif-count" id="notifCount"></span></button><div id="topRight"></div></div></div>
       <div class="content" id="view"></div>
     </main>
   </div>
@@ -1781,7 +1786,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-21-planning-per-project';
+const APP_VERSIE='2026-10-21-taal-nl-en';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1800,26 +1805,26 @@ async function versieCheck(){
 }
 
 const PAGES = [
-  {key:'kpi',      label:'KPI',                    icon:'🏁'},
-  {key:'werklijst',label:'Werklijst',              icon:'☀️'},
-  {key:'inbox',    label:'Inbox',                  icon:'💬'},
-  {key:'pipeline', label:'Pipeline',               icon:'🧭'},
-  {key:'agenda',   label:'Agenda',                 icon:'📅'},
-  {key:'planning', label:'Planning',               icon:'🗓️'},
-  {key:'analytics',label:'Analytics',              icon:'📊'},
-  {key:'revenue',  label:'Revenue',                icon:'💰'},
-  {key:'leads',    label:'Leads / CRM',            icon:'📇'},
-  {key:'sequences',label:'Bericht flows',          icon:'📤'},
-  {key:'broadcast',label:'Broadcast',              icon:'📣'},
-  {key:'content',  label:'Content',                icon:'🎬'},
-  {key:'ads',      label:'Ads',                    icon:'📢'},
-  {key:'webinars', label:'Webinar',                icon:'🎥'},
-  {key:'projects', label:'Projects',               icon:'🏗️'},
-  {key:'portal',   label:'Portal & Investors',     icon:'🏝️'},
-  {key:'referrals',label:'Referrals',              icon:'🎁'},
+  {key:'kpi',      label:'KPI',                    en:'KPI',                icon:'🏁'},
+  {key:'werklijst',label:'Werklijst',              en:'Worklist',           icon:'☀️'},
+  {key:'inbox',    label:'Inbox',                  en:'Inbox',              icon:'💬'},
+  {key:'pipeline', label:'Pipeline',               en:'Pipeline',           icon:'🧭'},
+  {key:'agenda',   label:'Agenda',                 en:'Calendar',           icon:'📅'},
+  {key:'planning', label:'Planning',               en:'Planning',           icon:'🗓️'},
+  {key:'analytics',label:'Analyse',                en:'Analytics',          icon:'📊'},
+  {key:'revenue',  label:'Omzet',                  en:'Revenue',            icon:'💰'},
+  {key:'leads',    label:'Leads / CRM',            en:'Leads / CRM',        icon:'📇'},
+  {key:'sequences',label:'Berichtflows',           en:'Message flows',      icon:'📤'},
+  {key:'broadcast',label:'Broadcast',              en:'Broadcast',          icon:'📣'},
+  {key:'content',  label:'Content',                en:'Content',            icon:'🎬'},
+  {key:'ads',      label:'Ads',                    en:'Ads',                icon:'📢'},
+  {key:'webinars', label:'Webinar',                en:'Webinar',            icon:'🎥'},
+  {key:'projects', label:'Projecten',              en:'Projects',           icon:'🏗️'},
+  {key:'portal',   label:'Portaal & investeerders',en:'Portal & Investors', icon:'🏝️'},
+  {key:'referrals',label:'Doorverwijzingen',       en:'Referrals',          icon:'🎁'},
   // Geen recht in adm_permissions: alleen zichtbaar als MW.eigenaar waar is (Steven).
-  {key:'mijn_whatsapp',label:'Mijn WhatsApp',      icon:'🟢'},
-  {key:'users',    label:'Team & Users',           icon:'👥'},
+  {key:'mijn_whatsapp',label:'Mijn WhatsApp',      en:'My WhatsApp',        icon:'🟢'},
+  {key:'users',    label:'Team & gebruikers',      en:'Team & Users',       icon:'👥'},
 ];
 // Pagina's waarvoor je in Team & Users rechten kunt geven. Mijn WhatsApp hoort
 // daar niet bij: de toegang hangt aan Stevens gebruikers-id in de database, en
@@ -2108,6 +2113,31 @@ const RES = {
 
 /* ================= STATE ================= */
 let ME=null, PERMS={}, SESSION=null, CURRENT='dashboard';
+
+/* ================= TAAL =================
+   Nederlands is de standaard; Engels kan gekozen worden met de schakelaar naast het logo
+   (Steven, 21 oktober 2026: "Zorg dat het Nederlands is en ook Engels geselecteerd kan worden.
+   Maar combineer het niet."). tr(nl,en) geeft de tekst in de gekozen taal. Vaste teksten in de
+   HTML dragen data-nl/data-en (placeholders data-ph-nl/-en, titels data-title-nl/-en).
+   Het menu, de paginatitels en de Planning volgen de keuze; de overige pagina's worden pagina
+   voor pagina omgezet met tr(). */
+let ADM_LANG=(()=>{try{return localStorage.getItem('adm-lang')==='en'?'en':'nl';}catch(e){return 'nl';}})();
+function tr(nl,en){return ADM_LANG==='en'&&en!=null?en:nl;}
+function pageLabel(k){if(k==='dashboard')return 'Dashboard';const p=PAGES.find(x=>x.key===k);return p?tr(p.label,p.en):'';}
+function applyShellLang(){
+  document.documentElement.lang=ADM_LANG;
+  document.querySelectorAll('[data-nl][data-en]').forEach(e=>{e.textContent=tr(e.dataset.nl,e.dataset.en);});
+  document.querySelectorAll('[data-ph-nl]').forEach(e=>{e.placeholder=tr(e.dataset.phNl,e.dataset.phEn);});
+  document.querySelectorAll('[data-title-nl]').forEach(e=>{e.title=tr(e.dataset.titleNl,e.dataset.titleEn);});
+  document.querySelectorAll('[data-admlang]').forEach(b=>b.classList.toggle('on',b.dataset.admlang===ADM_LANG));
+}
+function setAdmLang(l){
+  ADM_LANG=l==='en'?'en':'nl';try{localStorage.setItem('adm-lang',ADM_LANG);}catch(e){}
+  applyShellLang();
+  if(ME&&$('#nav')){buildNav();setActive(CURRENT);try{ddBadge();}catch(e){}go(CURRENT);}
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-admlang]');if(b){e.preventDefault();setAdmLang(b.dataset.admlang);}});
+applyShellLang();
 let _cache={};
 /* Mijn WhatsApp: eigenaar is null tot mwPeil() klaar is, daarna true (Steven)
    of false (iedereen anders, ook andere admins). Zie renderMijnWhatsapp(). */
@@ -2405,9 +2435,9 @@ function buildNav(){
   // De dagdoelen-badge ("2/5" tot de dag af is) wordt gevuld door ddBadge(). Hij staat bij KPI, waar de
   // dagdoelen sinds 6 oktober 2026 staan; wie die pagina niet ziet, heeft hem bij Dashboard.
   const badge='<span class="dd-nav" id="dd_nav" hidden></span>', kpiZicht=canView('kpi');
-  const dash=el('button','nav-item','<span class="ic">▚</span> Dashboard'+(kpiZicht?'':badge));dash.onclick=()=>go('dashboard');dash.dataset.k='dashboard';nav.append(dash);
+  const dash=el('button','nav-item','<span class="ic">▚</span> '+pageLabel('dashboard')+(kpiZicht?'':badge));dash.onclick=()=>go('dashboard');dash.dataset.k='dashboard';nav.append(dash);
   // Mijn WhatsApp telt niet via canView (ook een admin ziet het niet) maar via MW.eigenaar.
-  PAGES.forEach(p=>{if(p.key==='mijn_whatsapp'?MW.eigenaar!==true:!canView(p.key))return;const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${p.label}`+(p.key==='kpi'?badge:''));b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);});
+  PAGES.forEach(p=>{if(p.key==='mijn_whatsapp'?MW.eigenaar!==true:!canView(p.key))return;const b=el('button','nav-item',`<span class="ic">${p.icon}</span> ${tr(p.label,p.en)}`+(p.key==='kpi'?badge:''));b.dataset.k=p.key;b.onclick=()=>go(p.key);nav.append(b);});
 }
 function setActive(k){document.querySelectorAll('.nav-item[data-k]').forEach(n=>n.classList.toggle('active',n.dataset.k===k));}
 
@@ -2507,7 +2537,7 @@ function gzInit(){
 function go(k){
   CURRENT=k;setActive(k);$('#topRight').innerHTML='';
   const titles={dashboard:'Dashboard',kpi:'KPI',werklijst:'Werklijst',analytics:'Analytics',revenue:'Revenue',leads:'Leads / CRM',inbox:'Inbox',pipeline:'Pipeline',agenda:'Agenda',planning:'Planning',sequences:'Bericht flows',broadcast:'Broadcast',content:'Content',webinars:'Webinar',projects:'Projects',portal:'Portal & Investors',referrals:'Referrals',users:'Team & Users',ads:'Ads',mijn_whatsapp:'Mijn WhatsApp'};
-  $('#pageTitle').textContent=titles[k]||k;
+  $('#pageTitle').textContent=pageLabel(k)||titles[k]||k;
   versieCheck();
   if(k==='dashboard')return renderDashboard();
   if(k==='analytics')return renderAnalytics();
@@ -2522,9 +2552,9 @@ function go(k){
       MW.peil.then(()=>{if(CURRENT==='mijn_whatsapp')go('mijn_whatsapp');});
       return;
     }
-    $('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;
+    $('#view').innerHTML='<div class="panel"><div class="lock-note">'+tr('Je hebt geen toegang tot deze pagina.','You don’t have access to this page.')+'</div></div>';return;
   }
-  if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">You don’t have access to this page.</div></div>';return;}
+  if(!canView(k)){$('#view').innerHTML='<div class="panel"><div class="lock-note">'+tr('Je hebt geen toegang tot deze pagina.','You don’t have access to this page.')+'</div></div>';return;}
   if(k==='werklijst')return renderWerklijst();
   if(k==='kpi')return renderKpi();
   if(k==='leads')return renderPeople();
@@ -2710,6 +2740,7 @@ var PV = (function () {
     opts = opts || {};
     var today = opts.today || iso(new Date());
     var st = Object.assign({ proj: 'all', stream: 'all', q: '', past: false, lang: 'nl', zoom: 'q' }, opts.state || {});
+    if (opts.lang) st.lang = opts.lang;   // a host page (the /admin) that has its own language switch passes it in
     setLang(st.lang);
     var projects, mk, items, phases, byKey, USED;
     function index() {
@@ -2746,7 +2777,7 @@ var PV = (function () {
     function filters() {
       var counts = {}; items.forEach(function (m) { if ((st.proj === 'all' || m.pkey === st.proj) && m.date >= today) counts[m.kind] = (counts[m.kind] || 0) + 1; });
       var pc = {}; items.forEach(function (m) { if ((st.stream === 'all' || m.kind === st.stream) && m.date >= today) pc[m.pkey] = (pc[m.pkey] || 0) + 1; });
-      var h = '<div class="pv-filters"><div class="pv-frow"><span class="pv-flabel">' + L.lang + '</span><div class="pv-tabs pv-lang"><button data-lang="nl" class="' + (LANG === 'nl' ? 'on' : '') + '" lang="nl">Nederlands</button><button data-lang="en" class="' + (LANG === 'en' ? 'on' : '') + '" lang="en">English</button></div></div>' +
+      var h = '<div class="pv-filters">' + (opts.hideLang ? '' : '<div class="pv-frow"><span class="pv-flabel">' + L.lang + '</span><div class="pv-tabs pv-lang"><button data-lang="nl" class="' + (LANG === 'nl' ? 'on' : '') + '" lang="nl">Nederlands</button><button data-lang="en" class="' + (LANG === 'en' ? 'on' : '') + '" lang="en">English</button></div></div>') +
         '<div class="pv-frow"><span class="pv-flabel">' + L.project + '</span><div class="pv-tabs"><button data-proj="all" class="' + (st.proj === 'all' ? 'on' : '') + '">' + L.allProjects + '</button>' +
         projects.map(function (p) { return '<button data-proj="' + esc(p.key) + '" class="' + (st.proj === p.key ? 'on' : '') + '">' + esc(T(p, 'name')) + (pc[p.key] ? ' <i>' + pc[p.key] + '</i>' : '') + '</button>'; }).join('') + '</div></div>';
       h += '<div class="pv-frow"><span class="pv-flabel">' + L.work + '</span><div class="pv-tabs"><button data-stream="all" class="' + (st.stream === 'all' ? 'on' : '') + '">' + L.all + '</button>' +
@@ -2848,21 +2879,21 @@ var PV = (function () {
 })();
 
 async function renderPlanning(){
-  const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">Laden…</div>';
+  const v=$('#view');v.innerHTML='<div class="muted" style="padding:8px">'+tr('Laden…','Loading…')+'</div>';
   const {data,error}=await sb.from('planning_docs').select('data,updated_at').eq('key','main').maybeSingle();
   if(CURRENT!=='planning')return;
-  if(error||!data){v.innerHTML='<div class="panel"><div class="lock-note">'+esc(error?error.message:'Nog geen planning opgeslagen.')+'</div></div>';return;}
+  if(error||!data){v.innerHTML='<div class="panel"><div class="lock-note">'+esc(error?error.message:tr('Nog geen planning opgeslagen.','No planning saved yet.'))+'</div></div>';return;}
   const box=el('div','pv');v.innerHTML='';v.append(box);
   const doc=data.data||{};
-  if(!doc.updated)doc.updated=new Date(data.updated_at).toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
+  if(!doc.updated)doc.updated=new Date(data.updated_at).toLocaleDateString(ADM_LANG==='en'?'en-GB':'nl-NL',{day:'numeric',month:'long',year:'numeric'});
   let state={};try{state=JSON.parse(localStorage.getItem('adm-planning-state')||'{}');}catch(e){}
   const d=new Date(),today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  PV.render(box,doc,{today,state,editable:canEdit('planning'),
+  PV.render(box,doc,{today,state,lang:ADM_LANG,hideLang:true,editable:canEdit('planning'),
     onState:st=>{try{localStorage.setItem('adm-planning-state',JSON.stringify(st));}catch(e){}},
     onSave:async(nd,done)=>{
       const {error}=await sb.from('planning_docs').upsert({key:'main',data:nd,updated_at:new Date().toISOString()});
-      if(error){toast('Opslaan mislukt: '+error.message,'err');return;}
-      toast('Planning opgeslagen','ok');done();
+      if(error){toast(tr('Opslaan mislukt: ','Saving failed: ')+error.message,'err');return;}
+      toast(tr('Planning opgeslagen','Planning saved'),'ok');done();
     }});
 }
 
