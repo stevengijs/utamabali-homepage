@@ -15,6 +15,46 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/webinar/webinar.css">
+<!-- Meta Pixel: dezelfde dataset als /webinar/bali ("Claude Utama Site + MOKA Perspective", 419037194248722).
+     PageView op elke pagina; CompleteRegistration en Lead bij een gelukte inschrijving (zie hieronder). -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','419037194248722');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=419037194248722&ev=PageView&noscript=1"></noscript>
+<script>
+/* Inschrijving meten. Het WebinarGeek-formulier draait in deze pagina en maakt een inschrijving aan
+   met een POST naar .../subscriptions. Gaat die goed, dan CompleteRegistration en Lead, één keer per
+   bezoek (sessionStorage), zodat de bedankpagina hem niet nog eens telt. */
+(function(){
+  var KEY = 'utama_webinar_inschrijving';
+  function al(){ try{ return sessionStorage.getItem(KEY) === '1'; }catch(e){ return false; } }
+  function meld(){
+    if(al()) return;
+    try{ sessionStorage.setItem(KEY, '1'); }catch(e){}
+    if(window.fbq){
+      fbq('track', 'CompleteRegistration', {content_name: 'Webinar 25 oktober'});
+      fbq('track', 'Lead', {content_name: 'Webinar 25 oktober'});
+    }
+  }
+  function isInschrijving(url, method){
+    return /webinargeek\.com/.test(url) && /\/subscriptions(\?|$)/.test(url) && String(method || 'GET').toUpperCase() === 'POST';
+  }
+  var origineel = window.fetch;
+  if(origineel){
+    window.fetch = function(input, init){
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      var method = (init && init.method) || (input && input.method) || 'GET';
+      var p = origineel.apply(this, arguments);
+      if(isInschrijving(String(url), method)){
+        p.then(function(r){ if(r && r.ok) meld(); }).catch(function(){});
+      }
+      return p;
+    };
+  }
+})();
+</script>
 <!-- CONFIG · datum of tijd wijzigen? Pas aan: (1) alle teksten met de webinardatum en "14:00 uur",
      (2) data-target hieronder in de countdown, (3) de agenda-links op /webinar/bedankt/,
      (4) de datum naast de knop in de bovenbalk (nav-when). -->
