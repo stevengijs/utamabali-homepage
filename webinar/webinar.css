@@ -243,6 +243,30 @@ body.replay-closed .closed-card{display:block}
   .process-row.p7 .p-step:nth-child(n+5){border-bottom:none}
 }
 
+/* ---- aanmeldkaart op mobiel: compacter, zodat het formulier sneller in beeld is ---- */
+@media(max-width:600px){
+  .gate-sec{padding:40px 0}
+  .gate-card{padding:24px 16px}
+  .hosts{flex-wrap:nowrap;gap:14px;margin-bottom:16px}
+  .host{gap:8px}
+  .host img{width:44px;height:44px}
+  .host b{font-size:13.5px}
+  .host span{font-size:11px}
+  .cd-label{margin-bottom:8px}
+  .countdown{gap:6px;margin-bottom:16px}
+  .cd-cell{min-width:54px;padding:7px 4px}
+  .cd-cell b{font-size:20px}
+  .cd-cell span{font-size:9.5px}
+  .gate-card h2{margin:8px 0 8px}
+  .gate-card>p{font-size:15px;margin-bottom:16px}
+}
+
+/* ---- heel smalle telefoons (tot 360px): logo en knop raken elkaar niet ---- */
+@media(max-width:360px){
+  .brand{font-size:17px;letter-spacing:.22em}
+  .nav-cta .btn{padding:7px 11px;font-size:13px}
+}
+
 /* ---- hero met bouwfoto: donkere laag over de hele foto voor leesbare tekst ---- */
 .hero.hero-donker{background-position:center 35%}
 .hero.hero-donker::after{background:linear-gradient(180deg,rgba(23,20,15,.62) 0%,rgba(23,20,15,.66) 50%,rgba(23,20,15,.88) 100%)}
