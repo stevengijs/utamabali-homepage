@@ -271,6 +271,30 @@ body.replay-closed .closed-card{display:block}
 .hero.hero-donker{background-position:center 35%}
 .hero.hero-donker::after{background:linear-gradient(180deg,rgba(23,20,15,.62) 0%,rgba(23,20,15,.66) 50%,rgba(23,20,15,.88) 100%)}
 
+/* ---- uitbetalingsmelding in de hero (stijl van de homepage, rekenvoorbeeld) ---- */
+.hero-pay{z-index:2}
+.hp-stack{position:relative;display:grid;place-items:center;width:270px;padding-top:24px}
+.hp-ghost{position:absolute;left:50%;height:46px;border-radius:14px;transform:translateX(-50%)}
+.hp-ghost.g2{top:0;width:calc(100% - 40px);background:rgba(254,251,246,.22)}
+.hp-ghost.g1{top:11px;width:calc(100% - 22px);background:rgba(254,251,246,.5)}
+.hp-note{position:relative;width:100%;display:flex;align-items:center;gap:10px;background:var(--paper);color:var(--ink);border-radius:14px;padding:10px 14px 10px 10px;box-shadow:0 14px 30px -12px rgba(0,0,0,.45);text-align:left}
+.hp-ico{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#4E5E3A;color:#fff}
+.hp-ico svg{width:16px;height:16px}
+.hp-txt{flex:1;min-width:0;display:grid;gap:2px}
+.hp-txt b{font-size:13.5px;font-weight:700;line-height:1.2}
+.hp-txt small{font-size:11px;font-weight:500;line-height:1.25;color:var(--muted)}
+.hp-note em{font-style:normal;white-space:nowrap;font-size:17px;font-weight:800;letter-spacing:-.01em;color:#4E5E3A}
+.hp-desk{display:none}
+.hp-mob{display:flex;justify-content:center;margin:0 auto 14px}
+@media(min-width:1240px){
+  .hp-mob{display:none}
+  .hp-desk{display:block;position:absolute;right:max(32px,calc((100vw - 1160px)/2));top:120px}
+}
+@media(prefers-reduced-motion:no-preference){
+  .hp-note{animation:hpIn .8s cubic-bezier(.2,.8,.2,1) both .6s}
+  @keyframes hpIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+}
+
 /* ---- vier redenen om live te kijken: 2 x 2, op brede schermen 4 naast elkaar ---- */
 @media(min-width:760px){.afeat-grid.a4{grid-template-columns:1fr 1fr}}
 @media(min-width:1040px){.afeat-grid.a4{grid-template-columns:repeat(4,1fr);gap:0 32px}}
