@@ -87,6 +87,26 @@
       "source": "/pma",
       "destination": "/heb-je-een-pt-pma-nodig-om-op-bali-te-investeren",
       "permanent": false
+    },
+    {
+      "source": "/webinar/bedankt",
+      "destination": "/webinar/thanks",
+      "permanent": false
+    },
+    {
+      "source": "/webinar/bedankt/",
+      "destination": "/webinar/thanks",
+      "permanent": false
+    },
+    {
+      "source": "/webinar/bali-gesprek",
+      "destination": "/webinar/call",
+      "permanent": false
+    },
+    {
+      "source": "/webinar/bali-gesprek/",
+      "destination": "/webinar/call",
+      "permanent": false
     }
   ]
 }

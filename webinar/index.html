@@ -49,13 +49,13 @@ fbq('track','PageView');
       var p = origineel.apply(this, arguments);
       if(isInschrijving(String(url), method)){
         /* Na inschrijving stuurt WebinarGeek door naar het adres uit de instellingen van het webinar
-           (meegekopieerd: /webinar/bali-bedankt). Deze pagina hoort op /webinar/bedankt te eindigen,
+           (meegekopieerd: /webinar/bali-bedankt). Deze pagina hoort op /webinar/thanks te eindigen,
            dus dat adres vervangen we in het antwoord, voordat het formulier het gebruikt. */
         return p.then(function(r){
           if(r && r.ok) meld();
           return r.clone().text().then(function(t){
             if(t.indexOf('bali-bedankt') === -1) return r;
-            return new Response(t.split('bali-bedankt').join('bedankt'), {status: r.status, statusText: r.statusText, headers: r.headers});
+            return new Response(t.split('/webinar/bali-bedankt').join('/webinar/thanks').split('\\/webinar\\/bali-bedankt').join('\\/webinar\\/thanks'), {status: r.status, statusText: r.statusText, headers: r.headers});
           }).catch(function(){ return r; });
         });
       }
@@ -65,7 +65,7 @@ fbq('track','PageView');
 })();
 </script>
 <!-- CONFIG · datum of tijd wijzigen? Pas aan: (1) alle teksten met de webinardatum en "14:00 uur",
-     (2) data-target hieronder in de countdown, (3) de agenda-links op /webinar/bedankt/,
+     (2) data-target hieronder in de countdown, (3) de agenda-links op /webinar/thanks/,
      (4) de datum naast de knop in de bovenbalk (nav-when). -->
 </head>
 <body class="has-stickybar">
