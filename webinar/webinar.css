@@ -243,6 +243,10 @@ body.replay-closed .closed-card{display:block}
   .process-row.p7 .p-step:nth-child(n+5){border-bottom:none}
 }
 
+/* ---- hero met bouwfoto: donkere laag over de hele foto voor leesbare tekst ---- */
+.hero.hero-donker{background-position:center 35%}
+.hero.hero-donker::after{background:linear-gradient(180deg,rgba(23,20,15,.62) 0%,rgba(23,20,15,.66) 50%,rgba(23,20,15,.88) 100%)}
+
 /* ---- vier redenen om live te kijken: 2 x 2, op brede schermen 4 naast elkaar ---- */
 @media(min-width:760px){.afeat-grid.a4{grid-template-columns:1fr 1fr}}
 @media(min-width:1040px){.afeat-grid.a4{grid-template-columns:repeat(4,1fr);gap:0 32px}}
