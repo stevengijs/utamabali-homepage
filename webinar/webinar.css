@@ -263,8 +263,11 @@ body.replay-closed .closed-card{display:block}
 
 /* ---- heel smalle telefoons (tot 360px): logo en knop raken elkaar niet ---- */
 @media(max-width:360px){
-  .brand{font-size:17px;letter-spacing:.22em}
-  .nav-cta .btn{padding:7px 11px;font-size:13px}
+  nav .wrap{padding:0 14px}
+  .brand{font-size:15px;letter-spacing:.18em}
+  .nav-btn{padding:6px 10px}
+  .nav-btn .nb-main{font-size:12.5px;white-space:nowrap}
+  .nav-btn .nb-sub{font-size:10px;white-space:nowrap}
 }
 
 /* ---- hero met bouwfoto: donkere laag over de hele foto voor leesbare tekst ---- */
@@ -306,12 +309,13 @@ body.replay-closed .closed-card{display:block}
 .nav-cta{display:flex;align-items:center;gap:14px}
 .nav-when{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
 .nw-short{display:none}
+.nb-sub{display:none}
 @media(max-width:640px){
-  .nav-cta{flex-direction:column;align-items:flex-end;gap:3px}
-  .nav-cta .btn{padding:7px 14px;font-size:13.5px}
-  .nav-when{font-size:11px;order:2}
-  .nw-long{display:none}
-  .nw-short{display:inline}
+  /* Mobiel: de datum als tweede regel in de knop, niet los eronder */
+  .nav-when{display:none}
+  .nav-btn{flex-direction:column;align-items:center;gap:1px;padding:7px 16px;line-height:1.15}
+  .nav-btn .nb-main{font-size:14px;font-weight:700}
+  .nav-btn .nb-sub{display:block;font-size:10.5px;font-weight:500;opacity:.72;letter-spacing:.01em}
 }
 
 /* ---- footer ---- */
