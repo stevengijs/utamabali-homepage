@@ -243,6 +243,21 @@ body.replay-closed .closed-card{display:block}
   .process-row.p7 .p-step:nth-child(n+5){border-bottom:none}
 }
 
+/* ---- datumchip in de hero: tekst loopt door als hij op mobiel afbreekt ---- */
+.hero-date{display:inline-block;text-align:center;line-height:1.5}
+
+/* ---- datum naast de knop in de bovenbalk ---- */
+.nav-cta{display:flex;align-items:center;gap:14px}
+.nav-when{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.nw-short{display:none}
+@media(max-width:640px){
+  .nav-cta{flex-direction:column;align-items:flex-end;gap:3px}
+  .nav-cta .btn{padding:7px 14px;font-size:13.5px}
+  .nav-when{font-size:11px;order:2}
+  .nw-long{display:none}
+  .nw-short{display:inline}
+}
+
 /* ---- footer ---- */
 footer{border-top:1px solid var(--line);padding:34px 0;font-size:13px;color:var(--muted)}
 footer .frow{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:space-between}
