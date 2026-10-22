@@ -434,8 +434,13 @@
   var t = document.getElementById('countdown');
   var el = document.getElementById('heroDays');
   if(!t || !el) return;
-  var d = Math.ceil((new Date(t.getAttribute('data-target')).getTime() - Date.now())/864e5);
-  if(d > 0) el.textContent = ' · over ' + d + (d === 1 ? ' dag' : ' dagen');
+  /* Tel kalenderdagen in Nederlandse tijd, niet 24-uursblokken (anders is zondag op donderdag "over 4 dagen"). */
+  var start = new Date(t.getAttribute('data-target')).getTime();
+  if(!(start > Date.now())) return;
+  function dag(ms){ return Date.parse(new Date(ms).toLocaleDateString('en-CA', {timeZone: 'Europe/Amsterdam'})); }
+  var d = Math.round((dag(start) - dag(Date.now()))/864e5);
+  /* Vaste spatie: een gewone spatie aan het begin van de span valt weg in de flex-chip. */
+  el.textContent = '\u00a0· ' + (d > 1 ? 'over ' + d + ' dagen' : (d === 1 ? 'morgen' : 'vandaag'));
 })();
 </script>
 
