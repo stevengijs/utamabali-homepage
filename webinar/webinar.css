@@ -243,6 +243,10 @@ body.replay-closed .closed-card{display:block}
   .process-row.p7 .p-step:nth-child(n+5){border-bottom:none}
 }
 
+/* ---- vier redenen om live te kijken: 2 x 2, op brede schermen 4 naast elkaar ---- */
+@media(min-width:760px){.afeat-grid.a4{grid-template-columns:1fr 1fr}}
+@media(min-width:1040px){.afeat-grid.a4{grid-template-columns:repeat(4,1fr);gap:0 32px}}
+
 /* ---- datumchip in de hero: tekst loopt door als hij op mobiel afbreekt ---- */
 .hero-date{display:inline-block;text-align:center;line-height:1.5}
 
