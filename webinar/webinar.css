@@ -234,6 +234,24 @@ body.replay-closed .closed-card{display:block}
 .faq{margin:0 auto}
 .wa-card{max-width:720px;margin:0 auto}
 
+/* ---- programma met 7 stappen: 4 + 3 in een raster (25 oktober) ---- */
+@media(min-width:860px){
+  .process-row.p7{display:grid;grid-template-columns:repeat(4,1fr)}
+  .process-row.p7 .p-step{border-bottom:1px solid var(--line)}
+  .process-row.p7 .p-step:nth-child(4n){border-right:none}
+  .process-row.p7 .p-step:nth-child(n+5){border-bottom:none}
+}
+
+/* ---- aanbod: prijs nu en daarna ---- */
+.offer-price{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin:24px auto 0;max-width:720px}
+.offer-price > div{flex:1 1 240px;border-radius:var(--radius);padding:20px 24px;text-align:center}
+.offer-price span{display:block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.offer-price b{display:block;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.op-now{background:var(--ink);color:#fff}
+.op-now span{color:#E0875C}
+.op-next{background:var(--paper);border:1px solid var(--line);color:var(--muted)}
+.op-next b{color:var(--muted)}
+
 /* ---- footer ---- */
 footer{border-top:1px solid var(--line);padding:34px 0;font-size:13px;color:var(--muted)}
 footer .frow{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:space-between}
