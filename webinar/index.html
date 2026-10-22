@@ -48,7 +48,16 @@ fbq('track','PageView');
       var method = (init && init.method) || (input && input.method) || 'GET';
       var p = origineel.apply(this, arguments);
       if(isInschrijving(String(url), method)){
-        p.then(function(r){ if(r && r.ok) meld(); }).catch(function(){});
+        /* Na inschrijving stuurt WebinarGeek door naar het adres uit de instellingen van het webinar
+           (meegekopieerd: /webinar/bali-bedankt). Deze pagina hoort op /webinar/bedankt te eindigen,
+           dus dat adres vervangen we in het antwoord, voordat het formulier het gebruikt. */
+        return p.then(function(r){
+          if(r && r.ok) meld();
+          return r.clone().text().then(function(t){
+            if(t.indexOf('bali-bedankt') === -1) return r;
+            return new Response(t.split('bali-bedankt').join('bedankt'), {status: r.status, statusText: r.statusText, headers: r.headers});
+          }).catch(function(){ return r; });
+        });
       }
       return p;
     };
