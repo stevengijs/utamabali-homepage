@@ -7431,13 +7431,24 @@ async function ctGenereer(){
       soort:CT.soort, onderwerp, project:CT.project||null, doel:CT.doel,
       broll, gesproken:CT.gesproken||false, aantal_media:CT.media.length}});
     if(error||!data||data.ok===false){
-      $('#ct_status').innerHTML=`<span class="err">${esc((data&&data.reden)||(error&&error.message)||'mislukt')}</span>`;return;
+      $('#ct_status').innerHTML=`<span class="err">${esc(await ctFoutTekst(error,data))}</span>`;return;
     }
     CT.pakket=data.pakket; CT.hookKeus=0;
     ctPakketTekenen();
     await ctOpslaan('concept');
     $('#ct_status').textContent='';
   } finally { knop.disabled=false; }
+}
+
+// Bij een niet-2xx-antwoord geeft supabase-js alleen "Edge Function returned a non-2xx
+// status code" en staat de echte reden in de body (error.context). Hier halen we die op,
+// en een leeg Anthropic-tegoed krijgt een eigen, duidelijke tekst (24 oktober 2026).
+async function ctFoutTekst(error,data){
+  if(data&&data.reden) return data.reden;
+  let t=(error&&error.message)||'mislukt';
+  try{ const r=error&&error.context; if(r&&r.clone){ const j=await r.clone().json(); if(j&&(j.reden||j.error)) t=j.reden||j.error; } }catch(e){}
+  if(/credit balance is too low/i.test(t)) return 'Het Anthropic-tegoed is op. Voeg credits toe op console.anthropic.com (Plans & Billing), dan werkt dit meteen weer.';
+  return t;
 }
 
 function ctPakketTekenen(){
