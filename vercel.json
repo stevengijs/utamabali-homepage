@@ -107,6 +107,11 @@
       "source": "/webinar/bali-gesprek/",
       "destination": "/webinar/call",
       "permanent": false
+    },
+    {
+      "source": "/construction",
+      "destination": "/gids/bouwchecklist-villa-bali/?utm_source=instagram&utm_medium=reel&utm_campaign=construction",
+      "permanent": false
     }
   ]
 }
