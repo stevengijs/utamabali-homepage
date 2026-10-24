@@ -132,16 +132,6 @@
       "source": "/gids/bouwchecklist-villa-bali.md",
       "destination": "/bouwchecklist-villa-bali/index.md",
       "permanent": false
-    },
-    {
-      "source": "/gids",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/gids/",
-      "destination": "/",
-      "permanent": false
     }
   ]
 }

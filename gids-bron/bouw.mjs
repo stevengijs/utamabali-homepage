@@ -137,7 +137,8 @@ function schema(t) {
         '@type': 'BreadcrumbList', '@id': `${url}#kruimel`,
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'UTAMA', item: `${SITE}/` },
-          { '@type': 'ListItem', position: 2, name: t.pdf.titel, item: url },
+          { '@type': 'ListItem', position: 2, name: 'Gidsen', item: `${SITE}/gids/` },
+          { '@type': 'ListItem', position: 3, name: t.pdf.titel, item: url },
         ],
       },
       { '@type': 'ItemList', '@id': `${url}#checklist`, name: t.pdf.titel, numberOfItems: n, itemListElement: lijst },
@@ -304,6 +305,45 @@ ${voet}
 `;
 }
 
+/* ---------- overzicht /gids/ (Steven, 24 oktober 2026: de footerlink "Gids" wijst hier naartoe) ---------- */
+function renderHub(alle) {
+  const url = `${SITE}/gids/`;
+  const titel = 'Gratis gidsen over investeren in een villa op Bali | UTAMA';
+  const beschrijving = 'Gratis checklists en gidsen over investeren in een villa op Bali, van de bouw tot verhuur. Praktisch, met cijfers en zonder verkooppraatje.';
+  const graph = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      ORG, WEBSITE,
+      { '@type': 'CollectionPage', '@id': url, url, name: titel, description: beschrijving, inLanguage: 'nl-NL', isPartOf: { '@id': WEBSITE['@id'] }, breadcrumb: { '@id': `${url}#kruimel` } },
+      { '@type': 'BreadcrumbList', '@id': `${url}#kruimel`, itemListElement: [{ '@type': 'ListItem', position: 1, name: 'UTAMA', item: `${SITE}/` }, { '@type': 'ListItem', position: 2, name: 'Gidsen', item: url }] },
+      { '@type': 'ItemList', name: 'Gratis gidsen', itemListElement: alle.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: gidsUrl(t), name: t.kaartTitel })) },
+    ],
+  };
+  return `${kop({ titel, beschrijving, url, afbeelding: ogUrl(alle[0]), type: 'website' })}<script type="application/ld+json">${jsonLd(graph)}</script>
+</head>
+<body>
+${nav('', '')}
+<main>
+  <section class="hero">
+    <div class="wrap smal">
+      <span class="eyebrow">Gratis gidsen</span>
+      <h1>Investeren in een villa op Bali: praktische gidsen</h1>
+      <p class="lead">Checklists en uitleg van het team dat de villa's ontwikkelt. Gratis te lezen en te downloaden.</p>
+    </div>
+  </section>
+  <div class="wrap smal">
+    <div class="meer">
+${alle.map((t) => `      <a href="/${t.slug}/"><b>${esc(t.kaartTitel)}</b><span>${esc(t.metaBeschrijving)}</span></a>`).join('\n')}
+    </div>
+    ${afm}
+  </div>
+</main>
+${voet}
+</body>
+</html>
+`;
+}
+
 /* ---------- Markdown-versie voor AI-systemen ---------- */
 function renderMd(t) {
   const aantal = telItems(t);
@@ -429,9 +469,10 @@ function maakBestanden(t) {
 /* ---------- sitemap en llms.txt ---------- */
 function schrijfSitemap(alle) {
   const rij = (loc, lastmod) => `  <url><loc>${loc}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`;
+  const nieuwste = alle.map((t) => t.datumBijgewerkt).sort().pop();
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${[rij(`${SITE}/`), rij(`${SITE}/webinar/`), ...alle.map((t) => rij(gidsUrl(t), t.datumBijgewerkt))].join('\n')}
+${[rij(`${SITE}/`), rij(`${SITE}/webinar/`), rij(`${SITE}/gids/`, nieuwste), ...alle.map((t) => rij(gidsUrl(t), t.datumBijgewerkt))].join('\n')}
 </urlset>
 `;
   writeFileSync(join(ROOT, 'sitemap.xml'), xml);
@@ -452,6 +493,7 @@ ${alle.map((t) => `- [${t.kaartTitel}](${SITE}${mdUrl(t)}): ${t.metaBeschrijving
 
 - [Home](${SITE}/): wat UTAMA doet en voor wie.
 - [Gratis webinar](${SITE}/webinar): live uitleg in 60 minuten over investeren in een villa op Bali.
+- [Alle gidsen](${SITE}/gids/): overzicht van de gratis checklists en gidsen.
 - [Projecten en brochures](https://invest.utamabali.com): de villaprojecten met prijzen, plattegronden en bouwstatus.
 `;
   writeFileSync(join(ROOT, 'llms.txt'), txt);
@@ -482,6 +524,8 @@ for (const t of alle) {
   console.log(`  ManyChat-link: ${link(t)}`);
   console.log(`  Korte link ${kort}: ${vercel.includes(`"source": "${kort}"`) ? 'staat in vercel.json' : 'ONTBREEKT in vercel.json, voeg toe: { "source": "' + kort + '", "destination": "/' + t.slug + '/?utm_source=instagram&utm_medium=reel&utm_campaign=' + t.campagne + '", "permanent": false }'}`);
 }
+mkdirSync(join(ROOT, 'gids'), { recursive: true });
+writeFileSync(join(ROOT, 'gids', 'index.html'), renderHub(alle));
 schrijfSitemap(alle);
 schrijfLlms(alle);
 if (MET_PDF) rmSync(join(BRON, '.tmp'), { recursive: true, force: true });

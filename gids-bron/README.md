@@ -2,7 +2,7 @@
 
 Elke Instagram-reel met een trefwoord (bijvoorbeeld CONSTRUCTION) verwijst naar een gidspagina met een gratis PDF.
 Elke gids staat op een eigen adres in de hoofdmap, zonder tussenmap: `utamabali.com/<slug>/`. De pagina's zijn gewone HTML (goed voor Google en AI-systemen) en komen uit dit mapje.
-Er is bewust geen overzichtspagina en geen `/gids` in het adres (Steven, 24 oktober 2026): leads komen via een reel, niet via een lijst. `/gids` stuurt door naar de homepage.
+Geen `/gids` in het adres van een gids zelf (Steven, 24 oktober 2026): leads komen via een reel direct op de lander. Het overzicht `/gids/` bestaat wel; de footerlink "Gids" op de homepage wijst daarheen en elke nieuwe gids komt er automatisch in.
 
 ## Nieuwe gids toevoegen
 
