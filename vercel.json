@@ -110,7 +110,27 @@
     },
     {
       "source": "/construction",
-      "destination": "/gids/bouwchecklist-villa-bali/?utm_source=instagram&utm_medium=reel&utm_campaign=construction",
+      "destination": "/bouwchecklist-villa-bali/?utm_source=instagram&utm_medium=reel&utm_campaign=construction",
+      "permanent": false
+    },
+    {
+      "source": "/gids/bouwchecklist-villa-bali",
+      "destination": "/bouwchecklist-villa-bali/",
+      "permanent": false
+    },
+    {
+      "source": "/gids/bouwchecklist-villa-bali/",
+      "destination": "/bouwchecklist-villa-bali/",
+      "permanent": false
+    },
+    {
+      "source": "/gids/download/UTAMA-bouwchecklist-villa-bali.pdf",
+      "destination": "/bouwchecklist-villa-bali/UTAMA-bouwchecklist-villa-bali.pdf",
+      "permanent": false
+    },
+    {
+      "source": "/gids/bouwchecklist-villa-bali.md",
+      "destination": "/bouwchecklist-villa-bali/index.md",
       "permanent": false
     },
     {

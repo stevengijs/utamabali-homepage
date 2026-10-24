@@ -3,8 +3,8 @@
 > Je koopt een villa op Bali die nog gebouwd moet worden. Dan wil je weten wat je op welk moment moet controleren. Deze checklist loopt de bouw fase voor fase langs, met de documenten die je opvraagt en de controles die je laat doen.
 
 Door Steven Gijsman, Oprichter UTAMA. Bijgewerkt 24 oktober 2026. Taal: Nederlands.
-Pagina: https://www.utamabali.com/gids/bouwchecklist-villa-bali/
-PDF: https://www.utamabali.com/gids/download/UTAMA-bouwchecklist-villa-bali.pdf
+Pagina: https://www.utamabali.com/bouwchecklist-villa-bali/
+PDF: https://www.utamabali.com/bouwchecklist-villa-bali/UTAMA-bouwchecklist-villa-bali.pdf
 
 ## Kort antwoord
 

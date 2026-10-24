@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-/* UTAMA gidsen: bouwt de gratis gidspagina's (/gids/...) uit gids-bron/onderwerpen/*.json.
+/* UTAMA gidsen: bouwt de gratis gidspagina's uit gids-bron/onderwerpen/*.json.
+   Elke gids staat op eigen adres in de hoofdmap, zonder tussenmap: utamabali.com/<slug>/ (Steven, 24 oktober 2026).
 
    Waarom een generator: elke Instagram-reel met een trefwoord (bijvoorbeeld CONSTRUCTION) krijgt
    dezelfde pagina met eigen inhoud. De inhoud moet als gewone HTML in de pagina staan, niet via
@@ -12,7 +13,7 @@
 
    Nieuwe reel: kopieer een bestand in onderwerpen/, pas de inhoud aan, draai het script met --pdf,
    zet de korte link in vercel.json (het script print het regeltje) en commit de uitvoer. */
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, rmSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, rmSync, statSync, copyFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -44,7 +45,7 @@ const ICONEN = `<link rel="icon" href="/img/favicon.ico" sizes="any">
 const LETTERS = `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/gids/gids.css">`;
+<link rel="stylesheet" href="/gratis.css">`;
 
 function kop({ titel, beschrijving, url, afbeelding, type = 'article', alternatief = '', extraMeta = '' }) {
   return `<!doctype html>
@@ -52,6 +53,7 @@ function kop({ titel, beschrijving, url, afbeelding, type = 'article', alternati
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="generator" content="UTAMA gids-bron">
 <title>${esc(titel)}</title>
 <script src="/t.js" defer></script>
 <meta name="description" content="${esc(beschrijving)}">
@@ -101,11 +103,13 @@ const pijl = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-
 
 /* ---------- gidspagina ---------- */
 function telItems(t) { return t.fases.reduce((n, f) => n + f.items.length, 0); }
-const gidsUrl = (t) => `${SITE}/gids/${t.slug}/`;
-const pdfUrl = (t) => `/gids/download/${t.pdf.bestand}`;
-const ogUrl = (t) => `${SITE}/gids/img/${t.slug}-og.jpg`;
-const mdUrl = (t) => `/gids/${t.slug}.md`;
-const portaalUrl = (t) => `${t.portaal.url}${t.portaal.url.includes('?') ? '&' : '?'}utm_source=utamabali&utm_medium=gids&utm_campaign=${t.campagne}`;
+const gidsUrl = (t) => `${SITE}/${t.slug}/`;
+const pdfUrl = (t) => `/${t.slug}/${t.pdf.bestand}`;
+const ogUrl = (t) => `${SITE}/${t.slug}/og.jpg`;
+const mdUrl = (t) => `/${t.slug}/index.md`;
+const fotoUrl = (t) => `/${t.slug}/foto.jpg`;
+const RESERVED = new Set(['webinar', 'webinar1', 'webinar3', 'webinar20okt', 'admin', 'claude', 'stop', 'img', 'video', 'privacy', 'reserve', 'construction', 'gids', 'index', 'mcp', 'oauth', 'r']);
+const portaalUrl = (t) => `${t.portaal.url}${t.portaal.url.includes('?') ? '&' : '?'}utm_source=utamabali&utm_medium=checklist&utm_campaign=${t.campagne}`;
 const link = (t) => `${gidsUrl(t)}?utm_source=instagram&utm_medium=reel&utm_campaign=${t.campagne}`;
 
 function schema(t) {
@@ -183,7 +187,7 @@ ${nav(dl, portaalUrl(t))}
         </ul>
       </div>
       <figure class="hero-foto" style="margin:0">
-        <img src="/gids/img/${t.foto.bestand}" alt="${esc(t.foto.alt)}" width="${t.foto.breedte}" height="${t.foto.hoogte}" fetchpriority="high">
+        <img src="${fotoUrl(t)}" alt="${esc(t.foto.alt)}" width="${t.foto.breedte}" height="${t.foto.hoogte}" fetchpriority="high">
         <figcaption class="doc">
           <span class="doc-icoon" aria-hidden="true">PDF</span>
           <span><b>${esc(t.pdf.titel)}</b><span>${aantal} punten in ${t.fases.length} blokken · gratis</span></span>
@@ -370,7 +374,7 @@ ${t.fases.map((f, i) => `<section class="fb"><h2>${f.doorlopend ? 'Doorlopend' :
 <p class="fi">${esc(f.intro)}</p>
 ${f.items.map((it) => `<div class="pt"><span class="v"></span><div><b>${esc(it.kop)}</b><span class="t">${esc(it.tekst)}</span></div></div>`).join('\n')}</section>`).join('\n')}
 <div class="rood"><h3>${esc(t.roodVlaggen.titel)}</h3><ul>${t.roodVlaggen.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>
-<div class="voet"><b>${aantal} punten.</b> Online met uitleg, vragen en antwoorden: <b>utamabali.com/gids/${t.slug}</b><br>
+<div class="voet"><b>${aantal} punten.</b> Online met uitleg, vragen en antwoorden: <b>utamabali.com/${t.slug}</b><br>
 UTAMA ontwikkelt boutique villaprojecten op Bali voor investeerders · Instagram @stevenbalivillas · Bijgewerkt ${datumNl(t.datumBijgewerkt)}<br>
 ${esc(t.disclaimer)}</div>
 </body></html>`;
@@ -385,8 +389,8 @@ function renderCover(t) {
 .e{display:inline-block;background:#099a0b;color:#fff;font-weight:800;font-size:19px;letter-spacing:.14em;text-transform:uppercase;padding:9px 16px;border-radius:8px;margin-bottom:22px}
 h1{font-size:64px;line-height:1.04;margin:0 0 18px;letter-spacing:-.02em;text-wrap:balance}
 p{margin:0;color:#c9d1a6;font-size:26px;font-weight:600}
-.r{width:430px;background:url(../../gids/img/${t.foto.bestand}) center/cover}
-</style></head><body><div class="l"><div class="merk">UTAMA</div><div><div class="e">Gratis checklist · PDF</div><h1>${esc(t.pdf.titel)}</h1><p>${aantal} punten per bouwfase</p></div><p style="font-size:20px">utamabali.com/gids</p></div><div class="r"></div></body></html>`;
+.r{width:430px;background:url(../media/${t.foto.bestand}) center/cover}
+</style></head><body><div class="l"><div class="merk">UTAMA</div><div><div class="e">Gratis checklist · PDF</div><h1>${esc(t.pdf.titel)}</h1><p>${aantal} punten per bouwfase</p></div><p style="font-size:20px">utamabali.com</p></div><div class="r"></div></body></html>`;
 }
 
 /* ---------- Chrome ---------- */
@@ -402,13 +406,12 @@ function maakBestanden(t) {
   mkdirSync(tmp, { recursive: true });
   const printHtml = join(tmp, `${t.slug}-print.html`), coverHtml = join(tmp, `${t.slug}-cover.html`);
   writeFileSync(printHtml, renderPrint(t)); writeFileSync(coverHtml, renderCover(t));
-  mkdirSync(join(ROOT, 'gids', 'download'), { recursive: true });
-  const pdf = join(ROOT, 'gids', 'download', t.pdf.bestand);
+  const pdf = join(ROOT, t.slug, t.pdf.bestand);
   chrome(['--no-pdf-header-footer', `--print-to-pdf=${pdf}`, `file://${printHtml}`], pdf);
   const paginas = (readFileSync(pdf, 'latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
   console.log(`  PDF: ${pdf.replace(ROOT + '/', '')} (${paginas} pagina's, ${Math.round(statSync(pdf).size / 1024)} KB)`);
   if (paginas !== t.pdf.paginas) console.warn(`  LET OP: onderwerpen/${t.slug}.json zegt ${t.pdf.paginas} pagina's, de PDF heeft er ${paginas}`);
-  const png = join(tmp, `${t.slug}-og.png`), jpg = join(ROOT, 'gids', 'img', `${t.slug}-og.jpg`);
+  const png = join(tmp, `${t.slug}-og.png`), jpg = join(ROOT, t.slug, 'og.jpg');
   chrome(['--window-size=1200,630', `--screenshot=${png}`, `file://${coverHtml}`], png);
   spawnSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '82', png, '--out', jpg], { stdio: 'ignore' });
   console.log(`  Deelafbeelding: ${jpg.replace(ROOT + '/', '')}`);
@@ -450,21 +453,23 @@ const alle = readdirSync(join(BRON, 'onderwerpen')).filter((f) => f.endsWith('.j
   .map((f) => JSON.parse(readFileSync(join(BRON, 'onderwerpen', f), 'utf8')));
 if (!alle.length) throw new Error('geen onderwerpen gevonden');
 
-mkdirSync(join(ROOT, 'gids'), { recursive: true });
 for (const t of alle) {
   console.log(`${t.slug}`);
-  mkdirSync(join(ROOT, 'gids', t.slug), { recursive: true });
-  writeFileSync(join(ROOT, 'gids', t.slug, 'index.html'), renderPagina(t));
-  writeFileSync(join(ROOT, 'gids', `${t.slug}.md`), renderMd(t));
+  const map = join(ROOT, t.slug), index = join(map, 'index.html');
+  if (RESERVED.has(t.slug)) throw new Error(`slug "${t.slug}" is gereserveerd`);
+  if (existsSync(map) && !(existsSync(index) && readFileSync(index, 'utf8').includes('content="UTAMA gids-bron"'))) throw new Error(`${t.slug}/ bestaat al en is geen gegenereerde gids, kies een andere slug`);
+  mkdirSync(map, { recursive: true });
+  writeFileSync(index, renderPagina(t));
+  writeFileSync(join(map, 'index.md'), renderMd(t));
+  copyFileSync(join(BRON, 'media', t.foto.bestand), join(map, 'foto.jpg'));
   if (MET_PDF) maakBestanden(t);
-  const lang = join(ROOT, 'gids', 'download', t.pdf.bestand);
+  const lang = join(map, t.pdf.bestand);
   if (!existsSync(lang)) console.warn(`  LET OP: ${t.pdf.bestand} bestaat nog niet, draai met --pdf`);
   const vercel = readFileSync(join(ROOT, 'vercel.json'), 'utf8');
   const kort = `/${t.trefwoord.toLowerCase()}`;
   console.log(`  ManyChat-link: ${link(t)}`);
-  console.log(`  Korte link ${kort}: ${vercel.includes(`"source": "${kort}"`) ? 'staat in vercel.json' : 'ONTBREEKT in vercel.json, voeg toe: { "source": "' + kort + '", "destination": "/gids/' + t.slug + '/?utm_source=instagram&utm_medium=reel&utm_campaign=' + t.campagne + '", "permanent": false }'}`);
+  console.log(`  Korte link ${kort}: ${vercel.includes(`"source": "${kort}"`) ? 'staat in vercel.json' : 'ONTBREEKT in vercel.json, voeg toe: { "source": "' + kort + '", "destination": "/' + t.slug + '/?utm_source=instagram&utm_medium=reel&utm_campaign=' + t.campagne + '", "permanent": false }'}`);
 }
-rmSync(join(ROOT, 'gids', 'index.html'), { force: true });   // bewust geen overzichtspagina: leads komen via een reel, niet via een lijst
 schrijfSitemap(alle);
 schrijfLlms(alle);
 if (MET_PDF) rmSync(join(BRON, '.tmp'), { recursive: true, force: true });
