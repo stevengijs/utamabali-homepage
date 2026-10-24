@@ -159,7 +159,7 @@
     ctaH: 'You own it. We run it.<br><span class="accent">Four projects came before yours.</span>', ctaP: 'Choose a project, or send Ashley a WhatsApp message.',
     refT: 'Introduce someone who buys a villa. You receive it when the purchase agreement is signed.', refGo: 'How it works',
     footP: 'Boutique villa projects in the south of Bali. Pererenan, Cemagi and Kedungu.',
-    footChecklist: 'Free construction checklist (Dutch)',
+    footChecklist: 'Guide (Dutch)',
     footFine: 'Returns are estimates, not guarantees. Renders are impressions. © 2026 UTAMA',
     altHero: 'TEMAN Villas in Tumbak Bayuh at dusk: a white villa with arches, an open bedroom and a private pool',
     altMaison: 'Impression of the facades of The Maison in Pererenan', altGrond: 'Steven Gijsman with the contractor on site, plans in hand', altZebra: 'Zebra chairs and a lounger in a villa interior, designed to be photographed', altSleutel: 'Steven and a buyer at the key handover of his villa', tagInterior: 'Interior', tagHandover: 'Key handover', socViews: 'views', socShares: 'shares', socSaves: 'saves', socComments: 'comments', socReal: 'real numbers',
