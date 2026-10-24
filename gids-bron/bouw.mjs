@@ -7,7 +7,7 @@
    in de bron staat. Het resultaat is statische HTML die in het repo staat; Vercel bouwt niets.
 
    Gebruik, vanuit de map apps/homepage:
-     node gids-bron/bouw.mjs          pagina's, hub, Markdown-versies, sitemap.xml en llms.txt
+     node gids-bron/bouw.mjs          pagina's, Markdown-versies, sitemap.xml en llms.txt
      node gids-bron/bouw.mjs --pdf    idem, plus de PDF en de deelafbeelding (headless Chrome)
 
    Nieuwe reel: kopieer een bestand in onderwerpen/, pas de inhoud aan, draai het script met --pdf,
@@ -78,12 +78,12 @@ ${pixel}
 `;
 }
 
-const nav = (downloadUrl) => `<header class="nav">
+const nav = (downloadUrl, portaalUrl) => `<header class="nav">
   <div class="wrap">
     <a href="/" class="brand" aria-label="UTAMA, naar de homepage">UTAMA</a>
     <nav class="nav-links" aria-label="Hoofdmenu">
-      <a href="/gids/">Gidsen</a>
       <a href="/webinar">Webinar</a>
+      ${portaalUrl ? `<a class="btn klein nav-portaal" href="${portaalUrl}" data-portaal>Investeerdersportaal</a>` : ''}
       ${downloadUrl ? `<a class="btn cta klein" href="${downloadUrl}" download data-download>Download PDF</a>` : ''}
     </nav>
   </div>
@@ -105,6 +105,7 @@ const gidsUrl = (t) => `${SITE}/gids/${t.slug}/`;
 const pdfUrl = (t) => `/gids/download/${t.pdf.bestand}`;
 const ogUrl = (t) => `${SITE}/gids/img/${t.slug}-og.jpg`;
 const mdUrl = (t) => `/gids/${t.slug}.md`;
+const portaalUrl = (t) => `${t.portaal.url}${t.portaal.url.includes('?') ? '&' : '?'}utm_source=utamabali&utm_medium=gids&utm_campaign=${t.campagne}`;
 const link = (t) => `${gidsUrl(t)}?utm_source=instagram&utm_medium=reel&utm_campaign=${t.campagne}`;
 
 function schema(t) {
@@ -131,8 +132,7 @@ function schema(t) {
         '@type': 'BreadcrumbList', '@id': `${url}#kruimel`,
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'UTAMA', item: `${SITE}/` },
-          { '@type': 'ListItem', position: 2, name: 'Gidsen', item: `${SITE}/gids/` },
-          { '@type': 'ListItem', position: 3, name: t.pdf.titel, item: url },
+          { '@type': 'ListItem', position: 2, name: t.pdf.titel, item: url },
         ],
       },
       { '@type': 'ItemList', '@id': `${url}#checklist`, name: t.pdf.titel, numberOfItems: n, itemListElement: lijst },
@@ -141,11 +141,10 @@ function schema(t) {
   };
 }
 
-function renderPagina(t, alle) {
+function renderPagina(t) {
   const url = gidsUrl(t);
   const aantal = telItems(t);
   const dl = pdfUrl(t);
-  const meer = alle.filter((x) => x.slug !== t.slug);
   const fasen = t.fases.map((f, i) => {
     const nr = f.doorlopend ? '&#8635;' : i + 1;
     return `<article class="fase" id="${f.id}">
@@ -166,7 +165,7 @@ ${f.items.map((it) => `          <li><span class="vink" aria-hidden="true"></spa
   })}<script type="application/ld+json">${jsonLd(schema(t))}</script>
 </head>
 <body class="heeft-vast">
-${nav(dl)}
+${nav(dl, portaalUrl(t))}
 
 <main>
   <section class="hero">
@@ -213,7 +212,10 @@ ${t.korteAntwoord.map((p) => `      <p>${esc(p)}</p>`).join('\n')}
     <section class="band" aria-labelledby="neem-mee">
       <h2 id="neem-mee">Neem de checklist mee</h2>
       <p>Een PDF van ${t.pdf.paginas} pagina's met alle ${aantal} punten en de rode vlaggen. Print hem uit of open hem op je telefoon op de bouwplaats.</p>
-      <a class="btn cta" href="${dl}" download data-download>${pijl} Download de checklist (PDF)</a>
+      <div class="knoppen">
+        <a class="btn cta" href="${dl}" download data-download>${pijl} Download de checklist (PDF)</a>
+        <a class="btn licht" href="${portaalUrl(t)}" data-portaal>${esc(t.portaal.knop)} &rarr;</a>
+      </div>
     </section>
 
     <section class="rood" aria-labelledby="rood">
@@ -238,6 +240,12 @@ ${t.roodVlaggen.items.map((i) => `        <li>${esc(i)}</li>`).join('\n')}
       </div>
     </div>
 
+    <section class="band paper" aria-labelledby="portaal">
+      <h2 id="portaal">${esc(t.portaal.kop)}</h2>
+      <p>${esc(t.portaal.tekst)}</p>
+      <a class="btn cta" href="${portaalUrl(t)}" data-portaal>${esc(t.portaal.knop)} &rarr;</a>
+    </section>
+
     <section class="band licht" data-vervalt="${cta.vervalt}" aria-labelledby="webinar">
       <span class="wanneer">${esc(cta.wanneer)}</span>
       <h2 id="webinar">${esc(cta.kop)}</h2>
@@ -251,13 +259,7 @@ ${t.roodVlaggen.items.map((i) => `        <li>${esc(i)}</li>`).join('\n')}
 ${t.faq.map((q) => `        <div class="faq-item"><h3>${esc(q.v)}</h3><p>${esc(q.a)}</p></div>`).join('\n')}
       </div>
     </section>
-${meer.length ? `
-    <section aria-labelledby="meer">
-      <div class="kop-sectie" style="margin-top:10px"><h2 id="meer">Meer gratis gidsen</h2></div>
-      <div class="meer">
-${meer.map((m) => `        <a href="/gids/${m.slug}/"><b>${esc(m.kaartTitel)}</b><span>${esc(m.metaBeschrijving)}</span></a>`).join('\n')}
-      </div>
-    </section>` : ''}
+
 
     <p class="disclaimer">${esc(t.disclaimer)} Laatst bijgewerkt op ${datumNl(t.datumBijgewerkt)}.</p>
     ${afm}
@@ -274,6 +276,8 @@ ${voet}
   document.addEventListener('click', function(e){
     var a = e.target.closest && e.target.closest('[data-download]');
     if(a && window.fbq){ try{ fbq('trackCustom', 'ChecklistDownload', {content_name: ${JSON.stringify(t.pdf.titel)}}); }catch(x){} }
+    var p = e.target.closest && e.target.closest('[data-portaal]');
+    if(p && window.fbq){ try{ fbq('trackCustom', 'PortaalKlik', {content_name: ${JSON.stringify(t.slug)}}); }catch(x){} }
   });
   /* Vaste downloadbalk op mobiel weg zolang de knop in de kop in beeld is. */
   var v = document.getElementById('vast'), h = document.getElementById('hero-acties');
@@ -282,45 +286,6 @@ ${voet}
   document.querySelectorAll('[data-vervalt]').forEach(function(el){ if(Date.now() > Date.parse(el.getAttribute('data-vervalt'))) el.hidden = true; });
 })();
 </script>
-</body>
-</html>
-`;
-}
-
-/* ---------- hub /gids/ ---------- */
-function renderHub(alle) {
-  const url = `${SITE}/gids/`;
-  const titel = 'Gratis gidsen over investeren in een villa op Bali | UTAMA';
-  const beschrijving = 'Gratis checklists en gidsen over investeren in een villa op Bali, van de bouw tot verhuur. Praktisch, met cijfers en zonder verkooppraatje.';
-  const graph = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      ORG, WEBSITE,
-      { '@type': 'CollectionPage', '@id': url, url, name: titel, description: beschrijving, inLanguage: 'nl-NL', isPartOf: { '@id': WEBSITE['@id'] }, breadcrumb: { '@id': `${url}#kruimel` } },
-      { '@type': 'BreadcrumbList', '@id': `${url}#kruimel`, itemListElement: [{ '@type': 'ListItem', position: 1, name: 'UTAMA', item: `${SITE}/` }, { '@type': 'ListItem', position: 2, name: 'Gidsen', item: url }] },
-      { '@type': 'ItemList', name: 'Gratis gidsen', itemListElement: alle.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: gidsUrl(t), name: t.kaartTitel })) },
-    ],
-  };
-  return `${kop({ titel, beschrijving, url, afbeelding: ogUrl(alle[0]), type: 'website' })}<script type="application/ld+json">${jsonLd(graph)}</script>
-</head>
-<body>
-${nav('')}
-<main>
-  <section class="hero">
-    <div class="wrap smal">
-      <span class="eyebrow">Gratis gidsen</span>
-      <h1>Investeren in een villa op Bali: praktische gidsen</h1>
-      <p class="lead">Checklists en uitleg van het team dat de villa's bouwt en beheert. Gratis te lezen en te downloaden.</p>
-    </div>
-  </section>
-  <div class="wrap smal">
-    <div class="meer">
-${alle.map((t) => `      <a href="/gids/${t.slug}/"><b>${esc(t.kaartTitel)}</b><span>${esc(t.metaBeschrijving)}</span></a>`).join('\n')}
-    </div>
-    ${afm}
-  </div>
-</main>
-${voet}
 </body>
 </html>
 `;
@@ -452,10 +417,9 @@ function maakBestanden(t) {
 /* ---------- sitemap en llms.txt ---------- */
 function schrijfSitemap(alle) {
   const rij = (loc, lastmod) => `  <url><loc>${loc}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`;
-  const nieuwste = alle.map((t) => t.datumBijgewerkt).sort().pop();
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${[rij(`${SITE}/`), rij(`${SITE}/webinar/`), rij(`${SITE}/gids/`, nieuwste), ...alle.map((t) => rij(gidsUrl(t), t.datumBijgewerkt))].join('\n')}
+${[rij(`${SITE}/`), rij(`${SITE}/webinar/`), ...alle.map((t) => rij(gidsUrl(t), t.datumBijgewerkt))].join('\n')}
 </urlset>
 `;
   writeFileSync(join(ROOT, 'sitemap.xml'), xml);
@@ -476,7 +440,6 @@ ${alle.map((t) => `- [${t.kaartTitel}](${SITE}${mdUrl(t)}): ${t.metaBeschrijving
 
 - [Home](${SITE}/): wat UTAMA doet en voor wie.
 - [Gratis webinar](${SITE}/webinar): live uitleg in 60 minuten over investeren in een villa op Bali.
-- [Alle gidsen](${SITE}/gids/): overzicht van de gratis checklists.
 - [Projecten en brochures](https://invest.utamabali.com): de villaprojecten met prijzen, plattegronden en bouwstatus.
 `;
   writeFileSync(join(ROOT, 'llms.txt'), txt);
@@ -491,7 +454,7 @@ mkdirSync(join(ROOT, 'gids'), { recursive: true });
 for (const t of alle) {
   console.log(`${t.slug}`);
   mkdirSync(join(ROOT, 'gids', t.slug), { recursive: true });
-  writeFileSync(join(ROOT, 'gids', t.slug, 'index.html'), renderPagina(t, alle));
+  writeFileSync(join(ROOT, 'gids', t.slug, 'index.html'), renderPagina(t));
   writeFileSync(join(ROOT, 'gids', `${t.slug}.md`), renderMd(t));
   if (MET_PDF) maakBestanden(t);
   const lang = join(ROOT, 'gids', 'download', t.pdf.bestand);
@@ -501,8 +464,8 @@ for (const t of alle) {
   console.log(`  ManyChat-link: ${link(t)}`);
   console.log(`  Korte link ${kort}: ${vercel.includes(`"source": "${kort}"`) ? 'staat in vercel.json' : 'ONTBREEKT in vercel.json, voeg toe: { "source": "' + kort + '", "destination": "/gids/' + t.slug + '/?utm_source=instagram&utm_medium=reel&utm_campaign=' + t.campagne + '", "permanent": false }'}`);
 }
-writeFileSync(join(ROOT, 'gids', 'index.html'), renderHub(alle));
+rmSync(join(ROOT, 'gids', 'index.html'), { force: true });   // bewust geen overzichtspagina: leads komen via een reel, niet via een lijst
 schrijfSitemap(alle);
 schrijfLlms(alle);
 if (MET_PDF) rmSync(join(BRON, '.tmp'), { recursive: true, force: true });
-console.log(`Klaar: ${alle.length} gids${alle.length === 1 ? '' : 'en'}, hub, sitemap.xml en llms.txt.`);
+console.log(`Klaar: ${alle.length} gids${alle.length === 1 ? '' : 'en'}, sitemap.xml en llms.txt.`);

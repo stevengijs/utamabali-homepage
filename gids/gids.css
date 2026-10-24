@@ -35,7 +35,7 @@ p{margin:0}
 .brand{font:800 20px/1 var(--display);letter-spacing:.32em;text-transform:uppercase;text-decoration:none}
 .nav-links{display:flex;align-items:center;gap:22px}
 .nav-links a:not(.btn){font-size:14px;font-weight:600;color:var(--muted);text-decoration:none}
-@media(max-width:640px){.nav-links a:not(.btn){display:none}}
+@media(max-width:640px){.nav-links a:not(.btn){display:none}.nav-portaal{display:none}}
 
 /* hero */
 .hero{padding:30px 0 44px}
@@ -95,6 +95,9 @@ p{margin:0}
 .band.licht{background:var(--sage);color:var(--ink)}
 .band.licht p{color:var(--muted)}
 .band.licht .wanneer{color:var(--olive-deep)}
+.band.paper{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.band.paper p{color:var(--muted)}
+.band .knoppen{display:flex;flex-wrap:wrap;gap:12px}
 
 /* rode vlaggen */
 .rood{background:#FBF3EC;border:1px solid #ecd9c8;border-radius:16px;padding:22px 22px 18px}

@@ -265,5 +265,11 @@
       "a": "Grotendeels wel. Fase 4 en 5 (installaties, afwerking en oplevering) gelden ook voor een afgebouwde villa. Voor de eerdere fases vraag je de documenten en foto's op, bijvoorbeeld de bouwvergunning, de tekeningen en foto's van de wapening."
     }
   ],
-  "disclaimer": "Deze checklist is algemene informatie en geen juridisch of technisch advies. Laat belangrijke documenten controleren door een onafhankelijke notaris en bouwkundige."
+  "disclaimer": "Deze checklist is algemene informatie en geen juridisch of technisch advies. Laat belangrijke documenten controleren door een onafhankelijke notaris en bouwkundige.",
+  "portaal": {
+    "kop": "Bekijk onze projecten op het investeerdersportaal",
+    "tekst": "Op ons investeerdersportaal vind je de lopende villaprojecten met prijzen, plattegronden en bouwvoortgang. Vraag er een brochure aan en meld je aan voor updates.",
+    "knop": "Naar het investeerdersportaal",
+    "url": "https://invest.utamabali.com/"
+  }
 }
