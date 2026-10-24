@@ -109,11 +109,11 @@ Reken bij een nieuwbouwvilla op ongeveer 12 maanden, van de start van de bouw to
 
 ### Wat is een PBG?
 
-PBG (Persetujuan Bangunan Gedung) is de bouwgoedkeuring in Indonesië. Het vervangt sinds 2021 de IMB en laat zien dat een gebouw op deze plek en in deze vorm gebouwd mag worden.
+PBG (Persetujuan Bangunan Gedung) is de bouwgoedkeuring in Indonesië. Het vervangt sinds 2021 de IMB (PP 16/2021) en bevestigt dat het ontwerp voldoet aan de technische eisen voor een veilig gebouw. Of je op een bepaalde plek mag bouwen, volgt uit de zonering van de grond. Dat is een apart document, dus vraag beide op.
 
 ### Wat is een SLF?
 
-SLF (Sertifikat Laik Fungsi) is het certificaat dat bevestigt dat een gebouw veilig en geschikt is voor gebruik. Vraag het bij de oplevering, samen met de as-built tekeningen.
+SLF (Sertifikat Laik Fungsi) is het certificaat dat bevestigt dat een gebouw veilig en geschikt is voor gebruik. De lokale overheid geeft het af nadat de bouw klaar is, op basis van een controle. Vraag het bij de oplevering, samen met de as-built tekeningen.
 
 ### Wat is een opleverlijst of snag list?
 
@@ -126,6 +126,12 @@ Bij een investering van tonnen is dat verstandig, vooral op 3 momenten: voordat 
 ### Is deze checklist ook bruikbaar voor een villa die al klaar is?
 
 Grotendeels wel. Fase 4 en 5 (installaties, afwerking en oplevering) gelden ook voor een afgebouwde villa. Voor de eerdere fases vraag je de documenten en foto's op, bijvoorbeeld de bouwvergunning, de tekeningen en foto's van de wapening.
+
+## Bronnen
+
+- [Paradigma baru mendirikan bangunan: van IMB naar PBG](https://www.hukumonline.com/berita/a/paradigma-baru-mendirikan-bangunan-lt60504d94ca81d), Hukumonline (Indonesisch)
+- [Memahami apa itu PBG, pengganti IMB](https://finance.detik.com/properti/d-5478822/memahami-apa-itu-pbg-pengganti-imb), Detik Finance (Indonesisch)
+- [Catat ini: 3 dokumen penting terkait bangunan gedung](https://www.hukumonline.com/klinik/a/catat-ini-3-dokumen-penting-terkait-bangunan-gedung-lt6058aae3aad6d), Hukumonline (Indonesisch)
 
 ---
 

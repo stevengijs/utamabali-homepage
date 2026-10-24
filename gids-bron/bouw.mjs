@@ -126,6 +126,7 @@ function schema(t) {
         datePublished: t.datumGepubliceerd, dateModified: t.datumBijgewerkt, image: [ogUrl(t)],
         author: { '@id': auteur['@id'] }, publisher: { '@id': ORG['@id'] }, isPartOf: { '@id': WEBSITE['@id'] },
         mainEntityOfPage: { '@id': url }, about: [{ '@type': 'Thing', name: 'Villa bouwen op Bali' }, { '@type': 'Thing', name: 'Investeren in vastgoed op Bali' }],
+        citation: (t.bronnen || []).map((b) => ({ '@type': 'CreativeWork', name: b.titel, url: b.url, publisher: { '@type': 'Organization', name: b.uitgever } })),
         associatedMedia: { '@type': 'MediaObject', name: t.pdf.titel, contentUrl: `${SITE}${pdfUrl(t)}`, encodingFormat: 'application/pdf' },
       },
       {
@@ -187,7 +188,7 @@ ${nav(dl, portaalUrl(t))}
         </ul>
       </div>
       <figure class="hero-foto" style="margin:0">
-        <img src="${fotoUrl(t)}" alt="${esc(t.foto.alt)}" width="${t.foto.breedte}" height="${t.foto.hoogte}" fetchpriority="high">
+        <picture>${t._webp ? `<source srcset="/${t.slug}/foto.webp" type="image/webp">` : ''}<img src="${fotoUrl(t)}" alt="${esc(t.foto.alt)}" width="${t.foto.breedte}" height="${t.foto.hoogte}" fetchpriority="high"></picture>
         <figcaption class="doc">
           <span class="doc-icoon" aria-hidden="true">PDF</span>
           <span><b>${esc(t.pdf.titel)}</b><span>${aantal} punten in ${t.fases.length} blokken · gratis</span></span>
@@ -265,6 +266,14 @@ ${t.faq.map((q) => `        <div class="faq-item"><h3>${esc(q.v)}</h3><p>${esc(q
     </section>
 
 
+${(t.bronnen || []).length ? `    <section class="bronnen" aria-labelledby="bronnen">
+      <h2 id="bronnen">Bronnen</h2>
+      <p>Achtergrond bij de Indonesische bouwdocumenten (PBG en SLF):</p>
+      <ul>
+${t.bronnen.map((b) => `        <li><a href="${b.url}" target="_blank" rel="noopener">${esc(b.titel)}</a> · ${esc(b.uitgever)} (${esc(b.taal)})</li>`).join('\n')}
+      </ul>
+    </section>
+` : ''}
     <p class="disclaimer">${esc(t.disclaimer)} Laatst bijgewerkt op ${datumNl(t.datumBijgewerkt)}.</p>
     ${afm}
   </div>
@@ -331,7 +340,7 @@ ${t.uitleg.tekst}
 ## Veelgestelde vragen
 
 ${t.faq.map((q) => `### ${q.v}\n\n${q.a}\n`).join('\n')}
----
+${(t.bronnen || []).length ? `## Bronnen\n\n${t.bronnen.map((b) => `- [${b.titel}](${b.url}), ${b.uitgever} (${b.taal})`).join('\n')}\n\n` : ''}---
 
 ${t.disclaimer}
 `;
@@ -459,9 +468,12 @@ for (const t of alle) {
   if (RESERVED.has(t.slug)) throw new Error(`slug "${t.slug}" is gereserveerd`);
   if (existsSync(map) && !(existsSync(index) && readFileSync(index, 'utf8').includes('content="UTAMA gids-bron"'))) throw new Error(`${t.slug}/ bestaat al en is geen gegenereerde gids, kies een andere slug`);
   mkdirSync(map, { recursive: true });
+  copyFileSync(join(BRON, 'media', t.foto.bestand), join(map, 'foto.jpg'));
+  spawnSync('cwebp', ['-q', '74', '-quiet', join(BRON, 'media', t.foto.bestand), '-o', join(map, 'foto.webp')], { stdio: 'ignore' });
+  t._webp = existsSync(join(map, 'foto.webp'));
+  if (!t._webp) console.warn('  LET OP: cwebp ontbreekt (brew install webp), de foto blijft JPEG');
   writeFileSync(index, renderPagina(t));
   writeFileSync(join(map, 'index.md'), renderMd(t));
-  copyFileSync(join(BRON, 'media', t.foto.bestand), join(map, 'foto.jpg'));
   if (MET_PDF) maakBestanden(t);
   const lang = join(map, t.pdf.bestand);
   if (!existsSync(lang)) console.warn(`  LET OP: ${t.pdf.bestand} bestaat nog niet, draai met --pdf`);

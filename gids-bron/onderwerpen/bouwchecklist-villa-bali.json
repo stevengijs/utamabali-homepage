@@ -5,7 +5,7 @@
   "label": "Bouwchecklist",
   "h1": "Construction checklist: zo controleer je de bouw van je villa op Bali",
   "seoTitel": "Bouwchecklist villa Bali: 31 punten, gratis PDF | UTAMA",
-  "metaBeschrijving": "Gratis construction checklist voor een villa op Bali: 31 punten per bouwfase, van vergunning en fundering tot oplevering. Download de PDF en controleer de bouw zelf, ook vanuit Nederland.",
+  "metaBeschrijving": "Gratis construction checklist voor een villa op Bali: 31 punten per bouwfase, van vergunning tot oplevering. Download de PDF en controleer de bouw.",
   "kaartTitel": "Gratis bouwchecklist voor je villa op Bali",
   "intro": "Je koopt een villa op Bali die nog gebouwd moet worden. Dan wil je weten wat je op welk moment moet controleren. Deze checklist loopt de bouw fase voor fase langs, met de documenten die je opvraagt en de controles die je laat doen.",
   "korteAntwoord": [
@@ -23,8 +23,8 @@
   "foto": {
     "bestand": "bouwplaats-wapening.jpg",
     "alt": "Steven Gijsman en een collega controleren de wapening van een vloer op een bouwplaats op Bali, vlak voordat het beton wordt gestort",
-    "breedte": 750,
-    "hoogte": 1000
+    "breedte": 600,
+    "hoogte": 800
   },
   "fases": [
     {
@@ -246,11 +246,11 @@
     },
     {
       "v": "Wat is een PBG?",
-      "a": "PBG (Persetujuan Bangunan Gedung) is de bouwgoedkeuring in Indonesië. Het vervangt sinds 2021 de IMB en laat zien dat een gebouw op deze plek en in deze vorm gebouwd mag worden."
+      "a": "PBG (Persetujuan Bangunan Gedung) is de bouwgoedkeuring in Indonesië. Het vervangt sinds 2021 de IMB (PP 16/2021) en bevestigt dat het ontwerp voldoet aan de technische eisen voor een veilig gebouw. Of je op een bepaalde plek mag bouwen, volgt uit de zonering van de grond. Dat is een apart document, dus vraag beide op."
     },
     {
       "v": "Wat is een SLF?",
-      "a": "SLF (Sertifikat Laik Fungsi) is het certificaat dat bevestigt dat een gebouw veilig en geschikt is voor gebruik. Vraag het bij de oplevering, samen met de as-built tekeningen."
+      "a": "SLF (Sertifikat Laik Fungsi) is het certificaat dat bevestigt dat een gebouw veilig en geschikt is voor gebruik. De lokale overheid geeft het af nadat de bouw klaar is, op basis van een controle. Vraag het bij de oplevering, samen met de as-built tekeningen."
     },
     {
       "v": "Wat is een opleverlijst of snag list?",
@@ -271,5 +271,25 @@
     "tekst": "Op ons investeerdersportaal vind je de lopende villaprojecten met prijzen, plattegronden en bouwvoortgang. Vraag er een brochure aan en meld je aan voor updates.",
     "knop": "Naar het investeerdersportaal",
     "url": "https://invest.utamabali.com/"
-  }
+  },
+  "bronnen": [
+    {
+      "titel": "Paradigma baru mendirikan bangunan: van IMB naar PBG",
+      "uitgever": "Hukumonline",
+      "url": "https://www.hukumonline.com/berita/a/paradigma-baru-mendirikan-bangunan-lt60504d94ca81d",
+      "taal": "Indonesisch"
+    },
+    {
+      "titel": "Memahami apa itu PBG, pengganti IMB",
+      "uitgever": "Detik Finance",
+      "url": "https://finance.detik.com/properti/d-5478822/memahami-apa-itu-pbg-pengganti-imb",
+      "taal": "Indonesisch"
+    },
+    {
+      "titel": "Catat ini: 3 dokumen penting terkait bangunan gedung",
+      "uitgever": "Hukumonline",
+      "url": "https://www.hukumonline.com/klinik/a/catat-ini-3-dokumen-penting-terkait-bangunan-gedung-lt6058aae3aad6d",
+      "taal": "Indonesisch"
+    }
+  ]
 }
