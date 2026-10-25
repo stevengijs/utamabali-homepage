@@ -8,13 +8,13 @@ PDF: https://www.utamabali.com/verhuur-per-woningtype-bali/UTAMA-prijzenoverzich
 
 ## Kort antwoord
 
-De nachtprijs op Bali volgt de plek, het merk en het design meer dan het aantal vierkante meters. Een kamer van 36 m² in een designhotel in Pererenan haalt rond de €151 tot €207 per nacht, een villa met 3 slaapkamers via een bureau in dezelfde streek vanaf $375.
+De nachtprijs op Bali volgt de plek, het merk en het design meer dan het aantal vierkante meters. Een kamer van 36 m² in een designhotel in Pererenan haalt rond de €225 per nacht, een villa met 3 slaapkamers via een bureau in dezelfde streek vanaf $375.
 
 De beste woningen zitten 81% van het jaar vol, en kleine units in de juiste buurt halen 85 tot 90%. Plek, concept en beheer bepalen het verschil.
 
 Reken terug: voor 12% netto rendement bij 80% bezetting heeft een studio van €135.000 ongeveer €101 per nacht nodig en een villa van €225.000 ongeveer €168.
 
-## Het overzicht: 36 punten in 5 delen
+## Het overzicht: 33 punten in 5 delen
 
 ### Deel 1: De markt in 2026
 
@@ -32,39 +32,36 @@ De vraag achter de nachtprijzen: bezoekers, herkomst en wat ze komen doen.
 
 - [ ] **Buitenlandse bezoekers.** 6,95 miljoen in 2025, 9,7% meer dan in 2024. In februari 2026 waren het er 492.289.
 - [ ] **Herkomst 2025.** Australië 23,4%, India 8,2%, China 7,7%, Zuid-Korea 5,0%, Verenigd Koninkrijk 4,6%, Frankrijk 4,0%, Verenigde Staten 4,0%.
-- [ ] **Binnenlandse bezoekers.** 10,5 miljoen in 2024, meer dan de 6,3 miljoen buitenlanders. In juli 2025 lagen de binnenlandse reizen 32% hoger dan een jaar eerder.
+- [ ] **Binnenlandse bezoekers.** 10,5 miljoen in 2024, meer dan de 6,3 miljoen buitenlanders. In juli 2025 lagen de binnenlandse reizen 32% hoger dan een jaar eerder. Het plan van de provincie loopt tot 2030: voor 2026 is het doel 6,6 miljoen buitenlandse bezoekers, met de nadruk op langer verblijf en hogere bestedingen.
 - [ ] **Alleen of met z'n tweeën.** 2 van de 3 gasten reist alleen of als stel.
 - [ ] **Waar ze slapen.** Van alle geboekte nachten gaat 55% naar villa's, 40% naar guesthouses en kleine units en 5% naar appartementen.
 - [ ] **Wellness.** 58% van de reizigers met een hoog inkomen plant in 2026 een wellnessreis. Woningen met wellness verkopen internationaal 10 tot 25% hoger.
 
 ### Deel 3: Voorbeelden van nachtprijzen per type
 
-Eén tabel, alles in euro, van klein naar groot. Per slaapkamer, maat en prijs per nacht, met een link naar de plek.
+Eén tabel, alles in euro, van klein naar groot. Per locatie het duurste voorbeeld, met type, slaapkamers, maat en een link naar de plek.
 
-| Voorbeeld | Slaap-kamers | m² | Per nacht in euro | Per m² per nacht | Plek |
+| Locatie | Type | Kamers | m² | Per nacht in euro | Plek |
 |---|---|---|---|---|---|
-| **1 slaapkamer: studio's en suites** | | | | | |
-| Further Hotel, Urban King Gallery | 1 | 36 | €151 tot €207 (kerstweek) | €4,20 tot €5,70 | [Kaart](https://www.google.com/maps/search/?api=1&query=Further+Hotel+Pererenan+Bali) |
-| Further Hotel, Urban King Suite | 1 | 63 | €127 tot €158 | €2,00 tot €2,50 | [Kaart](https://www.google.com/maps/search/?api=1&query=Further+Hotel+Pererenan+Bali) |
-| Maja Canggu, Maja Suite (eigen keuken, butler) | 1 | onbekend | vanaf €246 | onbekend | [Site](https://www.thisismaja.com/hotel/suites/maja) |
-| Maja Canggu, Maja Villa | 1 | onbekend | vanaf €239 | onbekend | [Site](https://www.thisismaja.com/hotel/suites/maja-villa) |
-| Maja Canggu, Pool View | onbekend | onbekend | vanaf €197 | onbekend | [Site](https://www.thisismaja.com/hotel/suites/pool-view) |
-| The Slow, Pool Suite met plunge pool | 1 | 80 | €110 tot €123 | €1,40 tot €1,50 | [Kaart](https://www.google.com/maps/search/?api=1&query=The+Slow+Canggu+Bali) |
-| COMO Uma Canggu | onbekend | onbekend | circa €170 | onbekend | [Kaart](https://www.google.com/maps/search/?api=1&query=COMO+Uma+Canggu+Bali) |
-| Chesa Canggu | onbekend | onbekend | circa €78 | onbekend | [Kaart](https://www.google.com/maps/search/?api=1&query=Chesa+Canggu+Bali) |
+| **1 slaapkamer: hotelkamers en suites** | | | | | |
+| Chesa Canggu | Hotelkamer | 1 | circa 25 | circa €78 | [Kaart](https://www.google.com/maps/search/?api=1&query=Chesa+Canggu+Bali) |
+| The Slow | Suite met plunge pool | 1 | 80 | €123 | [Kaart](https://www.google.com/maps/search/?api=1&query=The+Slow+Canggu+Bali) |
+| COMO Uma Canggu | Resortkamer | 1 | circa 40 | circa €170 | [Kaart](https://www.google.com/maps/search/?api=1&query=COMO+Uma+Canggu+Bali) |
+| Further Hotel | Designsuite | 1 | 36 | €225 | [Kaart](https://www.google.com/maps/search/?api=1&query=Further+Hotel+Pererenan+Bali) |
+| Maja Canggu | Suite met keuken en butler | 1 | circa 60 | €246 | [Site](https://www.thisismaja.com/hotel/suites/maja) |
 | **2 slaapkamers** | | | | | |
-| Villa in Canggu, 4 gasten | 2 | onbekend | €139 tot €226 plus belasting | onbekend | [Listing](https://villagetaways.com/bali/villa-rentals-canggu-3758.html) |
+| Canggu | Villa, 4 gasten | 2 | circa 120 | €226 | [Listing](https://villagetaways.com/bali/villa-rentals-canggu-3758.html) |
 | **3 slaapkamers** | | | | | |
-| Villa in Pererenan, 6 gasten | 3 | onbekend | €297 tot €471 plus 15,5% belasting | onbekend | [Listing](https://www.villagetaways.com/bali/villa-rentals-pererenan-3934.html) |
-| Villa in Canggu, 6 gasten | 3 | onbekend | €455 tot €594 plus belasting | onbekend | [Listing](https://www.villagetaways.com/bali/villa-rentals-canggu-3343.html) |
+| Pererenan | Villa, 6 gasten | 3 | circa 200 | €471 | [Listing](https://www.villagetaways.com/bali/villa-rentals-pererenan-3934.html) |
+| Canggu | Villa, 6 gasten | 3 | circa 250 | €594 | [Listing](https://www.villagetaways.com/bali/villa-rentals-canggu-3343.html) |
 | **5 slaapkamers** | | | | | |
-| Villa zonder personeel, Canggu en Seminyak | 5 | onbekend | €503 tot €723 plus belasting | onbekend | per bureau |
-| Villa met butler, chef en chauffeur, Uluwatu | 5 | onbekend | circa €2.200 tot €3.800 plus belasting | onbekend | per bureau |
-| Villa met 24 medewerkers, Seminyak | 5 | onbekend | vanaf circa €2.400 | onbekend | reisartikel |
+| Canggu en Seminyak | Villa zonder personeel | 5 | circa 450 | €723 | per bureau |
+| Seminyak | Villa met 24 medewerkers | 5 | circa 600 | circa €2.400 | reisartikel |
+| Uluwatu | Villa met butler, chef en chauffeur | 5 | circa 700 | circa €3.800 | per bureau |
 
-Momentopnamen van 25 oktober 2026; de prijs van Further Hotel is voor 21 tot 23 december. Dollarprijzen omgerekend tegen $1 = €0,79, rupiah tegen €1 = IDR 20.284. Zonder belasting tenzij vermeld. Per m² kan alleen waar de maat bekend is.
+Momentopnamen van 25 oktober 2026; per datum en seizoen verschillen de prijzen. Per locatie staat het duurste voorbeeld. Dollarprijzen omgerekend tegen $1 = €0,79, rupiah tegen €1 = IDR 20.284. Belasting en servicekosten verschillen per aanbieder. Maten met circa zijn een indicatie, de aanbieder noemt ze niet.
 
-- [ ] **Wat dit laat zien.** Per vierkante meter haalt de kleinste kamer het meest: €4,20 tot €5,70 per nacht, tegen €1,40 tot €2,50 bij de grotere suites. De nachtprijs volgt de plek, het merk en het design meer dan het aantal vierkante meters.
+- [ ] **Wat dit laat zien.** Een kamer van 36 m² bij Further Hotel haalt €225 per nacht, een suite van 80 m² bij The Slow €123. De nachtprijs volgt de plek, het merk en het design meer dan het aantal vierkante meters.
 
 ### Deel 4: De rekensom: welke nachtprijs heb je nodig
 
@@ -94,7 +91,7 @@ UTAMA ontwikkelt boutique projecten op Bali voor investeerders. Wij tekenen op b
 
 ### Is een grote villa altijd duurder per nacht dan een studio?
 
-Nee. In Pererenan haalt een kamer van 36 m² in een designhotel rond €151 tot €207 per nacht, terwijl een villa met 3 slaapkamers via een bureau vanaf $375 kost. De nachtprijs volgt de plek, het merk en het design meer dan de vierkante meters.
+Nee. In Pererenan haalt een kamer van 36 m² in een designhotel rond €225 per nacht, terwijl een villa met 3 slaapkamers via een bureau vanaf $375 kost. De nachtprijs volgt de plek, het merk en het design meer dan de vierkante meters.
 
 ### Wat is een goede bezetting op Bali?
 
@@ -106,7 +103,7 @@ Bij 80% bezetting en 55% netto: een studio van €135.000 heeft circa €101 per
 
 ### Waarom zijn dit momentopnamen?
 
-Nachtprijzen veranderen per datum, seizoen en vraag. De voorbeelden komen van 25 oktober 2026, de prijs van Further Hotel is voor kerstweek, het hoogseizoen.
+Nachtprijzen veranderen per datum, seizoen en vraag. De voorbeelden komen van 25 oktober 2026, de prijs per datum en seizoen verschilt.
 
 ### Is een hotel een goed voorbeeld voor een woning?
 
@@ -117,6 +114,7 @@ Het laat zien wat gasten bereid zijn te betalen voor een plek met merk en design
 - [Bali Airbnb market data 2026 (Canggu, Uluwatu, Ubud, Seminyak)](https://balivillarealty.com/blog/best-cities-for-airbnb-in-bali/), Bali Villa Realty met AirROI (Engels)
 - [Bali short-term rental revenue and daily rates](https://www.airdna.co/vacation-rental-data/app/id/default/bali/revenue), AirDNA (Engels)
 - [Bali's foreign arrivals Jan to Dec 2025](https://bali.bps.go.id/en/news/2026/02/02/347/bali-s-foreign-arrivals-jan-dec-2025-rise--with-australia-remaining-the-largest-contributor-overall-.html), BPS Bali (Engels)
+- [Bali targets 6.6M tourists in 2026](https://rri.co.id/voice-of-indonesia/archipelago/2298501/bali-targets-66m-tourists-in-2026-shifts-focus-to-asia-pacific-market), Dinas Pariwisata Bali via RRI (Engels)
 - [Villa, apartment or guest house? Bali rental demand in 2026](https://bali-home-immo.com/blog/villa-apartment-or-guest-house-bali-rental-demand-in-2026), Bali Home Immo met REID (Engels)
 - [Maja Canggu, suites](https://www.thisismaja.com/hotel/suites), Maja Canggu (Engels)
 - [Further Hotel](https://www.timeout.com/bali/hotels/further-hotel), Time Out Bali (Engels)
