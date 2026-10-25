@@ -115,10 +115,28 @@ const woorden = (t) => ({
   ...(t.woorden || {}),
 });
 const vul = (s, t, n) => s.replace(/\{n\}/g, n).replace(/\{p\}/g, t.pdf.paginas);
-function telItems(t) { return t.fases.reduce((n, f) => n + f.items.length + (f.tabel ? f.tabel.groepen.reduce((m, g) => m + g.rijen.length, 0) : 0), 0); }
+function telItems(t) { return t.fases.reduce((n, f) => n + f.items.length + (f.tabel ? f.tabel.groepen.reduce((m, g) => m + g.rijen.length, 0) : 0) + (f.kaarten ? f.kaarten.length : 0), 0); }
 /* Vergelijkingstabel (optioneel per fase): kolommen, groepen met rijen; een cel is tekst of { t, url }. */
 const cel = (c) => (c && typeof c === 'object') ? (c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.t)}</a>` : esc(c.t)) : esc(c ?? '');
 const celTxt = (c) => (c && typeof c === 'object') ? (c.url ? `[${c.t}](${c.url})` : c.t) : String(c ?? '');
+
+/* Voorbeeldkaarten (optioneel per fase): foto, naam, regel, prijs, tekst en een link. */
+const kaartUrl = (t, k) => `/${t.slug}/${k.bestand}`;
+const renderKaarten = (t, ks) => `<div class="kaarten">${ks.map((k) => `
+          <figure class="kaart">
+            <img src="${kaartUrl(t, k)}" alt="${esc(k.alt)}" width="960" height="720" loading="lazy">
+            <figcaption>
+              <h3>${esc(k.naam)}</h3>
+              <p class="kaart-regel">${esc(k.regel)}</p>
+              <p class="kaart-prijs">${esc(k.prijs)}</p>
+              <p>${esc(k.tekst)}</p>
+              <a class="tekst" href="${esc(k.link.url)}" target="_blank" rel="noopener">${esc(k.link.tekst)} &rarr;</a>
+              <small>Foto: ${esc(k.bron)}</small>
+            </figcaption>
+          </figure>`).join('')}
+        </div>`;
+const kaartenMd = (ks) => ks.map((k) => `- **${k.naam}.** ${k.regel}. ${k.prijs}. ${k.tekst} [${k.link.tekst}](${k.link.url})`).join('\n');
+const kaartenPrint = (ks) => ks.map((k) => `<div class="pt"><span class="v"></span><div><b>${esc(k.naam)}: ${esc(k.prijs)}</b><span class="t">${esc(k.regel)}. ${esc(k.tekst)}</span></div></div>`).join('\n');
 function renderTabel(tb) {
   const n = tb.kolommen.length;
   const kop = tb.kolommen.map((k) => `<th scope="col">${esc(k)}</th>`).join('');
@@ -180,7 +198,7 @@ function renderPagina(t) {
     const nr = f.doorlopend ? '&#8635;' : i + 1;
     return `<article class="fase" id="${f.id}">
         <div class="fase-kop"><span class="fase-nr" aria-hidden="true">${nr}</span><h3>${esc(f.titel)}</h3></div>
-        <p class="fase-intro">${esc(f.intro)}</p>${f.tabel ? '\n        ' + renderTabel(f.tabel) : ''}${f.items.length ? `
+        <p class="fase-intro">${esc(f.intro)}</p>${f.tabel ? '\n        ' + renderTabel(f.tabel) : ''}${f.kaarten ? '\n        ' + renderKaarten(t, f.kaarten) : ''}${f.items.length ? `
         <ul class="items">
 ${f.items.map((it) => `          <li><span class="vink" aria-hidden="true"></span><div><b>${esc(it.kop)}</b><span>${esc(it.tekst)}</span></div></li>`).join('\n')}
         </ul>` : ''}
@@ -391,7 +409,7 @@ ${t.fases.map((f, i) => `### ${f.doorlopend ? 'Doorlopend' : `${w.fase} ${i + 1}
 
 ${f.intro}
 
-${f.tabel ? tabelMd(f.tabel) + '\n\n' : ''}${f.items.map((it) => `- [ ] **${it.kop}.** ${it.tekst}`).join('\n')}
+${f.tabel ? tabelMd(f.tabel) + '\n\n' : ''}${f.kaarten ? kaartenMd(f.kaarten) + '\n' : ''}${f.items.map((it) => `- [ ] **${it.kop}.** ${it.tekst}`).join('\n')}
 `).join('\n')}
 ${t.roodVlaggen ? `## ${t.roodVlaggen.titel}
 
@@ -453,7 +471,7 @@ function renderPrint(t) {
 <div class="kort">${t.korteAntwoord.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
 ${t.fases.map((f, i) => `<section class="fb"><h2>${f.doorlopend ? 'Doorlopend' : `${w.fase} ${i + 1}`}: ${esc(f.titel)}</h2>
 <p class="fi">${esc(f.intro)}</p>
-${f.tabel ? tabelPrint(f.tabel) : ''}
+${f.tabel ? tabelPrint(f.tabel) : ''}${f.kaarten ? kaartenPrint(f.kaarten) : ''}
 ${f.items.map((it) => `<div class="pt"><span class="v"></span><div><b>${esc(it.kop)}</b><span class="t">${esc(it.tekst)}</span></div></div>`).join('\n')}</section>`).join('\n')}
 ${t.roodVlaggen ? `<div class="rood"><h3>${esc(t.roodVlaggen.titel)}</h3><ul>${t.roodVlaggen.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>` : ''}
 <div class="voet"><b>${aantal} ${esc(w.eenheid)}.</b> Online met uitleg, vragen en antwoorden: <b>utamabali.com/${t.slug}</b><br>
@@ -545,6 +563,7 @@ for (const t of alle) {
   if (existsSync(map) && !(existsSync(index) && readFileSync(index, 'utf8').includes('content="UTAMA gids-bron"'))) throw new Error(`${t.slug}/ bestaat al en is geen gegenereerde gids, kies een andere slug`);
   mkdirSync(map, { recursive: true });
   copyFileSync(join(BRON, 'media', t.foto.bestand), join(map, 'foto.jpg'));
+  for (const f of t.fases) for (const k of (f.kaarten || [])) copyFileSync(join(BRON, 'media', k.bestand), join(map, k.bestand));
   spawnSync('cwebp', ['-q', '74', '-quiet', join(BRON, 'media', t.foto.bestand), '-o', join(map, 'foto.webp')], { stdio: 'ignore' });
   t._webp = existsSync(join(map, 'foto.webp'));
   if (!t._webp) console.warn('  LET OP: cwebp ontbreekt (brew install webp), de foto blijft JPEG');

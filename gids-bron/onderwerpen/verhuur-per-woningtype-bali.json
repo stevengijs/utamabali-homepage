@@ -105,159 +105,41 @@
   {
    "id": "voorbeelden",
    "titel": "Voorbeelden van nachtprijzen per type",
-   "intro": "Eén tabel, alles in euro, van klein naar groot. Per locatie het duurste voorbeeld, met type, slaapkamers, maat en een link naar de plek.",
+   "intro": "Twee voorbeelden uit Pererenan en Canggu, met de nachtprijs in euro en in rupiah.",
    "items": [
     {
      "kop": "Wat dit laat zien",
-     "tekst": "Een kamer van 36 m² bij Further Hotel haalt €225 per nacht, een suite van 80 m² bij The Slow €123. De nachtprijs volgt de plek, het merk en het design meer dan het aantal vierkante meters."
+     "tekst": "Een kamer van 36 m² bij Further Hotel haalt zo'n Rp 4,5 miljoen per nacht. De nachtprijs volgt de plek, het merk en het design meer dan het aantal vierkante meters."
     }
    ],
-   "tabel": {
-    "label": "Nachtprijzen per locatie: type, slaapkamers en maat",
-    "kolommen": [
-     "Locatie",
-     "Type",
-     "Kamers",
-     "m²",
-     "Per nacht in euro",
-     "Plek"
-    ],
-    "groepen": [
-     {
-      "titel": "1 slaapkamer: hotelkamers en suites",
-      "rijen": [
-       [
-        "Chesa Canggu",
-        "Hotelkamer",
-        "1",
-        "circa 25",
-        "circa €78",
-        {
-         "t": "Kaart",
-         "url": "https://www.google.com/maps/search/?api=1&query=Chesa+Canggu+Bali"
-        }
-       ],
-       [
-        "The Slow",
-        "Suite met plunge pool",
-        "1",
-        "80",
-        "€123",
-        {
-         "t": "Kaart",
-         "url": "https://www.google.com/maps/search/?api=1&query=The+Slow+Canggu+Bali"
-        }
-       ],
-       [
-        "COMO Uma Canggu",
-        "Resortkamer",
-        "1",
-        "circa 40",
-        "circa €170",
-        {
-         "t": "Kaart",
-         "url": "https://www.google.com/maps/search/?api=1&query=COMO+Uma+Canggu+Bali"
-        }
-       ],
-       [
-        "Further Hotel",
-        "Designsuite",
-        "1",
-        "36",
-        "€225",
-        {
-         "t": "Kaart",
-         "url": "https://www.google.com/maps/search/?api=1&query=Further+Hotel+Pererenan+Bali"
-        }
-       ],
-       [
-        "Maja Canggu",
-        "Suite met keuken en butler",
-        "1",
-        "circa 60",
-        "€246",
-        {
-         "t": "Site",
-         "url": "https://www.thisismaja.com/hotel/suites/maja"
-        }
-       ]
-      ]
-     },
-     {
-      "titel": "2 slaapkamers",
-      "rijen": [
-       [
-        "Canggu",
-        "Villa, 4 gasten",
-        "2",
-        "circa 120",
-        "€226",
-        {
-         "t": "Listing",
-         "url": "https://villagetaways.com/bali/villa-rentals-canggu-3758.html"
-        }
-       ]
-      ]
-     },
-     {
-      "titel": "3 slaapkamers",
-      "rijen": [
-       [
-        "Pererenan",
-        "Villa, 6 gasten",
-        "3",
-        "circa 200",
-        "€471",
-        {
-         "t": "Listing",
-         "url": "https://www.villagetaways.com/bali/villa-rentals-pererenan-3934.html"
-        }
-       ],
-       [
-        "Canggu",
-        "Villa, 6 gasten",
-        "3",
-        "circa 250",
-        "€594",
-        {
-         "t": "Listing",
-         "url": "https://www.villagetaways.com/bali/villa-rentals-canggu-3343.html"
-        }
-       ]
-      ]
-     },
-     {
-      "titel": "5 slaapkamers",
-      "rijen": [
-       [
-        "Canggu en Seminyak",
-        "Villa zonder personeel",
-        "5",
-        "circa 450",
-        "€723",
-        "per bureau"
-       ],
-       [
-        "Seminyak",
-        "Villa met 24 medewerkers",
-        "5",
-        "circa 600",
-        "circa €2.400",
-        "reisartikel"
-       ],
-       [
-        "Uluwatu",
-        "Villa met butler, chef en chauffeur",
-        "5",
-        "circa 700",
-        "circa €3.800",
-        "per bureau"
-       ]
-      ]
+   "kaarten": [
+    {
+     "naam": "Further Hotel, Pererenan",
+     "bestand": "kaart-further-hotel.jpg",
+     "alt": "Gevel van Further Hotel in Pererenan met een patroon van gebakken steen",
+     "bron": "Further Hotel",
+     "regel": "Kamer van 36 m² met 1 slaapkamer",
+     "prijs": "€225 per nacht, zo'n Rp 4,5 miljoen",
+     "tekst": "Voor een kleine kamer van 36 m². De gast betaalt voor het design, het merk en de plek, niet voor de vierkante meters.",
+     "link": {
+      "tekst": "Bekijk Further Hotel",
+      "url": "https://www.furtherhotel.com/"
      }
-    ],
-    "voet": "Momentopnamen van 25 oktober 2026; per datum en seizoen verschillen de prijzen. Per locatie staat het duurste voorbeeld. Dollarprijzen omgerekend tegen $1 = €0,79, rupiah tegen €1 = IDR 20.284. Belasting en servicekosten verschillen per aanbieder. Maten met circa zijn een indicatie, de aanbieder noemt ze niet."
-   }
+    },
+    {
+     "naam": "Maja Canggu",
+     "bestand": "kaart-maja-canggu.jpg",
+     "alt": "Badkamer met vrijstaand bad in een suite van Maja Canggu",
+     "bron": "Maja Canggu",
+     "regel": "Suite met eigen keuken en butler, 1 slaapkamer, circa 60 m²",
+     "prijs": "Vanaf €246 per nacht, zo'n Rp 5 miljoen",
+     "tekst": "Een suite met service, een eigen keuken en een eigen verhaal. De gast betaalt voor de beleving.",
+     "link": {
+      "tekst": "Bekijk de suite",
+      "url": "https://www.thisismaja.com/hotel/suites/maja"
+     }
+    }
+   ]
   },
   {
    "id": "rekensom",

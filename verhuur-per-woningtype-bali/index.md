@@ -14,7 +14,7 @@ De beste woningen zitten 81% van het jaar vol, en kleine units in de juiste buur
 
 Reken terug: voor 12% netto rendement bij 80% bezetting heeft een studio van €135.000 ongeveer €101 per nacht nodig en een villa van €225.000 ongeveer €168.
 
-## Het overzicht: 33 punten in 5 delen
+## Het overzicht: 24 punten in 5 delen
 
 ### Deel 1: De markt in 2026
 
@@ -39,29 +39,11 @@ De vraag achter de nachtprijzen: bezoekers, herkomst en wat ze komen doen.
 
 ### Deel 3: Voorbeelden van nachtprijzen per type
 
-Eén tabel, alles in euro, van klein naar groot. Per locatie het duurste voorbeeld, met type, slaapkamers, maat en een link naar de plek.
+Twee voorbeelden uit Pererenan en Canggu, met de nachtprijs in euro en in rupiah.
 
-| Locatie | Type | Kamers | m² | Per nacht in euro | Plek |
-|---|---|---|---|---|---|
-| **1 slaapkamer: hotelkamers en suites** | | | | | |
-| Chesa Canggu | Hotelkamer | 1 | circa 25 | circa €78 | [Kaart](https://www.google.com/maps/search/?api=1&query=Chesa+Canggu+Bali) |
-| The Slow | Suite met plunge pool | 1 | 80 | €123 | [Kaart](https://www.google.com/maps/search/?api=1&query=The+Slow+Canggu+Bali) |
-| COMO Uma Canggu | Resortkamer | 1 | circa 40 | circa €170 | [Kaart](https://www.google.com/maps/search/?api=1&query=COMO+Uma+Canggu+Bali) |
-| Further Hotel | Designsuite | 1 | 36 | €225 | [Kaart](https://www.google.com/maps/search/?api=1&query=Further+Hotel+Pererenan+Bali) |
-| Maja Canggu | Suite met keuken en butler | 1 | circa 60 | €246 | [Site](https://www.thisismaja.com/hotel/suites/maja) |
-| **2 slaapkamers** | | | | | |
-| Canggu | Villa, 4 gasten | 2 | circa 120 | €226 | [Listing](https://villagetaways.com/bali/villa-rentals-canggu-3758.html) |
-| **3 slaapkamers** | | | | | |
-| Pererenan | Villa, 6 gasten | 3 | circa 200 | €471 | [Listing](https://www.villagetaways.com/bali/villa-rentals-pererenan-3934.html) |
-| Canggu | Villa, 6 gasten | 3 | circa 250 | €594 | [Listing](https://www.villagetaways.com/bali/villa-rentals-canggu-3343.html) |
-| **5 slaapkamers** | | | | | |
-| Canggu en Seminyak | Villa zonder personeel | 5 | circa 450 | €723 | per bureau |
-| Seminyak | Villa met 24 medewerkers | 5 | circa 600 | circa €2.400 | reisartikel |
-| Uluwatu | Villa met butler, chef en chauffeur | 5 | circa 700 | circa €3.800 | per bureau |
-
-Momentopnamen van 25 oktober 2026; per datum en seizoen verschillen de prijzen. Per locatie staat het duurste voorbeeld. Dollarprijzen omgerekend tegen $1 = €0,79, rupiah tegen €1 = IDR 20.284. Belasting en servicekosten verschillen per aanbieder. Maten met circa zijn een indicatie, de aanbieder noemt ze niet.
-
-- [ ] **Wat dit laat zien.** Een kamer van 36 m² bij Further Hotel haalt €225 per nacht, een suite van 80 m² bij The Slow €123. De nachtprijs volgt de plek, het merk en het design meer dan het aantal vierkante meters.
+- **Further Hotel, Pererenan.** Kamer van 36 m² met 1 slaapkamer. €225 per nacht, zo'n Rp 4,5 miljoen. Voor een kleine kamer van 36 m². De gast betaalt voor het design, het merk en de plek, niet voor de vierkante meters. [Bekijk Further Hotel](https://www.furtherhotel.com/)
+- **Maja Canggu.** Suite met eigen keuken en butler, 1 slaapkamer, circa 60 m². Vanaf €246 per nacht, zo'n Rp 5 miljoen. Een suite met service, een eigen keuken en een eigen verhaal. De gast betaalt voor de beleving. [Bekijk de suite](https://www.thisismaja.com/hotel/suites/maja)
+- [ ] **Wat dit laat zien.** Een kamer van 36 m² bij Further Hotel haalt zo'n Rp 4,5 miljoen per nacht. De nachtprijs volgt de plek, het merk en het design meer dan het aantal vierkante meters.
 
 ### Deel 4: De rekensom: welke nachtprijs heb je nodig
 
