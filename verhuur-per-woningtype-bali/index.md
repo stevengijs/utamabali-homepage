@@ -37,7 +37,7 @@ De vraag achter de nachtprijzen: bezoekers, herkomst en wat ze komen doen.
 - [ ] **Waar ze slapen.** Van alle geboekte nachten gaat 55% naar villa's, 40% naar guesthouses en kleine units en 5% naar appartementen.
 - [ ] **Wellness.** 58% van de reizigers met een hoog inkomen plant in 2026 een wellnessreis. Woningen met wellness verkopen internationaal 10 tot 25% hoger.
 
-### Deel 3: Voorbeelden van nachtprijzen per type
+### Deel 3: Voorbeelden van nachtprijzen per kleine 1 slaapkamer rentals
 
 Twee voorbeelden uit Pererenan en Canggu, met de nachtprijs in euro en in rupiah.
 
