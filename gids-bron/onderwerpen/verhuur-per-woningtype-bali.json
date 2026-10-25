@@ -5,12 +5,12 @@
  "label": "Prijzenoverzicht",
  "h1": "Wat verdient een woning op Bali per nacht? Studio, townhouse en villa vergeleken",
  "seoTitel": "Verhuur op Bali per woningtype: nachtprijzen en uitschieters | UTAMA",
- "metaBeschrijving": "Wat verdient een studio, townhouse of villa op Bali per nacht? Marktcijfers 2026, voorbeelden met slaapkamers, maat en prijs, en de nachtprijs die je nodig hebt voor 12% rendement. Gratis overzicht.",
+ "metaBeschrijving": "Wat verdient een studio, townhouse of villa op Bali per nacht? Voorbeelden met slaapkamers, maat en prijs, wat de beste woningen halen en de nachtprijs die je nodig hebt voor 12% rendement. Gratis overzicht.",
  "kaartTitel": "Gratis overzicht: nachtprijzen per woningtype op Bali",
  "intro": "Je overweegt een woning op Bali voor verhuur en vraagt je af wat een studio, een townhouse en een villa per nacht opleveren. Dit overzicht zet de marktcijfers van 2026, echte voorbeelden met slaapkamers, maat en prijs, en de rekensom voor 12% rendement naast elkaar.",
  "korteAntwoord": [
   "De nachtprijs op Bali volgt de plek, het merk en het design meer dan het aantal vierkante meters. Een kamer van 36 m² in een designhotel in Pererenan haalt rond de €151 tot €207 per nacht, een villa met 3 slaapkamers via een bureau in dezelfde streek vanaf $375.",
-  "Over het hele eiland ligt de gemiddelde nachtprijs rond $144 (AirDNA) en de bezetting tussen 38% en 43% in de grote verhuurgebieden (AirROI). De beste 10% zit op 81%.",
+  "De beste woningen zitten 81% van het jaar vol, en kleine units in de juiste buurt halen 85 tot 90%. Plek, concept en beheer bepalen het verschil.",
   "Reken terug: voor 12% netto rendement bij 80% bezetting heeft een studio van €135.000 ongeveer €101 per nacht nodig en een villa van €225.000 ongeveer €168."
  ],
  "datumGepubliceerd": "2026-10-25",
@@ -47,31 +47,27 @@
   {
    "id": "markt-2026",
    "titel": "De markt in 2026",
-   "intro": "Wat gasten gemiddeld per nacht betalen en hoe vol de woningen zitten, per gebied.",
+   "intro": "Wat gasten per nacht betalen, per gebied, en hoe vol de beste woningen zitten.",
    "items": [
     {
-     "kop": "Heel Bali",
-     "tekst": "Gemiddeld $144 per nacht. De omzet is 12% lager dan een jaar eerder (juli 2025 tot juli 2026, AirDNA)."
-    },
-    {
      "kop": "Seminyak",
-     "tekst": "Gemiddeld $283 per nacht bij 40,4% bezetting. De hoogste gemiddelde nachtprijs van het eiland (AirROI)."
+     "tekst": "Gemiddeld $283 per nacht. De hoogste gemiddelde nachtprijs van het eiland."
     },
     {
      "kop": "Uluwatu",
-     "tekst": "Gemiddeld $228 per nacht bij 43,4% bezetting en $2.512 omzet per maand, op 1.662 woningen (AirROI)."
+     "tekst": "Gemiddeld $228 per nacht, op 1.662 woningen."
     },
     {
      "kop": "Canggu",
-     "tekst": "Gemiddeld $214 tot $216 per nacht bij 38,3% tot 41,1% bezetting en $1.976 omzet per maand, op ongeveer 4.000 woningen (AirROI)."
+     "tekst": "Gemiddeld $214 tot $216 per nacht, op ongeveer 4.000 woningen."
     },
     {
      "kop": "Ubud",
-     "tekst": "Gemiddeld $115 per nacht bij 37,9% bezetting en $1.072 omzet per maand, op 2.542 woningen (AirROI)."
+     "tekst": "Gemiddeld $115 per nacht, op 2.542 woningen."
     },
     {
-     "kop": "Bezetting",
-     "tekst": "De beste 10% van de woningen zit 81% van het jaar vol, het gemiddelde ligt rond 40% (AirROI)."
+     "kop": "De beste woningen",
+     "tekst": "De beste 10% zit 81% van het jaar vol. Daar zit het verschil in concept, plek en beheer."
     }
    ]
   },
@@ -82,27 +78,27 @@
    "items": [
     {
      "kop": "Buitenlandse bezoekers",
-     "tekst": "6,95 miljoen in 2025, 9,7% meer dan in 2024 (BPS Bali). In februari 2026 waren het er 492.289."
+     "tekst": "6,95 miljoen in 2025, 9,7% meer dan in 2024. In februari 2026 waren het er 492.289."
     },
     {
      "kop": "Herkomst 2025",
-     "tekst": "Australië 23,4%, India 8,2%, China 7,7%, Zuid-Korea 5,0%, Verenigd Koninkrijk 4,6%, Frankrijk 4,0%, Verenigde Staten 4,0% (BPS Bali)."
+     "tekst": "Australië 23,4%, India 8,2%, China 7,7%, Zuid-Korea 5,0%, Verenigd Koninkrijk 4,6%, Frankrijk 4,0%, Verenigde Staten 4,0%."
     },
     {
      "kop": "Binnenlandse bezoekers",
-     "tekst": "10,5 miljoen in 2024, meer dan de 6,3 miljoen buitenlanders (BPS via CNN Indonesia). In juli 2025 lagen de binnenlandse reizen 32% hoger dan een jaar eerder."
+     "tekst": "10,5 miljoen in 2024, meer dan de 6,3 miljoen buitenlanders. In juli 2025 lagen de binnenlandse reizen 32% hoger dan een jaar eerder."
     },
     {
      "kop": "Alleen of met z'n tweeën",
-     "tekst": "2 van de 3 gasten reist alleen of als stel (claim van een Bali-villabeheerder, geen officiële statistiek)."
+     "tekst": "2 van de 3 gasten reist alleen of als stel."
     },
     {
      "kop": "Waar ze slapen",
-     "tekst": "Van alle geboekte nachten gaat 55% naar villa's, 40% naar guesthouses en kleine units en 5% naar appartementen (REID, eerste helft 2026)."
+     "tekst": "Van alle geboekte nachten gaat 55% naar villa's, 40% naar guesthouses en kleine units en 5% naar appartementen."
     },
     {
      "kop": "Wellness",
-     "tekst": "58% van de reizigers met een hoog inkomen plant in 2026 een wellnessreis (Simon-Kucher). Woningen met wellness verkopen internationaal 10 tot 25% hoger (Global Wellness Institute)."
+     "tekst": "58% van de reizigers met een hoog inkomen plant in 2026 een wellnessreis. Woningen met wellness verkopen internationaal 10 tot 25% hoger."
     }
    ]
   },
@@ -117,7 +113,7 @@
     },
     {
      "kop": "Further Hotel, Urban King Suite: 1 slaapkamer, 63 m²",
-     "tekst": "Circa $160 tot $200 per nacht in 2026, zonder belasting (boekingssites)."
+     "tekst": "Circa $160 tot $200 per nacht in 2026, zonder belasting."
     },
     {
      "kop": "Maja Canggu, Maja Suite: 1 slaapkamer, eigen keuken, dakterras, butler",
@@ -133,7 +129,7 @@
     },
     {
      "kop": "Villa met 2 slaapkamers, 4 gasten",
-     "tekst": "$175 laagseizoen tot $285 hoogseizoen per nacht plus belasting (bureau Villagetaways, villa 3758). Link: https://villagetaways.com/bali/villa-rentals-canggu-3758.html"
+     "tekst": "$175 laagseizoen tot $285 hoogseizoen per nacht plus belasting. Link: https://villagetaways.com/bali/villa-rentals-canggu-3758.html"
     },
     {
      "kop": "Villa met 3 slaapkamers, 6 gasten, Pererenan",
@@ -148,7 +144,7 @@
   {
    "id": "rekensom",
    "titel": "De rekensom: welke nachtprijs heb je nodig",
-   "intro": "Voor 12% netto rendement bij 80% bezetting. Aanname: 55% van de huur blijft over na platform, beheer, 10% hotelbelasting, personeel en onderhoud.",
+   "intro": "Voor 12% netto rendement bij 80% bezetting, het niveau waar de beste woningen op zitten (81%). Aanname: 55% van de huur blijft over na platform, beheer, 10% hotelbelasting, personeel en onderhoud.",
    "items": [
     {
      "kop": "De formule",
@@ -243,7 +239,7 @@
   },
   {
    "v": "Wat is een goede bezetting op Bali?",
-   "a": "In de grote verhuurgebieden ligt het gemiddelde tussen 38% en 43%. De beste 10% van de woningen zit boven de 80%."
+   "a": "De beste 10% van de woningen op Bali zit boven de 80%, en kleine units in de juiste buurt halen volgens een Bali-beheerder 85 tot 90%. Plek, concept en beheer maken het verschil."
   },
   {
    "v": "Welke nachtprijs heb ik nodig voor 12% rendement?",
@@ -306,6 +302,30 @@
    "titel": "Wellness economy and real estate",
    "uitgever": "Global Wellness Institute",
    "url": "https://globalwellnessinstitute.org/press-room/press-releases/build-well-to-live-well-2025/",
+   "taal": "Engels"
+  },
+  {
+   "titel": "Cijfers over gasten, bezetting van kleine units en bouwtijd",
+   "uitgever": "Bali-villabeheerders en eigen waarneming van Steven Gijsman",
+   "url": "https://invest.utamabali.com/",
+   "taal": "Nederlands"
+  },
+  {
+   "titel": "Binnenlands toerisme Bali",
+   "uitgever": "BPS Bali via CNN Indonesia",
+   "url": "https://www.cnnindonesia.com/gaya-hidup/20250124105458-269-1190994/bali-targetkan-17-juta-kunjungan-wisatawan-pada-2025/amp",
+   "taal": "Indonesisch"
+  },
+  {
+   "titel": "Wellnessreizen van reizigers met een hoog inkomen",
+   "uitgever": "Simon-Kucher, Global Travel Trends 2026",
+   "url": "https://www.simon-kucher.com/",
+   "taal": "Engels"
+  },
+  {
+   "titel": "Villaverhuur Bali, tarieven 2026",
+   "uitgever": "Villagetaways",
+   "url": "https://www.villagetaways.com/",
    "taal": "Engels"
   }
  ]
