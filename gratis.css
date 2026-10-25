@@ -156,3 +156,19 @@ p{margin:0}
   body.heeft-vast{padding-bottom:84px}
 }
 @media print{.nav,.vast,.band,.fase-nav{display:none}}
+
+/* vergelijkingstabel in een fase */
+.tabel-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0 6px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.tabel-scroll:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.vergelijk{border-collapse:separate;border-spacing:0;width:100%;min-width:640px;font-size:14px;line-height:1.35}
+.vergelijk thead th{position:sticky;top:0;background:var(--sand-2);text-align:left;font:700 11.5px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.vergelijk td,.vergelijk tbody th{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+.vergelijk tbody th[scope=row]{font-weight:700;color:var(--ink);min-width:190px;background:#fff;position:sticky;left:0}
+.vergelijk td{color:var(--ink-2);white-space:nowrap}
+.vergelijk td:nth-child(5){color:var(--olive-deep);font-weight:700}
+.vergelijk tr.groep th{background:var(--sage);color:var(--olive-deep);font:800 12.5px/1.2 var(--body);letter-spacing:.1em;text-transform:uppercase;padding:9px 12px;position:static}
+.vergelijk tbody tr:last-child td,.vergelijk tbody tr:last-child th{border-bottom:0}
+.vergelijk a{font-weight:700;text-decoration:underline;text-underline-offset:3px;color:var(--ink)}
+.tabel-voet{font-size:13px;color:var(--muted);margin:8px 2px 12px}
+@media(max-width:640px){.vergelijk{font-size:13px}.vergelijk tbody th[scope=row]{min-width:150px}}
+.over.enkel{grid-template-columns:1fr}

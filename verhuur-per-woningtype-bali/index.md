@@ -14,7 +14,7 @@ De beste woningen zitten 81% van het jaar vol, en kleine units in de juiste buur
 
 Reken terug: voor 12% netto rendement bij 80% bezetting heeft een studio van €135.000 ongeveer €101 per nacht nodig en een villa van €225.000 ongeveer €168.
 
-## Het overzicht: 29 punten in 5 delen
+## Het overzicht: 36 punten in 5 delen
 
 ### Deel 1: De markt in 2026
 
@@ -39,20 +39,36 @@ De vraag achter de nachtprijzen: bezoekers, herkomst en wat ze komen doen.
 
 ### Deel 3: Voorbeelden van nachtprijzen per type
 
-Echte prijzen, met slaapkamers, maat en een link naar de plek. Momentopnamen van boekingssites en bureaus op 25 oktober 2026; prijzen veranderen per datum.
+Eén tabel, alles in euro, van klein naar groot. Per slaapkamer, maat en prijs per nacht, met een link naar de plek.
 
-- [ ] **Further Hotel, Urban King Gallery: 1 slaapkamer, 36 m².** 21 tot 23 december 2026, 2 gasten: IDR 3.071.200 per nacht met early bird, circa €151. Flexibel IDR 4.190.000, circa €207. Met ontbijt IDR 3.458.400, circa €170. Kaart: https://www.google.com/maps/search/?api=1&query=Further+Hotel+Pererenan+Bali
-- [ ] **Further Hotel, Urban King Suite: 1 slaapkamer, 63 m².** Circa $160 tot $200 per nacht in 2026, zonder belasting.
-- [ ] **Maja Canggu, Maja Suite: 1 slaapkamer, eigen keuken, dakterras, butler.** Vanaf IDR 5.000.000 per nacht, circa €246. De Maja Villa met dezelfde voorzieningen vanaf IDR 4.850.000, circa €239; Pool View vanaf IDR 4.000.000, circa €197. Site: https://www.thisismaja.com/hotel/suites
-- [ ] **The Slow, Pool Suite: 1 slaapkamer, 80 m², eigen plunge pool.** $139 tot $155 per nacht in 2026. Kaart: https://www.google.com/maps/search/?api=1&query=The+Slow+Canggu+Bali
-- [ ] **COMO Uma Canggu en Chesa Canggu: suites.** $214 en $98 per nacht (momentopnamen februari en maart 2026).
-- [ ] **Villa met 2 slaapkamers, 4 gasten.** $175 laagseizoen tot $285 hoogseizoen per nacht plus belasting. Link: https://villagetaways.com/bali/villa-rentals-canggu-3758.html
-- [ ] **Villa met 3 slaapkamers, 6 gasten, Pererenan.** $375 laagseizoen tot $595 hoogseizoen plus 15,5% belasting, 7 nachten minimaal (villa 3934). Link: https://www.villagetaways.com/bali/villa-rentals-pererenan-3934.html. Een villa met 3 slaapkamers in Canggu kost $575 tot $750 (villa 3343).
-- [ ] **Villa met 5 slaapkamers.** Zonder personeel $635 tot $913 per nacht in Canggu en Seminyak. Met butler, chef en chauffeur in Uluwatu $2.800 tot $4.850. Seminyak met 24 medewerkers vanaf $3.000.
+| Voorbeeld | Slaap-kamers | m² | Per nacht in euro | Per m² per nacht | Plek |
+|---|---|---|---|---|---|
+| **1 slaapkamer: studio's en suites** | | | | | |
+| Further Hotel, Urban King Gallery | 1 | 36 | €151 tot €207 (kerstweek) | €4,20 tot €5,70 | [Kaart](https://www.google.com/maps/search/?api=1&query=Further+Hotel+Pererenan+Bali) |
+| Further Hotel, Urban King Suite | 1 | 63 | €127 tot €158 | €2,00 tot €2,50 | [Kaart](https://www.google.com/maps/search/?api=1&query=Further+Hotel+Pererenan+Bali) |
+| Maja Canggu, Maja Suite (eigen keuken, butler) | 1 | onbekend | vanaf €246 | onbekend | [Site](https://www.thisismaja.com/hotel/suites/maja) |
+| Maja Canggu, Maja Villa | 1 | onbekend | vanaf €239 | onbekend | [Site](https://www.thisismaja.com/hotel/suites/maja-villa) |
+| Maja Canggu, Pool View | onbekend | onbekend | vanaf €197 | onbekend | [Site](https://www.thisismaja.com/hotel/suites/pool-view) |
+| The Slow, Pool Suite met plunge pool | 1 | 80 | €110 tot €123 | €1,40 tot €1,50 | [Kaart](https://www.google.com/maps/search/?api=1&query=The+Slow+Canggu+Bali) |
+| COMO Uma Canggu | onbekend | onbekend | circa €170 | onbekend | [Kaart](https://www.google.com/maps/search/?api=1&query=COMO+Uma+Canggu+Bali) |
+| Chesa Canggu | onbekend | onbekend | circa €78 | onbekend | [Kaart](https://www.google.com/maps/search/?api=1&query=Chesa+Canggu+Bali) |
+| **2 slaapkamers** | | | | | |
+| Villa in Canggu, 4 gasten | 2 | onbekend | €139 tot €226 plus belasting | onbekend | [Listing](https://villagetaways.com/bali/villa-rentals-canggu-3758.html) |
+| **3 slaapkamers** | | | | | |
+| Villa in Pererenan, 6 gasten | 3 | onbekend | €297 tot €471 plus 15,5% belasting | onbekend | [Listing](https://www.villagetaways.com/bali/villa-rentals-pererenan-3934.html) |
+| Villa in Canggu, 6 gasten | 3 | onbekend | €455 tot €594 plus belasting | onbekend | [Listing](https://www.villagetaways.com/bali/villa-rentals-canggu-3343.html) |
+| **5 slaapkamers** | | | | | |
+| Villa zonder personeel, Canggu en Seminyak | 5 | onbekend | €503 tot €723 plus belasting | onbekend | per bureau |
+| Villa met butler, chef en chauffeur, Uluwatu | 5 | onbekend | circa €2.200 tot €3.800 plus belasting | onbekend | per bureau |
+| Villa met 24 medewerkers, Seminyak | 5 | onbekend | vanaf circa €2.400 | onbekend | reisartikel |
+
+Momentopnamen van 25 oktober 2026; de prijs van Further Hotel is voor 21 tot 23 december. Dollarprijzen omgerekend tegen $1 = €0,79, rupiah tegen €1 = IDR 20.284. Zonder belasting tenzij vermeld. Per m² kan alleen waar de maat bekend is.
+
+- [ ] **Wat dit laat zien.** Per vierkante meter haalt de kleinste kamer het meest: €4,20 tot €5,70 per nacht, tegen €1,40 tot €2,50 bij de grotere suites. De nachtprijs volgt de plek, het merk en het design meer dan het aantal vierkante meters.
 
 ### Deel 4: De rekensom: welke nachtprijs heb je nodig
 
-Voor 12% netto rendement bij 80% bezetting, het niveau waar de beste woningen op zitten (81%). Aanname: 55% van de huur blijft over na platform, beheer, 10% hotelbelasting, personeel en onderhoud.
+Voor 12% netto rendement bij 80% bezetting, het niveau waar de beste woningen op zitten (81%). 55% van de huur blijft over na platform, beheer, 10% hotelbelasting, personeel en onderhoud.
 
 - [ ] **De formule.** Netto rendement = nachtprijs x 365 x bezetting x 55%, gedeeld door de prijs van de woning.
 - [ ] **Studio of loft, 1 slaapkamer.** €126.000 heeft circa €94 per nacht nodig, €132.500 circa €99.
@@ -69,17 +85,6 @@ Waarom een kamer van 36 m² bijna evenveel haalt als een villa van meer dan 100 
 - [ ] **Wellness en contact.** Yoga, een ijsbad, samen sporten en andere gasten ontmoeten tellen mee in de keuze.
 - [ ] **Waar betalen gasten voor.** Voor de beleving en de ervaren waarde, niet voor het aantal slaapkamers. Wie de hele dag op pad is, heeft geen drie slaapkamers nodig.
 - [ ] **Reken zelf met 3 vragen.** Welke nachtprijs halen vergelijkbare woningen in laagseizoen? Welke bezetting heeft de beheerder in zijn raming, en op wiens cijfers? Hoeveel blijft er netto over na alle kosten?
-
-## Pas hiermee op bij andermans cijfers
-
-Een hoge nachtprijs zegt nog niets over wat je overhoudt.
-
-- Er staat een nachtprijs, maar geen bezetting.
-- De bezetting komt van de verkoper en niet van een beheerder of een platform.
-- Er is één topmaand genomen in plaats van een jaar.
-- De prijs is een vraagprijs of een tarief zonder belasting en servicekosten.
-- Er wordt een gemiddelde genoemd, maar het is een uitschieter.
-- Er is geen raming van kosten op papier.
 
 ## Zo kijkt UTAMA naar rendement
 

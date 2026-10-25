@@ -115,7 +115,18 @@ const woorden = (t) => ({
   ...(t.woorden || {}),
 });
 const vul = (s, t, n) => s.replace(/\{n\}/g, n).replace(/\{p\}/g, t.pdf.paginas);
-function telItems(t) { return t.fases.reduce((n, f) => n + f.items.length, 0); }
+function telItems(t) { return t.fases.reduce((n, f) => n + f.items.length + (f.tabel ? f.tabel.groepen.reduce((m, g) => m + g.rijen.length, 0) : 0), 0); }
+/* Vergelijkingstabel (optioneel per fase): kolommen, groepen met rijen; een cel is tekst of { t, url }. */
+const cel = (c) => (c && typeof c === 'object') ? (c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.t)}</a>` : esc(c.t)) : esc(c ?? '');
+const celTxt = (c) => (c && typeof c === 'object') ? (c.url ? `[${c.t}](${c.url})` : c.t) : String(c ?? '');
+function renderTabel(tb) {
+  const n = tb.kolommen.length;
+  const kop = tb.kolommen.map((k) => `<th scope="col">${esc(k)}</th>`).join('');
+  const lijf = tb.groepen.map((g) => `<tr class="groep"><th colspan="${n}" scope="colgroup">${esc(g.titel)}</th></tr>` + g.rijen.map((r) => `<tr>${r.map((c, i) => i === 0 ? `<th scope="row">${cel(c)}</th>` : `<td>${cel(c)}</td>`).join('')}</tr>`).join('')).join('');
+  return `<div class="tabel-scroll" tabindex="0" role="region" aria-label="${esc(tb.label || 'Vergelijking')}"><table class="vergelijk"><thead><tr>${kop}</tr></thead><tbody>${lijf}</tbody></table></div>${tb.voet ? `<p class="tabel-voet">${esc(tb.voet)}</p>` : ''}`;
+}
+const tabelMd = (tb) => `| ${tb.kolommen.join(' | ')} |\n|${tb.kolommen.map(() => '---').join('|')}|\n` + tb.groepen.map((g) => `| **${g.titel}** |${' |'.repeat(tb.kolommen.length - 1)}\n` + g.rijen.map((r) => `| ${r.map(celTxt).join(' | ')} |`).join('\n')).join('\n') + (tb.voet ? `\n\n${tb.voet}` : '');
+const tabelPrint = (tb) => `<table class="pt-tabel"><thead><tr>${tb.kolommen.map((k) => `<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>` + tb.groepen.map((g) => `<tr class="g"><th colspan="${tb.kolommen.length}">${esc(g.titel)}</th></tr>` + g.rijen.map((r) => `<tr>${r.map((c) => `<td>${(c && typeof c === 'object') ? esc(c.t) : esc(c ?? '')}</td>`).join('')}</tr>`).join('')).join('') + `</tbody></table>` + (tb.voet ? `<p class="fi">${esc(tb.voet)}</p>` : '');
 const gidsUrl = (t) => `${SITE}/${t.slug}/`;
 const pdfUrl = (t) => `/${t.slug}/${t.pdf.bestand}`;
 const ogUrl = (t) => `${SITE}/${t.slug}/og.jpg`;
@@ -169,10 +180,10 @@ function renderPagina(t) {
     const nr = f.doorlopend ? '&#8635;' : i + 1;
     return `<article class="fase" id="${f.id}">
         <div class="fase-kop"><span class="fase-nr" aria-hidden="true">${nr}</span><h3>${esc(f.titel)}</h3></div>
-        <p class="fase-intro">${esc(f.intro)}</p>
+        <p class="fase-intro">${esc(f.intro)}</p>${f.tabel ? '\n        ' + renderTabel(f.tabel) : ''}${f.items.length ? `
         <ul class="items">
 ${f.items.map((it) => `          <li><span class="vink" aria-hidden="true"></span><div><b>${esc(it.kop)}</b><span>${esc(it.tekst)}</span></div></li>`).join('\n')}
-        </ul>
+        </ul>` : ''}
       </article>`;
   }).join('\n      ');
   const fasenav = t.fases.map((f, i) => `<a href="#${f.id}">${f.doorlopend ? '&#8635;' : i + 1}. ${esc(f.titel.split(':')[0])}</a>`).join('');
@@ -238,27 +249,27 @@ ${t.korteAntwoord.map((p) => `      <p>${esc(p)}</p>`).join('\n')}
       </div>
     </section>
 
-    <section class="rood" aria-labelledby="rood">
+${t.roodVlaggen ? `    <section class="rood" aria-labelledby="rood">
       <h2 id="rood">${esc(t.roodVlaggen.titel)}</h2>
       <p>${esc(t.roodVlaggen.intro)}</p>
       <ul>
 ${t.roodVlaggen.items.map((i) => `        <li>${esc(i)}</li>`).join('\n')}
       </ul>
-    </section>
+    </section>` : ''}
 
-    <div class="over">
+    <div class="over${t.toonAuteur === false ? ' enkel' : ''}">
       <div>
         <h2>${esc(t.uitleg.titel)}</h2>
         <p>${esc(t.uitleg.tekst)}</p>
         <a class="tekst" href="${t.uitleg.link.url}" target="_blank" rel="noopener">${esc(t.uitleg.link.tekst)} &rarr;</a>
       </div>
-      <div>
+${t.toonAuteur === false ? '' : `      <div>
         <h2>Over de schrijver</h2>
         <div class="auteur"><img src="${t.auteur.foto}" alt="${esc(t.auteur.naam)}" width="56" height="56" loading="lazy"><div><b>${esc(t.auteur.naam)}</b><span>${esc(t.auteur.functie)}</span></div></div>
         <p>${esc(t.auteur.tekst)}</p>
         <a class="tekst" href="${t.auteur.instagram}" target="_blank" rel="noopener">Volg op Instagram &rarr;</a>
       </div>
-    </div>
+`}    </div>
 
     <section class="band paper" aria-labelledby="portaal">
       <h2 id="portaal">${esc(t.portaal.kop)}</h2>
@@ -380,15 +391,15 @@ ${t.fases.map((f, i) => `### ${f.doorlopend ? 'Doorlopend' : `${w.fase} ${i + 1}
 
 ${f.intro}
 
-${f.items.map((it) => `- [ ] **${it.kop}.** ${it.tekst}`).join('\n')}
+${f.tabel ? tabelMd(f.tabel) + '\n\n' : ''}${f.items.map((it) => `- [ ] **${it.kop}.** ${it.tekst}`).join('\n')}
 `).join('\n')}
-## ${t.roodVlaggen.titel}
+${t.roodVlaggen ? `## ${t.roodVlaggen.titel}
 
 ${t.roodVlaggen.intro}
 
 ${t.roodVlaggen.items.map((i) => `- ${i}`).join('\n')}
 
-## ${t.uitleg.titel}
+` : ''}## ${t.uitleg.titel}
 
 ${t.uitleg.tekst}
 
@@ -425,6 +436,11 @@ h2{font-size:11.5pt;margin:12pt 0 5pt;padding:4pt 8pt;background:#17140F;color:#
 .rood li{margin:0 0 2pt;font-size:9pt}.rood ul{margin:0;padding-left:13pt}
 .voet{margin-top:12pt;padding-top:7pt;border-top:1.5pt solid #17140F;font-size:8.2pt;color:#5B564C;break-inside:avoid}
 .voet b{color:#17140F}
+.pt-tabel{width:100%;border-collapse:collapse;margin:3pt 0 6pt;font-size:8.2pt;break-inside:auto}
+.pt-tabel th,.pt-tabel td{border-bottom:.5pt solid #E7DECD;padding:2.5pt 3pt;text-align:left;vertical-align:top}
+.pt-tabel thead th{font-size:7.6pt;text-transform:uppercase;letter-spacing:.04em;color:#5B564C;border-bottom:1pt solid #17140F}
+.pt-tabel tr.g th{background:#EEF0E2;font-size:8.4pt;color:#17140F;padding:3pt}
+.pt-tabel tr{break-inside:avoid}
 `;
 
 function renderPrint(t) {
@@ -437,8 +453,9 @@ function renderPrint(t) {
 <div class="kort">${t.korteAntwoord.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
 ${t.fases.map((f, i) => `<section class="fb"><h2>${f.doorlopend ? 'Doorlopend' : `${w.fase} ${i + 1}`}: ${esc(f.titel)}</h2>
 <p class="fi">${esc(f.intro)}</p>
+${f.tabel ? tabelPrint(f.tabel) : ''}
 ${f.items.map((it) => `<div class="pt"><span class="v"></span><div><b>${esc(it.kop)}</b><span class="t">${esc(it.tekst)}</span></div></div>`).join('\n')}</section>`).join('\n')}
-<div class="rood"><h3>${esc(t.roodVlaggen.titel)}</h3><ul>${t.roodVlaggen.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>
+${t.roodVlaggen ? `<div class="rood"><h3>${esc(t.roodVlaggen.titel)}</h3><ul>${t.roodVlaggen.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>` : ''}
 <div class="voet"><b>${aantal} ${esc(w.eenheid)}.</b> Online met uitleg, vragen en antwoorden: <b>utamabali.com/${t.slug}</b><br>
 UTAMA ontwikkelt boutique villaprojecten op Bali voor investeerders · Instagram @stevenbalivillas · Bijgewerkt ${datumNl(t.datumBijgewerkt)}<br>
 ${esc(t.disclaimer)}</div>
