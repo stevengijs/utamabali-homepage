@@ -508,7 +508,8 @@ function maakBestanden(t) {
   const printHtml = join(tmp, `${t.slug}-print.html`), coverHtml = join(tmp, `${t.slug}-cover.html`);
   writeFileSync(printHtml, renderPrint(t)); writeFileSync(coverHtml, renderCover(t));
   const pdf = join(ROOT, t.slug, t.pdf.bestand);
-  chrome(['--no-pdf-header-footer', `--print-to-pdf=${pdf}`, `file://${printHtml}`], pdf);
+  if (t.pdf.eigen) copyFileSync(join(BRON, 'media', t.pdf.eigen), pdf);   // een eigen ontworpen PDF (UTAMA-stijl) in plaats van de afdrukversie
+  else chrome(['--no-pdf-header-footer', `--print-to-pdf=${pdf}`, `file://${printHtml}`], pdf);
   const paginas = (readFileSync(pdf, 'latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
   console.log(`  PDF: ${pdf.replace(ROOT + '/', '')} (${paginas} pagina's, ${Math.round(statSync(pdf).size / 1024)} KB)`);
   if (paginas !== t.pdf.paginas) console.warn(`  LET OP: onderwerpen/${t.slug}.json zegt ${t.pdf.paginas} pagina's, de PDF heeft er ${paginas}`);
