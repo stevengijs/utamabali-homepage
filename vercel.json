@@ -114,6 +114,11 @@
       "permanent": false
     },
     {
+      "source": "/prijzen",
+      "destination": "/verhuur-per-woningtype-bali/?utm_source=instagram&utm_medium=reel&utm_campaign=prijzen",
+      "permanent": false
+    },
+    {
       "source": "/gids/bouwchecklist-villa-bali",
       "destination": "/bouwchecklist-villa-bali/",
       "permanent": false

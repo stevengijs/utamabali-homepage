@@ -102,6 +102,19 @@ const afm = `<p class="afm"><strong>Let op!</strong> U belegt buiten AFM&#8209;t
 const pijl = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v11M5 9.5l5 5 5-5M4 17h12"/></svg>`;
 
 /* ---------- gidspagina ---------- */
+/* Teksten die per gids te overschrijven zijn met "woorden" in het JSON; zonder woorden blijft het een bouwchecklist. */
+const woorden = (t) => ({
+  eyebrow: 'Gratis checklist', download: 'Download de checklist (PDF)', online: 'Lees hem online', over: 'Over deze checklist',
+  eenheid: 'punten', faseNav: 'Springen naar een bouwfase', fase: 'Fase',
+  sectieKop: 'De checklist: {n} punten per bouwfase',
+  sectieIntro: 'Vink af wat klaar is. Download de PDF om hem mee te nemen naar de bouwplaats of naar je gesprek met de ontwikkelaar.',
+  meeKop: 'Neem de checklist mee',
+  meeTekst: "Een PDF van {p} pagina's met alle {n} punten en de rode vlaggen. Print hem uit of open hem op je telefoon op de bouwplaats.",
+  printTop: 'Gratis checklist', cover: 'Gratis checklist · PDF', coverRegel: '{n} punten per bouwfase',
+  bronnenIntro: 'Achtergrond bij de Indonesische bouwdocumenten (PBG en SLF):',
+  ...(t.woorden || {}),
+});
+const vul = (s, t, n) => s.replace(/\{n\}/g, n).replace(/\{p\}/g, t.pdf.paginas);
 function telItems(t) { return t.fases.reduce((n, f) => n + f.items.length, 0); }
 const gidsUrl = (t) => `${SITE}/${t.slug}/`;
 const pdfUrl = (t) => `/${t.slug}/${t.pdf.bestand}`;
@@ -150,6 +163,7 @@ function schema(t) {
 function renderPagina(t) {
   const url = gidsUrl(t);
   const aantal = telItems(t);
+  const w = woorden(t);
   const dl = pdfUrl(t);
   const fasen = t.fases.map((f, i) => {
     const nr = f.doorlopend ? '&#8635;' : i + 1;
@@ -177,22 +191,22 @@ ${nav(dl, portaalUrl(t))}
   <section class="hero">
     <div class="wrap hero-grid">
       <div>
-        <span class="eyebrow">Gratis checklist</span>
+        <span class="eyebrow">${esc(w.eyebrow)}</span>
         <h1>${esc(t.h1)}</h1>
         <p class="lead">${esc(t.intro)}</p>
         <div class="hero-acties" id="hero-acties">
-          <a class="btn cta" href="${dl}" download data-download>${pijl} Download de checklist (PDF)</a>
-          <a class="btn licht" href="#checklist">Lees hem online</a>
+          <a class="btn cta" href="${dl}" download data-download>${pijl} ${esc(w.download)}</a>
+          <a class="btn licht" href="#checklist">${esc(w.online)}</a>
         </div>
-        <ul class="chips" aria-label="Over deze checklist">
-          <li>Gratis</li><li>PDF van ${t.pdf.paginas} pagina's</li><li>${aantal} punten</li><li>Bijgewerkt ${datumNl(t.datumBijgewerkt)}</li>
+        <ul class="chips" aria-label="${esc(w.over)}">
+          <li>Gratis</li><li>PDF van ${t.pdf.paginas} pagina's</li><li>${aantal} ${esc(w.eenheid)}</li><li>Bijgewerkt ${datumNl(t.datumBijgewerkt)}</li>
         </ul>
       </div>
       <figure class="hero-foto" style="margin:0">
         <picture>${t._webp ? `<source srcset="/${t.slug}/foto.webp" type="image/webp">` : ''}<img src="${fotoUrl(t)}" alt="${esc(t.foto.alt)}" width="${t.foto.breedte}" height="${t.foto.hoogte}" fetchpriority="high"></picture>
         <figcaption class="doc">
           <span class="doc-icoon" aria-hidden="true">PDF</span>
-          <span><b>${esc(t.pdf.titel)}</b><span>${aantal} punten in ${t.fases.length} blokken · gratis</span></span>
+          <span><b>${esc(t.pdf.titel)}</b><span>${aantal} ${esc(w.eenheid)} in ${t.fases.length} blokken · gratis</span></span>
         </figcaption>
       </figure>
     </div>
@@ -204,11 +218,11 @@ ${nav(dl, portaalUrl(t))}
 ${t.korteAntwoord.map((p) => `      <p>${esc(p)}</p>`).join('\n')}
     </section>
 
-    <nav class="fase-nav" aria-label="Springen naar een bouwfase">${fasenav}</nav>
+    <nav class="fase-nav" aria-label="${esc(w.faseNav)}">${fasenav}</nav>
 
     <div class="kop-sectie" id="checklist">
-      <h2>De checklist: ${aantal} punten per bouwfase</h2>
-      <p>Vink af wat klaar is. Download de PDF om hem mee te nemen naar de bouwplaats of naar je gesprek met de ontwikkelaar.</p>
+      <h2>${esc(vul(w.sectieKop, t, aantal))}</h2>
+      <p>${esc(w.sectieIntro)}</p>
     </div>
 
     <div>
@@ -216,10 +230,10 @@ ${t.korteAntwoord.map((p) => `      <p>${esc(p)}</p>`).join('\n')}
     </div>
 
     <section class="band" aria-labelledby="neem-mee">
-      <h2 id="neem-mee">Neem de checklist mee</h2>
-      <p>Een PDF van ${t.pdf.paginas} pagina's met alle ${aantal} punten en de rode vlaggen. Print hem uit of open hem op je telefoon op de bouwplaats.</p>
+      <h2 id="neem-mee">${esc(w.meeKop)}</h2>
+      <p>${esc(vul(w.meeTekst, t, aantal))}</p>
       <div class="knoppen">
-        <a class="btn cta" href="${dl}" download data-download>${pijl} Download de checklist (PDF)</a>
+        <a class="btn cta" href="${dl}" download data-download>${pijl} ${esc(w.download)}</a>
         <a class="btn licht" href="${portaalUrl(t)}" data-portaal>${esc(t.portaal.knop)} &rarr;</a>
       </div>
     </section>
@@ -269,7 +283,7 @@ ${t.faq.map((q) => `        <div class="faq-item"><h3>${esc(q.v)}</h3><p>${esc(q
 
 ${(t.bronnen || []).length ? `    <section class="bronnen" aria-labelledby="bronnen">
       <h2 id="bronnen">Bronnen</h2>
-      <p>Achtergrond bij de Indonesische bouwdocumenten (PBG en SLF):</p>
+      <p>${esc(w.bronnenIntro)}</p>
       <ul>
 ${t.bronnen.map((b) => `        <li><a href="${b.url}" target="_blank" rel="noopener">${esc(b.titel)}</a> · ${esc(b.uitgever)} (${esc(b.taal)})</li>`).join('\n')}
       </ul>
@@ -282,7 +296,7 @@ ${t.bronnen.map((b) => `        <li><a href="${b.url}" target="_blank" rel="noop
 
 ${voet}
 
-<div class="vast" id="vast"><a class="btn cta" href="${dl}" download data-download>${pijl} Download de checklist (PDF)</a></div>
+<div class="vast" id="vast"><a class="btn cta" href="${dl}" download data-download>${pijl} ${esc(w.download)}</a></div>
 
 <script>
 (function(){
@@ -347,6 +361,7 @@ ${voet}
 /* ---------- Markdown-versie voor AI-systemen ---------- */
 function renderMd(t) {
   const aantal = telItems(t);
+  const w = woorden(t);
   return `# ${t.h1}
 
 > ${t.intro}
@@ -359,9 +374,9 @@ PDF: ${SITE}${pdfUrl(t)}
 
 ${t.korteAntwoord.join('\n\n')}
 
-## De checklist: ${aantal} punten per bouwfase
+## ${vul(w.sectieKop, t, aantal)}
 
-${t.fases.map((f, i) => `### ${f.doorlopend ? 'Doorlopend' : `Fase ${i + 1}`}: ${f.titel}
+${t.fases.map((f, i) => `### ${f.doorlopend ? 'Doorlopend' : `${w.fase} ${i + 1}`}: ${f.titel}
 
 ${f.intro}
 
@@ -414,16 +429,17 @@ h2{font-size:11.5pt;margin:12pt 0 5pt;padding:4pt 8pt;background:#17140F;color:#
 
 function renderPrint(t) {
   const aantal = telItems(t);
+  const w = woorden(t);
   return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><title>${esc(t.pdf.titel)}</title><style>${PRINT_CSS}</style></head><body>
-<div class="top"><span class="merk">UTAMA</span><span>Gratis checklist</span></div>
+<div class="top"><span class="merk">UTAMA</span><span>${esc(w.printTop)}</span></div>
 <h1>${esc(t.h1)}</h1>
 <p class="intro">${esc(t.intro)}</p>
 <div class="kort">${t.korteAntwoord.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
-${t.fases.map((f, i) => `<section class="fb"><h2>${f.doorlopend ? 'Doorlopend' : `Fase ${i + 1}`}: ${esc(f.titel)}</h2>
+${t.fases.map((f, i) => `<section class="fb"><h2>${f.doorlopend ? 'Doorlopend' : `${w.fase} ${i + 1}`}: ${esc(f.titel)}</h2>
 <p class="fi">${esc(f.intro)}</p>
 ${f.items.map((it) => `<div class="pt"><span class="v"></span><div><b>${esc(it.kop)}</b><span class="t">${esc(it.tekst)}</span></div></div>`).join('\n')}</section>`).join('\n')}
 <div class="rood"><h3>${esc(t.roodVlaggen.titel)}</h3><ul>${t.roodVlaggen.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>
-<div class="voet"><b>${aantal} punten.</b> Online met uitleg, vragen en antwoorden: <b>utamabali.com/${t.slug}</b><br>
+<div class="voet"><b>${aantal} ${esc(w.eenheid)}.</b> Online met uitleg, vragen en antwoorden: <b>utamabali.com/${t.slug}</b><br>
 UTAMA ontwikkelt boutique villaprojecten op Bali voor investeerders · Instagram @stevenbalivillas · Bijgewerkt ${datumNl(t.datumBijgewerkt)}<br>
 ${esc(t.disclaimer)}</div>
 </body></html>`;
@@ -431,6 +447,7 @@ ${esc(t.disclaimer)}</div>
 
 function renderCover(t) {
   const aantal = telItems(t);
+  const w = woorden(t);
   return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><style>
 *{box-sizing:border-box}body{margin:0;width:1200px;height:630px;display:flex;background:#17140F;color:#fff;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;overflow:hidden}
 .l{flex:1;padding:56px 56px 52px;display:flex;flex-direction:column;justify-content:space-between}
@@ -439,7 +456,7 @@ function renderCover(t) {
 h1{font-size:64px;line-height:1.04;margin:0 0 18px;letter-spacing:-.02em;text-wrap:balance}
 p{margin:0;color:#c9d1a6;font-size:26px;font-weight:600}
 .r{width:430px;background:url(../media/${t.foto.bestand}) center/cover}
-</style></head><body><div class="l"><div class="merk">UTAMA</div><div><div class="e">Gratis checklist · PDF</div><h1>${esc(t.pdf.titel)}</h1><p>${aantal} punten per bouwfase</p></div><p style="font-size:20px">utamabali.com</p></div><div class="r"></div></body></html>`;
+</style></head><body><div class="l"><div class="merk">UTAMA</div><div><div class="e">${esc(w.cover)}</div><h1>${esc(t.pdf.titel)}</h1><p>${esc(vul(w.coverRegel, t, aantal))}</p></div><p style="font-size:20px">utamabali.com</p></div><div class="r"></div></body></html>`;
 }
 
 /* ---------- Chrome ---------- */
