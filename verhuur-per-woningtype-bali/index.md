@@ -8,7 +8,7 @@ PDF: https://www.utamabali.com/verhuur-per-woningtype-bali/UTAMA-prijzenoverzich
 
 ## Kort antwoord
 
-De nachtprijs op Bali volgt de plek, het merk en het design meer dan het aantal vierkante meters. Een kamer van 36 m² in een designhotel in Pererenan haalt rond de €225 per nacht, een villa met 3 slaapkamers via een bureau in dezelfde streek vanaf $375.
+De nachtprijs op Bali volgt de plek, het merk en het design meer dan het aantal vierkante meters. Een kamer van 36 m² in een designhotel in Pererenan haalt circa €285 tot €325 per nacht, een villa met 3 slaapkamers via een bureau in dezelfde streek vanaf $375.
 
 De beste woningen zitten 81% van het jaar vol, en kleine units in de juiste buurt halen 85 tot 90%. Plek, concept en beheer bepalen het verschil.
 
@@ -41,9 +41,9 @@ De vraag achter de nachtprijzen: bezoekers, herkomst en wat ze komen doen.
 
 Twee voorbeelden uit Pererenan en Canggu, met de nachtprijs in euro en in rupiah.
 
-- **Further Hotel, Pererenan.** Kamer van 36 m² met 1 slaapkamer. €225 per nacht, zo'n Rp 4,5 miljoen. Voor een kleine kamer van 36 m². De gast betaalt voor het design, het merk en de plek, niet voor de vierkante meters. [Bekijk Further Hotel](https://www.furtherhotel.com/)
+- **Further Hotel, Pererenan.** Kamer van 36 m² met 1 slaapkamer. Circa €285 tot €325 per nacht, zo'n Rp 6 miljoen. Voor een kleine kamer van 36 m². De gast betaalt voor het design, het merk en de plek, niet voor de vierkante meters. [Bekijk Further Hotel](https://www.furtherhotel.com/)
 - **Maja Canggu.** Suite met eigen keuken en butler, 1 slaapkamer, circa 60 m². Vanaf €246 per nacht, zo'n Rp 5 miljoen. Een suite met service, een eigen keuken en een eigen verhaal. De gast betaalt voor de beleving. [Bekijk de suite](https://www.thisismaja.com/hotel/suites/maja)
-- [ ] **Wat dit laat zien.** Een kamer van 36 m² bij Further Hotel haalt zo'n Rp 4,5 miljoen per nacht. De nachtprijs volgt de plek, het merk en het design meer dan het aantal vierkante meters.
+- [ ] **Wat dit laat zien.** Een kamer van 36 m² bij Further Hotel haalt circa €285 tot €325 per nacht, zo'n Rp 6 miljoen. De nachtprijs volgt de plek, het merk en het design meer dan het aantal vierkante meters.
 
 ### Deel 4: De rekensom: welke nachtprijs heb je nodig
 
@@ -73,7 +73,7 @@ UTAMA ontwikkelt boutique projecten op Bali voor investeerders. Wij tekenen op b
 
 ### Is een grote villa altijd duurder per nacht dan een studio?
 
-Nee. In Pererenan haalt een kamer van 36 m² in een designhotel rond €225 per nacht, terwijl een villa met 3 slaapkamers via een bureau vanaf $375 kost. De nachtprijs volgt de plek, het merk en het design meer dan de vierkante meters.
+Nee. In Pererenan haalt een kamer van 36 m² in een designhotel circa €285 tot €325 per nacht, terwijl een villa met 3 slaapkamers via een bureau vanaf $375 kost. De nachtprijs volgt de plek, het merk en het design meer dan de vierkante meters.
 
 ### Wat is een goede bezetting op Bali?
 
