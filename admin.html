@@ -10758,7 +10758,14 @@ function warmthTier(score,nieuw){
 }
 function partnerBadge(partner){
   if(!partner)return '';
-  return `<span class="badge" title="Aangeleverd door partner ${esc(partner)} — apart afgehandeld" style="background:#111827;color:#fff;font-weight:700">${esc(partner)}</span>`;
+  // Agents staan los van gewone partners: een goedgekeurde agent die zelf iets invult is geen lead, en een koper
+  // die een agent aanbrengt valt 90 dagen onder de bescherming van die agent.
+  const titel=/^agent:.*\(zelf\)$/i.test(partner)
+    ?'Geverifieerde agent die zelf een formulier invulde. Geen lead, geen opvolging nodig.'
+    :/^agent:/i.test(partner)
+      ?'Aangebracht door een agent. Die heeft 90 dagen bescherming op deze koper, overleg eerst met de agent.'
+      :`Aangeleverd door partner ${esc(partner)} — apart afgehandeld`;
+  return `<span class="badge" title="${titel}" style="background:#111827;color:#fff;font-weight:700">${esc(partner)}</span>`;
 }
 function warmthBadgeId(id,opts){return warmthBadge(WARMTH[id],{...(opts||{}),nieuw:WARMTH_NIEUW[id]});}
 function warmthBadge(score,opts){
