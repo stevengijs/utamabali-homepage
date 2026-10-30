@@ -2573,7 +2573,7 @@ function go(k){
 }
 
 /* ================= AGENTS (agentenportaal, 30 oktober 2026) =================
-   Verkoopagents met toegang tot invest.utamabali.com/agents. Beheer hier: uitnodigen (edge function agent-uitnodigen),
+   Verkoopagents met toegang tot agents.utamabali.com. Beheer hier: uitnodigen (edge function agent-uitnodigen),
    aan of uit zetten (agent_beheer_zet_actief) en zien wat agents hebben geregistreerd (agent_beheer_registraties).
    Kopers die een agent registreert staan ook onder Leads, met als bron "agent: naam" (leads.partner). */
 const AGENT_VOORTGANG={geregistreerd:['Geregistreerd','blue'],in_gesprek:['In gesprek','green'],gereserveerd:['Gereserveerd','green'],gekocht:['Gekocht','green'],afgevallen:['Afgevallen','red']};
@@ -2588,7 +2588,7 @@ async function agentUitnodigen(payload){
 }
 async function renderAgents(){
   const v=$('#view');const bewerk=canEdit('agents');
-  v.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>Agents</h3><div class="desc">Verkoopagents met toegang tot het agentenportaal (invest.utamabali.com/agents). Een agent uitzetten sluit de toegang meteen. Wat een agent registreert, staat ook bij Leads met als bron “agent: naam”.</div></div>${bewerk?'<button class="btn btn-primary btn-sm" id="agNieuw">+ Agent uitnodigen</button>':''}</div><div class="table-wrap" id="tw_agents"><div class="empty">Laden…</div></div></div>
+  v.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>Agents</h3><div class="desc">Verkoopagents met toegang tot het agentenportaal (agents.utamabali.com). Een agent uitzetten sluit de toegang meteen. Wat een agent registreert, staat ook bij Leads met als bron “agent: naam”.</div></div>${bewerk?'<button class="btn btn-primary btn-sm" id="agNieuw">+ Agent uitnodigen</button>':''}</div><div class="table-wrap" id="tw_agents"><div class="empty">Laden…</div></div></div>
     <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h3>Geregistreerde kopers</h3><div class="desc">Wat agents hebben ingevoerd en het resultaat: geregistreerd (90 dagen bescherming) of al bekend (geen bescherming).</div></div></div><div class="table-wrap" id="tw_agkopers"><div class="empty">Laden…</div></div></div>`;
   if(bewerk)$('#agNieuw').onclick=()=>openAgentForm();
   await laadAgents(bewerk);
