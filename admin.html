@@ -1822,6 +1822,7 @@ const PAGES = [
   {key:'projects', label:'Projecten',              en:'Projects',           icon:'🏗️'},
   {key:'portal',   label:'Portaal & investeerders',en:'Portal & Investors', icon:'🏝️'},
   {key:'referrals',label:'Doorverwijzingen',       en:'Referrals',          icon:'🎁'},
+  {key:'agents',   label:'Agents',                 en:'Agents',             icon:'🤝'},
   // Geen recht in adm_permissions: alleen zichtbaar als MW.eigenaar waar is (Steven).
   {key:'mijn_whatsapp',label:'Mijn WhatsApp',      en:'My WhatsApp',        icon:'🟢'},
   {key:'users',    label:'Team & gebruikers',      en:'Team & Users',       icon:'👥'},
@@ -2566,8 +2567,92 @@ function go(k){
   if(k==='broadcast')return renderBroadcast();
   if(k==='content')return renderContent();
   if(k==='ads')return renderAds();
+  if(k==='agents')return renderAgents();
   const v=$('#view');v.innerHTML='';
   (PAGE_RES[k]||[]).forEach(rk=>{const d=el('div');d.id='sec_'+rk;v.append(d);renderResource(rk,d);});
+}
+
+/* ================= AGENTS (agentenportaal, 30 oktober 2026) =================
+   Verkoopagents met toegang tot invest.utamabali.com/agents. Beheer hier: uitnodigen (edge function agent-uitnodigen),
+   aan of uit zetten (agent_beheer_zet_actief) en zien wat agents hebben geregistreerd (agent_beheer_registraties).
+   Kopers die een agent registreert staan ook onder Leads, met als bron "agent: naam" (leads.partner). */
+const AGENT_VOORTGANG={geregistreerd:['Geregistreerd','blue'],in_gesprek:['In gesprek','green'],gereserveerd:['Gereserveerd','green'],gekocht:['Gekocht','green'],afgevallen:['Afgevallen','red']};
+async function agentUitnodigen(payload){
+  const {data:{session}}=await sb.auth.getSession();
+  const res=await fetch(`${SUPABASE_URL}/functions/v1/agent-uitnodigen`,{method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`,'apikey':SUPABASE_ANON},
+    body:JSON.stringify(payload)});
+  let json={};try{json=await res.json();}catch(e){}
+  if(!res.ok||json.error)throw new Error(json.error||('Mislukt ('+res.status+')'));
+  return json;
+}
+async function renderAgents(){
+  const v=$('#view');const bewerk=canEdit('agents');
+  v.innerHTML=`<div class="panel"><div class="panel-head"><div><h3>Agents</h3><div class="desc">Verkoopagents met toegang tot het agentenportaal (invest.utamabali.com/agents). Een agent uitzetten sluit de toegang meteen. Wat een agent registreert, staat ook bij Leads met als bron “agent: naam”.</div></div>${bewerk?'<button class="btn btn-primary btn-sm" id="agNieuw">+ Agent uitnodigen</button>':''}</div><div class="table-wrap" id="tw_agents"><div class="empty">Laden…</div></div></div>
+    <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h3>Geregistreerde kopers</h3><div class="desc">Wat agents hebben ingevoerd en het resultaat: geregistreerd (90 dagen bescherming) of al bekend (geen bescherming).</div></div></div><div class="table-wrap" id="tw_agkopers"><div class="empty">Laden…</div></div></div>`;
+  if(bewerk)$('#agNieuw').onclick=()=>openAgentForm();
+  await laadAgents(bewerk);
+}
+async function laadAgents(bewerk){
+  const [a,r]=await Promise.all([sb.rpc('agents_beheer_lijst'),sb.rpc('agent_beheer_registraties',{p_agent:null})]);
+  if(a.error){$('#tw_agents').innerHTML='<div class="empty">'+esc(a.error.message)+'</div>';return;}
+  const ags=a.data||[];
+  let h='<table><thead><tr><th>Naam</th><th>Bedrijf</th><th>E-mail</th><th>Toegang</th><th>Laatst ingelogd</th><th class="num">Downloads</th><th class="num">Geregistreerd</th><th class="num">Al bekend</th><th style="text-align:right">Acties</th></tr></thead><tbody>';
+  if(!ags.length)h+='<tr><td colspan="9" class="muted" style="padding:14px">Nog geen agents. Nodig de eerste uit met “+ Agent uitnodigen”.</td></tr>';
+  ags.forEach(x=>{
+    h+=`<tr><td><b>${esc(x.naam)}</b></td><td>${esc(x.bedrijf||'—')}</td><td>${esc(x.email)}</td>
+      <td>${x.actief?'<span class="badge green">Aan</span>':'<span class="badge grey">Uit</span>'}</td>
+      <td>${x.laatst_ingelogd_at?esc(fmtDateTime(x.laatst_ingelogd_at)):'<span class="muted">nog niet</span>'}</td>
+      <td class="num">${x.downloads}</td><td class="num">${x.geregistreerd}</td><td class="num">${x.al_bekend}</td>
+      <td><div class="row-actions">${bewerk?`<button class="btn btn-ghost btn-sm" data-agzet="${x.id}" data-aan="${x.actief?'0':'1'}">${x.actief?'Uitzetten':'Aanzetten'}</button><button class="btn btn-ghost btn-sm" data-aguit="${x.id}">Opnieuw uitnodigen</button>`:''}</div></td></tr>`;
+  });
+  $('#tw_agents').innerHTML=h+'</tbody></table>';
+  $('#tw_agents').querySelectorAll('[data-agzet]').forEach(b=>b.onclick=async()=>{
+    const aan=b.dataset.aan==='1';
+    if(!aan&&!confirm('Deze agent uitzetten? Hij kan dan meteen niet meer inloggen.'))return;
+    const {error}=await sb.rpc('agent_beheer_zet_actief',{p_id:b.dataset.agzet,p_actief:aan});
+    if(error){toast(error.message,'err');return;}
+    toast(aan?'Agent staat aan':'Agent staat uit','ok');laadAgents(bewerk);
+  });
+  $('#tw_agents').querySelectorAll('[data-aguit]').forEach(b=>b.onclick=async()=>{
+    const x=ags.find(y=>y.id===b.dataset.aguit);if(!x)return;
+    b.disabled=true;
+    try{const res=await agentUitnodigen({naam:x.naam,email:x.email,bedrijf:x.bedrijf});toast(res.mail==='verstuurd'?'Uitnodiging opnieuw verstuurd':'Agent staat aan, maar de mail is niet verstuurd ('+res.mail+')',res.mail==='verstuurd'?'ok':'err');}
+    catch(err){toast(err.message,'err');}
+    b.disabled=false;laadAgents(bewerk);
+  });
+  if(r.error){$('#tw_agkopers').innerHTML='<div class="empty">'+esc(r.error.message)+'</div>';return;}
+  const regs=r.data||[];
+  let k='<table><thead><tr><th>Datum</th><th>Agent</th><th>Koper</th><th>Project</th><th>Registratie</th><th>Voortgang</th><th>Beschermd tot</th><th>Fee gemeld</th></tr></thead><tbody>';
+  if(!regs.length)k+='<tr><td colspan="8" class="muted" style="padding:14px">Nog niets geregistreerd.</td></tr>';
+  regs.forEach(x=>{
+    const vg=x.voortgang?(AGENT_VOORTGANG[x.voortgang]||[x.voortgang,'grey']):null;
+    const pr=x.project==='The Reload'?'Cemagi (interesse)':(x.project+(x.unit?', '+x.unit:''));
+    k+=`<tr><td>${esc(fmtDate(x.created_at))}</td><td>${esc(x.agent)}</td>
+      <td>${x.contact_id?`<a href="#" data-agcontact="${x.contact_id}"><b>${esc(x.naam)}</b></a>`:`<b>${esc(x.naam)}</b>`}<div class="muted" style="font-size:12px">${esc(x.email||x.telefoon||'')}</div></td>
+      <td>${esc(pr)}</td>
+      <td>${x.status==='geregistreerd'?'<span class="badge green">Geregistreerd</span>':'<span class="badge grey">Al bekend</span>'}</td>
+      <td>${vg?`<span class="badge ${vg[1]}">${esc(vg[0])}</span>`:'—'}</td>
+      <td>${x.beschermd_tot?esc(fmtDate(x.beschermd_tot)):'—'}</td><td>${x.fee_gemeld?'Ja':'<span class="muted">—</span>'}</td></tr>`;
+  });
+  $('#tw_agkopers').innerHTML=k+'</tbody></table>';
+  $('#tw_agkopers').querySelectorAll('[data-agcontact]').forEach(a2=>a2.onclick=e=>{e.preventDefault();openLivePerson(a2.dataset.agcontact);});
+}
+function openAgentForm(){
+  const body=`<div class="grid2">
+    <div class="field"><label>Naam *</label><input id="ag_naam"></div>
+    <div class="field"><label>E-mail *</label><input id="ag_email" type="email"></div>
+    <div class="field" style="grid-column:1/-1"><label>Bedrijf</label><input id="ag_bedrijf"></div></div>
+    <div class="hint">De agent krijgt een mail met de link naar het portaal en vraagt daar zelf een inloglink aan. Geen wachtwoord. Eerst de agentovereenkomst laten tekenen, dan pas uitnodigen.</div>`;
+  showModal('Agent uitnodigen',body,async()=>{
+    const naam=$('#ag_naam').value.trim(),email=$('#ag_email').value.trim();
+    if(!naam||!email){toast('Vul naam en e-mail in','err');return false;}
+    try{
+      const res=await agentUitnodigen({naam,email,bedrijf:$('#ag_bedrijf').value.trim()});
+      toast(res.mail==='verstuurd'?'Agent toegevoegd en uitnodiging verstuurd':'Agent toegevoegd, maar de mail is niet verstuurd ('+res.mail+')',res.mail==='verstuurd'?'ok':'err');
+      renderAgents();
+    }catch(err){toast(err.message,'err');return false;}
+  });
 }
 
 /* ================= PLANNING =================
