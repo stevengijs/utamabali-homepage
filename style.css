@@ -4,7 +4,7 @@
   --ink:#17140F; --ink-2:#211C14; --ink-soft:#332A1F; --muted:#5B564C; --line:#E7DECD;
   --terra:#8B5A3C; --olive:#9CA47C; --olive-2:#C3C9A6; --olive-3:#C9D1A6; --olive-deep:#5B6A45; --sage:#EEF0E2;
   --ok:#2E7D5B;
-  --display:'Manrope', 'Inter', system-ui, sans-serif;
+  --display:'Poppins', 'Inter', system-ui, sans-serif;
   --body:'Inter', system-ui, -apple-system, sans-serif;
   --shadow:rgba(0,0,0,.02) 0 0 0 1px, rgba(0,0,0,.04) 0 2px 6px, rgba(0,0,0,.1) 0 4px 8px;
   --lift:0 1px 0 rgba(255,255,255,.6) inset, 0 18px 40px -18px rgba(23,20,15,.35), 0 2px 6px rgba(23,20,15,.08);
@@ -172,7 +172,7 @@ html.menu-open{ overflow:hidden; }
 .hero-meta{ grid-area:meta; }
 .teller{ grid-area:teller; display:none; }
 .hero h1{
-  font-weight:800; font-size:clamp(35px, 9.4vw, 66px); line-height:1.03; letter-spacing:-.04em;
+  font-weight:700; font-size:clamp(32px, 8.6vw, 61px); line-height:1.05; letter-spacing:-.02em;
   margin-bottom:16px; text-wrap:balance;
 }
 .lead{ font-size:17px; line-height:1.55; color:var(--ink-soft); max-width:34em; }
@@ -272,7 +272,10 @@ html.menu-open{ overflow:hidden; }
 .sec{ padding:64px 0; }
 @media (min-width:1024px){ .sec{ padding:104px 0; } }
 .sec-head{ margin-bottom:32px; max-width:780px; }
-.sec h2{ font-weight:800; font-size:clamp(31px, 4.4vw, 58px); line-height:1.04; letter-spacing:-.035em; text-wrap:balance; }
+.sec h2{ font-weight:700; font-size:clamp(28px, 4vw, 53px); line-height:1.06; letter-spacing:-.02em; text-wrap:balance; }
+/* Kop met een tweede, gekleurde regel (<br> plus .accent): als blok laat de browser die regel zelf uitbalanceren, zodat er geen
+   los woord op de laatste regel valt. Poppins is breder dan het vorige lettertype en liet dat vaker gebeuren. */
+h1 .accent, h2 .accent{ display:block; text-wrap:balance; }
 .sec-sub{ margin-top:14px; font-size:17px; line-height:1.55; color:var(--muted); max-width:36em; }
 .sec-sub, .lead, .faq-a p{ text-wrap:pretty; } /* geen weduwe zoals "is." onder de FAQ-kop; browsers zonder steun negeren het */
 @media (min-width:1024px){ .sec-head{ margin-bottom:56px; } .sec-sub{ font-size:18.5px; } }
@@ -286,7 +289,7 @@ html.menu-open{ overflow:hidden; }
 .fnode .tile{ position:relative; border-radius:14px; overflow:hidden; background:var(--sand-2); }
 .fnode .k{ display:flex; align-items:center; gap:10px; font:600 11px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
 .kn{ display:inline-grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--paper); box-shadow:0 0 0 1px var(--line); font:700 11px/1 var(--body); letter-spacing:0; color:var(--ink); }
-.fnode h3{ font-weight:800; font-size:20px; line-height:1.15; letter-spacing:-.025em; }
+.fnode h3{ font-weight:700; font-size:20px; line-height:1.15; letter-spacing:-.02em; }
 .fnode > p:not(.k){ font-size:14px; line-height:1.45; color:var(--muted); }
 
 /* Mobiel: compacte rijen, de hele geldstroom past in een scherm */
@@ -418,7 +421,7 @@ html.menu-open{ overflow:hidden; }
 
 .year{ margin:0; border-radius:22px; padding:20px 18px 18px; background:var(--sand); box-shadow:0 0 0 1px var(--line); }
 .year-h{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin:0 0 20px; }
-.year h3{ font-weight:800; font-size:18px; line-height:1.2; letter-spacing:-.02em; }
+.year h3{ font-weight:700; font-size:18px; line-height:1.2; letter-spacing:-.02em; }
 .year-h p{ font-size:13px; color:var(--muted); margin-top:4px; }
 .year-pill{ flex:none; font:700 12px/1 var(--body); padding:8px 10px; border-radius:999px; background:var(--sage); color:var(--olive-deep); }
 @media (max-width:759px){ .year-pill{ display:none; } }
@@ -544,7 +547,7 @@ html.menu-open{ overflow:hidden; }
 .step-media{ position:relative; margin:0; aspect-ratio:4/3; border-radius:16px; overflow:hidden; }
 .step-media img{ width:100%; height:100%; object-fit:cover; transition:transform 1.2s var(--ease); }
 .step:hover .step-media img{ transform:scale(1.04); }
-.step h3{ margin:16px 0 6px; font-weight:800; font-size:20px; line-height:1.2; letter-spacing:-.02em; }
+.step h3{ margin:16px 0 6px; font-weight:700; font-size:20px; line-height:1.2; letter-spacing:-.02em; }
 .step > p{ flex:1; margin:0 0 14px; font-size:14.5px; line-height:1.48; color:var(--muted); }
 
 .step-media.ui{ display:grid; place-items:center; padding:16px; background:linear-gradient(160deg, var(--paper), var(--sand-2)); box-shadow:0 0 0 1px var(--line) inset; }
@@ -642,7 +645,7 @@ html.menu-open{ overflow:hidden; }
   padding-bottom:clamp(28px, 4.5vh, 48px); /* lucht onder de knoprij; main.js telt dit mee in de pasvorm */
 }
 .atoz.pin .sec-head{ margin-bottom:28px; }
-.atoz.pin .sec h2, .atoz.pin h2{ font-size:clamp(36px, 3.6vw, 52px); }
+.atoz.pin .sec h2, .atoz.pin h2{ font-size:clamp(33px, 3.3vw, 48px); }
 .atoz.pin .rail{ display:flex; margin-bottom:22px; }
 .atoz.pin .steps-vp{ width:max-content; transform:translate3d(var(--x, 0px),0,0); will-change:transform; }
 .atoz.pin .steps{ display:flex; flex-wrap:nowrap; gap:22px; width:max-content; overflow:visible; }
@@ -691,7 +694,7 @@ html.menu-open{ overflow:hidden; }
 .m-src-t{ display:flex; flex-direction:column; justify-content:center; min-width:0; }
 .m-k{ font:600 11px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:rgba(254,251,246,.58); margin-bottom:8px; }
 .m-k.dark{ color:var(--muted); }
-.model h3{ font-weight:800; font-size:21px; line-height:1.15; letter-spacing:-.02em; }
+.model h3{ font-weight:700; font-size:21px; line-height:1.15; letter-spacing:-.02em; }
 .m-p{ margin-top:6px; font-size:14px; line-height:1.45; color:rgba(254,251,246,.72); }
 .ch-list{ list-style:none; margin:12px 0 0; padding:0; display:grid; gap:6px; }
 .ch-list li{ display:flex; align-items:center; gap:10px; font:600 13px/1.2 var(--body); color:rgba(254,251,246,.9); padding:7px 8px; border-radius:10px; background:rgba(254,251,246,.06); }
@@ -1047,7 +1050,7 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .person-img{ border-radius:16px; overflow:hidden; aspect-ratio:4/5; }
 .person-img img{ width:100%; height:100%; object-fit:cover; }
 .person-t{ min-width:0; }
-.person-t h3{ font-weight:800; font-size:22px; letter-spacing:-.02em; line-height:1.15; }
+.person-t h3{ font-weight:700; font-size:22px; letter-spacing:-.02em; line-height:1.15; }
 .person-t p:not(.m-k){ margin-top:6px; font-size:14.5px; line-height:1.5; color:var(--muted); }
 .person-t .m-k{ margin-bottom:6px; }
 .person-t .btn{ margin-top:14px; min-height:44px; }
@@ -1203,7 +1206,10 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .well-stats dd{ margin:8px 0 0; display:grid; gap:6px; }
 .well-stats dd .num{ font:800 clamp(32px, 6vw, 46px)/1 var(--display); letter-spacing:-.04em; color:var(--olive-deep); white-space:nowrap; }
 .well-stats small{ font:500 12.5px/1.45 var(--body); color:var(--muted); }
-@media (min-width:700px){ .well-stats{ grid-template-columns:repeat(3,1fr); } }
+@media (min-width:700px){ .well-stats{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+/* Tablet: de cijfers stonden op nowrap met 6vw (46px op 768px) in kolommen die niet onder hun inhoud mochten krimpen, waardoor de rij
+   buiten het scherm stak. Kleiner en per kolom begrensd; Poppins is breder en maakte het ongeveer 22px erger. */
+@media (min-width:700px) and (max-width:1023px){ .well-stats dd .num{ font-size:clamp(22px, 3.2vw, 32px); } }
 @media (max-width:699px){
   .well-stats{ gap:0; border-radius:20px; background:var(--paper); box-shadow:0 0 0 1px var(--line); overflow:hidden; }
   .well-stats > div{ border-radius:0; box-shadow:none; padding:16px 20px; }
@@ -1252,7 +1258,7 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .faq{ background:var(--paper); }
 .faq-grid{ display:grid; gap:14px; }
 .faq-aside{ order:2; border-radius:20px; padding:20px; background:var(--sand); box-shadow:0 0 0 1px var(--line); }
-.faq-aside h3{ font-weight:800; font-size:21px; line-height:1.2; letter-spacing:-.02em; }
+.faq-aside h3{ font-weight:700; font-size:21px; line-height:1.2; letter-spacing:-.02em; }
 .faq-aside p:not(.m-k){ margin-top:6px; font-size:14.5px; line-height:1.5; color:var(--muted); }
 .faq-aside .m-k{ margin-bottom:8px; }
 .faq-aside .btn{ margin-top:16px; }
@@ -1280,7 +1286,7 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .cta{ background:var(--ink); color:var(--paper); padding:72px 0 56px; }
 .cta-in{ display:grid; gap:36px; }
 @media (max-width:759px){ .cta{ padding:56px 0 48px; } .cta-in{ gap:28px; } }
-.cta h2{ font-weight:800; font-size:clamp(38px, 5vw, 66px); line-height:1.03; letter-spacing:-.04em; }
+.cta h2{ font-weight:700; font-size:clamp(35px, 4.6vw, 61px); line-height:1.05; letter-spacing:-.02em; text-wrap:balance; }
 .cta .accent{ color:var(--olive-3); }
 .cta .eyebrow{ margin-bottom:14px; }
 .cta p:not(.eyebrow){ margin-top:16px; font-size:17px; color:rgba(254,251,246,.74); }
