@@ -639,6 +639,7 @@ html.menu-open{ overflow:hidden; }
 .atoz.pin .atoz-stage{
   position:sticky; top:var(--nav-h); height:calc(100vh - var(--nav-h)); overflow:hidden;
   display:flex; flex-direction:column; justify-content:flex-start; padding-top:clamp(20px, 4vh, 48px);
+  padding-bottom:clamp(28px, 4.5vh, 48px); /* lucht onder de knoprij; main.js telt dit mee in de pasvorm */
 }
 .atoz.pin .sec-head{ margin-bottom:28px; }
 .atoz.pin .sec h2, .atoz.pin h2{ font-size:clamp(36px, 3.6vw, 52px); }

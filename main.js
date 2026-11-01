@@ -290,7 +290,13 @@
     if (!want) return;
     var stageH = window.innerHeight - (nav ? nav.offsetHeight : 68);
     var inner = $('.wrap', stage);
-    if (inner.scrollHeight > stageH - 24) { atoz.classList.remove("pin"); return; } /* past niet: gewoon raster */
+    /* Passen moet het geheel: kop, stappen en de knoprij eronder, plus lucht onderaan. Eerder telde alleen het eerste blok
+       (kop en stappen) mee. Op een scherm waar dat net paste, viel de knop tegen de onderrand van de vastgepinde stage of
+       eronder weg (Steven, 1 november 2026). */
+    var knoprij = $('.sec-cta', stage);
+    var nodig = knoprij ? knoprij.getBoundingClientRect().bottom - stage.getBoundingClientRect().top : inner.scrollHeight;
+    var luchtOnder = parseFloat(getComputedStyle(stage).paddingBottom) || 0;
+    if (inner.scrollHeight > stageH - 24 || nodig + luchtOnder > stageH) { atoz.classList.remove("pin"); return; } /* past niet: gewoon raster */
     var wrapW = inner.clientWidth - parseFloat(getComputedStyle(inner).paddingLeft) - parseFloat(getComputedStyle(inner).paddingRight);
     pinDist = Math.max(0, track.scrollWidth - wrapW);
     atoz.style.height = (stageH + pinDist + Math.round(stageH * 0.25)) + 'px';
