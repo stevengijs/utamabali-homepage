@@ -760,46 +760,65 @@ h1 .accent, h2 .accent{ display:block; text-wrap:balance; }
 .b-maison .bm-main img{ object-position:44% 60%; }
 .b-reload .bm-main img{ object-position:72% 50%; }
 .brand-body{ padding:8px 10px 12px; display:flex; flex-direction:column; align-items:flex-start; }
-.brand-mini{ display:grid; gap:12px; }
-.bmini{ display:block; border-radius:22px; background:var(--sand); box-shadow:0 0 0 1px var(--line); padding:8px; color:var(--ink); text-decoration:none; transition:transform .25s var(--ease), box-shadow .25s var(--ease); }
-.bmini:hover{ transform:translateY(-3px); box-shadow:0 0 0 1px var(--line), 0 18px 40px -18px rgba(23,20,15,.35); }
-.bmini-img{ position:relative; display:block; aspect-ratio:4/3; border-radius:16px; overflow:hidden; background:var(--ph); }
-.bmini-img img, .bmini-img video{ width:100%; height:100%; object-fit:cover; display:block; }
-.bmini-img .tag{ position:absolute; top:10px; left:10px; }
-.bmini-body{ display:block; padding:16px 10px 12px; }
-.bmini .brand-loc{ display:block; margin-bottom:8px; }
-.bmini .brand-name{ display:block; font-size:30px; line-height:1; }
-.bmini.b-reload .brand-name{ font-size:22px; }
-/* volgend project als verrassing (Steven, 9 oktober 2026), in de stijl van de teaser op invest */
-.bmini.b-teaser{ position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; min-height:420px; padding:28px 22px; background:#171512; color:#fff; text-align:center; box-shadow:none; }
-.bmini.b-teaser:hover{ box-shadow:0 18px 40px -18px rgba(23,20,15,.45); }
-.b-teaser .tz-bg{ position:absolute; inset:0; background-size:cover; background-position:30% 50%; transform:scale(1.06); }
-.b-teaser .tz-bg::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(23,21,18,.18), rgba(23,21,18,.66)); }
-.b-teaser .tz-c{ position:relative; z-index:1; display:grid; justify-items:center; gap:12px; max-width:300px; }
-@media (max-width:759px){
-  .bmini.b-teaser{ min-height:320px; }
+/* Schuifrij met staande projectkaarten (Steven, 1 november 2026), in de stijl van tamoragroup.com: een donkere laag over de foto,
+   de naam in het midden, en bij hover verdwijnt de laag, zoomt de foto in en komt de tekst met knop erbij. Op touch (geen hover)
+   staat die tekst er altijd. De rij loopt tot de rand van het scherm; de eerste kaart sluit aan op de kantlijn van .wrap. */
+.pfx{ --pfx-pad:16px; --pfx-end:16px; --pfx-gap:12px; position:relative; margin-top:8px; }
+@media (min-width:768px){ .pfx{ --pfx-pad:32px; --pfx-end:32px; } }
+@media (min-width:1200px){ .pfx{ --pfx-pad:48px; --pfx-end:48px; --pfx-gap:14px; } }
+@media (min-width:1312px){ .pfx{ --pfx-pad:calc((100% - 1216px) / 2); } }
+.pfx-track{ display:flex; gap:var(--pfx-gap); margin:0; padding:0 0 0 var(--pfx-pad); list-style:none; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; scroll-padding-inline:var(--pfx-pad); scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.pfx-track::-webkit-scrollbar{ display:none; }
+.pfx-track::after{ content:""; flex:0 0 max(0px, calc(var(--pfx-end) - var(--pfx-gap))); }
+.pfx-item{ flex:0 0 auto; width:min(76vw, 292px); scroll-snap-align:start; }
+.pfx-card{ position:relative; display:block; width:100%; aspect-ratio:9/16; margin:0; padding:0; border:0; border-radius:18px; overflow:hidden; isolation:isolate; transform:translateZ(0); background:#2A251E; color:#fff; font:inherit; text-align:center; text-decoration:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.pfx-card:focus-visible{ outline:2px solid var(--olive-deep); outline-offset:3px; }
+.pfx-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform 1.4s var(--ease); }
+.pfx-shade{ position:absolute; inset:0; background:rgba(23,20,15,.46); transition:background-color 1.1s var(--ease); }
+.pfx-grad{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(23,20,15,0) 40%, rgba(23,20,15,.8) 100%); opacity:0; transition:opacity .9s var(--ease); }
+.pfx-mid{ position:absolute; inset:0; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:0 18px; }
+.pfx-loc{ font:600 11px/1.3 var(--body); letter-spacing:.2em; text-transform:uppercase; color:rgba(255,255,255,.92); text-shadow:0 1px 10px rgba(0,0,0,.55), 0 0 2px rgba(0,0,0,.25); }
+.pfx-loc-warm{ color:#F0C9A8; font-weight:700; letter-spacing:.16em; }
+.pfx-name{ display:block; font:600 28px/1.05 var(--display); letter-spacing:-.01em; text-wrap:balance; text-shadow:0 2px 24px rgba(0,0,0,.5); }
+.b-maison .pfx-name{ font-family:'Fraunces', Georgia, serif; font-weight:400; font-size:40px; font-variation-settings:"opsz" 144, "SOFT" 0; letter-spacing:-.02em; }
+.b-moka .pfx-name{ font-family:'Fraunces', Georgia, serif; font-weight:600; font-size:44px; font-variation-settings:"opsz" 144, "SOFT" 100; letter-spacing:.02em; }
+.b-teaser .pfx-name{ font-size:22px; line-height:1.22; max-width:13em; }
+.pfx-pill{ display:inline-flex; align-items:center; gap:7px; padding:7px 12px; border-radius:999px; background:rgba(254,251,246,.16); box-shadow:inset 0 0 0 1px rgba(254,251,246,.42); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); font:600 11.5px/1 var(--body); color:#fff; }
+.pfx-pill i, .pfx-st i{ flex:none; width:7px; height:7px; border-radius:50%; background:#BFD79A; }
+.pfx-pill-sold{ background:var(--paper); box-shadow:0 6px 16px rgba(23,20,15,.25); color:var(--ink); font-weight:700; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; transform:rotate(-3deg); }
+.pfx-card .tag{ z-index:3; }
+.pfx-play{ position:absolute; top:10px; right:10px; z-index:3; width:34px; height:34px; border-radius:50%; background:rgba(254,251,246,.95); color:var(--ink); display:grid; place-items:center; box-shadow:0 6px 16px rgba(23,20,15,.25); }
+.pfx-play svg{ width:16px; height:16px; margin-left:2px; }
+.pfx-more{ position:absolute; left:0; right:0; bottom:0; z-index:2; display:grid; justify-items:center; gap:9px; padding:0 18px 20px; opacity:0; transform:translateY(14px); transition:opacity .8s var(--ease), transform .8s var(--ease); }
+.pfx-line{ font:400 14px/1.45 var(--body); color:rgba(255,255,255,.95); text-wrap:balance; }
+.pfx-st, .pfx-ab{ display:inline-flex; align-items:center; gap:7px; font:600 12.5px/1.3 var(--body); color:#fff; }
+.pfx-ab{ gap:5px; font-weight:500; font-size:13.5px; }
+.pfx-ab .ab-logo{ width:17px; height:17px; color:#FF5A75; margin-right:3px; }
+.pfx-ab .ab-star{ width:13px; height:13px; }
+.pfx-rev{ color:rgba(255,255,255,.78); }
+.pfx-go{ display:inline-flex; align-items:center; gap:8px; margin-top:3px; padding:11px 17px; border-radius:999px; background:var(--paper); color:var(--ink); font:600 13.5px/1 var(--body); }
+.pfx-go .arr, .pfx-go svg{ width:14px; height:14px; flex:none; }
+.pfx-arrow{ position:absolute; top:50%; z-index:5; width:46px; height:46px; margin-top:-23px; padding:0; border:0; border-radius:50%; background:var(--paper); color:var(--ink); display:grid; place-items:center; cursor:pointer; box-shadow:0 8px 24px -6px rgba(23,20,15,.45); transition:opacity .25s, transform .25s var(--ease), background-color .2s; }
+.pfx-arrow svg{ width:20px; height:20px; }
+.pfx-prev{ left:max(8px, calc(var(--pfx-pad) - 23px)); }
+.pfx-next{ right:max(8px, calc(var(--pfx-pad) - 23px)); }
+.pfx-arrow:hover{ background:#fff; transform:scale(1.07); }
+.pfx-arrow:disabled{ opacity:0; pointer-events:none; }
+.pfx-fits .pfx-arrow{ display:none; }
+@media (hover:hover){
+  .pfx-card:hover .pfx-bg{ transform:scale(1.12); }
+  .pfx-card:hover .pfx-shade{ background-color:rgba(23,20,15,.16); }
+  .pfx-card:hover .pfx-grad{ opacity:1; }
+  .pfx-card:hover .pfx-more{ opacity:1; transform:none; }
 }
-.tz-tag{ font:700 11px/1.3 var(--body); letter-spacing:.16em; text-transform:uppercase; color:#f0c9a8; }
-.tz-t{ font:600 24px/1.2 var(--display); letter-spacing:-.01em; color:#fff; }
-.tz-price{ margin-top:2px; padding:8px 14px; border-radius:999px; background:rgba(254,251,246,.14); border:1px solid rgba(254,251,246,.4); font:700 14px/1.2 var(--body); color:#fff; }
-.tz-note{ font:400 13.5px/1.45 var(--body); color:rgba(254,251,246,.88); }
-.tz-go{ display:inline-flex; align-items:center; gap:8px; margin-top:2px; font:600 14px/1 var(--body); color:#f0c9a8; }
-.tz-go .arr{ width:14px; height:14px; }
-.bmini-line{ display:block; margin-top:8px; font:400 15px/1.5 var(--body); color:var(--ink-soft); }
-/* logo van The Maison (de luipaard uit het merk) naast de naam */
-.bmini-head{ display:flex; align-items:center; gap:12px; }
-.bmini-mark{ width:60px; height:auto; flex:none; }
-/* opleverlabel van MOKA */
-.bmini-status{ display:inline-flex; align-items:center; gap:7px; margin-top:12px; padding:6px 11px; border-radius:999px; background:var(--sage); box-shadow:0 0 0 1px rgba(91,105,74,.25); font:700 12px/1 var(--body); color:var(--olive-deep); }
-.bmini-status i{ width:7px; height:7px; border-radius:50%; background:var(--olive-deep); }
-/* unitmix van MOKA (Steven, 9 oktober 2026) */
-.bmini-mix{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-.bmini-mix span{ padding:5px 10px; border-radius:999px; background:var(--paper); box-shadow:0 0 0 1px var(--line); font:700 12px/1 var(--body); letter-spacing:.02em; color:var(--ink); }
-.bmini-go{ display:inline-flex; align-items:center; gap:8px; margin-top:12px; font:600 14px/1 var(--body); color:var(--ink); }
-.bmini-go .arr{ width:14px; height:14px; }
-@media (max-width:759px){
-  .bmini-go{ display:flex; justify-content:center; min-height:46px; margin-top:16px; border-radius:999px; box-shadow:inset 0 0 0 1.5px rgba(23,20,15,.2); }
-  .tz-go{ min-height:46px; padding:0 20px; border-radius:999px; box-shadow:inset 0 0 0 1.5px rgba(254,251,246,.45); margin-top:4px; }
+.pfx-card:focus-visible .pfx-bg{ transform:scale(1.12); }
+.pfx-card:focus-visible .pfx-shade{ background-color:rgba(23,20,15,.16); }
+.pfx-card:focus-visible .pfx-grad{ opacity:1; }
+.pfx-card:focus-visible .pfx-more{ opacity:1; transform:none; }
+@media (hover:none){
+  .pfx-grad{ opacity:1; }
+  .pfx-more{ opacity:1; transform:none; }
+  .pfx-arrow{ display:none; }
 }
 .sec-cta{ display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; margin:36px 0 0; }
 /* De knop onder de tien stappen staat buiten .wrap (in .atoz-stage) en kreeg dus geen kantlijn: dezelfde maten als .wrap. */
@@ -829,40 +848,6 @@ h1 .accent, h2 .accent{ display:block; text-wrap:balance; }
   .sec-cta-big{ padding:20px 18px; }
   .sec-cta-big .btn{ width:100%; white-space:normal; text-align:center; line-height:1.25; padding:12px 18px; }
   .sec-cta-big .btn > span{ text-wrap:balance; }
-}
-@media (min-width:760px){ .brand-mini{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; } }
-/* eerder uitverkocht: bewijs onder de merkkaarten (Steven, 9 oktober 2026) */
-.sold-row{ margin-top:26px; }
-.sold-head{ display:flex; align-items:center; gap:12px; margin:0 0 12px; font:700 11.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
-.sold-head::after{ content:""; flex:1; height:1px; background:var(--line); }
-.sold-mini{ display:grid; gap:12px; }
-@media (min-width:760px){ .sold-mini{ grid-template-columns:1fr 1fr; gap:18px; } }
-.smini{ display:flex; gap:14px; align-items:center; padding:8px; border-radius:20px; background:var(--sand); box-shadow:0 0 0 1px var(--line); color:var(--ink); text-decoration:none; transition:transform .25s var(--ease), box-shadow .25s var(--ease); }
-a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 14px 32px -16px rgba(23,20,15,.3); }
-.smini-img{ position:relative; flex:0 0 42%; aspect-ratio:4/3; border-radius:14px; overflow:hidden; background:var(--ph); display:grid; place-items:center; }
-.smini-img img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.smini-img::after{ content:""; position:absolute; inset:0; background:rgba(23,20,15,.28); }
-.smini-img .tag{ position:absolute; top:8px; left:8px; z-index:2; }
-.smini-stamp{ position:relative; z-index:2; transform:rotate(-3deg); padding:6px 12px; border-radius:999px; background:var(--paper); color:var(--ink); font:800 11px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; box-shadow:0 6px 16px rgba(23,20,15,.22); }
-.smini-body{ display:grid; gap:4px; min-width:0; padding:4px 4px 4px 0; }
-.smini-body .brand-loc{ margin-bottom:2px; }
-.smini-name{ font:600 20px/1.1 var(--display); letter-spacing:-.01em; }
-.smini-st{ font:500 13.5px/1.35 var(--body); color:var(--ink-soft); }
-.smini-ab{ display:inline-flex; align-items:center; gap:5px; margin-top:4px; font:500 13.5px/1 var(--body); color:var(--ink); }
-.smini-ab .ab-logo{ width:18px; height:18px; color:#FF385C; margin-right:3px; }
-.smini-ab .ab-star{ width:13px; height:13px; }
-.smini-rev{ color:var(--muted); }
-.smini-video{ width:100%; border:0; font:inherit; text-align:left; cursor:pointer; }
-.smini-video:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 14px 32px -16px rgba(23,20,15,.3); }
-.smini-play{ position:absolute; right:8px; bottom:8px; z-index:2; width:34px; height:34px; border-radius:50%; background:rgba(254,251,246,.95); color:var(--ink); display:grid; place-items:center; box-shadow:0 6px 16px rgba(23,20,15,.25); }
-.smini-play svg{ width:16px; height:16px; margin-left:2px; }
-.smini-status{ margin-top:4px; justify-self:start; }
-.smini-go{ display:inline-flex; align-items:center; gap:6px; margin-top:6px; font:600 13.5px/1 var(--body); color:var(--ink); }
-.smini-go svg{ width:13px; height:13px; }
-@media (max-width:759px){
-  .smini{ gap:12px; }
-  .smini-img{ flex-basis:40%; aspect-ratio:1/1; }
-  .smini-status{ padding:0; background:none; box-shadow:none; font-size:11.5px; }
 }
 /* videolaag */
 .vmodal{ position:fixed; inset:0; z-index:2147482000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(23,20,15,.78); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
@@ -1174,7 +1159,7 @@ a.smini:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--line), 0 1
 .well-tile figcaption{ position:absolute; inset:0; z-index:2; }
 .wt-cap{ position:absolute; left:12px; right:12px; bottom:12px; font:700 14px/1.25 var(--display); color:#fff; letter-spacing:-.01em; }
 @media (max-width:759px){
-  .well-tile .tag, .bmini-img .tag, .smini-img .tag{ height:24px; padding:0 10px; font-size:10.5px; line-height:24px; }
+  .well-tile .tag, .pfx-card .tag{ height:24px; padding:0 10px; font-size:10.5px; line-height:24px; }
 }
 .well-partners{ grid-column:1 / -1; border-radius:22px; padding:20px; background:var(--paper); box-shadow:0 0 0 1px var(--line); }
 /* Naamchips. Het logo-slot (.plogo) staat in de markup en gaat aan zodra de klasse "names" van de lijst gaat. */

@@ -69,7 +69,7 @@
     navSure: 'Certainty', rating: '4.83', amtInleg: '€225,000', amtPay: '≈ €2,491',
     pEyebrow: 'Every project its own brand', pH: 'Guests book a brand.<br><span class="accent">Your villa is part of it.</span>',
     pSub: 'Own name, own design, own audience, a unique experience. That is why the nightly rate is higher.',
-    bGoMaison: 'See The Maison', bGoMoka: 'See MOKA', bGoReload: 'Put me on the list', tzTag: 'Coming soon · new project', tzT: 'Next project to be revealed soon', tzNote: 'Leave your details. You\'ll receive a personal message from us before the public sale.', tzGo: 'Put me on the list', soldHead: 'Sold out before', soldStamp: 'Sold out', soldTemanSt: 'Delivered and rented out', soldPalmaSt: 'Every villa sold', palmaStatus: 'Handover November 2026', palmaGo: 'Watch the video', ariaPalmaVideo: 'Watch the video of Villa Palma', ariaClose: 'Close', mokaStatus: 'Handover November 2026', altSoldTeman: 'TEMAN Villas in Tumbak Bayuh, delivered', altSoldPalma: 'Impression of Villa Palma in Kedungu',
+    bGoMaison: 'See The Maison', bGoMoka: 'See MOKA', bGoReload: 'Put me on the list', tzTag: 'Coming soon · new project', tzT: 'Next project to be revealed soon', tzNote: 'Leave your details. You\'ll receive a personal message from us before the public sale.', tzGo: 'Put me on the list', soldStamp: 'Sold out', soldTemanSt: 'Delivered and rented out', soldPalmaSt: 'Every villa sold', palmaStatus: 'Handover November 2026', palmaGo: 'Watch the video', ariaPalmaVideo: 'Watch the video of Villa Palma', pfRegion: 'Our projects', pfPrev: 'Previous projects', pfNext: 'Next projects', pfGoAirbnb: 'View on Airbnb', ariaClose: 'Close', mokaStatus: 'Handover November 2026', altSoldTeman: 'TEMAN Villas in Tumbak Bayuh, delivered', altSoldPalma: 'Impression of Villa Palma in Kedungu',
     mEyebrow: 'Data and automation', mH: 'Demand is moving west.<br><span class="accent">We are already there.</span>',
     mSub: 'Seminyak, Canggu, Pererenan, now Cemagi and Kedungu. Location, layout and nightly rate: data and AI weigh in.',
     mapK: 'Schematic, not to scale',
@@ -462,6 +462,30 @@
   setupPin(); navState(); pinScroll(); setStep(stepIdx, 0.1); updateDock();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { setupPin(); pinScroll(); updateDock(); });
   window.addEventListener('load', function () { setupPin(); pinScroll(); updateDock(); });
+
+  /* ---------- Projectenrij: pijlen schuiven één kaart op; ze verdwijnen als alle kaarten al in beeld passen ---------- */
+  var pfx = $('.pfx');
+  if (pfx) {
+    var pTrack = $('.pfx-track', pfx), pPrev = $('.pfx-prev', pfx), pNext = $('.pfx-next', pfx), pBusy = false;
+    var pfxSync = function () {
+      pBusy = false;
+      var max = pTrack.scrollWidth - pTrack.clientWidth;
+      pfx.classList.toggle('pfx-fits', max < 8);
+      pPrev.disabled = pTrack.scrollLeft < 6;
+      pNext.disabled = pTrack.scrollLeft > max - 6;
+    };
+    var pfxStap = function (dir) {
+      var item = $('.pfx-item', pTrack);
+      var w = item ? item.getBoundingClientRect().width + (parseFloat(getComputedStyle(pTrack).columnGap) || 12) : 300;
+      pTrack.scrollBy({ left: dir * w, behavior: reduce ? 'auto' : 'smooth' });
+    };
+    pPrev.addEventListener('click', function () { pfxStap(-1); });
+    pNext.addEventListener('click', function () { pfxStap(1); });
+    pTrack.addEventListener('scroll', function () { if (!pBusy) { pBusy = true; raf(pfxSync); } }, { passive: true });
+    window.addEventListener('resize', pfxSync);
+    window.addEventListener('load', pfxSync);
+    pfxSync();
+  }
 
   /* ---------- MOKA-video: pas laden als hij in beeld komt, een lichtere versie onder 1024 px,
      niets bij reduced motion of bij een databesparende voorkeur (prefers-reduced-data) ---------- */
