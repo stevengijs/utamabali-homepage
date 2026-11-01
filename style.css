@@ -1046,7 +1046,8 @@ h1 .accent, h2 .accent{ display:block; text-wrap:balance; }
   .pf-rating{ grid-column:span 3; padding:22px; }
   .pf-calmaan{ grid-column:span 3; aspect-ratio:auto; }
   .pf-moka{ grid-column:span 8; aspect-ratio:auto; }
-  .pf-list{ grid-column:span 4; padding:22px 24px 12px; }
+  .pf-list{ grid-column:span 4; padding:18px 24px 8px; }
+  .pf-list .track li{ padding:5px 0; }
   .pf-card figcaption{ left:16px; right:16px; bottom:16px; }
   .pf-name{ font-size:18px; }
   .rating b{ font-size:60px; }

@@ -116,7 +116,7 @@
     wS1K: 'Wellness tourism worldwide', wS1V: 'USD 894 bn', wS1S: 'Source: Global Wellness Institute, figure for 2024',
     wS2K: 'Premium on homes with wellness', wS2S: 'International research. Source: Global Wellness Institute, 300+ studies',
     wS3K: 'Foreign visitors to Bali in 2025', wS3V: '6.95 m', wS3S: '9.7% more than in 2024. Source: BPS Bali',
-    zEyebrow: 'Dutch and precise', zH: 'Agreements on paper.<br><span class="accent">No empty promises.</span>',
+    zEyebrow: 'Dutch and precise', zH: 'Agreements on paper.<br><span class="accent">Everything clear up front.</span>',
     zSub: 'Dutch party, Dutch founder. Leasehold 30 + 30 years, permits included, paid out every month in euros.',
     altNotaris: 'Steven Gijsman signing a contract at the notary in Bali', tagNotaris: 'At the notary', altOpgWoon: 'Furnished living room with open kitchen of a delivered project, under a wooden roof structure',
     z1B: 'Dutch.', z1: 'Dutch party, Dutch founder, in Bali himself.',
