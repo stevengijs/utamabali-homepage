@@ -2590,7 +2590,7 @@ async function renderAgents(){
   const v=$('#view');const bewerk=canEdit('agents');
   v.innerHTML=`<div class="panel" id="pn_agaanmeld" style="display:none;margin-bottom:14px"><div class="panel-head"><div><h3>Aanmeldingen <span class="badge amber" id="agAanmeldN"></span></h3><div class="desc">Agents die zich zelf hebben aangemeld op agents.utamabali.com. Ze hebben pas toegang als je ze goedkeurt, en krijgen dan automatisch een mail met de inloglink.</div></div></div><div class="table-wrap" id="tw_agaanmeld"></div></div>
     <div class="panel"><div class="panel-head"><div><h3>Agents</h3><div class="desc">Verkoopagents met toegang tot het agentenportaal (agents.utamabali.com). Een agent uitzetten sluit de toegang meteen. Wat een agent registreert, staat ook bij Leads met als bron “agent: naam”. Agents kunnen zich ook zelf aanmelden, die staan hierboven onder Aanmeldingen.</div></div>${bewerk?'<button class="btn btn-primary btn-sm" id="agNieuw">+ Agent uitnodigen</button>':''}</div><div class="table-wrap" id="tw_agents"><div class="empty">Laden…</div></div></div>
-    <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h3>Geregistreerde kopers</h3><div class="desc">Wat agents hebben ingevoerd en het resultaat: geregistreerd (90 dagen bescherming) of al bekend (geen bescherming).</div></div></div><div class="table-wrap" id="tw_agkopers"><div class="empty">Laden…</div></div></div>`;
+    <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h3>Geregistreerde kopers</h3><div class="desc">Wat agents hebben ingevoerd en het resultaat: geregistreerd (14 dagen bescherming, tot de reserveringsaanbetaling binnen is) of al bekend (geen bescherming).</div></div></div><div class="table-wrap" id="tw_agkopers"><div class="empty">Laden…</div></div></div>`;
   if(bewerk)$('#agNieuw').onclick=()=>openAgentForm();
   await laadAgents(bewerk);
 }
@@ -10759,11 +10759,11 @@ function warmthTier(score,nieuw){
 function partnerBadge(partner){
   if(!partner)return '';
   // Agents staan los van gewone partners: een goedgekeurde agent die zelf iets invult is geen lead, en een koper
-  // die een agent aanbrengt valt 90 dagen onder de bescherming van die agent.
+  // die een agent aanbrengt valt 14 dagen onder de bescherming van die agent, tot de reserveringsaanbetaling binnen is.
   const titel=/^agent:.*\(zelf\)$/i.test(partner)
     ?'Geverifieerde agent die zelf een formulier invulde. Geen lead, geen opvolging nodig.'
     :/^agent:/i.test(partner)
-      ?'Aangebracht door een agent. Die heeft 90 dagen bescherming op deze koper, overleg eerst met de agent.'
+      ?'Aangebracht door een agent. Die heeft 14 dagen bescherming op deze koper, tot de reserveringsaanbetaling binnen is. Overleg eerst met de agent.'
       :`Aangeleverd door partner ${esc(partner)} — apart afgehandeld`;
   return `<span class="badge" title="${titel}" style="background:#111827;color:#fff;font-weight:700">${esc(partner)}</span>`;
 }
