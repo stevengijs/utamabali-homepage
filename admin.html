@@ -2661,8 +2661,8 @@ async function laadAgents(bewerk){
   });
   if(r.error){$('#tw_agkopers').innerHTML='<div class="empty">'+esc(r.error.message)+'</div>';return;}
   const regs=r.data||[];
-  let k='<table><thead><tr><th>Datum</th><th>Agent</th><th>Koper</th><th>Project</th><th>Registratie</th><th>Voortgang</th><th>Beschermd tot</th><th>Fee gemeld</th></tr></thead><tbody>';
-  if(!regs.length)k+='<tr><td colspan="8" class="muted" style="padding:14px">Nog niets geregistreerd.</td></tr>';
+  let k='<table><thead><tr><th>Datum</th><th>Agent</th><th>Koper</th><th>Project</th><th>Registratie</th><th>Voortgang</th><th>Beschermd tot</th></tr></thead><tbody>';
+  if(!regs.length)k+='<tr><td colspan="7" class="muted" style="padding:14px">Nog niets geregistreerd.</td></tr>';
   regs.forEach(x=>{
     const vg=x.voortgang?(AGENT_VOORTGANG[x.voortgang]||[x.voortgang,'grey']):null;
     const pr=x.project==='The Reload'?'Cemagi (interesse)':(x.project+(x.unit?', '+x.unit:''));
@@ -2671,7 +2671,7 @@ async function laadAgents(bewerk){
       <td>${esc(pr)}</td>
       <td>${x.status==='geregistreerd'?'<span class="badge green">Geregistreerd</span>':'<span class="badge grey">Al bekend</span>'}</td>
       <td>${vg?`<span class="badge ${vg[1]}">${esc(vg[0])}</span>`:'—'}</td>
-      <td>${x.beschermd_tot?esc(fmtDate(x.beschermd_tot)):'—'}</td><td>${x.fee_gemeld?'Ja':'<span class="muted">—</span>'}</td></tr>`;
+      <td>${x.beschermd_tot?esc(fmtDate(x.beschermd_tot)):'—'}</td></tr>`;
   });
   $('#tw_agkopers').innerHTML=k+'</tbody></table>';
   $('#tw_agkopers').querySelectorAll('[data-agcontact]').forEach(a2=>a2.onclick=e=>{e.preventDefault();openLivePerson(a2.dataset.agcontact);});
