@@ -4,13 +4,13 @@ PRODID:-//UTAMA//Webinar//NL
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
-UID:webinar-voordat-je-investeert-20261108@utamabali.com
-DTSTAMP:20261022T120000Z
+UID:webinar-the-maison-20261108@utamabali.com
+DTSTAMP:20261104T040000Z
 DTSTART:20261108T130000Z
 DTEND:20261108T140000Z
-SUMMARY:UTAMA webinar · Voordat je investeert in vastgoed op Bali
-DESCRIPTION:Je persoonlijke deelnamelink staat in je bevestigingsmail. Link kwijt? Meld je opnieuw aan via https://www.utamabali.com/webinar/
-URL:https://www.utamabali.com/webinar/
+SUMMARY:UTAMA webinar · The Maison in Pererenan: de laatste villa's
+DESCRIPTION:Live webinar, 30 minuten plus je vragen. Je persoonlijke deelnamelink staat in je bevestigingsmail. Link kwijt? Meld je opnieuw aan via https://www.utamabali.com/webinar-nov-8/
+URL:https://www.utamabali.com/webinar-nov-8/
 LOCATION:Online
 BEGIN:VALARM
 TRIGGER:-PT1H
