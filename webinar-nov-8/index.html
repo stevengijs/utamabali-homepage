@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <script src="/t.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live webinar · The Maison in Pererenan: de laatste villa's | UTAMA</title>
+<link rel="canonical" href="https://www.utamabali.com/webinar-nov-8/">
+<meta name="description" content="Live webinar, zondag 8 november, 14:00 uur (Nederlandse tijd). In 30 minuten laat Steven Gijsman zien wat The Maison is, wat een villa kost en welke villa's nog beschikbaar zijn.">
+<meta property="og:title" content="Ontdek of een villa op Bali een slimme investering is voor jouw vermogen">
+<meta property="og:description" content="Live webinar, zondag 8 november, 14:00 uur (Nederlandse tijd). In 30 minuten laat Steven Gijsman zien wat The Maison is, wat een villa kost en welke villa's nog beschikbaar zijn.">
+<meta property="og:image" content="https://www.utamabali.com/webinar-nov-8/assets/hero.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/png" sizes="192x192" href="/webinar-nov-8/assets/icon192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/webinar-nov-8/webinar.css">
+<!-- Meta Pixel: dezelfde dataset als /webinar/bali ("Claude Utama Site + MOKA Perspective", 419037194248722).
+     PageView op elke pagina; CompleteRegistration en Lead bij een gelukte inschrijving (zie hieronder). -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','419037194248722');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=419037194248722&ev=PageView&noscript=1"></noscript>
+<script>
+/* Inschrijving meten. Het WebinarGeek-formulier draait in deze pagina en maakt een inschrijving aan
+   met een POST naar .../subscriptions. Gaat die goed, dan CompleteRegistration en Lead, één keer per
+   bezoek (sessionStorage), zodat de bedankpagina hem niet nog eens telt. */
+(function(){
+  var KEY = 'utama_webinar_inschrijving';
+  function al(){ try{ return sessionStorage.getItem(KEY) === '1'; }catch(e){ return false; } }
+  function meld(){
+    if(al()) return;
+    try{ sessionStorage.setItem(KEY, '1'); }catch(e){}
+    if(window.fbq){
+      fbq('track', 'CompleteRegistration', {content_name: 'Webinar 8 november'});
+      fbq('track', 'Lead', {content_name: 'Webinar 8 november'});
+    }
+  }
+  function isInschrijving(url, method){
+    return /webinargeek\.com/.test(url) && /\/subscriptions(\?|$)/.test(url) && String(method || 'GET').toUpperCase() === 'POST';
+  }
+  var origineel = window.fetch;
+  if(origineel){
+    window.fetch = function(input, init){
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      var method = (init && init.method) || (input && input.method) || 'GET';
+      var p = origineel.apply(this, arguments);
+      if(isInschrijving(String(url), method)){
+        /* Na inschrijving stuurt WebinarGeek door naar het adres uit de instellingen van het webinar
+           (meegekopieerd: /webinar/bali-bedankt). Deze pagina hoort op /webinar-nov-8/thanks/ te eindigen,
+           dus dat adres vervangen we in het antwoord, voordat het formulier het gebruikt. */
+        return p.then(function(r){
+          if(r && r.ok) meld();
+          return r.clone().text().then(function(t){
+            if(t.indexOf('bali-bedankt') === -1) return r;
+            return new Response(t.split('/webinar/bali-bedankt').join('/webinar-nov-8/thanks/').split('\\/webinar\\/bali-bedankt').join('\\/webinar-nov-8\\/thanks\\/'), {status: r.status, statusText: r.statusText, headers: r.headers});
+          }).catch(function(){ return r; });
+        });
+      }
+      return p;
+    };
+  }
+})();
+</script>
+<!-- CONFIG · datum of tijd wijzigen? Pas aan: (1) alle teksten met de webinardatum en "14:00 uur",
+     (2) data-target hieronder in de countdown, (3) de agenda-links op /webinar-nov-8/thanks/,
+     (4) de datum naast de knop in de bovenbalk (nav-when). -->
+</head>
+<body class="has-stickybar">
+
+<nav>
+  <div class="wrap row">
+    <a href="https://www.utamabali.com" class="brand">UTAMA</a>
+    <div class="nav-cta">
+      <span class="nav-when"><span class="nw-long">Zondag 8 november · 14:00 uur · 30 minuten</span><span class="nw-short">Zo 8 nov · 14:00 · 30 min</span></span>
+      <a href="#aanmelden" class="btn nav-btn"><span class="nb-main">Reserveer je gratis plek ↓</span><span class="nb-sub">Zo 8 nov · 14:00 · 30 min</span></a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero hero-donker" style="background-image:url('/webinar-nov-8/assets/hero-bouw.jpg')">
+  <div class="wrap inner">
+    <img class="hero-face" src="/webinar-nov-8/assets/steven.jpg" alt="Steven Gijsman, oprichter UTAMA">
+    <div class="hero-badges">
+      <span class="live-badge"><span class="live-dot"></span>Live webinar</span>
+      <span class="hero-date">Gratis · Zondag 8 november · 14:00 uur<span id="heroDays"></span></span>
+    </div>
+    
+    <h1>The Maison in Pererenan: de laatste villa's.</h1>
+    <p>Live webinar, zondag 8 november, 14:00 uur (Nederlandse tijd). 30 minuten, daarna ruimte voor je vragen. In 30 minuten laat Steven Gijsman zien wat The Maison is, wat een villa kost en welke villa's nog beschikbaar zijn. Daarna hoor je hoe de bouw, de verhuur en het kopen op afstand zijn geregeld.</p>
+    <div class="btns">
+      <a href="#aanmelden" class="btn solid-light lg">Reserveer je gratis plek ↓</a>
+      <a href="#programma" class="btn ghost-light lg">Dit zie je</a>
+    </div>
+    <div class="hero-note">Online · 30 minuten · Met ruimte voor je vragen</div>
+  </div>
+  
+</header>
+
+<!-- STATS-BALK verwijderd op 30/7 (keuze Steven): de lander gaat over de masterclass,
+     niet over wat UTAMA aanbiedt of verkocht heeft. Autoriteit zit nu in het
+     founder-blok (zes jaar, concepten en verhuurwoningen voor Nederlandse investeerders). -->
+
+<section class="process-sec" id="programma">
+  <div class="wrap">
+    <div class="sec-head" style="margin-bottom:0">
+      <div class="eyebrow">Dit zie je · 30 minuten</div>
+      <h2>Dit zie je.</h2>
+      
+    </div>
+    <div class="process-row p5">
+      <div class="p-step">
+        <div class="p-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        </div>
+        <div class="p-body">
+          <div class="p-num">01</div>
+          <h4>Het aanbod</h4>
+          <p>De laatste 2 villa's, villa 2 en 3, voor €225.000, volledig gemeubileerd en instapklaar.</p>
+        </div>
+      </div>
+<div class="p-step">
+        <div class="p-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/><circle cx="16.5" cy="15.5" r="2"/></svg>
+        </div>
+        <div class="p-body">
+          <div class="p-num">02</div>
+          <h4>De villa</h4>
+          <p>2 slaapkamers met eigen badkamer, een plunge pool en een rooftop lounge van 40 m² met buitenkeuken.</p>
+        </div>
+      </div>
+<div class="p-step">
+        <div class="p-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l6-4 6 4v12"/><path d="M4 21h16"/><path d="M10 21v-6h4v6"/></svg>
+        </div>
+        <div class="p-body">
+          <div class="p-num">03</div>
+          <h4>De plek en de bouw</h4>
+          <p>Pererenan, in aanbouw sinds 15 mei 2026, met live bouwcamera's en een wekelijks bouwrapport.</p>
+        </div>
+      </div>
+<div class="p-step">
+        <div class="p-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="15" r="4"/><path d="M10 12l10-10"/><path d="M16 6l3 3"/><path d="M13 9l2.5 2.5"/></svg>
+        </div>
+        <div class="p-body">
+          <div class="p-num">04</div>
+          <h4>Hoe je koopt</h4>
+          <p>Leasehold 30 + 30 jaar, notarieel op jouw naam. Bij het tekenen 30 tot 40%, daarna maandelijks naar de voortgang van de bouw. Tekenen kan op afstand.</p>
+        </div>
+      </div>
+<div class="p-step">
+        <div class="p-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7a7.2 7.2 0 100 10"/><path d="M5 10.4h8.5M5 13.6h8.5"/></svg>
+        </div>
+        <div class="p-body">
+          <div class="p-num">05</div>
+          <h4>Hoe je reserveert</h4>
+          <p>Met een intentieverklaring en €5.000 aanbetaling.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pane" id="host">
+  <div class="wrap">
+    <div class="founder">
+      <div class="founder-photo"><img src="/webinar-nov-8/assets/founder.jpg" alt="Steven Gijsman op de bouwplaats van een UTAMA-project"></div>
+      <div class="founder-body">
+        <div class="eyebrow">Wie geeft het webinar</div>
+        <h2>Steven Gijsman, oprichter UTAMA</h2>
+        <p>Ik ben ruim zes jaar actief op Bali. Bij UTAMA verkopen we geen losse villa's, maar woningen binnen een concept: een complete plek, ontworpen voor de gast en gebouwd om te renderen.</p>
+        <p>Zo heb ik voor Nederlandse investeerders succesvolle concepten en winstgevende verhuurwoningen ontwikkeld, die nu in de verhuur draaien. Alles wat in het webinar voorbijkomt, heb ik zelf in de praktijk gedaan.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="gate-sec" id="aanmelden">
+  <div class="wrap">
+    <div class="gate-card">
+      <div class="hosts">
+        <div class="host">
+          <img src="/webinar-nov-8/assets/steven.jpg" alt="Steven Gijsman">
+          <div><b>Steven Gijsman</b><span>Oprichter UTAMA · host</span></div>
+        </div>
+        <div class="host">
+          <img src="/webinar-nov-8/assets/ashley.jpg" alt="Ashley">
+          <div><b>Ashley</b><span>Sales manager UTAMA · cohost</span></div>
+        </div>
+      </div>
+      <div class="cd-label" id="cdLabel">Het webinar start over</div>
+      <div class="countdown" id="countdown" data-target="2026-11-08T14:00:00+01:00">
+        <div class="cd-cell"><b id="cdD">0</b><span>dagen</span></div>
+        <div class="cd-cell"><b id="cdH">0</b><span>uur</span></div>
+        <div class="cd-cell"><b id="cdM">0</b><span>min</span></div>
+        <div class="cd-cell"><b id="cdS">0</b><span>sec</span></div>
+      </div>
+      <div class="eyebrow">Gratis · Online · Zondag 8 november, 14:00 uur</div>
+      <h2>Reserveer je gratis plek.</h2>
+      <p>Gratis en online. Zondag 8 november, 14:00 uur Nederlandse tijd (21:00 Bali). De deuren gaan open om 13:45 uur. Duur: 30 minuten plus vragen. Na aanmelding ontvang je direct je persoonlijke deelnamelink per e-mail.</p>
+      <!-- WEBINARGEEK_EMBED:START
+     Het insluitformulier, zodat mensen zich hier aanmelden en niet worden
+     doorgestuurd naar een pagina van WebinarGeek.
+
+     Ander webinar? Dan hoeft alleen "identifier" hieronder te veranderen. De
+     sleutel mw_SdX1utPeoR8 is enkel een naamruimte voor dit ene snippet en mag
+     blijven staan; het script eronder gebruikt dezelfde naam.
+
+     De identifier staat in de bron van de registratiepagina van het webinar
+     zelf, in het blok dat begint met {"project":"registration". Bekend:
+       10 september (test)  2afd8ac5-3048-4b59-84be-3d7f4dbc198a
+       30 september 12:00   485d1563-627b-4e1e-96b3-8f029543aa42 (webinar 606052, was eerst 22 september)
+       8 november 14:00     2ad6ec8a-f591-4268-8427-546f734c3f23 (eigen webinar 624120, uitzending 7005843;
+                            kopie van 606052, zodat 30 september los blijft)
+     Wissel je van webinar, pas dan ook de datums en de knop hieronder aan. -->
+      <div id="mw_SdX1utPeoR8_webinargeek" style="max-width:560px;margin:0 auto"></div>
+      <script>
+        (function(w,d,stn,sa,gn,se,fse){w[gn]=w[gn]||function(){(w[gn].q = w[gn].q||[]).push(arguments)};
+        se=d.createElement(stn);fse=d.getElementsByTagName(stn)[0];se.id=gn;se.async=1;
+        se.src=sa+"?t="+new Date().toISOString().slice(0, -9);fse.parentNode.insertBefore(se, fse);
+        })(window, document, "script", "https://malong.webinargeek.com/malong.embed.js", "mw_SdX1utPeoR8");
+        mw_SdX1utPeoR8("init", {
+          project: "registration",
+          identifier: "2ad6ec8a-f591-4268-8427-546f734c3f23",
+          shape: "inline",
+          theme: "light",
+          embedAccentColor: "#099a0b",
+          embedSecondaryColor: "#000000",
+          hiddenSections: [
+              "logo",
+              "title",
+              "date"
+          ],
+          transparentBackground: true
+        });
+      </script>
+      <a id="gateFallback" class="btn lg" style="width:100%;max-width:420px;justify-content:center" href="https://utama.webinargeek.com/voordat-je-investeert-in-vastgoed-op-bali-de-7-stappen-die-elke-investering-moet-doorlopen">Reserveer je gratis plek →</a>
+      <script>
+        /* Toon de knop alleen zolang het embed-formulier nog niet rendert.
+           Robuust: kijkt naar de hele aanmeldkaart (iframe of gevulde slot),
+           via observer én een korte polling-fallback. */
+        (function(){
+          var card = document.querySelector('.gate-card');
+          var btn = document.getElementById('gateFallback');
+          if(!card || !btn) return;
+          function paintEmbed(){
+            /* Forceer de UTAMA-knopkleur in het formulier; WebinarGeek stuurt
+               de accentkleur anders bij naar goudbruin. */
+            var slot = document.getElementById('mw_SdX1utPeoR8_webinargeek');
+            if(slot && slot.shadowRoot && !slot.shadowRoot.getElementById('utamaEmbedStyle')){
+              var st = document.createElement('style');
+              st.id = 'utamaEmbedStyle';
+              st.textContent = 'button[type="submit"]{background:#099a0b !important;border-color:#099a0b !important;color:#fff !important;font-family:"Inter",ui-sans-serif,system-ui,sans-serif !important;font-size:17px !important;font-weight:800 !important;padding:18px 32px !important;min-height:60px !important;border-radius:8px !important;width:100% !important;max-width:none !important;justify-content:center !important;cursor:pointer !important;transition:filter .15s ease !important} button[type="submit"]:hover{filter:brightness(1.08) !important} a{color:#17140F !important}';
+              slot.shadowRoot.appendChild(st);
+            }
+          }
+          function embedRendered(){
+            var slot = document.getElementById('mw_SdX1utPeoR8_webinargeek');
+            if(!slot) return false;
+            paintEmbed();
+            if(slot.childElementCount > 0) return true;
+            /* WebinarGeek rendert het formulier in een shadow root op de slot-div */
+            if(slot.shadowRoot && slot.shadowRoot.childElementCount > 0) return true;
+            return !!card.querySelector('iframe');
+          }
+          var obs = null;
+          function hide(){
+            btn.style.display = 'none';
+            if(obs) obs.disconnect();
+            if(timer) clearInterval(timer);
+          }
+          function check(){ if(embedRendered()) hide(); }
+          obs = new MutationObserver(check);
+          obs.observe(card, {childList: true, subtree: true});
+          var tries = 0;
+          var timer = setInterval(function(){
+            tries++;
+            check();
+            if(tries > 60) clearInterval(timer);
+          }, 500);
+          check();
+        })();
+      </script>
+      <!-- WEBINARGEEK_EMBED:END -->
+      <div class="gate-note">Je ontvangt je persoonlijke deelnamelink en herinneringen. Uitschrijven kan altijd met één klik. Dit is geen fiscaal of juridisch advies.</div>
+    </div>
+  </div>
+</section>
+
+<section class="pane" id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Veelgestelde vragen</div>
+      <h2>Goed om te weten.</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>Wat kost het webinar?</summary>
+        <p>Niets. Het webinar is gratis en online. Je meldt je aan met je naam en e-mailadres.</p>
+      </details>
+      <details>
+        <summary>Hoe lang duurt het?</summary>
+        <p>30 minuten, daarna ruimte voor je vragen. De deuren gaan open om 13:45 uur (Nederlandse tijd), de start is om 14:00 uur, 21:00 uur op Bali.</p>
+      </details>
+      <details>
+        <summary>Ik oriënteer me nog. Is dit dan iets voor mij?</summary>
+        <p>Juist dan. In 30 minuten zie je wat The Maison is, wat een villa kost en hoe de bouw, de verhuur en het kopen op afstand zijn geregeld, zodat je daarna zelf kunt beoordelen of het bij je past.</p>
+      </details>
+      <details>
+        <summary>Wordt er iets verkocht tijdens het webinar?</summary>
+        <p>Ja, het aanbod komt in de eerste tien minuten: villa 2 en 3 van The Maison, voor €225.000, volledig gemeubileerd en instapklaar. Daarna hoor je hoe de bouw, de verhuur en het kopen op afstand zijn geregeld. Reserveren gaat met een intentieverklaring en €5.000 aanbetaling.</p>
+      </details>
+      <details>
+        <summary>Kan ik vragen stellen?</summary>
+        <p>Ja. Stel ze via de Q&amp;A-knop of in de chat. Na de 30 minuten beantwoorden we ze live.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="pane cta-sec">
+  <div class="wrap">
+    <div class="cta-final">
+      <div class="cta-faces">
+        <img src="/webinar-nov-8/assets/ashley.jpg" alt="Ashley, UTAMA">
+        <img src="/webinar-nov-8/assets/steven.jpg" alt="Steven Gijsman, oprichter UTAMA">
+      </div>
+      <div class="eyebrow">Zondag 8 november · 14:00 uur</div>
+      <h2>Ontdek of het bij jouw vermogen past.</h2>
+      <p>Reserveer je gratis plek. Het duurt nog geen minuut.</p>
+      <a href="#aanmelden" class="btn lg">Reserveer je gratis plek ↑</a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="afm-note"><strong>Let op!</strong> U belegt buiten AFM&#8209;toezicht. Geen vergunningplicht voor deze activiteit.</div>
+<div class="afm-note">Bronnen: prijzen, betaalschema en contracten: brochure van The Maison. Bouwstart en voortgang: bouwrapportage en live camera (<a href="https://invest.utamabali.com/the-maison/camera">invest.utamabali.com/the-maison/camera</a>). Reistijden: per scooter vanaf de bouwplaats, zoals in de brochure.</div>
+</div>
+
+<footer>
+  <div class="wrap frow">
+    <div>UTAMA · Boutique vastgoedontwikkeling op Bali</div>
+    <div>
+      <a href="https://www.utamabali.com">utamabali.com</a> &nbsp;·&nbsp;
+      <a href="https://www.instagram.com/stevenbalivillas/" target="_blank" rel="noopener">Instagram</a> &nbsp;·&nbsp;
+      <a href="https://wa.me/31624845014" target="_blank" rel="noopener">WhatsApp</a> &nbsp;·&nbsp;
+      <a href="mailto:steven@utamabali.com">steven@utamabali.com</a>
+    </div>
+  </div>
+</footer>
+
+<div class="stickybar" id="stickybar">
+  <a href="#aanmelden" class="btn">Reserveer je gratis plek ↓</a>
+</div>
+<script>
+  /* Verberg de sticky CTA-balk zolang de aanmeldsectie zelf in beeld is */
+  (function(){
+    var bar = document.getElementById('stickybar');
+    var gate = document.getElementById('aanmelden');
+    if(!bar || !gate || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver(function(entries){
+      bar.style.display = entries[0].isIntersecting ? 'none' : '';
+    }, {rootMargin: '0px 0px -60px 0px'}).observe(gate);
+  })();
+</script>
+
+<script>
+(function(){
+  /* countdown */
+  var box = document.getElementById('countdown');
+  if(box){
+    var target = new Date(box.getAttribute('data-target')).getTime();
+    var ids = {d:'cdD',h:'cdH',m:'cdM',s:'cdS'};
+    function tick(){
+      var diff = target - Date.now();
+      if(diff <= 0){
+        document.getElementById('cdLabel').textContent = 'Het webinar is begonnen';
+        box.style.display = 'none';
+        return;
+      }
+      var d = Math.floor(diff/864e5), h = Math.floor(diff%864e5/36e5),
+          m = Math.floor(diff%36e5/6e4), s = Math.floor(diff%6e4/1e3);
+      document.getElementById(ids.d).textContent = d;
+      document.getElementById(ids.h).textContent = h;
+      document.getElementById(ids.m).textContent = m;
+      document.getElementById(ids.s).textContent = s;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  }
+  /* geef ?ref= door aan invest-links en voeg UTM's toe */
+  var params = new URLSearchParams(location.search);
+  var ref = params.get('ref');
+  document.querySelectorAll('a[href*="invest.utamabali.com"]').forEach(function(a){
+    try{
+      var u = new URL(a.href);
+      u.searchParams.set('utm_source','utamabali');
+      u.searchParams.set('utm_medium','webinar');
+      u.searchParams.set('utm_campaign','cijfers-bali-villa');
+      if(ref) u.searchParams.set('ref', ref);
+      a.href = u.toString();
+    }catch(e){}
+  });
+})();
+</script>
+
+<script>
+/* "over X dagen" in de hero-datumchip */
+(function(){
+  var t = document.getElementById('countdown');
+  var el = document.getElementById('heroDays');
+  if(!t || !el) return;
+  /* Tel kalenderdagen in Nederlandse tijd, niet 24-uursblokken (anders is zondag op donderdag "over 4 dagen"). */
+  var start = new Date(t.getAttribute('data-target')).getTime();
+  if(!(start > Date.now())) return;
+  function dag(ms){ return Date.parse(new Date(ms).toLocaleDateString('en-CA', {timeZone: 'Europe/Amsterdam'})); }
+  var d = Math.round((dag(start) - dag(Date.now()))/864e5);
+  /* Vaste spatie: een gewone spatie aan het begin van de span valt weg in de flex-chip. */
+  el.textContent = '\u00a0· ' + (d > 1 ? 'over ' + d + ' dagen' : (d === 1 ? 'morgen' : 'vandaag'));
+})();
+</script>
+
+</body>
+</html>

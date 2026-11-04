@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <script src="/t.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Je plek is gereserveerd | UTAMA webinar</title>
+<link rel="canonical" href="https://www.utamabali.com/webinar-nov-8/thanks/">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" sizes="192x192" href="/webinar-nov-8/assets/icon192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/webinar-nov-8/webinar.css">
+<!-- Meta Pixel: dezelfde dataset als /webinar/bali ("Claude Utama Site + MOKA Perspective", 419037194248722).
+     PageView op elke pagina; CompleteRegistration en Lead bij een gelukte inschrijving (zie hieronder). -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','419037194248722');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=419037194248722&ev=PageView&noscript=1"></noscript>
+<script>
+/* Bedankpagina: tel de inschrijving als /webinar dat in dit bezoek nog niet deed. */
+(function(){
+  var KEY = 'utama_webinar_inschrijving', al = false;
+  try{ al = sessionStorage.getItem(KEY) === '1'; }catch(e){}
+  if(!al && window.fbq){
+    try{ sessionStorage.setItem(KEY, '1'); }catch(e){}
+    fbq('track', 'CompleteRegistration', {content_name: 'Webinar 8 november'});
+    fbq('track', 'Lead', {content_name: 'Webinar 8 november'});
+  }
+})();
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="wrap row">
+    <a href="https://www.utamabali.com" class="brand">UTAMA</a>
+  </div>
+</nav>
+
+<header class="confirm-hero">
+  <div class="wrap">
+    <div class="ok-duo">
+      <img src="/webinar-nov-8/assets/steven.jpg" alt="Steven">
+      <img src="/webinar-nov-8/assets/ashley.jpg" alt="Ashley">
+    </div>
+    <div class="eyebrow">Aanmelding bevestigd</div>
+    <h1>Je plek is gereserveerd.</h1>
+    <p>Aanstaande zondag 8 november om 14:00 uur laat Steven Gijsman in 30 minuten zien wat The Maison is, wat een villa kost en welke villa's nog beschikbaar zijn. Daarna hoor je hoe de bouw, de verhuur en het kopen op afstand zijn geregeld. Fijn dat je erbij bent.</p>
+    <div class="btns" style="justify-content:center;margin-top:28px">
+      <a class="btn" target="_blank" rel="noopener" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=UTAMA%20webinar%20%C2%B7%20Voordat%20je%20investeert%20in%20vastgoed%20op%20Bali&amp;dates=20261108T133000Z%2F20261108T143000Z&amp;details=Je%20persoonlijke%20deelnamelink%20staat%20in%20je%20bevestigingsmail.%20Link%20kwijt%3F%20Meld%20je%20opnieuw%20aan%20via%20https%3A%2F%2Fwww.utamabali.com%2Fwebinar%2F&amp;location=Online">Zet in Google Agenda</a>
+      <a class="btn ghost" href="/webinar-nov-8/utama-webinar.ics" download>Apple / Outlook (.ics)</a>
+    </div>
+    <p style="font-size:12.5px;opacity:.75;margin-top:16px">Je persoonlijke deelnamelink staat binnen enkele minuten in je inbox (check eventueel je spamfolder).</p>
+  </div>
+</header>
+
+<!-- LEAD_VIDEO:START : lead-video voor deze pagina (bouwbrief 7.1). Reputatie-audit 29/7: niets
+     negatiefs vindbaar over UTAMA, dus het juiste type is de FAQ-VIDEO: Steven beantwoordt de
+     meest gestelde vragen (eigendom, vergunningen, beheer, exit), eerste 60 sec een samenvatting,
+     met hoofdstukken. NOOIT een "check je mail"-video. Zodra de video er is: embed-slot vervangen
+     en style="display:none" weghalen. -->
+<section class="pane" id="leadvideo" style="display:none;padding-bottom:0">
+  <div class="wrap" style="max-width:920px">
+    <div class="sec-head">
+      <div class="eyebrow">Kijk dit alvast</div>
+      <h2>De meest gestelde vragen, beantwoord.</h2>
+    </div>
+    <div class="video-shell">
+      <div class="embed-slot">Hier komt de FAQ-video.</div>
+    </div>
+  </div>
+</section>
+<!-- LEAD_VIDEO:END -->
+
+<!-- BREAKOUT_VIDEOS:START : korte 1-vraag-video's (1 tot 5 min) onder de lead-video
+     (bouwbrief 7.1 / SOP confirmation-page stap 4). Meest gestelde vraag eerst; eerste
+     ±60 sec een samenvatting; hoofdstukken per video. Kandidaten, in deze volgorde:
+     1) eigendom/leasehold  2) de bouwcamera + voortgang (de digitale "aha")  3) beheer
+     en maandrapportage House of Reservations  4) het notariële proces  5) exit.
+     Host de video's op een platform dat play rate en engagement per video meet
+     (Wistia/Vidalytics), anders is de boodschap-vs-kanaal-diagnose onmogelijk.
+     Zodra er video's zijn: sectie tonen (display:none weghalen) en per video een
+     .video-shell blok toevoegen. -->
+<section class="pane" id="breakouts" style="display:none;padding-bottom:0">
+  <div class="wrap" style="max-width:920px">
+    <div class="sec-head">
+      <div class="eyebrow">Korte antwoorden</div>
+      <h2>Eén vraag per video.</h2>
+    </div>
+    <div class="video-shell"><div class="embed-slot">Breakout-video's komen hier.</div></div>
+  </div>
+</section>
+<!-- BREAKOUT_VIDEOS:END -->
+
+<!-- TESTIMONIALS:START : investeerder-verhalen (bouwbrief 7.1 / SOP confirmation-page
+     stap 5). Regels: niet cherrypicken, ook mensen die maar een paar stappen verder
+     zijn dan de kijker (net gereserveerd / eerste uitkering), klikbaar en volledig
+     leesbaar. Alleen echte, geverifieerde quotes met toestemming; nooit verzinnen.
+     Zodra Steven 2 tot 3 quotes of video's aanlevert: sectie tonen. -->
+<section class="pane" id="ervaringen" style="display:none;padding-bottom:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Ervaringen</div>
+      <h2>Investeerders die je voorgingen.</h2>
+    </div>
+  </div>
+</section>
+<!-- TESTIMONIALS:END -->
+
+<section class="process-sec">
+  <div class="wrap">
+    <div class="sec-head" style="margin-bottom:0">
+      <div class="eyebrow">Wat nu</div>
+      <h2>Drie dingen voor zondag.</h2>
+    </div>
+    <div class="process-row">
+      <div class="p-step">
+        <div class="p-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 3v4M16 3v4"/></svg>
+        </div>
+        <div class="p-body">
+          <div class="p-num">01</div>
+          <h4>Zet het in je agenda</h4>
+          <p>Zondag 8 november, 14:00 uur, reken op 30 minuten plus vragen. Inloggen kan vanaf 13:45 uur met je persoonlijke link.</p>
+        </div>
+      </div>
+      <div class="p-step">
+        <div class="p-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 01-9 8.4 8.9 8.9 0 01-3.5-.7L3 21l1.8-4.4a8.4 8.4 0 1116.2-5.1z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>
+        </div>
+        <div class="p-body">
+          <div class="p-num">02</div>
+          <h4>Stuur alvast je vraag in</h4>
+          <p>Waar wil jij zondag echt antwoord op? App hem <a href="https://wa.me/6281330857011?text=Mijn%20vraag%20voor%20het%20webinar%20van%208%20november%3A%20" target="_blank" rel="noopener" style="color:inherit;font-weight:600">via WhatsApp</a>, dan nemen we hem mee in de Q&amp;A.</p>
+        </div>
+      </div>
+      <div class="p-step">
+        <div class="p-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5.5c0 4.3-2.9 7.2-7 8.5-4.1-1.3-7-4.2-7-8.5V6z"/><path d="M9.5 12l2 2 3.5-3.5"/></svg>
+        </div>
+        <div class="p-body">
+          <div class="p-num">03</div>
+          <h4>Blijf tot het einde</h4>
+          <p>Na de 30 minuten beantwoorden we je vragen live in de Q&amp;A.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pane">
+  <div class="wrap">
+    <div class="wa-card">
+      <div>
+        <h3>Liever een seintje via WhatsApp?</h3>
+        <p>Stuur ons een berichtje, dan ontvang je vlak voor de start een persoonlijke herinnering.</p>
+      </div>
+      <a class="btn" target="_blank" rel="noopener" href="https://wa.me/31624845014?text=Hoi!%20Ik%20doe%20mee%20met%20het%20webinar%20van%20zondag%208%20november.%20Sturen%20jullie%20mij%20vlak%20voor%20de%20start%20een%20herinnering%3F">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm5.1 14.1c-.2.6-1.2 1.2-1.7 1.2-.4.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1.1-1.4-1.1-2.7s.7-1.9.9-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.6.4 0 .1 0 .5-.2 1z"/></svg>
+        WhatsApp ons
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="pane" id="faq" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Alvast antwoord op de grote vragen</div>
+      <h2>Dit vragen investeerders ons het vaakst.</h2>
+      <p>De uitgebreide antwoorden krijg je zondag. Dit is alvast de kern.</p>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>Van wie is de villa dan echt?</summary>
+        <p>Je krijgt een leasehold van 30+30 jaar die notarieel op jouw naam wordt vastgelegd, los van UTAMA. In het webinar leggen we precies uit hoe die structuur werkt en waar je op moet letten.</p>
+      </details>
+      <details>
+        <summary>Mag je zomaar verhuren op Bali?</summary>
+        <p>Nee, en daar gaat het vaak mis. Verhuur vraagt om de juiste zone en om een bouw- en gebruiksvergunning (PBG en SLF). Wij ontwikkelen alleen op plekken waar short-stay verhuur is toegestaan.</p>
+      </details>
+      <details>
+        <summary>Hoe bewaak je de bouw vanaf 12.000 kilometer?</summary>
+        <p>Wij ontwikkelen zelf, werken met een vaste aannemer, betalen per bouwfase en delen voortgang met beeld. Zondag laten we zien hoe dat er in de praktijk uitziet.</p>
+      </details>
+      <details>
+        <summary>Wie zorgt er voor de villa en de gasten?</summary>
+        <p>Een professioneel beheerteam met honderden villa's in beheer regelt de verhuur, de prijzen en de gasten. Jij hoeft niets te doen; dat is precies het model.</p>
+      </details>
+      <details>
+        <summary>Hoe ontvang ik mijn huurinkomsten?</summary>
+        <p>Maandelijks, op je eigen rekening, in euro's of rupiah. Hoe de rekensom van bruto naar netto loopt, leggen we zondag uit.</p>
+      </details>
+      <details>
+        <summary>Kan ik er ooit weer uit?</summary>
+        <p>Ja, een leasehold is overdraagbaar en doorverkoop komt voor. Wat dat betekent voor jouw horizon bespreken we in het webinar, inclusief wanneer instappen níet slim is.</p>
+      </details>
+      <details>
+        <summary>Hoe zit het met belasting?</summary>
+        <p>Op Bali geldt lokale toeristenbelasting over de verhuur; hoe het in Nederland uitpakt hangt af van jouw situatie. We leggen zondag de hoofdlijnen uit. Geen individueel fiscaal advies, wel het eerlijke verhaal.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- PROJECTEN-SECTIE bewust verwijderd (29/7, keuze Steven): de project-reveal hoort
+     ín de masterclass (bouwbrief sectie 5, deel 4). Geen aanbod, prijzen of
+     verkooplinks vóór de educatie; de bedanktpagina stuurt puur op opdagen. -->
+
+<div class="wrap">
+  <div class="afm-note"><strong>Let op!</strong> U belegt buiten AFM&#8209;toezicht. Geen vergunningplicht voor deze activiteit.</div>
+</div>
+
+<footer>
+  <div class="wrap frow">
+    <div>UTAMA · Boutique vastgoedontwikkeling op Bali</div>
+    <div>
+      <a href="https://www.utamabali.com">utamabali.com</a> &nbsp;·&nbsp;
+      <a href="https://www.instagram.com/stevenbalivillas/" target="_blank" rel="noopener">Instagram</a> &nbsp;·&nbsp;
+      <a href="https://wa.me/31624845014" target="_blank" rel="noopener">WhatsApp</a> &nbsp;·&nbsp;
+      <a href="mailto:steven@utamabali.com">steven@utamabali.com</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

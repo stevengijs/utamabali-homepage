@@ -1,0 +1,21 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//UTAMA//Webinar//NL
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:webinar-voordat-je-investeert-20261108@utamabali.com
+DTSTAMP:20261022T120000Z
+DTSTART:20261108T130000Z
+DTEND:20261108T140000Z
+SUMMARY:UTAMA webinar · Voordat je investeert in vastgoed op Bali
+DESCRIPTION:Je persoonlijke deelnamelink staat in je bevestigingsmail. Link kwijt? Meld je opnieuw aan via https://www.utamabali.com/webinar/
+URL:https://www.utamabali.com/webinar/
+LOCATION:Online
+BEGIN:VALARM
+TRIGGER:-PT1H
+ACTION:DISPLAY
+DESCRIPTION:UTAMA webinar begint over 1 uur
+END:VALARM
+END:VEVENT
+END:VCALENDAR
