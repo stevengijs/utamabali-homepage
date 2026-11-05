@@ -1786,7 +1786,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-10-21-tijdlijn-op-maat';
+const APP_VERSIE='2026-11-05-wa-template-indienen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -6128,6 +6128,10 @@ function bcOpstellen(hervatCamp){
         <div id="bc_watpls"><span class="muted" style="font-size:12.5px">Templates laden&hellip;</span></div>
         <div class="bc-hint">Buiten het 24-uursvenster staat WhatsApp alleen door Meta goedgekeurde templates toe. Vrije tekst kan niet, en een broadcast naar een oude lijst valt altijd buiten dat venster. Alleen templates in de categorie MARKETING mogen voor een campagne.</div>
       </div>
+      <div class="field bc-buiten" id="bc_watplnieuw_vak">
+        <div class="vo-knoppen" style="margin-top:0"><button type="button" class="bc-zoekactie" id="bc_watplnieuw_knop">+ Nieuw template indienen bij Meta</button></div>
+        <div id="bc_watplnieuw" style="display:none;margin-top:10px"></div>
+      </div>
       <div class="field bc-buiten" id="bc_wavars_vak" style="display:none">
         <label>Variabelen invullen</label>
         <div id="bc_wavars"></div>
@@ -6424,27 +6428,37 @@ async function bcWaLaden(){
   }catch(e){ st.innerHTML=`<span class="err">${esc(e.message||e)}</span>`; }
 
   const vak=$('#bc_watpls');
+  const nieuwKnop=$('#bc_watplnieuw_knop'); if(nieuwKnop) nieuwKnop.onclick=bcWaTplNieuwToggle;
   if(!BC.waTpls){
-    const {data,error}=await sb.functions.invoke('broadcast-wa',{body:{actie:'templates'}});
+    // alles: ook UTILITY en de reden van een afwijzing, voor het beheer
+    // hieronder. Kiezen kan alleen uit APPROVED en MARKETING.
+    const {data,error}=await sb.functions.invoke('broadcast-wa',{body:{actie:'templates',alles:true}});
     if(error||!data||!data.ok){
       vak.innerHTML=`<span class="err">Kon de templates niet laden: ${esc((data&&data.reden)||(error&&error.message)||'onbekend')}</span>`;
       return;
     }
     BC.waTpls=data.templates||[];
   }
-  const klaar   = BC.waTpls.filter(t=>t.status==='APPROVED');
+  const klaar   = BC.waTpls.filter(t=>t.status==='APPROVED'&&t.categorie==='MARKETING');
+  const anders  = BC.waTpls.filter(t=>t.status==='APPROVED'&&t.categorie!=='MARKETING');
   const wachtend= BC.waTpls.filter(t=>t.status==='PENDING');
   const afgewezen=BC.waTpls.filter(t=>t.status==='REJECTED');
-  if(!klaar.length && !wachtend.length){
-    vak.innerHTML='<div class="bc-let">Er is nog geen goedgekeurd MARKETING-template. Dien er een in bij Meta; zodra die is goedgekeurd verschijnt hij hier vanzelf.</div>';
+  if(!klaar.length && !wachtend.length && !afgewezen.length){
+    vak.innerHTML='<div class="bc-let">Er is nog geen goedgekeurd MARKETING-template. Dien er een in met de knop hieronder; zodra Meta hem goedkeurt verschijnt hij hier vanzelf.</div>';
     return;
   }
+  // Een wachtend of afgewezen template mag weg (een tikfout in de naam, een
+  // tekst die je toch anders wilt). De functie weigert templates die het
+  // platform zelf gebruikt.
+  const tplRegel=(t,extra)=>`<b>${esc(t.naam)}</b>${t.taal&&t.taal!=='nl'?` (${esc(t.taal)})`:''}${extra||''} <button type="button" class="bc-zoekactie" data-tplweg="${esc(t.naam)}" title="Verwijderen bij Meta">weg</button>`;
   vak.innerHTML='<div class="bc-rij">'+klaar.map(t=>
     `<button type="button" class="bc-chip ${BC.waTpl&&BC.waTpl.naam===t.naam?'on':''}" data-watpl="${esc(t.naam)}" title="${esc(t.body)}">${esc(t.naam)} <span class="bc-n">${t.variabelen}</span></button>`).join('')+'</div>'
     // Wachtende templates zichtbaar maar niet aanklikbaar: anders lijkt het of
     // je indiening is verdwenen.
-    + (wachtend.length?`<div class="bc-hint" style="margin-top:8px">In review bij Meta: ${wachtend.map(t=>`<b>${esc(t.naam)}</b>`).join(', ')}. Zodra Meta ze goedkeurt staan ze hierboven. Meestal binnen een paar uur; ververs deze pagina.</div>`:'')
-    + (afgewezen.length?`<div class="bc-hint" style="margin-top:4px"><span class="err">Afgewezen door Meta: ${afgewezen.map(t=>esc(t.naam)).join(', ')}.</span></div>`:'');
+    + (wachtend.length?`<div class="bc-hint" style="margin-top:8px">In review bij Meta: ${wachtend.map(t=>tplRegel(t)).join(', ')}. Zodra Meta ze goedkeurt staan ze hierboven. Meestal binnen een paar uur; ververs deze pagina.</div>`:'')
+    + (afgewezen.length?`<div class="bc-hint" style="margin-top:4px"><span class="err">Afgewezen door Meta:</span> ${afgewezen.map(t=>tplRegel(t, t.reden?` <span class="muted">(${esc(t.reden)})</span>`:'')).join(', ')}. Pas de tekst aan en dien hem in onder een nieuwe naam.</div>`:'')
+    + (anders.length?`<div class="bc-hint" style="margin-top:4px">Goedgekeurd, maar niet als MARKETING en dus niet voor een campagne: ${anders.map(t=>`<b>${esc(t.naam)}</b> (${esc(t.categorie)})`).join(', ')}.</div>`:'');
+  vak.querySelectorAll('[data-tplweg]').forEach(b=>{b.onclick=()=>bcWaTplVerwijderen(b.dataset.tplweg);});
   vak.querySelectorAll('[data-watpl]').forEach(b=>b.onclick=()=>{
     if(BC.camp && BC.waGolven>0){
       toast('Deze campagne loopt al. Een ander template zou golf 4 anders maken dan golf 1.','err');
@@ -6541,6 +6555,140 @@ function bcWaVoorbeeld(){
   vak.innerHTML=esc(tekst).replace(/\n/g,'<br>').replace(/\[\{\{\d+\}\} nog invullen\]/g,m=>`<span class="wa-leeg">${m}</span>`)+
     `<div class="bc-hint" style="margin-top:8px">Voorbeeld met de gegevens van ${esc(voorbeeld.naam||'een ontvanger')}.`+
     (onvolledig?' <span class="err">Vul de rode stukken nog in.</span>':'')+`</div>`;
+}
+
+/* Zelf een template indienen bij Meta (5 november 2026). Ashley heeft geen
+   toegang tot de Meta Business Manager, dus tot nu toe diende Steven elk
+   template met de hand in. Dit formulier stuurt naam, tekst, voorbeelden,
+   voettekst en knoppen naar broadcast-wa, die het bij Meta aanmeldt. Meta
+   beoordeelt het (meestal binnen een paar uur); de lijst erboven toont de
+   status. Dezelfde controles als in de functie, zodat een fout hier al zichtbaar
+   is voordat er iets naar Meta gaat. */
+const BC_TPL_FOOTER_STD='Geen berichten meer ontvangen? Stuur STOP.';
+function bcWaTplNieuwToggle(){
+  const vak=$('#bc_watplnieuw'); if(!vak) return;
+  const open=vak.style.display==='none';
+  if(open && !vak.innerHTML) bcWaTplFormTekenen();
+  vak.style.display=open?'':'none';
+  const knop=$('#bc_watplnieuw_knop');
+  if(knop) knop.textContent=open?'Formulier sluiten':'+ Nieuw template indienen bij Meta';
+}
+function bcWaTplFormTekenen(){
+  const vak=$('#bc_watplnieuw');
+  vak.innerHTML=`
+    <div class="bc-grid">
+      <div class="field"><label>Naam</label>
+        <input id="tplf_naam" class="pc-in" placeholder="bijv. webinar_uitnodiging_november">
+        <div class="bc-hint">Kleine letters, cijfers en liggende streepjes. Alleen voor intern gebruik, de ontvanger ziet hem niet. Een naam kan maar één keer bestaan.</div></div>
+      <div class="field"><label>Taal</label>
+        <select id="tplf_taal" class="pc-in"><option value="nl">Nederlands</option><option value="en">Engels</option></select>
+        <div class="bc-hint">De taal van de tekst. Meta beoordeelt daarop.</div></div>
+    </div>
+    <div class="field"><label>Bericht</label>
+      <textarea id="tplf_body" class="pc-in" rows="7" placeholder="Hoi {{1}}, ..."></textarea>
+      <div class="bc-hint" id="tplf_teller"></div></div>
+    <div class="field" id="tplf_vb_vak" style="display:none"><label>Voorbeeld per variabele</label>
+      <div id="tplf_vb"></div>
+      <div class="bc-hint">Meta beoordeelt het template met deze voorbeelden. Bij een campagne vul je per ontvanger de echte waarde in: voornaam, project, een vaste tekst of een link.</div></div>
+    <div class="field"><label>Voettekst</label>
+      <input id="tplf_footer" class="pc-in" maxlength="60" value="${esc(BC_TPL_FOOTER_STD)}">
+      <div class="bc-hint">Hooguit 60 tekens, klein en grijs onder het bericht. De STOP-regel houdt de kwaliteitsscore gezond en versnelt de goedkeuring.</div></div>
+    <div class="field"><label>Antwoordknoppen (optioneel)</label>
+      <div class="bc-rij">
+        <input id="tplf_knop1" class="pc-in" maxlength="25" placeholder="bijv. Ja, stuur maar" style="width:auto;flex:1;margin:0">
+        <input id="tplf_knop2" class="pc-in" maxlength="25" placeholder="knop 2" style="width:auto;flex:1;margin:0">
+        <input id="tplf_knop3" class="pc-in" maxlength="25" placeholder="knop 3" style="width:auto;flex:1;margin:0">
+      </div>
+      <div class="bc-hint">Hooguit drie, elk hooguit 25 tekens. Een tik op een knop opent het 24-uursvenster; daarna kun je vrij appen.</div></div>
+    <div class="field"><label>Zo komt het aan</label><div class="wa-bubbel" id="tplf_voorbeeld"></div></div>
+    <div class="vo-knoppen">
+      <button type="button" class="btn primary" id="tplf_indienen">Indienen bij Meta</button>
+      <button type="button" class="bc-zoekactie" id="tplf_sluit">Sluiten</button>
+    </div>
+    <div class="bc-hint">Na het indienen staat het template bij "In review bij Meta". Zodra Meta het goedkeurt, meestal binnen een paar uur, staat het hierboven en kun je het voor een campagne kiezen. Afgewezen? Pas de tekst aan en dien hem in onder een nieuwe naam; Meta houdt een gebruikte naam 30 dagen bezet.</div>`;
+  vak.querySelector('#tplf_body').oninput=()=>{bcWaTplVoorbeeldVelden();bcWaTplVoorbeeld();};
+  ['tplf_footer','tplf_knop1','tplf_knop2','tplf_knop3'].forEach(id=>{vak.querySelector('#'+id).oninput=bcWaTplVoorbeeld;});
+  vak.querySelector('#tplf_indienen').onclick=bcWaTplIndienen;
+  vak.querySelector('#tplf_sluit').onclick=bcWaTplNieuwToggle;
+  bcWaTplVoorbeeldVelden(); bcWaTplVoorbeeld();
+}
+function bcWaTplAantal(body){
+  const nrs=[...String(body).matchAll(/\{\{(\d+)\}\}/g)].map(m=>Number(m[1]));
+  return nrs.length?Math.max(...nrs):0;
+}
+function bcWaTplVoorbeeldVelden(){
+  const body=$('#tplf_body').value, n=bcWaTplAantal(body), vak=$('#tplf_vb'), wrap=$('#tplf_vb_vak');
+  $('#tplf_teller').textContent=`${body.length} van 1024 tekens. Variabelen schrijf je als {{1}}, {{2}}, ... in volgorde; {{1}} is meestal de voornaam.`;
+  wrap.style.display=n?'':'none';
+  // Al ingevulde voorbeelden bewaren als het aantal variabelen verandert.
+  const oud=Array.from(vak.querySelectorAll('[data-tplvb]')).map(i=>i.value);
+  vak.innerHTML=Array.from({length:n},(_x,i)=>
+    `<div class="bc-wavar"><span class="bc-wanr">{{${i+1}}}</span>
+       <input data-tplvb="${i}" class="pc-in" style="width:auto;flex:1;margin:0" value="${esc(oud[i]??(i===0?'Steven':''))}" placeholder="${i===0?'bijv. Steven':'voorbeeldwaarde'}"></div>`).join('');
+  vak.querySelectorAll('[data-tplvb]').forEach(i=>{i.oninput=bcWaTplVoorbeeld;});
+}
+function bcWaTplLezen(){
+  const naam=String($('#tplf_naam').value||'').trim().toLowerCase()
+    .replace(/[\s-]+/g,'_').replace(/[^a-z0-9_]/g,'').replace(/_+/g,'_').replace(/^_|_$/g,'');
+  return {
+    naam, taal:$('#tplf_taal').value||'nl',
+    body:String($('#tplf_body').value||'').replace(/\r/g,'').replace(/\t/g,' ').replace(/\n{3,}/g,'\n\n').trim(),
+    voorbeelden:Array.from($('#tplf_vb').querySelectorAll('[data-tplvb]')).map(i=>i.value.trim()),
+    footer:String($('#tplf_footer').value||'').trim(),
+    knoppen:['tplf_knop1','tplf_knop2','tplf_knop3'].map(id=>String($('#'+id).value||'').trim()).filter(Boolean),
+  };
+}
+function bcWaTplVoorbeeld(){
+  const vak=$('#tplf_voorbeeld'); if(!vak) return;
+  const t=bcWaTplLezen();
+  const tekst=t.body.replace(/\{\{(\d+)\}\}/g,(_m,n)=>t.voorbeelden[Number(n)-1]||`[{{${n}}} nog invullen]`);
+  vak.innerHTML=(tekst?esc(tekst).replace(/\n/g,'<br>'):'<span class="muted">Typ hierboven je bericht.</span>')
+    .replace(/\[\{\{\d+\}\} nog invullen\]/g,m=>`<span class="wa-leeg">${m}</span>`)
+    +(t.footer?`<div class="muted" style="font-size:12px;margin-top:6px">${esc(t.footer)}</div>`:'')
+    +(t.knoppen.length?`<div class="bc-rij" style="margin-top:8px">${t.knoppen.map(k=>`<span class="bc-chip">${esc(k)}</span>`).join('')}</div>`:'');
+}
+function bcWaTplCheck(t){
+  if(!t.naam) return 'Geef het template een naam: kleine letters, cijfers en liggende streepjes.';
+  if(!t.body) return 'Schrijf eerst het bericht.';
+  if(t.body.length>1024) return `Het bericht is ${t.body.length} tekens; Meta staat 1024 toe.`;
+  const nrs=[...t.body.matchAll(/\{\{(\d+)\}\}/g)].map(m=>Number(m[1])), n=nrs.length?Math.max(...nrs):0;
+  for(let i=1;i<=n;i++) if(!nrs.includes(i)) return `Variabele {{${i}}} ontbreekt. Nummer ze {{1}}, {{2}}, ... zonder gat.`;
+  if(/\{\{[^}]*\}\}/.test(t.body.replace(/\{\{\d+\}\}/g,''))) return 'Een variabele schrijf je als {{1}}, {{2}}, ... alleen met een nummer.';
+  if(/^\{\{\d+\}\}/.test(t.body)||/\{\{\d+\}\}$/.test(t.body)) return 'Een bericht mag niet met een variabele beginnen of eindigen. Zet er een woord voor of achter.';
+  for(let i=0;i<n;i++) if(!t.voorbeelden[i]) return `Geef een voorbeeldwaarde voor {{${i+1}}}.`;
+  if(t.footer.length>60) return 'De voettekst mag hooguit 60 tekens zijn.';
+  if(/\{\{/.test(t.footer)) return 'In de voettekst kan geen variabele.';
+  for(const k of t.knoppen) if(k.length>25) return `De knop "${k}" is te lang; hooguit 25 tekens.`;
+  if(new Set(t.knoppen).size!==t.knoppen.length) return 'Twee knoppen met dezelfde tekst kan niet.';
+  if(BC.waTpls&&BC.waTpls.some(x=>x.naam===t.naam)) return `Er bestaat al een template met de naam "${t.naam}". Kies een andere naam.`;
+  return null;
+}
+async function bcWaTplIndienen(){
+  const t=bcWaTplLezen(), fout=bcWaTplCheck(t);
+  if(fout){toast(fout,'err',6000);return;}
+  if(!confirm(`Template "${t.naam}" (${t.taal}) indienen bij Meta?\n\nMeta beoordeelt de tekst; dat duurt meestal minuten tot een paar uur.`)) return;
+  const knop=$('#tplf_indienen'); knop.disabled=true; knop.textContent='Indienen…';
+  try{
+    const {data,error}=await sb.functions.invoke('broadcast-wa',{body:{actie:'template_indienen',...t}});
+    if(error||!data||!data.ok){
+      toast('Indienen mislukt: '+((data&&data.reden)||(error&&error.message)||'onbekend'),'err',9000);
+      return;
+    }
+    toast(`Ingediend bij Meta: ${data.naam} (${data.status}${data.categorie!=='MARKETING'?', categorie '+data.categorie:''}). Hij staat in de lijst zodra Meta hem goedkeurt.`,'ok',8000);
+    $('#tplf_naam').value=''; $('#tplf_body').value='';
+    ['tplf_knop1','tplf_knop2','tplf_knop3'].forEach(id=>{$('#'+id).value='';});
+    $('#tplf_footer').value=BC_TPL_FOOTER_STD;
+    bcWaTplVoorbeeldVelden(); bcWaTplVoorbeeld();
+    bcWaTplNieuwToggle();
+    BC.waTpls=null; await bcWaLaden();
+  } finally { knop.disabled=false; knop.textContent='Indienen bij Meta'; }
+}
+async function bcWaTplVerwijderen(naam){
+  if(!confirm(`Template "${naam}" bij Meta verwijderen?\n\nMeta houdt de naam daarna 30 dagen bezet.`)) return;
+  const {data,error}=await sb.functions.invoke('broadcast-wa',{body:{actie:'template_verwijderen',naam}});
+  if(error||!data||!data.ok){toast('Verwijderen mislukt: '+((data&&data.reden)||(error&&error.message)||'onbekend'),'err',8000);return;}
+  toast(`Template ${naam} verwijderd bij Meta.`,'ok');
+  BC.waTpls=null; await bcWaLaden();
 }
 
 async function bcSjablonenLaden(){
