@@ -1786,7 +1786,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-11-05-wa-template-indienen';
+const APP_VERSIE='2026-11-06-wa-golf-achtergrond';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -7067,10 +7067,30 @@ async function bcVerstuurWa(test){
     st.style.display='none';return;
   }
   const knop=$('#bc_verstuur'); knop.disabled=true;
+  // De stand voor de golf, om straks te zien wat erbij is gekomen.
+  const voor=(await sb.rpc('broadcast_campagne_laden',{p_id:BC.camp})).data||{};
   const {data,error}=await sb.functions.invoke('broadcast-wa',{
     body:{actie:'golf', campagne_id:BC.camp, template_body:BC.waTpl.body}});
+  if(error){
+    // Een weigering komt met uitleg in het antwoord; de standaardmelding van de
+    // bibliotheek ("non-2xx status code") toont die niet. Een 502 of 504 betekent
+    // alleen dat de gateway het wachten opgaf (een golf van 40 duurt ruim twee
+    // minuten): de golf zelf loopt op de server door.
+    let uit=null, code=0;
+    try{ code=(error.context&&error.context.status)||0; uit=error.context&&await error.context.json(); }catch(e){}
+    if(uit&&uit.reden){
+      knop.disabled=false;
+      st.innerHTML=`<span class="err">${esc(uit.reden)}</span>`;
+      if(uit.status&&uit.status.kwaliteit) st.innerHTML+=` <span class="muted">(score staat op ${esc(uit.status.kwaliteit)})</span>`;
+      return;
+    }
+    if(code===502||code===504||code===0){ bcWaGolfVolgen(st,knop,voor); return; }
+    knop.disabled=false;
+    st.innerHTML=`<span class="err">Mislukt: ${esc(error.message)}</span>`;return;
+  }
+  // De server heeft de golf op de achtergrond gestart (antwoord 202).
+  if(data&&data.gestart){ bcWaGolfVolgen(st,knop,voor); return; }
   knop.disabled=false;
-  if(error){st.innerHTML=`<span class="err">Mislukt: ${esc(error.message)}</span>`;return;}
   if(!data||data.ok===false){
     st.innerHTML=`<span class="err">${esc(data&&data.reden||'mislukt')}</span>`;
     if(data&&data.status) st.innerHTML+=` <span class="muted">(score staat op ${esc(data.status.kwaliteit)})</span>`;
@@ -7091,6 +7111,50 @@ async function bcVerstuurWa(test){
     knop.disabled=true; knop.textContent='Alles verstuurd';
     bcCampVergeten();
     toast(`WhatsApp-campagne klaar: ${data.doel} berichten`,'ok');
+  }
+}
+
+/* Een golf van 40 duurt ruim twee minuten en draait op de server door, ook als dit
+   scherm dichtgaat. Hier volgen we hem: elke 8 seconden de stand ophalen tot de
+   golf klaar is of stilvalt. De stand komt uit de database (wie een regel heeft is
+   behandeld), dus ook na een afgebroken verbinding klopt hij. */
+async function bcWaGolfVolgen(st,knop,voor){
+  const golf=Math.max(1,Math.min(BC.golf, Number(voor.resterend)||BC.golf));
+  const basis=Number(voor.behandeld)||0;
+  const t0=Date.now(); let laatst=basis, laatstT=t0, stand=voor;
+  st.innerHTML=`Golf van ${golf} gestart. Dat duurt ongeveer ${Math.ceil(golf*3.5/60)} minuten.`;
+  while(true){
+    await new Promise(r=>setTimeout(r,8000));
+    let s=null; try{ s=(await sb.rpc('broadcast_campagne_laden',{p_id:BC.camp})).data; }catch(e){}
+    if(s&&s.ok!==false){
+      stand=s; const nu=Number(s.behandeld)||0;
+      if(nu>laatst){ laatst=nu; laatstT=Date.now(); }
+      st.innerHTML=`Golf loopt op de server. Tot nu toe <b>${nu-basis}</b> van ${golf} verwerkt. Dit scherm mag open blijven, sluiten kan ook: de golf loopt door.`;
+      if(nu-basis>=golf||(Number(s.resterend)||0)<=0) break;
+    }
+    // Geen voortgang meer: de golf is klaar of gestopt.
+    if(Date.now()-laatstT>60000) break;
+    if(Date.now()-t0>8*60000) break;
+  }
+  const kl=(Number(stand.behandeld)||0)-basis, rest=Number(stand.resterend)||0;
+  let kw=null;
+  try{ const {data:ns}=await sb.functions.invoke('broadcast-wa',{body:{actie:'status'}}); kw=ns&&ns.kwaliteit||null; }catch(e){}
+  BC.waGolven++; bcCampBewaren(); bcCampagnesLaden();
+  if(BC.vast) BC.vast.resterend=rest;
+  const kleur=kw==='GREEN'?'ok':'err';
+  st.innerHTML=`Golf klaar. Verwerkt: <b>${kl}</b> van ${golf}. Verstuurd in totaal: <b>${Number(stand.verzonden)||0}</b>.`+
+    `<br>Nog <b>${rest}</b> te gaan van ${stand.doel||'?'}.`+
+    (kw?` Kwaliteitsscore nu: <span class="${kleur}">${esc(kw)}</span>.`:'')+
+    (kw&&kw!=='GREEN'?`<div class="bc-let" style="margin:10px 0 0">De kwaliteitsscore staat nu op ${esc(kw)}. Stop met versturen en kijk waarom mensen blokkeren.</div>`:'')+
+    (kl<golf&&rest>0?`<div class="bc-let" style="margin:10px 0 0">De golf is eerder gestopt dan gepland (${kl} van ${golf}). Kijk in de campagnelijst wat er is verstuurd en druk daarna op de knop om verder te gaan.</div>`:'');
+  if(rest>0){
+    knop.textContent=`🚀 Volgende golf (${Math.min(BC.golf,rest)} van ${rest})`;
+    knop.disabled=!!(kw&&kw!=='GREEN');
+    if(kw&&kw!=='GREEN') knop.title='Kwaliteitsscore is niet groen';
+  }else{
+    knop.disabled=true; knop.textContent='Alles verstuurd';
+    bcCampVergeten();
+    toast(`WhatsApp-campagne klaar: ${stand.doel} berichten`,'ok');
   }
 }
 
