@@ -1786,7 +1786,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-11-06-wa-golf-achtergrond';
+const APP_VERSIE='2026-11-07-wa-template-weg';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -6447,17 +6447,18 @@ async function bcWaLaden(){
     vak.innerHTML='<div class="bc-let">Er is nog geen goedgekeurd MARKETING-template. Dien er een in met de knop hieronder; zodra Meta hem goedkeurt verschijnt hij hier vanzelf.</div>';
     return;
   }
-  // Een wachtend of afgewezen template mag weg (een tikfout in de naam, een
-  // tekst die je toch anders wilt). De functie weigert templates die het
-  // platform zelf gebruikt.
+  // Elk template mag weg, ook een goedgekeurd (een tikfout in de naam, een
+  // tekst die je toch anders wilt, een oud template). De functie weigert
+  // templates die het platform zelf gebruikt en templates die een campagne
+  // die nog niet af is nodig heeft.
   const tplRegel=(t,extra)=>`<b>${esc(t.naam)}</b>${t.taal&&t.taal!=='nl'?` (${esc(t.taal)})`:''}${extra||''} <button type="button" class="bc-zoekactie" data-tplweg="${esc(t.naam)}" title="Verwijderen bij Meta">weg</button>`;
   vak.innerHTML='<div class="bc-rij">'+klaar.map(t=>
-    `<button type="button" class="bc-chip ${BC.waTpl&&BC.waTpl.naam===t.naam?'on':''}" data-watpl="${esc(t.naam)}" title="${esc(t.body)}">${esc(t.naam)} <span class="bc-n">${t.variabelen}</span></button>`).join('')+'</div>'
+    `<span style="display:inline-flex;align-items:center;gap:4px"><button type="button" class="bc-chip ${BC.waTpl&&BC.waTpl.naam===t.naam?'on':''}" data-watpl="${esc(t.naam)}" title="${esc(t.body)}">${esc(t.naam)} <span class="bc-n">${t.variabelen}</span></button><button type="button" class="bc-zoekactie" data-tplweg="${esc(t.naam)}" title="Verwijderen bij Meta">weg</button></span>`).join('')+'</div>'
     // Wachtende templates zichtbaar maar niet aanklikbaar: anders lijkt het of
     // je indiening is verdwenen.
     + (wachtend.length?`<div class="bc-hint" style="margin-top:8px">In review bij Meta: ${wachtend.map(t=>tplRegel(t)).join(', ')}. Zodra Meta ze goedkeurt staan ze hierboven. Meestal binnen een paar uur; ververs deze pagina.</div>`:'')
     + (afgewezen.length?`<div class="bc-hint" style="margin-top:4px"><span class="err">Afgewezen door Meta:</span> ${afgewezen.map(t=>tplRegel(t, t.reden?` <span class="muted">(${esc(t.reden)})</span>`:'')).join(', ')}. Pas de tekst aan en dien hem in onder een nieuwe naam.</div>`:'')
-    + (anders.length?`<div class="bc-hint" style="margin-top:4px">Goedgekeurd, maar niet als MARKETING en dus niet voor een campagne: ${anders.map(t=>`<b>${esc(t.naam)}</b> (${esc(t.categorie)})`).join(', ')}.</div>`:'');
+    + (anders.length?`<div class="bc-hint" style="margin-top:4px">Goedgekeurd, maar niet als MARKETING en dus niet voor een campagne: ${anders.map(t=>tplRegel(t,` (${esc(t.categorie)})`)).join(', ')}.</div>`:'');
   vak.querySelectorAll('[data-tplweg]').forEach(b=>{b.onclick=()=>bcWaTplVerwijderen(b.dataset.tplweg);});
   vak.querySelectorAll('[data-watpl]').forEach(b=>b.onclick=()=>{
     if(BC.camp && BC.waGolven>0){
@@ -6684,10 +6685,16 @@ async function bcWaTplIndienen(){
   } finally { knop.disabled=false; knop.textContent='Indienen bij Meta'; }
 }
 async function bcWaTplVerwijderen(naam){
-  if(!confirm(`Template "${naam}" bij Meta verwijderen?\n\nMeta houdt de naam daarna 30 dagen bezet.`)) return;
+  const tpl=(BC.waTpls||[]).find(x=>x.naam===naam);
+  const goed=tpl&&tpl.status==='APPROVED';
+  if(!confirm(goed
+    ? `Template "${naam}" is goedgekeurd en nu te gebruiken. Bij Meta verwijderen?\n\nDit kun je niet terugdraaien en Meta houdt de naam daarna 30 dagen bezet. Een template dat een lopende campagne nog nodig heeft wordt geweigerd.`
+    : `Template "${naam}" bij Meta verwijderen?\n\nMeta houdt de naam daarna 30 dagen bezet.`)) return;
   const {data,error}=await sb.functions.invoke('broadcast-wa',{body:{actie:'template_verwijderen',naam}});
   if(error||!data||!data.ok){toast('Verwijderen mislukt: '+((data&&data.reden)||(error&&error.message)||'onbekend'),'err',8000);return;}
   toast(`Template ${naam} verwijderd bij Meta.`,'ok');
+  // Was dit het gekozen template, dan de keuze loslaten.
+  if(BC.waTpl&&BC.waTpl.naam===naam){ BC.waTpl=null; BC.waTplNaam=null; BC.waVars=[]; }
   BC.waTpls=null; await bcWaLaden();
 }
 
