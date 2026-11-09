@@ -332,4 +332,25 @@ footer a:hover{text-decoration:underline}
 .gate-card .steps li{position:relative;padding-left:26px;margin:5px 0;line-height:1.45}
 .gate-card .steps li::before{content:"\2713";position:absolute;left:2px;top:0;color:#099a0b;font-weight:800}
 .gate-card .outro{margin-top:4px}
+/* Aanmeldkaart 9 nov: belofte als kop, formulier direct in beeld (mobiel: kop, formulier, rest; desktop: twee kolommen) */
+.gate-card{text-align:left;max-width:1120px}
+.gate-grid{display:grid;gap:26px}
+.gate-head .chips{justify-content:flex-start}
+.gate-card h1{font-size:clamp(26px,3.4vw,40px);line-height:1.12;margin:16px 0 10px;letter-spacing:-.01em}
+.gate-sub{font-size:16.5px;color:var(--muted);margin:0;line-height:1.5}
+.gate-form{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 20px;box-shadow:0 12px 34px rgba(0,0,0,.07)}
+.gate-form h2{font-size:22px;margin:0 0 6px}
+.gate-form-sub{font-size:14px;color:var(--muted);margin:0 0 14px}
+.gate-form #gateFallback{margin:6px 0 0}
+.steps-title{font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin:0 0 8px;color:var(--ink)}
+.gate-card .steps{display:block;max-width:none;margin:0 0 22px}
+.gate-more .hosts{justify-content:flex-start;gap:22px;margin:0 0 12px}
+.trust{font-size:15px;color:var(--muted);margin:0 0 22px;line-height:1.5}
+.gate-more .countdown{justify-content:flex-start;margin:0}
+@media(min-width:900px){
+  .gate-grid{grid-template-columns:1.15fr .85fr;column-gap:44px;align-items:start}
+  .gate-head{grid-column:1;grid-row:1}
+  .gate-more{grid-column:1;grid-row:2}
+  .gate-form{grid-column:2;grid-row:1 / span 2;position:sticky;top:88px}
+}
 
