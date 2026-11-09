@@ -326,3 +326,4 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:13px;color:var(
 footer .frow{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:space-between}
 footer a{color:var(--ink);text-decoration:none;font-weight:600}
 footer a:hover{text-decoration:underline}
+.cd-label u{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}

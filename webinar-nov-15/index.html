@@ -96,7 +96,7 @@ fbq('track','PageView');
           <div><b>Ashley</b><span>Sales manager UTAMA · cohost</span></div>
         </div>
       </div>
-      <div class="cd-label" id="cdLabel">Het webinar start over</div>
+      <div class="cd-label" id="cdLabel">Het <u>webinar</u> start over</div>
       <div class="countdown" id="countdown" data-target="2026-11-15T13:00:00+01:00">
         <div class="cd-cell"><b id="cdD">0</b><span>dagen</span></div>
         <div class="cd-cell"><b id="cdH">0</b><span>uur</span></div>
@@ -173,7 +173,7 @@ fbq('track','PageView');
             if(slot && slot.shadowRoot && !slot.shadowRoot.getElementById('utamaEmbedStyle')){
               var st = document.createElement('style');
               st.id = 'utamaEmbedStyle';
-              st.textContent = 'button[type="submit"]{background:#099a0b !important;border-color:#099a0b !important;color:#fff !important;font-family:"Inter",ui-sans-serif,system-ui,sans-serif !important;font-size:17px !important;font-weight:800 !important;padding:18px 32px !important;min-height:60px !important;border-radius:8px !important;width:100% !important;max-width:none !important;justify-content:center !important;cursor:pointer !important;transition:filter .15s ease !important} button[type="submit"]:hover{filter:brightness(1.08) !important} a{color:#17140F !important} label{font-weight:700 !important;color:#17140F !important}';
+              st.textContent = 'button[type="submit"]{background:#099a0b !important;border-color:#099a0b !important;color:#fff !important;font-family:"Inter",ui-sans-serif,system-ui,sans-serif !important;font-size:17px !important;font-weight:800 !important;padding:18px 32px !important;min-height:60px !important;border-radius:8px !important;width:100% !important;max-width:none !important;justify-content:center !important;cursor:pointer !important;transition:filter .15s ease !important} button[type="submit"]:hover{filter:brightness(1.08) !important} a{color:#17140F !important} label{font-weight:700 !important;color:#17140F !important} label[data-utama="phone"]{font-size:0 !important;line-height:0 !important} label[data-utama="phone"] *{display:none !important} label[data-utama="phone"]::before{content:"Mobiel nummer* (optioneel). ";font-size:16px;line-height:24px;font-weight:700} label[data-utama="phone"]::after{content:"Alleen voor een WhatsApp-herinnering vlak voor de start";font-size:16px;line-height:24px;font-weight:400}';
               slot.shadowRoot.appendChild(st);
             }
           }
@@ -225,26 +225,11 @@ fbq('track','PageView');
                 }catch(e){}
               }
             }
+            /* Label van het telefoonveld: alleen markeren. De tekst zelf komt uit CSS (zie
+               utamaEmbedStyle), want WebinarGeek zet de labeltekst bij elke hertekening terug
+               en plakt er " (optioneel)" achter. Tekst aanpassen in de DOM gaf dubbele regels. */
             sr.querySelectorAll('label').forEach(function(l){
-              var last = l.lastChild;
-              if(last && last.nodeType === 3 && /\(optioneel\)\./.test(l.textContent) && / \(optioneel\)\s*$/.test(last.nodeValue)){
-                last.nodeValue = last.nodeValue.replace(/ \(optioneel\)\s*$/, '');
-              }
-              /* Alleen de kop vet: "Mobiel nummer* (optioneel)." De uitleg erachter in normaal gewicht. */
-              if(!l.querySelector('.utama-sub')){
-                var t = l.lastChild;
-                if(t && t.nodeType === 3){
-                  var m = t.nodeValue.match(/^(.*?\(optioneel\)\.)\s*(\S.*)$/);
-                  if(m){
-                    t.nodeValue = m[1] + ' ';
-                    var sp = document.createElement('span');
-                    sp.className = 'utama-sub';
-                    sp.style.fontWeight = '400';
-                    sp.textContent = m[2];
-                    l.appendChild(sp);
-                  }
-                }
-              }
+              if(/Mobiel nummer/.test(l.textContent) && !l.hasAttribute('data-utama')) l.setAttribute('data-utama', 'phone');
             });
           }
           var armed = false;
@@ -293,7 +278,7 @@ fbq('track','PageView');
     function tick(){
       var diff = target - Date.now();
       if(diff <= 0){
-        document.getElementById('cdLabel').textContent = 'Het webinar is begonnen';
+        document.getElementById('cdLabel').innerHTML = 'Het <u>webinar</u> is begonnen';
         box.style.display = 'none';
         return;
       }
