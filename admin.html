@@ -1786,7 +1786,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-11-07-wa-template-weg';
+const APP_VERSIE='2026-11-09-werklijst-fases';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -4905,26 +4905,33 @@ async function renderWerklijst(){
 }
 function drawWerklijst(){
   const d=WL.data,v=$('#view');if(!d)return;
-  const wacht=d.wacht||[];wacht.forEach((r,i)=>r._i=i);
-  const open=wacht.filter(r=>!r.afgevinkt_op),afgevinkt=wacht.filter(r=>r.afgevinkt_op);
+  const wacht=d.wacht||[];wacht.forEach((r,i)=>{r._i=i;r._src='wacht';});
+  // Sinds 9 november 2026 geeft werklijst() afgevinkte gesprekken apart terug (wacht_afgevinkt), zodat de
+  // Claude-koppeling en dagstart ze niet als wachtend tellen. Een oudere database stopt ze nog in wacht.
+  const afgevinkt=(d.wacht_afgevinkt||[]).concat(wacht.filter(r=>r.afgevinkt_op));afgevinkt.forEach((r,i)=>{if(!r._src){r._i=i;r._src='wacht_afgevinkt';}});
+  const open=wacht.filter(r=>!r.afgevinkt_op);
   // Klanten (ITP getekend of aanbetaling betaald) horen niet in de verkoop-
   // wachtrij, maar verdwijnen ook niet: ze staan hieronder ingeklapt. Zonder
   // knoppen, want die werken op de index in d.wacht en die hebben deze rijen niet.
-  const klanten=d.wacht_klanten||[];
+  const klanten=d.wacht_klanten||[];klanten.forEach((r,i)=>{r._i=i;r._src='wacht_klanten';});
+  const klantenWacht=klanten.filter(r=>!r.afgevinkt_op).length;
+  // Een klant die zelf nog op antwoord wacht mag niet stil in een ingeklapt lijstje zitten
+  // (Valerie & Hidde Terpstra, 6 november 2026): dan staat het lijstje open.
+  if(WL.klantenOpen===undefined)WL.klantenOpen=klantenWacht>0;
   const tabs=[['mijn','Op mijn bord'],['niemand','Van niemand'],['ander','Van een ander']];
   const perGroep=g=>open.filter(r=>r.groep===g);
   const rijen1=perGroep(WL.tab);
   const rij1=r=>`<tr>
-    <td><button class="wl-naam" data-wl-crm="wacht:${r._i}" title="Open de CRM-kaart">${esc(r.naam||'(naamloos)')}</button>${r.is_customer?' <span class="badge green">klant</span>':''}${wlWaBadge(r.kaart)}</td>
+    <td><button class="wl-naam" data-wl-crm="${r._src||'wacht'}:${r._i}" title="Open de CRM-kaart">${esc(r.naam||'(naamloos)')}</button>${r.is_customer?' <span class="badge green">klant</span>':''}${wlWaBadge(r.kaart)}</td>
     <td class="muted">${esc(r.bereikbaar||'')}</td>
     <td>${wlKanaal(r.kanaal)}${esc(r.kanalen||r.kanaal||'')}</td>
     <td>${wlLaatste(r)}</td>
     <td>${r.reden==='bot droeg over'?'<span class="badge amber">bot droeg over</span>':'<span class="badge">lead wacht</span>'}${r.afgevinkt_op?`<div class="muted" style="font-size:11px">afgevinkt ${wlRel(r.afgevinkt_op)}</div>`:''}</td>
     <td>${wlKaart(r.kaart)}${wlWerk(r)}<div style="font-size:12px">${wlWie(r.kaart)}</div></td>
     <td>${r.afspraak||r.reservering?`${r.afspraak?wlAfspraak(r.afspraak):''}${r.reservering?wlRes(r.reservering):''}`:'<span class="muted">geen</span>'}</td>
-    ${wlActs('wacht:'+r._i,true,!canEdit('inbox')?'':r.afgevinkt_op
-      ?`<button class="btn btn-ghost btn-sm" data-wl-geenantw="${r._i}:0" title="Zet dit gesprek terug op wachtend">↩︎ Toch beantwoorden</button>`
-      :`<button class="btn btn-ghost btn-sm" data-wl-geenantw="${r._i}:1" title="Haal deze lead uit de lijst. Schrijft de lead daarna opnieuw, dan komt hij vanzelf terug.">✓ Geen antwoord nodig</button>`)}
+    ${wlActs((r._src||'wacht')+':'+r._i,true,!canEdit('inbox')?'':r.afgevinkt_op
+      ?`<button class="btn btn-ghost btn-sm" data-wl-geenantw="${r._src||'wacht'}:${r._i}:0" title="Zet dit gesprek terug op wachtend">↩︎ Toch beantwoorden</button>`
+      :`<button class="btn btn-ghost btn-sm" data-wl-geenantw="${r._src||'wacht'}:${r._i}:1" title="Haal deze lead uit de lijst. Schrijft de lead daarna opnieuw, dan komt hij vanzelf terug.">✓ Geen antwoord nodig</button>`)}
   </tr>`;
   const kop1='<tr><th>Naam</th><th>Bereikbaar</th><th>Kanaal</th><th>Laatste bericht</th><th>Reden</th><th>Kaart / fase / van wie</th><th>Afspraak / reservering</th><th></th></tr>';
 
@@ -4980,17 +4987,19 @@ function drawWerklijst(){
   </div>
 
   <div class="panel wl-sec">
-    <div class="panel-head"><div><h3>1. Wacht op antwoord <span class="count-pill">${open.length}</span></h3><div class="desc">Laatste bericht kwam van de lead en daarna deed niemand iets: geen bericht, geen belletje, geen kaart doorgeschoven. Een kaart doorschuiven telt als opgepakt; naar een Dag-kolom, Mobiel bellen, In gesprek sales, Later opvolgen of Gekwalificeerd ook als belpoging. Kaarten in een afgesloten kolom staan er niet bij.</div></div>
+    <div class="panel-head"><div><h3>1. Wacht op antwoord <span class="count-pill">${open.length}</span></h3><div class="desc">Laatste bericht kwam van de lead en daarna deed niemand iets: geen bericht, geen belletje, geen kaart doorgeschoven. Een kaart doorschuiven telt als opgepakt; naar een Dag-kolom, Mobiel bellen, In gesprek sales, Later opvolgen of Gekwalificeerd ook als belpoging. Kaarten in een afgesloten kolom staan er niet bij. Een kaart op In gesprek sales, Later opvolgen (tot de datum), Afspraak ingepland, Relatie onderhouden of The Reload: wachtlijst telt ook niet: die fase zegt al wat er gebeurt. Praat de bot nog met de lead, dan is het zijn gesprek; alleen een overdracht door de bot staat hier.</div></div>
       <div class="seg">${tabs.map(([k,l])=>`<button data-wl-tab="${k}" class="${WL.tab===k?'on':''}">${l} <span class="count-pill">${perGroep(k).length}</span></button>`).join('')}</div></div>
     <div class="table-wrap">${rijen1.length?`<table><thead>${kop1}</thead><tbody>${rijen1.map(rij1).join('')}</tbody></table>`:'<div class="empty">Niets in dit tabblad. Alles is opgepakt.</div>'}</div>
-    ${afgevinkt.length?`<div class="wl-uit"><button class="btn btn-ghost btn-sm" data-wl-toggle="afgevinkt">${WL.afgevinktOpen?'Verberg':'Toon'} ${afgevinkt.length} in de inbox afgevinkt als "geen antwoord nodig"</button>
+    ${afgevinkt.length?`<div class="wl-uit"><button class="btn btn-ghost btn-sm" data-wl-toggle="afgevinkt">${WL.afgevinktOpen?'Verberg':'Toon'} ${afgevinkt.length} afgevinkt als "geen antwoord nodig" (tellen niet als wachtend)</button>
       ${WL.afgevinktOpen?`<div class="table-wrap" style="margin-top:10px"><table><thead>${kop1}</thead><tbody>${afgevinkt.map(rij1).join('')}</tbody></table></div>`:''}</div>`:''}
-    ${klanten.length?`<div class="wl-uit"><button class="btn btn-ghost btn-sm" data-wl-toggle="klanten">${WL.klantenOpen?'Verberg':'Toon'} ${klanten.length} ${klanten.length===1?'klant die':'klanten die'} buiten de wachtrij ${klanten.length===1?'valt':'vallen'}</button>
-      ${WL.klantenOpen?`<div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Naam</th><th>Kanaal</th><th>Laatste bericht</th><th>Reservering</th></tr></thead><tbody>${klanten.map(r=>`<tr>
-        <td>${esc(r.naam||'(naamloos)')} <span class="badge green">klant</span></td>
+    ${klanten.length?`<div class="wl-uit"><button class="btn btn-ghost btn-sm" data-wl-toggle="klanten">${WL.klantenOpen?'Verberg':'Toon'} ${klanten.length} ${klanten.length===1?'klant die':'klanten die'} buiten de wachtrij ${klanten.length===1?'valt':'vallen'}${klantenWacht?` (${klantenWacht} wacht nog op antwoord)`:''}</button>
+      ${WL.klantenOpen?`<div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Naam</th><th>Kanaal</th><th>Laatste bericht</th><th>Reservering</th><th>Van wie</th><th></th></tr></thead><tbody>${klanten.map(r=>`<tr>
+        <td>${esc(r.naam||'(naamloos)')} <span class="badge green">klant</span>${r.afgevinkt_op?'':' <span class="badge amber">wacht op antwoord</span>'}</td>
         <td>${wlKanaal(r.kanaal)}${esc(r.kanalen||r.kanaal||'')}</td>
         <td>${wlLaatste(r)}</td>
         <td>${r.reservering?wlRes(r.reservering):'<span class="muted">geen</span>'}</td>
+        <td>${wlWie(r.kaart)}</td>
+        <td class="wl-acts"><button class="btn btn-ghost btn-sm" data-wl-open="wacht_klanten:${r._i}" title="Open het gesprek in de inbox">Inbox</button></td>
       </tr>`).join('')}</tbody></table></div>
       <div class="muted" style="font-size:12px;margin-top:6px">Een getekende ITP of een betaalde aanbetaling maakt iemand klant. Die hoort in de nazorg, niet in de verkoop-wachtrij. Wil je toch antwoorden, open het gesprek in de inbox.</div>`:''}</div>`:''}
   </div>
@@ -5034,7 +5043,7 @@ function drawWerklijst(){
 // "Inbox": het gesprek van deze rij openen.
 function wlOpen(ref){
   const {sectie,row}=wlRij(ref);if(!row)return;
-  const conv=sectie==='wacht'?row.conversation_id:(row.gesprek&&row.gesprek.id);
+  const conv=(sectie==='wacht'||sectie==='wacht_afgevinkt'||sectie==='wacht_klanten')?row.conversation_id:(row.gesprek&&row.gesprek.id);
   if(conv){openInboxThread(conv);return;}
   toast('Geen gesprek bekend voor deze rij','err');
 }
@@ -5061,7 +5070,8 @@ async function wlOpenCrm(ref){
 // voor alle gesprekken van dit contact. Een nieuw bericht van de lead maakt
 // hem vanzelf weer open.
 async function wlGeenAntwoord(ref){
-  const [i,aan]=String(ref).split(':');const row=((WL.data||{}).wacht||[])[parseInt(i,10)];
+  // ref is "bron:index:aan" (bron wacht of wacht_afgevinkt); de oude vorm "index:aan" blijft werken.
+  const p=String(ref).split(':');const [src,i,aan]=p.length===3?p:['wacht',p[0],p[1]];const row=((WL.data||{})[src]||[])[parseInt(i,10)];
   if(!row||!row.conversation_id){toast('Geen gesprek om af te vinken','err');return;}
   const {data,error}=await sb.rpc('inbox_geen_antwoord_nodig',{p_conversation:row.conversation_id,p_aan:aan==='1'});
   if(error||!data||!data.ok){toast('Afvinken mislukt: '+((error&&error.message)||(data&&data.reden)||'onbekend'),'err');return;}
@@ -5120,7 +5130,7 @@ async function wlLogPopup(ref){
 }
 function wlFoutPopup(ref){
   const info=ref?wlRij(ref):{sectie:'algemeen',row:null};
-  const row=info.row;const sectie=info.sectie==='uit'?'belbaar':(WL_SECTIE[info.sectie]?info.sectie:'algemeen');
+  const row=info.row;const s0=(info.sectie==='wacht_afgevinkt'||info.sectie==='wacht_klanten')?'wacht':info.sectie;const sectie=s0==='uit'?'belbaar':(WL_SECTIE[s0]?s0:'algemeen');
   const naam=row?(row.naam||''):'';
   afPopup(`<div style="max-width:540px">
     <h3 style="margin:0 0 4px">Klopt niet${naam?': '+esc(naam):''}</h3>
