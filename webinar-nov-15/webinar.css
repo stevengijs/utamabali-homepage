@@ -327,3 +327,9 @@ footer .frow{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justif
 footer a{color:var(--ink);text-decoration:none;font-weight:600}
 footer a:hover{text-decoration:underline}
 .cd-label u{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.gate-card .intro{margin-bottom:6px}
+.gate-card .steps{list-style:none;padding:0;margin:6px auto 12px;text-align:left;display:inline-block;max-width:560px;color:var(--muted)}
+.gate-card .steps li{position:relative;padding-left:26px;margin:5px 0;line-height:1.45}
+.gate-card .steps li::before{content:"\2713";position:absolute;left:2px;top:0;color:#099a0b;font-weight:800}
+.gate-card .outro{margin-top:4px}
+
