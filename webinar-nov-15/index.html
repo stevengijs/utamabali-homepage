@@ -230,6 +230,21 @@ fbq('track','PageView');
               if(last && last.nodeType === 3 && /\(optioneel\)\./.test(l.textContent) && / \(optioneel\)\s*$/.test(last.nodeValue)){
                 last.nodeValue = last.nodeValue.replace(/ \(optioneel\)\s*$/, '');
               }
+              /* Alleen de kop vet: "Mobiel nummer* (optioneel)." De uitleg erachter in normaal gewicht. */
+              if(!l.querySelector('.utama-sub')){
+                var t = l.lastChild;
+                if(t && t.nodeType === 3){
+                  var m = t.nodeValue.match(/^(.*?\(optioneel\)\.)\s*(\S.*)$/);
+                  if(m){
+                    t.nodeValue = m[1] + ' ';
+                    var sp = document.createElement('span');
+                    sp.className = 'utama-sub';
+                    sp.style.fontWeight = '400';
+                    sp.textContent = m[2];
+                    l.appendChild(sp);
+                  }
+                }
+              }
             });
           }
           var armed = false;
