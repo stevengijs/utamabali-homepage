@@ -373,7 +373,7 @@ footer a:hover{text-decoration:underline}
 .gate-form .chips{justify-content:flex-start;margin:4px 0 12px}
 .gate-form .chips span{font-size:11px;padding:6px 10px}
 @media(max-width:899px){.gate-form .chips{justify-content:center}}
-.gate-form .chips{padding-bottom:0;margin-bottom:14px;border-bottom:none}
+.gate-form .chips{padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid var(--line)}
 .steps-title{font-size:20px;letter-spacing:-.01em;text-transform:none;font-weight:800;margin:0 0 12px}
 @media(max-width:899px){.steps-title{font-size:19px}}
 /* Knop in de bovenbalk in dezelfde groene kleur als de formulierknop (Steven, 10 nov) */
@@ -397,5 +397,3 @@ footer a:hover{text-decoration:underline}
 .gate-form .host b{font-size:14.5px}
 .gate-form .host span{font-size:12px}
 @media(min-width:900px){.gate-form .hosts{justify-content:flex-start}}
-/* Streep tussen de hosts en het naamveld (Steven, 10 nov) */
-.gate-form .hosts{padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid var(--line)}
