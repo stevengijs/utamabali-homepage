@@ -403,4 +403,7 @@ footer a:hover{text-decoration:underline}
 #mw_SdX1utPeoR8_webinargeek{max-width:100% !important;width:100%;overflow:hidden}
 .gate-card{overflow:hidden}
 @media(max-width:899px){html,body{overflow-x:hidden;max-width:100%}.wrap{max-width:100%;box-sizing:border-box}}
+/* Datumblokje op telefoons in twee regels (Steven, 10 nov) */
+.chips .chip-sep,.chips .chip-time{display:inline;background:none;padding:0}
+@media(max-width:899px){.gate-form .chips span>.chip-sep{display:none}.gate-form .chips span>.chip-time{display:block}.gate-form .chips>span{text-align:center;white-space:normal;line-height:1.4;padding:8px 16px}}
 
