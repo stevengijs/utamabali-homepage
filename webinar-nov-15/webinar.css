@@ -367,4 +367,5 @@ footer a:hover{text-decoration:underline}
 .gate-card .steps li{position:relative;background:var(--sand-2);border-radius:16px;padding:13px 16px 13px 54px;margin:8px 0;line-height:1.42;font-size:15.5px}
 .gate-card .steps li::before{content:"\2713";position:absolute;left:14px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
 @media(max-width:899px){.gate-card .steps{display:block;text-align:left}.gate-card .steps li{font-size:15px}}
+@media(max-width:899px){.gate-form h2,.gate-form .gate-form-sub{text-align:center}}
 
