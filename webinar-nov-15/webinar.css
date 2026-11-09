@@ -379,4 +379,13 @@ footer a:hover{text-decoration:underline}
 /* Knop in de bovenbalk in dezelfde groene kleur als de formulierknop (Steven, 10 nov) */
 .nav-btn{background:#099a0b !important;color:#fff !important}
 .nav-btn:hover{background:#0a8a0c !important;filter:none}
+/* Verhaalblok met foto (voorbeeld Steven, 10 nov) */
+.story-sec{background:var(--sand);padding:64px 0 24px}
+.story{display:grid;gap:28px;max-width:960px;margin:0 auto;align-items:center}
+.story img{width:100%;height:auto;display:block;border-radius:20px;aspect-ratio:3/4;object-fit:cover;object-position:center 30%}
+.story h2{font-size:clamp(26px,3.2vw,34px);margin:0 0 14px}
+.story p{font-size:16.5px;line-height:1.6;color:var(--ink-soft);margin:0 0 14px}
+.story-btn{background:#099a0b !important;color:#fff !important;margin-top:6px}
+@media(min-width:900px){.story{grid-template-columns:380px 1fr;gap:48px}}
+@media(max-width:899px){.story img{max-width:520px;margin:0 auto}.story h2{text-align:center}}
 
