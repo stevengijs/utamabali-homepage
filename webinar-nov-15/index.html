@@ -209,8 +209,14 @@ fbq('track','PageView');
                   sel.dataset.utamaNl = '1';
                   if(sel.value !== 'NL'){
                     try{
+                      var y = window.scrollY;
                       Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, 'NL');
                       sel.dispatchEvent(new Event('change', {bubbles: true}));
+                      /* De telefoonbibliotheek zet na een landwissel de focus op het nummerveld. Dat scrolt de
+                         pagina naar het formulier en opent op een telefoon het toetsenbord. Focus weghalen
+                         en de schuifpositie terugzetten. */
+                      var unfocus = function(){ var a = sr.activeElement; if(a && a.blur) a.blur(); window.scrollTo(0, y); };
+                      unfocus(); setTimeout(unfocus, 0); setTimeout(unfocus, 60);
                     }catch(e){}
                   }
                 }
