@@ -397,3 +397,10 @@ footer a:hover{text-decoration:underline}
 .gate-form .host b{font-size:14.5px}
 .gate-form .host span{font-size:12px}
 @media(min-width:900px){.gate-form .hosts{justify-content:flex-start}}
+/* Geen horizontale overloop op telefoons: grid-kinderen mogen krimpen, embed nooit breder dan de kaart (iPhone, 10 nov) */
+.gate-grid>*{min-width:0;max-width:100%}
+.gate-form{max-width:100%;overflow:hidden}
+#mw_SdX1utPeoR8_webinargeek{max-width:100% !important;width:100%;overflow:hidden}
+.gate-card{overflow:hidden}
+@media(max-width:899px){html,body{overflow-x:hidden;max-width:100%}.wrap{max-width:100%;box-sizing:border-box}}
+
