@@ -89,6 +89,27 @@ fbq('track','PageView');
       <div class="gate-grid">
         <div class="gate-head">
           <h1>Hoe kan het rendement van vastgoed op Bali zo hoog zijn?</h1>
+          <script>
+            /* Kop wisselt mee met de ad (message match). De ad-links dragen utm_content=video-a/b/c
+               (zie het brein: maison-webinar-ads-2026-11-15). Zonder of met een onbekende waarde
+               blijft de rendementskop staan. Subkop, 7 punten, formulier en FAQ zijn voor alle hooks gelijk. */
+            (function(){
+              var koppen = {
+                'video-a':   'Je geld staat stil. Is vastgoed op Bali een slim alternatief?',
+                'spaargeld': 'Je geld staat stil. Is vastgoed op Bali een slim alternatief?',
+                'video-b':   'Dubai, Spanje of Bali: waar levert vastgoed echt wat op?',
+                'buitenland':'Dubai, Spanje of Bali: waar levert vastgoed echt wat op?'
+              };
+              try{
+                var hook = (new URLSearchParams(window.location.search).get('utm_content') || '').trim().toLowerCase();
+                var kop = koppen[hook];
+                if(kop){
+                  var h1 = document.currentScript.previousElementSibling;
+                  if(h1 && h1.tagName === 'H1'){ h1.textContent = kop; h1.setAttribute('data-hook', hook); }
+                }
+              }catch(e){}
+            })();
+          </script>
           <p class="gate-sub">In Nederland doet vastgoed zo'n 3%. Op Bali zie je 12% voorbijkomen. Hoe kan dat? De rekensom van bruto naar netto en de vragen die je elke ontwikkelaar stelt. Live, voor wie spaargeld, overwaarde of geld in de holding heeft dat stilstaat.</p>
         </div>
         <div class="gate-form">
