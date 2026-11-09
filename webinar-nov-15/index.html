@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <script src="/t.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live webinar · Voordat je investeert in vastgoed op Bali: de 7 stappen die elke investering moet doorlopen | UTAMA</title>
+<link rel="canonical" href="https://www.utamabali.com/webinar-nov-15/">
+<meta name="description" content="Live webinar, zondag 15 november, 13:00 uur (Nederlandse tijd). Voordat je investeert in vastgoed op Bali: hoe eigendom als buitenlander werkt, hoe short-stay verhuur via Airbnb loopt en waar het rendement vandaan komt.">
+<meta property="og:title" content="Live webinar · Voordat je investeert in vastgoed op Bali: de 7 stappen die elke investering moet doorlopen">
+<meta property="og:description" content="Live webinar, zondag 15 november, 13:00 uur (Nederlandse tijd). Voordat je investeert in vastgoed op Bali: hoe eigendom als buitenlander werkt, hoe short-stay verhuur via Airbnb loopt en waar het rendement vandaan komt.">
+<meta property="og:image" content="https://www.utamabali.com/webinar-nov-15/assets/hero.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/png" sizes="192x192" href="/webinar-nov-15/assets/icon192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/webinar-nov-15/webinar.css">
+<!-- Meta Pixel: dezelfde dataset als /webinar/bali ("Claude Utama Site + MOKA Perspective", 419037194248722).
+     PageView op elke pagina; CompleteRegistration en Lead bij een gelukte inschrijving (zie hieronder). -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','419037194248722');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=419037194248722&ev=PageView&noscript=1"></noscript>
+<script>
+/* Inschrijving meten. Het WebinarGeek-formulier draait in deze pagina en maakt een inschrijving aan
+   met een POST naar .../subscriptions. Gaat die goed, dan CompleteRegistration en Lead, één keer per
+   bezoek (sessionStorage), zodat de bedankpagina hem niet nog eens telt. */
+(function(){
+  var KEY = 'utama_webinar_inschrijving';
+  function al(){ try{ return sessionStorage.getItem(KEY) === '1'; }catch(e){ return false; } }
+  function meld(){
+    if(al()) return;
+    try{ sessionStorage.setItem(KEY, '1'); }catch(e){}
+    if(window.fbq){
+      fbq('track', 'CompleteRegistration', {content_name: 'Webinar 15 november'});
+      fbq('track', 'Lead', {content_name: 'Webinar 15 november'});
+    }
+  }
+  function isInschrijving(url, method){
+    return /webinargeek\.com/.test(url) && /\/subscriptions(\?|$)/.test(url) && String(method || 'GET').toUpperCase() === 'POST';
+  }
+  var origineel = window.fetch;
+  if(origineel){
+    window.fetch = function(input, init){
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      var method = (init && init.method) || (input && input.method) || 'GET';
+      var p = origineel.apply(this, arguments);
+      if(isInschrijving(String(url), method)){
+        /* Na inschrijving stuurt WebinarGeek door naar het adres uit de instellingen van het webinar
+           (meegekopieerd: /webinar/bali-bedankt). Deze pagina hoort op /webinar-nov-15/thanks/ te eindigen,
+           dus dat adres vervangen we in het antwoord, voordat het formulier het gebruikt. */
+        return p.then(function(r){
+          if(r && r.ok) meld();
+          return r.clone().text().then(function(t){
+            if(t.indexOf('bali-bedankt') === -1) return r;
+            return new Response(t.split('/webinar/bali-bedankt').join('/webinar-nov-15/thanks/').split('\\/webinar\\/bali-bedankt').join('\\/webinar-nov-15\\/thanks\\/'), {status: r.status, statusText: r.statusText, headers: r.headers});
+          }).catch(function(){ return r; });
+        });
+      }
+      return p;
+    };
+  }
+})();
+</script>
+<!-- CONFIG · datum of tijd wijzigen? Pas aan: (1) alle teksten met de webinardatum en "13:00 uur",
+     (2) data-target hieronder in de countdown, (3) de agenda-links op /webinar-nov-15/thanks/,
+     (4) de datum naast de knop in de bovenbalk (nav-when).
+     Opbouw (Steven, 4 november 2026): alleen de bovenbalk en het aanmeldblok, leads landen direct op het
+     formulier. De uitgebreide lander (hero, programma, host, FAQ) staat in git: commit f4fe7f9. -->
+</head>
+<body>
+
+<nav>
+  <div class="wrap row">
+    <a href="https://www.utamabali.com" class="brand">UTAMA</a>
+    <div class="nav-cta">
+      <span class="nav-when"><span class="nw-long">Zondag 15 november · 13:00 uur · 60 minuten</span><span class="nw-short">Zo 15 nov · 13:00 · 60 min</span></span>
+      <a href="#aanmelden" class="btn nav-btn"><span class="nb-main">Reserveer je gratis plek ↓</span><span class="nb-sub">Zo 15 nov · 13:00 · 60 min</span></a>
+    </div>
+  </div>
+</nav>
+
+<section class="gate-sec" id="aanmelden">
+  <div class="wrap">
+    <div class="gate-card">
+      <div class="hosts">
+        <div class="host">
+          <img src="/webinar-nov-15/assets/steven.jpg" alt="Steven Gijsman">
+          <div><b>Steven Gijsman</b><span>Oprichter UTAMA · host</span></div>
+        </div>
+        <div class="host">
+          <img src="/webinar-nov-15/assets/ashley.jpg" alt="Ashley">
+          <div><b>Ashley</b><span>Sales manager UTAMA · cohost</span></div>
+        </div>
+      </div>
+      <div class="cd-label" id="cdLabel">Het webinar start over</div>
+      <div class="countdown" id="countdown" data-target="2026-11-15T13:00:00+01:00">
+        <div class="cd-cell"><b id="cdD">0</b><span>dagen</span></div>
+        <div class="cd-cell"><b id="cdH">0</b><span>uur</span></div>
+        <div class="cd-cell"><b id="cdM">0</b><span>min</span></div>
+        <div class="cd-cell"><b id="cdS">0</b><span>sec</span></div>
+      </div>
+      <div class="eyebrow">Gratis · Online · Zondag 15 november, 13:00 uur</div>
+      <h2>Reserveer je gratis plek.</h2>
+      <p>Gratis en online. Zondag 15 november, 13:00 uur Nederlandse tijd (20:00 Bali). De deuren gaan open om 12:45 uur. Duur: 60 minuten, met ruimte voor je vragen.</p>
+      <!-- WEBINARGEEK_EMBED:START
+     Het insluitformulier, zodat mensen zich hier aanmelden en niet worden
+     doorgestuurd naar een pagina van WebinarGeek.
+
+     Ander webinar? Dan hoeft alleen "identifier" hieronder te veranderen. De
+     sleutel mw_SdX1utPeoR8 is enkel een naamruimte voor dit ene snippet en mag
+     blijven staan; het script eronder gebruikt dezelfde naam.
+
+     De identifier staat in de bron van de registratiepagina van het webinar
+     zelf, in het blok dat begint met {"project":"registration". Bekend:
+       10 september (test)  2afd8ac5-3048-4b59-84be-3d7f4dbc198a
+       30 september 12:00   485d1563-627b-4e1e-96b3-8f029543aa42 (webinar 606052, was eerst 22 september)
+       25 oktober 14:00     2ad6ec8a-f591-4268-8427-546f734c3f23 (webinar 624120, uitzending 7005843)
+       8 november 14:00     43069405-2b08-4c84-95da-64afbae5f43b (eigen webinar 628341, uitzending 7063505,
+                            episode 665986; exacte kopie van 25 oktober, Steven 4 november)
+       15 november 13:00    kopie van /webinar-nov-8/ (webinar 8 november niet doorgegaan, Steven 9 november),
+                            13:00 NL = 20:00 Bali. De identifier hieronder is nog die van webinar 628341
+                            (8 november) tot de uitzending van 15 november in WebinarGeek staat.
+                            Nieuwe identifier? Alleen "identifier" hieronder vervangen.
+     Wissel je van webinar, pas dan ook de datums en de knop hieronder aan. -->
+      <div id="mw_SdX1utPeoR8_webinargeek" style="max-width:560px;margin:0 auto"></div>
+      <script>
+        (function(w,d,stn,sa,gn,se,fse){w[gn]=w[gn]||function(){(w[gn].q = w[gn].q||[]).push(arguments)};
+        se=d.createElement(stn);fse=d.getElementsByTagName(stn)[0];se.id=gn;se.async=1;
+        se.src=sa+"?t="+new Date().toISOString().slice(0, -9);fse.parentNode.insertBefore(se, fse);
+        })(window, document, "script", "https://malong.webinargeek.com/malong.embed.js", "mw_SdX1utPeoR8");
+        var wgOpties = {
+          project: "registration",
+          identifier: "43069405-2b08-4c84-95da-64afbae5f43b",
+          shape: "inline",
+          theme: "light",
+          embedAccentColor: "#099a0b",
+          embedSecondaryColor: "#000000",
+          hiddenSections: [
+              "logo",
+              "title",
+              "date"
+          ],
+          transparentBackground: true
+        };
+        /* Bron per aanmelding: het ingesloten formulier leest de utm-tags niet van dit adres
+           maar uit zijn eigen opties (malong.embed.js: utmTags). Geef ze dus door, dan staan
+           ze in de WebinarGeek-payload en schrijft webinargeek-webhook v8 ze weg. */
+        try {
+          var wgQuery = new URLSearchParams(window.location.search);
+          ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach(function(k){
+            var v = wgQuery.get(k);
+            if(v) wgOpties[k] = v.slice(0, 200);
+          });
+        } catch(e) {}
+        mw_SdX1utPeoR8("init", wgOpties);
+      </script>
+      <a id="gateFallback" class="btn lg" style="width:100%;max-width:420px;justify-content:center" href="https://utama.webinargeek.com/voordat-je-investeert-in-vastgoed-op-bali-de-7-stappen-die-elke-investering-moet-doorlopen-1">Reserveer je gratis plek →</a>
+      <script>
+        /* Toon de knop alleen zolang het embed-formulier nog niet rendert.
+           Robuust: kijkt naar de hele aanmeldkaart (iframe of gevulde slot),
+           via observer én een korte polling-fallback. */
+        (function(){
+          var card = document.querySelector('.gate-card');
+          var btn = document.getElementById('gateFallback');
+          if(!card || !btn) return;
+          function paintEmbed(){
+            /* Forceer de UTAMA-knopkleur in het formulier; WebinarGeek stuurt
+               de accentkleur anders bij naar goudbruin. */
+            var slot = document.getElementById('mw_SdX1utPeoR8_webinargeek');
+            if(slot && slot.shadowRoot && !slot.shadowRoot.getElementById('utamaEmbedStyle')){
+              var st = document.createElement('style');
+              st.id = 'utamaEmbedStyle';
+              st.textContent = 'button[type="submit"]{background:#099a0b !important;border-color:#099a0b !important;color:#fff !important;font-family:"Inter",ui-sans-serif,system-ui,sans-serif !important;font-size:17px !important;font-weight:800 !important;padding:18px 32px !important;min-height:60px !important;border-radius:8px !important;width:100% !important;max-width:none !important;justify-content:center !important;cursor:pointer !important;transition:filter .15s ease !important} button[type="submit"]:hover{filter:brightness(1.08) !important} a{color:#17140F !important}';
+              slot.shadowRoot.appendChild(st);
+            }
+          }
+          function embedRendered(){
+            var slot = document.getElementById('mw_SdX1utPeoR8_webinargeek');
+            if(!slot) return false;
+            paintEmbed();
+            if(slot.childElementCount > 0) return true;
+            /* WebinarGeek rendert het formulier in een shadow root op de slot-div */
+            if(slot.shadowRoot && slot.shadowRoot.childElementCount > 0) return true;
+            return !!card.querySelector('iframe');
+          }
+          var obs = null;
+          function hide(){
+            btn.style.display = 'none';
+            if(obs) obs.disconnect();
+            if(timer) clearInterval(timer);
+          }
+          function check(){ if(embedRendered()) hide(); }
+          obs = new MutationObserver(check);
+          obs.observe(card, {childList: true, subtree: true});
+          var tries = 0;
+          var timer = setInterval(function(){
+            tries++;
+            check();
+            if(tries > 60) clearInterval(timer);
+          }, 500);
+          check();
+        })();
+      </script>
+      <!-- WEBINARGEEK_EMBED:END -->
+      <div class="gate-note">Je ontvangt je persoonlijke deelnamelink en herinneringen. Uitschrijven kan altijd met één klik. Dit is geen fiscaal of juridisch advies.</div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="afm-note" style="margin-top:26px"><strong>Let op!</strong> U belegt buiten AFM&#8209;toezicht. Geen vergunningplicht voor deze activiteit.</div>
+</div>
+
+<footer>
+  <div class="wrap frow">
+    <div>UTAMA · Boutique vastgoedontwikkeling op Bali</div>
+    <div>
+      <a href="https://www.utamabali.com">utamabali.com</a> &nbsp;·&nbsp;
+      <a href="https://www.instagram.com/stevenbalivillas/" target="_blank" rel="noopener">Instagram</a> &nbsp;·&nbsp;
+      <a href="https://wa.me/31624845014" target="_blank" rel="noopener">WhatsApp</a> &nbsp;·&nbsp;
+      <a href="mailto:steven@utamabali.com">steven@utamabali.com</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  /* countdown */
+  var box = document.getElementById('countdown');
+  if(box){
+    var target = new Date(box.getAttribute('data-target')).getTime();
+    var ids = {d:'cdD',h:'cdH',m:'cdM',s:'cdS'};
+    function tick(){
+      var diff = target - Date.now();
+      if(diff <= 0){
+        document.getElementById('cdLabel').textContent = 'Het webinar is begonnen';
+        box.style.display = 'none';
+        return;
+      }
+      var d = Math.floor(diff/864e5), h = Math.floor(diff%864e5/36e5),
+          m = Math.floor(diff%36e5/6e4), s = Math.floor(diff%6e4/1e3);
+      document.getElementById(ids.d).textContent = d;
+      document.getElementById(ids.h).textContent = h;
+      document.getElementById(ids.m).textContent = m;
+      document.getElementById(ids.s).textContent = s;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  }
+})();
+</script>
+
+</body>
+</html>
