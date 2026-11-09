@@ -341,6 +341,7 @@ footer a:hover{text-decoration:underline}
 .gate-form{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 20px;box-shadow:0 12px 34px rgba(0,0,0,.07)}
 .gate-form h2{font-size:22px;margin:0 0 6px}
 .gate-form-sub{font-size:14px;color:var(--muted);margin:0 0 14px}
+.gate-form .gate-form-sub{padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid var(--line)}
 .gate-form #gateFallback{margin:6px 0 0}
 .steps-title{font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin:0 0 8px;color:var(--ink)}
 .gate-card .steps{display:block;max-width:none;margin:0 0 22px}
