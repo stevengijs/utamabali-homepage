@@ -40,6 +40,9 @@ nav .row{display:flex;align-items:center;justify-content:space-between;height:64
 .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,20,15,.05) 0%,rgba(23,20,15,.28) 55%,rgba(23,20,15,.82) 100%)}
 .hero .inner{position:relative;z-index:1;padding:80px 0 60px;max-width:56ch}
 .eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);font-weight:700}
+.eyebrow.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;letter-spacing:.14em}
+.eyebrow.chips span{display:inline-block;background:var(--ink);color:#fff;padding:7px 12px;border-radius:6px;line-height:1.2;white-space:nowrap}
+@media (max-width:420px){.eyebrow.chips span{white-space:normal;font-size:11px}}
 .hero .eyebrow{color:rgba(255,255,255,.88)}
 .hero h1{font-size:clamp(34px,5.4vw,58px);letter-spacing:-.5px;margin:16px 0 16px;max-width:16ch;color:#fff}
 .hero p{font-size:18px;color:rgba(255,255,255,.82);margin:0 0 28px;max-width:48ch}
