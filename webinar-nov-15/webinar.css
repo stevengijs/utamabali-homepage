@@ -389,4 +389,6 @@ footer a:hover{text-decoration:underline}
 @media(min-width:900px){.story{grid-template-columns:380px 1fr;gap:48px}}
 @media(max-width:899px){.story img{max-width:520px;margin:0 auto}.story h2{text-align:center}}
 @media(max-width:899px){.story-text{text-align:center}.story p{text-align:left}.story-btn{display:inline-flex;margin:6px auto 0}}
+.steps-outro{font-size:15.5px;color:var(--ink);font-weight:600;margin:-6px 0 24px}
+@media(max-width:899px){.steps-outro{text-align:center}}
 
