@@ -382,7 +382,7 @@ footer a:hover{text-decoration:underline}
 /* Verhaalblok met foto (voorbeeld Steven, 10 nov) */
 .story-sec{background:var(--sand);padding:64px 0 24px}
 .story{display:grid;gap:28px;max-width:960px;margin:0 auto;align-items:center}
-.story img{width:100%;height:auto;display:block;border-radius:20px;aspect-ratio:3/4;object-fit:cover;object-position:center 30%}
+.story img{width:100%;height:auto;display:block;border-radius:20px;aspect-ratio:1/1;object-fit:cover;object-position:center 70%}
 .story h2{font-size:clamp(26px,3.2vw,34px);margin:0 0 14px}
 .story p{font-size:16.5px;line-height:1.6;color:var(--ink-soft);margin:0 0 14px}
 .story-btn{background:#099a0b !important;color:#fff !important;margin-top:6px}
