@@ -388,4 +388,5 @@ footer a:hover{text-decoration:underline}
 .story-btn{background:#099a0b !important;color:#fff !important;margin-top:6px}
 @media(min-width:900px){.story{grid-template-columns:380px 1fr;gap:48px}}
 @media(max-width:899px){.story img{max-width:520px;margin:0 auto}.story h2{text-align:center}}
+@media(max-width:899px){.story-text{text-align:center}.story p{text-align:left}.story-btn{display:inline-flex;margin:6px auto 0}}
 
