@@ -376,4 +376,7 @@ footer a:hover{text-decoration:underline}
 .gate-form .chips{padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid var(--line)}
 .steps-title{font-size:20px;letter-spacing:-.01em;text-transform:none;font-weight:800;margin:0 0 12px}
 @media(max-width:899px){.steps-title{font-size:19px}}
+/* Knop in de bovenbalk in dezelfde groene kleur als de formulierknop (Steven, 10 nov) */
+.nav-btn{background:#099a0b !important;color:#fff !important}
+.nav-btn:hover{background:#0a8a0c !important;filter:none}
 
