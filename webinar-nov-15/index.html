@@ -173,8 +173,30 @@ fbq('track','PageView');
             if(slot && slot.shadowRoot && !slot.shadowRoot.getElementById('utamaEmbedStyle')){
               var st = document.createElement('style');
               st.id = 'utamaEmbedStyle';
-              st.textContent = 'button[type="submit"]{background:#099a0b !important;border-color:#099a0b !important;color:#fff !important;font-family:"Inter",ui-sans-serif,system-ui,sans-serif !important;font-size:17px !important;font-weight:800 !important;padding:18px 32px !important;min-height:60px !important;border-radius:8px !important;width:100% !important;max-width:none !important;justify-content:center !important;cursor:pointer !important;transition:filter .15s ease !important} button[type="submit"]:hover{filter:brightness(1.08) !important} a{color:#17140F !important}';
+              st.textContent = 'button[type="submit"]{background:#099a0b !important;border-color:#099a0b !important;color:#fff !important;font-family:"Inter",ui-sans-serif,system-ui,sans-serif !important;font-size:17px !important;font-weight:800 !important;padding:18px 32px !important;min-height:60px !important;border-radius:8px !important;width:100% !important;max-width:none !important;justify-content:center !important;cursor:pointer !important;transition:filter .15s ease !important} button[type="submit"]:hover{filter:brightness(1.08) !important} a{color:#17140F !important} label{font-weight:700 !important;color:#17140F !important}';
               slot.shadowRoot.appendChild(st);
+            }
+            if(slot && slot.shadowRoot){
+              /* Telefoonveld: standaard Nederland (+31). WebinarGeek kiest anders het land van de
+                 bezoeker. Eén keer per bezoek, en alleen zolang de bezoeker zelf niets koos. */
+              var sel = slot.shadowRoot.querySelector('select.PhoneInputCountrySelect');
+              if(sel && !sel.dataset.utamaNl){
+                sel.dataset.utamaNl = '1';
+                if(sel.value !== 'NL'){
+                  try{
+                    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, 'NL');
+                    sel.dispatchEvent(new Event('change', {bubbles: true}));
+                  }catch(e){}
+                }
+              }
+              /* WebinarGeek plakt " (optioneel)" achter elk niet-verplicht veld. Ons label zegt
+                 dat al zelf ("Mobiel nummer* (optioneel). ..."), dus de tweede halen we weg. */
+              slot.shadowRoot.querySelectorAll('label').forEach(function(l){
+                var last = l.lastChild;
+                if(last && last.nodeType === 3 && /\(optioneel\)\./.test(l.textContent) && / \(optioneel\)\s*$/.test(last.nodeValue)){
+                  last.nodeValue = last.nodeValue.replace(/ \(optioneel\)\s*$/, '');
+                }
+              });
             }
           }
           function embedRendered(){
