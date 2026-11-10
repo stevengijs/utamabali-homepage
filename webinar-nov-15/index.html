@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="nl" data-version="v1">
 <head>
   <script src="/t.js" defer></script>
 <meta charset="UTF-8">
@@ -25,6 +25,43 @@ fbq('track','PageView');
 </script>
 <noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=419037194248722&ev=PageView&noscript=1"></noscript>
 <script>
+/* Conversiemeting (eigen, los van Meta). De eerste paginaweergave per bezoek en elke inschrijving gaan
+   met de paginaversie (data-version op <html>) naar de tabel webinar_lander_events (Supabase, investor
+   portal). Zo zien we per wijziging wat de conversie doet. Logboek: brein, 30-sales-marketing/
+   webinar-lander-conversie-log.md. Regel: bij elke wijziging aan deze pagina data-version ophogen
+   en een regel in het logboek zetten. */
+(function(){
+  var PAGE = '/webinar-nov-15/';
+  var URL = 'https://gcpachivrwalsneuvlsa.supabase.co/rest/v1/webinar_lander_events';
+  var KEY = 'sb_publishable_P6qb3M4xQnPJGZkM-WFWdg_E9swz7Zn';
+  var versie = document.documentElement.getAttribute('data-version') || 'v0';
+  function nieuwSid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+  var sid;
+  try{
+    sid = sessionStorage.getItem('utama_sid');
+    if(!sid){ sid = nieuwSid(); sessionStorage.setItem('utama_sid', sid); }
+    sessionStorage.setItem('utama_versie', versie);
+  }catch(e){ sid = nieuwSid(); }
+  var q = new URLSearchParams(window.location.search);
+  function stuur(event){
+    try{
+      fetch(URL, {method:'POST', keepalive:true,
+        headers:{'apikey':KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal'},
+        body: JSON.stringify({page:PAGE, event:event, version:versie, sid:sid,
+          utm_source:q.get('utm_source'), utm_medium:q.get('utm_medium'),
+          utm_campaign:q.get('utm_campaign'), utm_content:q.get('utm_content'),
+          referrer:(document.referrer || '').slice(0,300),
+          device: window.matchMedia('(max-width:899px)').matches ? 'mobiel' : 'desktop'})
+      }).catch(function(){});
+    }catch(e){}
+  }
+  window.utamaTrack = stuur;
+  try{
+    if(sessionStorage.getItem('utama_view_' + PAGE) !== '1'){ sessionStorage.setItem('utama_view_' + PAGE, '1'); stuur('view'); }
+  }catch(e){ stuur('view'); }
+})();
+</script>
+<script>
 /* Inschrijving meten. Het WebinarGeek-formulier draait in deze pagina en maakt een inschrijving aan
    met een POST naar .../subscriptions. Gaat die goed, dan CompleteRegistration en Lead, één keer per
    bezoek (sessionStorage), zodat de bedankpagina hem niet nog eens telt. */
@@ -34,6 +71,7 @@ fbq('track','PageView');
   function meld(){
     if(al()) return;
     try{ sessionStorage.setItem(KEY, '1'); }catch(e){}
+    if(window.utamaTrack) utamaTrack('register');
     if(window.fbq){
       fbq('track', 'CompleteRegistration', {content_name: 'Webinar 15 november'});
       fbq('track', 'Lead', {content_name: 'Webinar 15 november'});

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="nl" data-version="v1">
 <head>
   <script src="/t.js" defer></script>
 <meta charset="UTF-8">
@@ -30,6 +30,28 @@ fbq('track','PageView');
     fbq('track', 'CompleteRegistration', {content_name: 'Webinar 15 november'});
     fbq('track', 'Lead', {content_name: 'Webinar 15 november'});
   }
+})();
+</script>
+<script>
+/* Conversiemeting: bedankpagina telt de inschrijving als de aanmeldpagina dat in dit bezoek nog niet deed
+   (zelfde tabel en versie als de aanmeldpagina, zie /webinar-nov-15/index.html). */
+(function(){
+  var al = false; try{ al = sessionStorage.getItem('utama_webinar_inschrijving') === '1'; }catch(e){}
+  if(al) return;
+  var URL = 'https://gcpachivrwalsneuvlsa.supabase.co/rest/v1/webinar_lander_events';
+  var KEY = 'sb_publishable_P6qb3M4xQnPJGZkM-WFWdg_E9swz7Zn';
+  var sid = null, versie = null;
+  try{ sid = sessionStorage.getItem('utama_sid'); versie = sessionStorage.getItem('utama_versie'); }catch(e){}
+  if(!sid) sid = Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+  if(!versie) versie = document.documentElement.getAttribute('data-version') || 'v0';
+  try{
+    fetch(URL, {method:'POST', keepalive:true,
+      headers:{'apikey':KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal'},
+      body: JSON.stringify({page:'/webinar-nov-15/', event:'thanks', version:versie, sid:sid,
+        referrer:(document.referrer || '').slice(0,300),
+        device: window.matchMedia('(max-width:899px)').matches ? 'mobiel' : 'desktop'})
+    }).catch(function(){});
+  }catch(e){}
 })();
 </script>
 </head>
