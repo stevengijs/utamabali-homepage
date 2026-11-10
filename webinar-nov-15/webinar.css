@@ -417,5 +417,6 @@ footer a:hover{text-decoration:underline}
 /* Replay-blok onder de knop: veel bezoekers kunnen niet live kijken (Steven, 10 nov) */
 .replay-box{display:flex;gap:12px;align-items:flex-start;background:#eef7ee;border:1px solid #c5e6c6;border-radius:12px;padding:12px 14px;margin:14px 0 0;text-align:left}
 .replay-box p{margin:0;font-size:14.5px;line-height:1.45;color:var(--ink)}
-.replay-box strong{display:block;font-weight:800;margin-bottom:2px}
+.replay-box strong{font-weight:800}
+.replay-box .replay-kop{display:block;margin-bottom:2px}
 .replay-icon{flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:#099a0b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px}
