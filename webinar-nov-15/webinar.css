@@ -409,3 +409,13 @@ footer a:hover{text-decoration:underline}
 
 /* Onderwerpenlijst korter: vet onderwerp + één zin (Steven, 10 nov) */
 .gate-card .steps li strong{color:var(--ink);font-weight:800}
+/* LIVE WEBINAR-badge boven de kop: knipperende punt met uitdijende ring, zoals /webinar (Steven, 10 nov) */
+.gate-head .live-badge{margin:0 0 14px;padding:8px 16px;font-size:12.5px}
+.gate-head .live-dot{position:relative;width:9px;height:9px}
+.gate-head .live-dot::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(255,255,255,.85);animation:livering 1.5s ease-out infinite}
+@keyframes livering{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.9);opacity:0}}
+/* Replay-blok onder de knop: veel bezoekers kunnen niet live kijken (Steven, 10 nov) */
+.replay-box{display:flex;gap:12px;align-items:flex-start;background:#eef7ee;border:1px solid #c5e6c6;border-radius:12px;padding:12px 14px;margin:14px 0 0;text-align:left}
+.replay-box p{margin:0;font-size:14.5px;line-height:1.45;color:var(--ink)}
+.replay-box strong{display:block;font-weight:800;margin-bottom:2px}
+.replay-icon{flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:#099a0b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px}
