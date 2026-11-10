@@ -407,3 +407,5 @@ footer a:hover{text-decoration:underline}
 .chips .chip-sep,.chips .chip-time{display:inline;background:none;padding:0}
 @media(max-width:899px){.gate-form .chips span>.chip-sep{display:none}.gate-form .chips span>.chip-time{display:block}.gate-form .chips>span{text-align:center;white-space:normal;line-height:1.4;padding:8px 16px}}
 
+/* Onderwerpenlijst korter: vet onderwerp + één zin (Steven, 10 nov) */
+.gate-card .steps li strong{color:var(--ink);font-weight:800}
