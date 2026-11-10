@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl" data-version="v7">
+<html lang="nl" data-version="v8">
 <head>
   <script src="/t.js" defer></script>
 <meta charset="UTF-8">
@@ -163,7 +163,17 @@ fbq('track','PageView');
           <img class="gate-avatar gate-avatar-desk" src="/webinar-nov-15/assets/steven.jpg" alt="" width="84" height="84" aria-hidden="true">
         <div class="gate-form">
           <h2>Reserveer je gratis webinar plek.</h2>
-          <div class="eyebrow chips" aria-label="Praktisch"><span>Zondag 15 november<span class="chip-sep">, </span><span class="chip-time">13:00 NL-tijd</span></span></div>
+          <div class="eyebrow chips" aria-label="Praktisch"><span id="gateChip"><span class="chip-day">Zondag 15 november</span><span class="chip-sep" aria-hidden="true">·</span><span class="chip-time">13:00 NL-tijd</span></span></div>
+          <script>
+            /* Datumblok: één regel als dag en tijd naast elkaar passen, anders twee gecentreerde regels zonder punt ertussen. */
+            (function(){
+              var chip = document.getElementById('gateChip'); if(!chip) return;
+              var d = chip.querySelector('.chip-day'), t = chip.querySelector('.chip-time'); if(!d || !t) return;
+              function check(){ chip.classList.remove('stacked'); if(t.offsetTop > d.offsetTop) chip.classList.add('stacked'); }
+              check(); window.addEventListener('resize', check);
+              if(document.fonts && document.fonts.ready) document.fonts.ready.then(check);
+            })();
+          </script>
           <!-- WEBINARGEEK_EMBED:START
      Het insluitformulier, zodat mensen zich hier aanmelden en niet worden
      doorgestuurd naar een pagina van WebinarGeek.
