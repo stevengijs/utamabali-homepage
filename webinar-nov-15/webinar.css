@@ -436,3 +436,6 @@ footer a:hover{text-decoration:underline}
   .gate-avatar-desk{display:block;margin:0 auto 14px}
   .gate-intro .gate-avatar{display:none}
 }
+/* Datum en tijd onder de aftelklok, met nadruk op Nederlandse tijd (Steven, 10 nov) */
+.cd-when{margin:12px 0 0;font-size:14.5px;line-height:1.45;color:var(--muted)}
+.cd-when strong{color:var(--ink);font-weight:800}
