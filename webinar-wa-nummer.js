@@ -166,6 +166,7 @@
     '.wan-card .wan-status:empty{display:none}' +
     '.wan-klaar{display:flex;gap:12px;align-items:flex-start;margin-top:16px;background:#EAF6EE;border:1px solid #BFE3CB;border-radius:10px;padding:14px 16px;color:var(--ink,#17140F);font-size:15px;line-height:1.5}' +
     '.wan-klaar:focus{outline:none}' +
+    '.wan-card .wan-geenmail{margin:0;font-size:15px;line-height:1.55;color:var(--muted,#5B564C)}' +
     '.wan-card .wan-en{display:block;font-weight:500;font-size:.88em;color:var(--muted,#5B564C);margin-top:2px}' +
     '.wan-card .wan-kop h2 .wan-en{font-size:.68em;font-weight:600;margin-top:4px}' +
     '.wan-card .wan-kop p .wan-en{margin-top:6px}' +
@@ -195,6 +196,7 @@
     klaar: 'Je ontvangt de herinnering en de link op WhatsApp.',
     foutNummer: 'Dit nummer lijkt niet te kloppen. Vul je mobiele nummer in, met landcode als het niet Nederlands is, bijvoorbeeld +32 470 12 34 56.',
     foutMail: 'Vul het e-mailadres in waarmee je je hebt aangemeld.',
+    geenMail: 'We vinden je aanmelding niet in deze browser. Meld je eerst aan, dan verschijnt deze stap vanzelf.',
     fout: 'Dat lukte niet. Probeer het zo nog eens, of stuur ons een berichtje via WhatsApp.'
   };
 
@@ -212,6 +214,7 @@
     klaar: tw('Je ontvangt de herinnering en de link op WhatsApp.', "You'll receive the reminder and the link on WhatsApp."),
     foutNummer: tw('Dit nummer lijkt niet te kloppen. Vul je mobiele nummer in, met landcode als het niet Nederlands is, bijvoorbeeld +32 470 12 34 56.', "This number doesn't look right. Enter your mobile number, with country code if it isn't Dutch, for example +32 470 12 34 56."),
     foutMail: tw('Vul het e-mailadres in waarmee je je hebt aangemeld.', 'Enter the email address you signed up with.'),
+    geenMail: tw('We vinden je aanmelding niet in deze browser. Meld je eerst aan, dan verschijnt deze stap vanzelf.', "We can't find your sign-up in this browser. Sign up first and this step appears automatically."),
     fout: tw('Dat lukte niet. Probeer het zo nog eens, of stuur ons een berichtje via WhatsApp.', "That didn't work. Please try again in a moment, or send us a message on WhatsApp.")
   };
   function zet(el, tekst) {
@@ -242,6 +245,11 @@
     var bewaard = lees();
     var email = (bewaard && bewaard.email) || '';
     var utm = (bewaard && bewaard.utm && Object.keys(bewaard.utm).length) ? bewaard.utm : utmUitAdres();
+    /* Het zichtbare e-mailveld verschijnt alleen voor wie uit de herinneringsmail komt (utm_medium=email) zonder
+       opgeslagen adres. In alle andere gevallen is het adres al bekend uit de aanmelding (Steven, 11 nov: niet nogmaals
+       vragen). ?preview=1 toont het formulier zonder opslag, om de pagina te bekijken. */
+    var uitMail = /[?&]utm_medium=email(&|$)/i.test(window.location.search);
+    var voorbeeld = /[?&]preview=1(&|$)/.test(window.location.search);
 
     var kaart = document.createElement('div');
     kaart.className = 'wan-card' + (tweetalig ? ' wan-tw' : '');
@@ -281,7 +289,7 @@
     zet(mailVeld.querySelector('label'), T.mailLabel);
     var mailInvoer = mailVeld.querySelector('input');
     var mailStatus = mailVeld.querySelector('.wan-status');
-    mailVeld.hidden = !!email;
+    mailVeld.hidden = !(uitMail && !email);
     form.appendChild(mailVeld);
 
     var rij = document.createElement('div');
@@ -317,6 +325,18 @@
       klaarBlok.hidden = false;
     }
 
+    /* Geen opgeslagen adres en niet uit de mail: het nummer kan nergens aan gekoppeld worden. Alleen een korte melding. */
+    if (!email && !uitMail && !voorbeeld) {
+      kaart.querySelector('.wan-kop').hidden = true;
+      form.hidden = true;
+      var geen = document.createElement('p');
+      geen.className = 'wan-geenmail';
+      zet(geen, T.geenMail);
+      kaart.appendChild(geen);
+      host.appendChild(kaart);
+      return;
+    }
+
     /* Al ingevuld in deze browser: meteen de bevestiging. */
     if (bewaard && bewaard.wa) {
       toonKlaar();
@@ -331,9 +351,16 @@
       if (bezig) return;
       var mail = ((verborgenMail.value || mailInvoer.value) || '').trim();
       var tel = (telInvoer.value || '').trim();
+      if (voorbeeld && !email) {
+        /* Voorbeeldmodus (?preview=1): geen opslag, alleen de bevestiging laten zien. */
+        if (tel.replace(/\D/g, '').length < 9) { toonFout(T.foutNummer, telInvoer); return; }
+        toonFout('');
+        toonKlaar();
+        return;
+      }
       if (!MAIL.test(mail)) {
-        mailVeld.hidden = false;
-        toonFout(T.foutMail, mailInvoer);
+        if (uitMail) { mailVeld.hidden = false; toonFout(T.foutMail, mailInvoer); }
+        else { toonFout(T.fout); }
         return;
       }
       if (tel.replace(/\D/g, '').length < 9) { toonFout(T.foutNummer, telInvoer); return; }
@@ -364,7 +391,7 @@
           return;
         }
         if (antwoord && antwoord.reden === 'nummer') { toonFout(T.foutNummer, telInvoer); return; }
-        if (antwoord && antwoord.reden === 'email') { mailVeld.hidden = false; toonFout(T.foutMail, mailInvoer); return; }
+        if (antwoord && antwoord.reden === 'email') { if (uitMail) { mailVeld.hidden = false; toonFout(T.foutMail, mailInvoer); } else { toonFout(T.fout); } return; }
         toonFout(T.fout);
       }).catch(function () {
         toonFout(T.fout);
