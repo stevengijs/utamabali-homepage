@@ -449,3 +449,15 @@ footer a:hover{text-decoration:underline}
 #formulier{scroll-margin-top:84px}
 /* Datumregel in het formulier zonder zwarte achtergrond: leek op een knop (feedback via Steven, 11 nov) */
 .gate-form .chips>span{background:none !important;color:var(--muted);padding:2px 0;font-size:12px;letter-spacing:.14em}
+/* Aparte hostsectie met bouwfoto's (feedback via Steven, 11 nov) */
+.host-sec{background:var(--sand);padding:36px 0 56px;text-align:center}
+.host-sec .wrap{max-width:960px}
+.host-sec h2{font-size:clamp(22px,3vw,30px);margin:6px 0 10px;letter-spacing:-.01em}
+.host-lead{max-width:640px;margin:0 auto 22px;color:var(--ink-soft);font-size:16px;line-height:1.5}
+.host-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 auto 24px;max-width:760px}
+.host-photos figure{margin:0}
+.host-photos img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;display:block}
+.host-photos figure:nth-child(1) img{object-position:center 30%}
+.host-photos figure:nth-child(3) img{object-position:25% center}
+.host-photos figcaption{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.3}
+@media(max-width:480px){.host-photos{gap:6px}.host-photos figcaption{font-size:11.5px}}
