@@ -456,8 +456,8 @@ footer a:hover{text-decoration:underline}
 .host-lead{max-width:640px;margin:0 auto 22px;color:var(--ink-soft);font-size:16px;line-height:1.5}
 .host-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 auto 24px;max-width:760px}
 .host-photos figure{margin:0}
-.host-photos img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;display:block}
-.host-photos figure:nth-child(1) img{object-position:center 30%}
+.host-photos img{width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;border-radius:14px;display:block;background:#e9e1d0}
+.host-photos figure:nth-child(1) img{object-position:center 78%}
 .host-photos figure:nth-child(3) img{object-position:25% center}
 .host-photos figcaption{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.3}
 @media(max-width:480px){.host-photos{gap:6px}.host-photos figcaption{font-size:11.5px}}
