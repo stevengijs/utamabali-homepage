@@ -445,3 +445,7 @@ footer a:hover{text-decoration:underline}
 .gate-form .chips .chip-sep{padding:0 .6em}
 .gate-form .chips>span.stacked .chip-sep{display:none}
 .gate-form .chips>span.stacked .chip-day,.gate-form .chips>span.stacked .chip-time{flex:0 0 100%}
+/* Knop in de bovenbalk en in het verhaalblok springen naar het formulier zelf, niet naar de sectie (Steven, 11 nov: knop deed niets op de telefoon) */
+#formulier{scroll-margin-top:84px}
+/* Datumregel in het formulier zonder zwarte achtergrond: leek op een knop (feedback via Steven, 11 nov) */
+.gate-form .chips>span{background:none !important;color:var(--muted);padding:2px 0;font-size:12px;letter-spacing:.14em}
