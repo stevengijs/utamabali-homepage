@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="nl" data-version="v1">
+<head>
+  <script src="/t.js" defer></script>
+  <script src="/webinar-wa-nummer.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stap 2: ontvang je link ook op WhatsApp | UTAMA webinar</title>
+<link rel="canonical" href="https://www.utamabali.com/webinar-nov-15/step2/">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" sizes="192x192" href="/webinar-nov-15/assets/icon192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/webinar-nov-15/webinar.css">
+<!-- Meta Pixel: dezelfde dataset als /webinar/bali ("Claude Utama Site + MOKA Perspective", 419037194248722).
+     PageView op elke pagina; CompleteRegistration en Lead bij een gelukte inschrijving (zie hieronder). -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','419037194248722');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=419037194248722&ev=PageView&noscript=1"></noscript>
+<script>
+/* Stap 2: tel de inschrijving als de aanmeldpagina dat in dit bezoek nog niet deed (bijvoorbeeld via de registratiepagina van WebinarGeek). */
+(function(){
+  var KEY = 'utama_webinar_inschrijving', al = false;
+  try{ al = sessionStorage.getItem(KEY) === '1'; }catch(e){}
+  if(!al && window.fbq){
+    try{ sessionStorage.setItem(KEY, '1'); }catch(e){}
+    fbq('track', 'CompleteRegistration', {content_name: 'Webinar 15 november'});
+    fbq('track', 'Lead', {content_name: 'Webinar 15 november'});
+  }
+})();
+</script>
+</head>
+
+<body>
+
+<nav>
+  <div class="wrap row">
+    <a href="https://www.utamabali.com" class="brand">UTAMA</a>
+  </div>
+</nav>
+
+<header class="confirm-hero step2-hero">
+  <div class="wrap">
+    <div class="ok-duo">
+      <img src="/webinar-nov-15/assets/steven.jpg" alt="Steven">
+      <img src="/webinar-nov-15/assets/ashley.jpg" alt="Ashley">
+    </div>
+    <div class="eyebrow">Stap 2 van 2</div>
+    <h1>Je plek is gereserveerd.</h1>
+    <p>Nog één stap, dan mis je zondag niets.</p>
+    <div data-wa-nummer data-wa-na="/webinar-nov-15/thanks/"></div>
+    <div class="step2-skip">
+      <a class="btn ghost" href="/webinar-nov-15/thanks/">No thanks, I'll use email reminders</a>
+    </div>
+  </div>
+</header>
+
+<footer>
+  <div class="wrap frow">
+    <div>UTAMA · Boutique vastgoedontwikkeling op Bali</div>
+    <div>
+      <a href="https://www.utamabali.com">utamabali.com</a> &nbsp;·&nbsp;
+      <a href="https://www.instagram.com/stevenbalivillas/" target="_blank" rel="noopener">Instagram</a> &nbsp;·&nbsp;
+      <a href="https://wa.me/31624845014" target="_blank" rel="noopener">WhatsApp</a> &nbsp;·&nbsp;
+      <a href="mailto:steven@utamabali.com">steven@utamabali.com</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

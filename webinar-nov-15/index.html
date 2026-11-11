@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl" data-version="v15">
+<html lang="nl" data-version="v16">
 <head>
   <script src="/t.js" defer></script>
   <script src="/webinar-wa-nummer.js"></script>
@@ -88,14 +88,16 @@ fbq('track','PageView');
       var method = (init && init.method) || (input && input.method) || 'GET';
       var p = origineel.apply(this, arguments);
       if(isInschrijving(String(url), method)){
-        /* Na inschrijving stuurt WebinarGeek door naar het adres uit de instellingen van het webinar
-           (meegekopieerd: /webinar/bali-bedankt). Deze pagina hoort op /webinar-nov-15/thanks/ te eindigen,
-           dus dat adres vervangen we in het antwoord, voordat het formulier het gebruikt. */
+        /* Na inschrijving stuurt WebinarGeek door naar het adres uit de instellingen van het embed. Dat hoort
+           stap 2 te zijn: /webinar-nov-15/step2/. Staat daar nog een ouder adres (bali-bedankt of de bedankpagina),
+           dan vervangen we dat hier in het antwoord, voordat het formulier het gebruikt. */
         return p.then(function(r){
           if(r && r.ok) meld();
           return r.clone().text().then(function(t){
-            if(t.indexOf('bali-bedankt') === -1) return r;
-            return new Response(t.split('/webinar/bali-bedankt').join('/webinar-nov-15/thanks/').split('\\/webinar\\/bali-bedankt').join('\\/webinar-nov-15\\/thanks\\/'), {status: r.status, statusText: r.statusText, headers: r.headers});
+            var NAAR = '/webinar-nov-15/step2/';
+            var nieuw = t.split('/webinar/bali-bedankt').join(NAAR).split('\\/webinar\\/bali-bedankt').join('\\/webinar-nov-15\\/step2\\/').split('/webinar-nov-15/thanks/').join(NAAR).split('\\/webinar-nov-15\\/thanks\\/').join('\\/webinar-nov-15\\/step2\\/');
+            if(nieuw === t) return r;
+            return new Response(nieuw, {status: r.status, statusText: r.statusText, headers: r.headers});
           }).catch(function(){ return r; });
         });
       }
@@ -297,20 +299,6 @@ fbq('track','PageView');
                 sr.querySelectorAll('label').forEach(function(l){
                   if(/Mobiel nummer/.test(l.textContent) && !l.hasAttribute('data-utama')) l.setAttribute('data-utama', 'phone');
                 });
-                /* Vangnet (Steven, 11 nov): een klik op "No thanks, I'll use email reminders" (of de Nederlandse
-                   variant) in het WebinarGeek-formulier stuurt altijd door naar de bedankpagina, wat WebinarGeek
-                   zelf ook doet. De eigen afhandeling van WebinarGeek loopt gewoon door. */
-                if(!sr.__utamaSkip){
-                  sr.__utamaSkip = true;
-                  sr.addEventListener('click', function(ev){
-                    var el = ev.target && ev.target.closest ? ev.target.closest('button, a, [role="button"]') : null;
-                    if(!el) return;
-                    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
-                    if(/no,? thanks.*e-?mail reminders|nee,? bedankt.*e-?mail/i.test(t)){
-                      setTimeout(function(){ window.location.assign('/webinar-nov-15/thanks/'); }, 200);
-                    }
-                  }, true);
-                }
               }
               var armed = false;
               function arm(){

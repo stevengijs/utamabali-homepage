@@ -217,6 +217,13 @@
     var form = kaart.querySelector('form');
     var klaarBlok = kaart.querySelector('.wan-klaar');
 
+    /* Optioneel: data-wa-na="/pad/" op het element stuurt na het invullen door naar die pagina (stap 2 van de aanmelding). */
+    var naUrl = host.getAttribute('data-wa-na') || '';
+    function doorsturen() {
+      if (!naUrl) return;
+      setTimeout(function () { try { window.location.assign(naUrl); } catch (e) {} }, 1400);
+    }
+
     /* Verborgen velden: e-mailadres en utm-tags van de aanmelding. */
     var verborgenMail = document.createElement('input');
     verborgenMail.type = 'hidden'; verborgenMail.name = 'email'; verborgenMail.value = email;
@@ -274,6 +281,7 @@
     if (bewaard && bewaard.wa) {
       toonKlaar();
       host.appendChild(kaart);
+      doorsturen();
       return;
     }
 
@@ -312,6 +320,7 @@
           schrijf(o);
           toonKlaar();
           try { klaarBlok.setAttribute('tabindex', '-1'); klaarBlok.focus(); } catch (e) {}
+          doorsturen();
           return;
         }
         if (antwoord && antwoord.reden === 'nummer') { toonFout(TEKST.foutNummer, telInvoer); return; }

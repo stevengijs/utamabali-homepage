@@ -463,3 +463,7 @@ footer a:hover{text-decoration:underline}
 @media(max-width:480px){.host-photos{gap:6px}.host-photos figcaption{font-size:11.5px}}
 /* Fix v13: datumregel in het formulier was wit op licht (onzichtbaar) na het weghalen van de zwarte achtergrond */
 .gate-form .chips span{color:var(--ink-soft) !important;font-weight:700}
+/* Stap 2 van de aanmelding: WhatsApp-nummer, met een knop om over te slaan (Steven, 11 nov) */
+.step2-hero{padding:56px 0 64px}
+.step2-skip{max-width:640px;margin:18px auto 0}
+.step2-skip .btn{width:100%;justify-content:center;white-space:normal;text-align:center;line-height:1.3;padding:15px 18px}
