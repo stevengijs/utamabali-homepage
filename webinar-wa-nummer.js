@@ -17,7 +17,18 @@
   'use strict';
 
   var API = 'https://gcpachivrwalsneuvlsa.supabase.co/rest/v1/rpc/webinar_whatsapp_toevoegen';
+  var EVENTS = 'https://gcpachivrwalsneuvlsa.supabase.co/rest/v1/webinar_lander_events';
   var KEY = 'sb_publishable_P6qb3M4xQnPJGZkM-WFWdg_E9swz7Zn';
+  /* Sleutel van de aanmeldpagina voor de meting, uit het adres: /webinar-nov-15/step2/ geeft /webinar-nov-15/.
+     Met data-pagina op de scripttag kan het ook expliciet. */
+  var PAGINA = (function () {
+    try {
+      var d = document.currentScript && document.currentScript.getAttribute('data-pagina');
+      if (d) return d;
+      var m = window.location.pathname.match(/^\/(webinar-[a-z]+-\d+)\//);
+      return m ? '/' + m[1] + '/' : '';
+    } catch (e) { return ''; }
+  })();
   var OPSLAG = 'utama_webinar_aanmelding';
   var UTM = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
   /* Gelijk aan het venster in de database: het nummer komt op een aanmelding van de laatste twee dagen. */
@@ -48,6 +59,40 @@
       UTM.forEach(function (k) { var v = q.get(k); if (v) u[k] = v.slice(0, 200); });
     } catch (e) {}
     return u;
+  }
+
+  /* ---------- meting: wa_view, wa_ja en wa_nee naar webinar_lander_events (zelfde tabel en sid als de aanmeldpagina) ---------- */
+  function nieuwSid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+  function sessieId() {
+    try {
+      var sid = window.sessionStorage.getItem('utama_sid');
+      if (!sid) { sid = nieuwSid(); window.sessionStorage.setItem('utama_sid', sid); }
+      return sid;
+    } catch (e) { return nieuwSid(); }
+  }
+  function paginaVersie() {
+    var v = '';
+    try { v = window.sessionStorage.getItem('utama_versie') || ''; } catch (e) {}
+    return v || document.documentElement.getAttribute('data-version') || 'v0';
+  }
+  function stuur(event) {
+    if (!PAGINA || !window.fetch) return;
+    var b = lees();
+    var u = utmUitAdres();
+    if (!Object.keys(u).length && b && b.utm) u = b.utm;
+    try {
+      window.fetch(EVENTS, {
+        method: 'POST', keepalive: true,
+        headers: { 'apikey': KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          page: PAGINA, event: event, version: paginaVersie(), sid: sessieId(),
+          utm_source: u.utm_source || null, utm_medium: u.utm_medium || null,
+          utm_campaign: u.utm_campaign || null, utm_content: u.utm_content || null,
+          referrer: (document.referrer || '').slice(0, 300),
+          device: (window.matchMedia && window.matchMedia('(max-width:899px)').matches) ? 'mobiel' : 'desktop'
+        })
+      }).catch(function () {});
+    } catch (e) {}
   }
 
   /* ---------- aanmeldpagina: het e-mailadres uit de inschrijving halen ---------- */
@@ -267,6 +312,8 @@
 
     /* Optioneel: data-wa-na="/pad/" op het element stuurt na het invullen door naar die pagina (stap 2 van de aanmelding). */
     var naUrl = host.getAttribute('data-wa-na') || '';
+    /* Bron van het nummer voor de database: stap2 op de WhatsApp-pagina (die doorstuurt), anders bedankpagina. */
+    var bron = host.getAttribute('data-bron') || (naUrl ? 'stap2' : 'bedankpagina');
     function doorsturen() {
       if (!naUrl) return;
       setTimeout(function () { try { window.location.assign(naUrl); } catch (e) {} }, 1400);
@@ -375,7 +422,7 @@
       fetch(API, {
         method: 'POST',
         headers: { 'apikey': KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_email: mail, p_telefoon: tel, p_utm: utm }),
+        body: JSON.stringify({ p_email: mail, p_telefoon: tel, p_utm: utm, p_bron: bron }),
         signal: ctl ? ctl.signal : undefined
       }).then(function (res) {
         if (!res.ok) throw new Error('http ' + res.status);
@@ -385,6 +432,7 @@
           var o = lees() || { email: mail.toLowerCase(), utm: utm, t: Date.now() };
           o.wa = true;
           schrijf(o);
+          stuur('wa_ja');
           toonKlaar();
           try { klaarBlok.setAttribute('tabindex', '-1'); klaarBlok.focus(); } catch (e) {}
           doorsturen();
@@ -404,11 +452,35 @@
     });
 
     host.appendChild(kaart);
+
+    /* Eerste weergave van stap 2 (het element stuurt door) per bezoek, niet in de voorbeeldmodus. */
+    if (naUrl && !voorbeeld) {
+      try {
+        var sleutel = 'utama_view_wa_' + PAGINA;
+        if (window.sessionStorage.getItem(sleutel) !== '1') { window.sessionStorage.setItem(sleutel, '1'); stuur('wa_view'); }
+      } catch (e) { stuur('wa_view'); }
+    }
+  }
+
+  /* "Nee bedankt" op stap 2 (element met data-wa-overslaan, of de knop in .step2-skip): gewone link naar de bedankpagina,
+     maar eerst tellen als het nummer nog niet is ingevuld. */
+  function koppelOverslaan() {
+    var links = document.querySelectorAll('[data-wa-overslaan], .step2-skip a');
+    for (var i = 0; i < links.length; i++) {
+      links[i].addEventListener('click', function () {
+        var b = lees();
+        if (b && b.wa) return;
+        /* Alleen tellen als deze weergave als wa_view is geteld: niet voor rechtstreekse bezoeken of de voorbeeldmodus. */
+        try { if (window.sessionStorage.getItem('utama_view_wa_' + PAGINA) !== '1') return; } catch (e) { return; }
+        stuur('wa_nee');
+      });
+    }
   }
 
   function start() {
     var hosts = document.querySelectorAll('[data-wa-nummer]');
     for (var i = 0; i < hosts.length; i++) maakFormulier(hosts[i]);
+    koppelOverslaan();
   }
 
   /* De aanmeldpagina heeft de hook nodig, de bedankpagina het formulier; allebei kunnen geen kwaad op de ander. */
