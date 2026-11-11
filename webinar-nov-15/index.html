@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl" data-version="v10">
+<html lang="nl" data-version="v11">
 <head>
   <script src="/t.js" defer></script>
 <meta charset="UTF-8">
@@ -288,22 +288,8 @@ fbq('track','PageView');
               function fixForm(){
                 var sr = slot.shadowRoot;
                 if(!sr) return;
-                var sel = sr.querySelector('select.PhoneInputCountrySelect');
-                if(sel && !sel.dataset.utamaNl){
-                  sel.dataset.utamaNl = '1';
-                  if(sel.value !== 'NL'){
-                    try{
-                      var y = window.scrollY;
-                      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, 'NL');
-                      sel.dispatchEvent(new Event('change', {bubbles: true}));
-                      /* De telefoonbibliotheek zet na een landwissel de focus op het nummerveld. Dat scrolt de
-                         pagina naar het formulier en opent op een telefoon het toetsenbord. Focus weghalen
-                         en de schuifpositie terugzetten. */
-                      var unfocus = function(){ var a = sr.activeElement; if(a && a.blur) a.blur(); window.scrollTo(0, y); };
-                      unfocus(); setTimeout(unfocus, 0); setTimeout(unfocus, 60);
-                    }catch(e){}
-                  }
-                }
+                /* Telefoonveld is verborgen (v9). Het land NIET meer op NL zetten: dat zet de waarde op '+31',
+                   een onvolledig nummer, en de verborgen validatie 'Ongeldig telefoonnummer' blokkeert dan het versturen. */
                 /* Label van het telefoonveld: alleen markeren. De tekst zelf komt uit CSS (zie
                    utamaEmbedStyle), want WebinarGeek zet de labeltekst bij elke hertekening terug
                    en plakt er " (optioneel)" achter. Tekst aanpassen in de DOM gaf dubbele regels. */
