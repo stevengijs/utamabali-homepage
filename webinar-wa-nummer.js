@@ -166,6 +166,16 @@
     '.wan-card .wan-status:empty{display:none}' +
     '.wan-klaar{display:flex;gap:12px;align-items:flex-start;margin-top:16px;background:#EAF6EE;border:1px solid #BFE3CB;border-radius:10px;padding:14px 16px;color:var(--ink,#17140F);font-size:15px;line-height:1.5}' +
     '.wan-klaar:focus{outline:none}' +
+    '.wan-card .wan-en{display:block;font-weight:500;font-size:.88em;color:var(--muted,#5B564C);margin-top:2px}' +
+    '.wan-card .wan-kop h2 .wan-en{font-size:.68em;font-weight:600;margin-top:4px}' +
+    '.wan-card .wan-kop p .wan-en{margin-top:6px}' +
+    '.wan-card .wan-veld label .wan-nl,.wan-card .wan-veld label .wan-en{display:inline}' +
+    '.wan-card .wan-veld label .wan-en{font-weight:500;color:var(--muted,#5B564C);margin-left:4px}' +
+    '.wan-card .wan-veld label .wan-en::before{content:"/ "}' +
+    '.wan-card.wan-tw .wan-knop{flex-direction:column;text-align:center;line-height:1.2}' +
+    '.wan-card .wan-knop .wan-nl{display:block}' +
+    '.wan-card .wan-knop .wan-en{display:block;font-size:12.5px;font-weight:500;color:#fff;opacity:.92;margin-top:1px}' +
+    '.wan-card .wan-klaar .wan-en,.wan-card .wan-status .wan-en{color:inherit;opacity:.88}' +
     '.wan-klaar svg{flex:none;margin-top:2px;color:#099a0b}' +
     '.wan-klaar strong{display:block;font-size:16px}' +
     '@media (max-width:560px){.wan-card{padding:20px 18px;margin-top:22px}.wan-icoon{display:none}.wan-card .wan-kop h2{font-size:19px}.wan-card .wan-kop p{font-size:14.5px}.wan-form{margin-top:14px}.wan-card .wan-knop{flex:1 1 100%;margin-top:0}}';
@@ -188,9 +198,39 @@
     fout: 'Dat lukte niet. Probeer het zo nog eens, of stuur ons een berichtje via WhatsApp.'
   };
 
+  /* Tweetalig (NL en EN onder elkaar): zet data-wa-taal="nl-en" op het element. Zonder dat blijft alles Nederlands. */
+  function tw(nl, en) { return nl + '\u0001' + en; }
+  var TEKST_NL_EN = {
+    kop: tw('Link ook op WhatsApp ontvangen?', 'Get your link on WhatsApp too?'),
+    intro: tw('Dan sturen we je op de dag zelf een herinnering en vlak voor de start je persoonlijke link.', "Then we'll send you a reminder on the day itself and your personal link right before the start."),
+    mailLabel: tw('E-mailadres van je aanmelding', 'Email address you signed up with'),
+    telLabel: tw('WhatsApp-nummer', 'WhatsApp number'),
+    knop: tw('Ontvang de link op WhatsApp', 'Get the link on WhatsApp'),
+    bezig: tw('Een momentje...', 'One moment...'),
+    noot: tw('(Geen telefoontjes, alleen je link en een herinnering.)', '(No calls, just your link and a reminder.)'),
+    klaarKop: tw('Gelukt.', 'Done.'),
+    klaar: tw('Je ontvangt de herinnering en de link op WhatsApp.', "You'll receive the reminder and the link on WhatsApp."),
+    foutNummer: tw('Dit nummer lijkt niet te kloppen. Vul je mobiele nummer in, met landcode als het niet Nederlands is, bijvoorbeeld +32 470 12 34 56.', "This number doesn't look right. Enter your mobile number, with country code if it isn't Dutch, for example +32 470 12 34 56."),
+    foutMail: tw('Vul het e-mailadres in waarmee je je hebt aangemeld.', 'Enter the email address you signed up with.'),
+    fout: tw('Dat lukte niet. Probeer het zo nog eens, of stuur ons een berichtje via WhatsApp.', "That didn't work. Please try again in a moment, or send us a message on WhatsApp.")
+  };
+  function zet(el, tekst) {
+    var delen = String(tekst).split('\u0001');
+    if (delen.length === 2) {
+      el.textContent = '';
+      var nl = document.createElement('span'); nl.className = 'wan-nl'; nl.textContent = delen[0];
+      var en = document.createElement('span'); en.className = 'wan-en'; en.textContent = delen[1];
+      el.appendChild(nl); el.appendChild(en);
+    } else {
+      el.textContent = tekst;
+    }
+  }
+
   function maakFormulier(host) {
     if (host.getAttribute('data-wa-klaar')) return;
     host.setAttribute('data-wa-klaar', '1');
+    var tweetalig = host.getAttribute('data-wa-taal') === 'nl-en';
+    var T = tweetalig ? TEKST_NL_EN : TEKST;
 
     if (!document.getElementById('wan-stijl')) {
       var st = document.createElement('style');
@@ -204,15 +244,15 @@
     var utm = (bewaard && bewaard.utm && Object.keys(bewaard.utm).length) ? bewaard.utm : utmUitAdres();
 
     var kaart = document.createElement('div');
-    kaart.className = 'wan-card';
+    kaart.className = 'wan-card' + (tweetalig ? ' wan-tw' : '');
     kaart.innerHTML =
       '<div class="wan-kop"><span class="wan-icoon">' + ICOON_WA + '</span><div><h2></h2><p class="wan-intro"></p></div></div>' +
       '<div class="wan-klaar" role="status" hidden>' + ICOON_OK + '<div><strong></strong><span class="wan-klaar-tekst"></span></div></div>' +
       '<form class="wan-form" novalidate></form>';
-    kaart.querySelector('h2').textContent = TEKST.kop;
-    kaart.querySelector('.wan-intro').textContent = TEKST.intro;
-    kaart.querySelector('.wan-klaar strong').textContent = TEKST.klaarKop;
-    kaart.querySelector('.wan-klaar-tekst').textContent = TEKST.klaar;
+    zet(kaart.querySelector('h2'), T.kop);
+    zet(kaart.querySelector('.wan-intro'), T.intro);
+    zet(kaart.querySelector('.wan-klaar strong'), T.klaarKop);
+    zet(kaart.querySelector('.wan-klaar-tekst'), T.klaar);
 
     var form = kaart.querySelector('form');
     var klaarBlok = kaart.querySelector('.wan-klaar');
@@ -238,7 +278,7 @@
     var mailVeld = document.createElement('div');
     mailVeld.className = 'wan-veld wan-mail';
     mailVeld.innerHTML = '<label for="wan-mail"></label><input id="wan-mail" type="email" name="email_zichtbaar" autocomplete="email" inputmode="email" placeholder="jij@voorbeeld.nl" aria-describedby="wan-mail-fout"><p class="wan-status" id="wan-mail-fout" role="alert"></p>';
-    mailVeld.querySelector('label').textContent = TEKST.mailLabel;
+    zet(mailVeld.querySelector('label'), T.mailLabel);
     var mailInvoer = mailVeld.querySelector('input');
     var mailStatus = mailVeld.querySelector('.wan-status');
     mailVeld.hidden = !!email;
@@ -248,16 +288,16 @@
     rij.className = 'wan-rij';
     rij.innerHTML = '<div class="wan-veld"><label for="wan-tel"></label><input id="wan-tel" type="tel" name="telefoon" autocomplete="tel" inputmode="tel" placeholder="+31 6 12345678" maxlength="40" aria-describedby="wan-tel-fout"><p class="wan-status" id="wan-tel-fout" role="alert"></p></div>' +
       '<button type="submit" class="btn wan-knop"></button>';
-    rij.querySelector('label').textContent = TEKST.telLabel;
+    zet(rij.querySelector('label'), T.telLabel);
     var telInvoer = rij.querySelector('input');
     var telStatus = rij.querySelector('.wan-status');
     var knop = rij.querySelector('button');
-    knop.textContent = TEKST.knop;
+    zet(knop, T.knop);
     form.appendChild(rij);
 
     var noot = document.createElement('p');
     noot.className = 'wan-noot';
-    noot.textContent = TEKST.noot;
+    zet(noot, T.noot);
     form.appendChild(noot);
 
     /* De melding staat direct onder het veld waar het om gaat, zodat je hem ziet met het toetsenbord open. */
@@ -268,7 +308,7 @@
       telInvoer.classList.remove('wan-mis'); telInvoer.removeAttribute('aria-invalid');
       if (!tekst) return;
       var doel = veld || telInvoer;
-      (doel === mailInvoer ? mailStatus : telStatus).textContent = tekst;
+      zet(doel === mailInvoer ? mailStatus : telStatus, tekst);
       if (veld) { veld.classList.add('wan-mis'); veld.setAttribute('aria-invalid', 'true'); try { veld.focus(); } catch (e) {} }
     }
     function toonKlaar() {
@@ -293,14 +333,14 @@
       var tel = (telInvoer.value || '').trim();
       if (!MAIL.test(mail)) {
         mailVeld.hidden = false;
-        toonFout(TEKST.foutMail, mailInvoer);
+        toonFout(T.foutMail, mailInvoer);
         return;
       }
-      if (tel.replace(/\D/g, '').length < 9) { toonFout(TEKST.foutNummer, telInvoer); return; }
+      if (tel.replace(/\D/g, '').length < 9) { toonFout(T.foutNummer, telInvoer); return; }
 
       bezig = true;
       knop.disabled = true;
-      knop.textContent = TEKST.bezig;
+      zet(knop, T.bezig);
       toonFout('');
 
       var ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
@@ -323,16 +363,16 @@
           doorsturen();
           return;
         }
-        if (antwoord && antwoord.reden === 'nummer') { toonFout(TEKST.foutNummer, telInvoer); return; }
-        if (antwoord && antwoord.reden === 'email') { mailVeld.hidden = false; toonFout(TEKST.foutMail, mailInvoer); return; }
-        toonFout(TEKST.fout);
+        if (antwoord && antwoord.reden === 'nummer') { toonFout(T.foutNummer, telInvoer); return; }
+        if (antwoord && antwoord.reden === 'email') { mailVeld.hidden = false; toonFout(T.foutMail, mailInvoer); return; }
+        toonFout(T.fout);
       }).catch(function () {
-        toonFout(TEKST.fout);
+        toonFout(T.fout);
       }).then(function () {
         if (tijd) clearTimeout(tijd);
         bezig = false;
         knop.disabled = false;
-        knop.textContent = TEKST.knop;
+        zet(knop, T.knop);
       });
     });
 

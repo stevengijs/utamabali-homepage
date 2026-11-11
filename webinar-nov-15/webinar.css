@@ -467,3 +467,10 @@ footer a:hover{text-decoration:underline}
 .step2-hero{padding:56px 0 64px}
 .step2-skip{max-width:640px;margin:18px auto 0}
 .step2-skip .btn{width:100%;justify-content:center;white-space:normal;text-align:center;line-height:1.3;padding:15px 18px}
+/* Stap 2 tweetalig: NL groot, EN eronder (Steven, 11 nov) */
+.step2-hero .en{display:block;font-weight:600;color:var(--muted);margin-top:6px}
+.step2-hero h1 .en{font-size:.52em;letter-spacing:0}
+.step2-hero p .en{font-size:15px;font-weight:500}
+.step2-skip .btn{flex-direction:column;gap:2px}
+.step2-skip .s-nl{display:block;font-weight:700}
+.step2-skip .s-en{display:block;font-size:13px;font-weight:500;color:var(--muted)}
