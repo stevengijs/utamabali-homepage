@@ -1786,7 +1786,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-11-11-webinar-whatsapp';
+const APP_VERSIE='2026-11-11-conversie-aanvragen';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -10625,6 +10625,35 @@ function anMatchProj(val,name,slug){
   if(sl&&(v===sl||v.includes(sl)))return true;
   return false;
 }
+/* Haalt ALLE rijen van een query op. PostgREST geeft per verzoek hoogstens 1000 rijen (max-rows), ook als je .limit(50000)
+   vraagt: het dashboard telde daardoor alleen de nieuwste 1000 gebeurtenissen en de conversie klopte niet.
+   'bouw' maakt bij elke aanroep een verse query (een query kan maar een keer verstuurd worden) en krijgt als argument de
+   select-optie voor het tellen. De paginagrootte is wat de server echt teruggeeft, dus ook goed als max-rows lager staat.
+   Rijen met een id worden ontdubbeld: komt er tijdens het ophalen iets bij, dan schuiven de pagina's op. */
+async function sbAlleRijen(bouw,max){
+  const GRENS=max||60000;
+  const eerste=await bouw({count:'exact'}).range(0,999);
+  if(eerste.error)return {data:null,error:eerste.error,afgekapt:false,totaal:0};
+  let rows=(eerste.data||[]).slice();
+  const totaal=eerste.count==null?rows.length:eerste.count;
+  const pag=rows.length;
+  let fout=null;
+  if(pag&&rows.length<totaal){
+    const doel=Math.min(totaal,GRENS),starts=[];
+    for(let s=pag;s<doel;s+=pag)starts.push(s);
+    for(let i=0;i<starts.length&&!fout;i+=4){
+      const res=await Promise.all(starts.slice(i,i+4).map(s=>bouw().range(s,s+pag-1)));
+      for(const r of res){if(r.error){fout=r.error;break;}rows.push(...(r.data||[]));}
+    }
+  }
+  const gezien=new Set();
+  rows=rows.filter(r=>{if(!r||r.id==null)return true;if(gezien.has(r.id))return false;gezien.add(r.id);return true;});
+  return {data:rows,error:fout,afgekapt:totaal>GRENS,totaal};
+}
+// Eigen, test- en previewverkeer telt niet mee in de conversie: localhost, 127.0.0.1, *.vercel.app, bestanden zonder host.
+function anProdSite(s){s=String(s||'').toLowerCase().trim();return !!s&&s!=='localhost'&&s!=='127.0.0.1'&&!/\.vercel\.app$/.test(s)&&!/\.local$/.test(s);}
+// Een persoon = een CRM-contact (anders het e-mailadres, anders de lead zelf): wie twee keer aanvraagt telt een keer.
+function anPersoon(l){return l.contact_id?'c:'+l.contact_id:(l.email?'e:'+String(l.email).toLowerCase().trim():'l:'+(l.id||l.created_at));}
 async function renderAnalytics(){
   const v=$('#view');
   const tr=$('#topRight');
@@ -10644,13 +10673,15 @@ async function renderAnalytics(){
   const {since:sinceD,until:untilD,label:rangeLabel}=anRangeCalc();
   const since=sinceD.toISOString(),until=untilD.toISOString();
   const spanDays=Math.max(1,Math.round((untilD-sinceD)/864e5));
+  // Alles wat meetelt komt via sbAlleRijen binnen: een gewone query geeft hoogstens 1000 rijen, dus ook bij .limit(50000)
+  // zagen we alleen de nieuwste 1000 gebeurtenissen (en bij lange periodes ook te weinig leads en aanmeldingen).
   const [evR,leadsR,purchR,webR,projR,intR,kvR]=await Promise.all([
-    sb.from('analytics_events').select('event_id,session_id,visitor_hash,visitor_id,is_new_session,path,referrer_host,channel,utm_source,utm_campaign,country,device,browser,duration_ms,created_at,page_title').gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).limit(50000),
-    sb.from('leads').select('contact_id,project,source_page,type,ua_vid,created_at').gte('created_at',since).lte('created_at',until),
+    sbAlleRijen(o=>sb.from('analytics_events').select('id,event_id,session_id,visitor_hash,visitor_id,is_new_session,site,path,referrer_host,channel,utm_source,utm_campaign,country,device,browser,duration_ms,created_at,page_title',o).gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).order('id')),
+    sbAlleRijen(o=>sb.from('leads').select('id,contact_id,email,project,source_page,type,ua_vid,created_at',o).gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).order('id')),
     sb.from('purchases').select('project,price,deposit_amount,status,created_at'),
-    sb.from('webinar_registrations').select('call_booked,attended,created_at').gte('created_at',since).lte('created_at',until),
+    sbAlleRijen(o=>sb.from('webinar_registrations').select('id,call_booked,attended,created_at',o).gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).order('id')),
     sb.from('projects').select('name,slug,status,sort_order').order('sort_order',{ascending:true}),
-    sb.from('analytics_interactions').select('kind,label,project,visitor_hash,session_id,created_at').gte('created_at',since).lte('created_at',until).limit(50000),
+    sbAlleRijen(o=>sb.from('analytics_interactions').select('id,kind,label,project,visitor_hash,session_id,created_at',o).gte('created_at',since).lte('created_at',until).order('created_at',{ascending:false}).order('id')),
     sb.from('analytics_known_visitors').select('visitor_id'),
   ]);
   if(evR.error){v.innerHTML=`<div class="panel"><div class="empty">Couldn’t load analytics: ${esc(evR.error.message)}</div></div>`;return;}
@@ -10710,7 +10741,7 @@ async function renderAnalytics(){
   // (The brochure pop-up saves the lead under the project page, not a /brochure URL, so filtering on the URL misses most of them.)
   const brochure=leads.filter(l=>{const t=(l.type||'').toLowerCase();return t!=='reservation'&&t!=='dataroom_request';});
   // unique people who signed up (dedupe by contact) — a person who requests twice counts once
-  const brochurePeople=new Set(brochure.map(l=>l.contact_id||('lead:'+l.source_page+l.created_at))).size;
+  const brochurePeople=new Set(brochure.map(anPersoon)).size;
   const brByProj=(()=>{const m={};brochure.forEach(l=>{const k=l.project||'(onbekend)';m[k]=(m[k]||0)+1;});return Object.entries(m).map(([k,n])=>({label:k,value:n,display:anInt(n)})).sort((a,b)=>b.value-a.value);})();
 
   // funnel + revenue
@@ -10732,40 +10763,65 @@ async function renderAnalytics(){
       buys:buys.length,rev:buys.reduce((a,x)=>a+(Number(x.price)||0),0)};
   }).sort((a,b)=>b.views-a.views);
 
-  // Conversion: project landing page -> brochure page (by unique visitors, within the selected range).
-  // "converted" = unique visitors who viewed the project page AND reached its /brochure page (i.e. requested the brochure).
-  CONV_DATA=projs.map(pr=>{
-    const slug=(pr.slug||'').toLowerCase(),name=pr.name||'';
-    if(!slug)return null;
-    const landing=new Set(),broch=new Set();
-    ev.forEach(e=>{
-      if(!e.visitor_hash)return;
-      const p=(e.path||'').toLowerCase().split('?')[0].split('#')[0].replace(/\/+$/,'')||'/';
-      if(p==='/'+slug)landing.add(e.visitor_hash);
-      else if(p.indexOf('/'+slug+'/brochure')===0)broch.add(e.visitor_hash);
-    });
-    let conv=0;landing.forEach(h=>{if(broch.has(h))conv++;});
-    return {name,slug,landingPath:'/'+slug,brochurePath:'/'+slug+'/brochure',landing:landing.size,brochure:broch.size,converted:conv,rate:landing.size?conv/landing.size:null};
-  }).filter(Boolean);
-  // Losse landingspagina's (/lp/...) die we testen ook meenemen. Elke LP met
-  // verkeer wordt gekoppeld aan de brochure van het bijbehorende project (de
-  // brochureknop op de LP wijst naar /<project>/brochure). Auto-detectie, dus
-  // een nieuwe LP verschijnt vanzelf zodra er verkeer op komt.
-  const _norm=path=>(path||'').toLowerCase().split('?')[0].split('#')[0].replace(/\/+$/,'')||'/';
-  const _projSlugs=projs.map(p=>(p.slug||'').toLowerCase()).filter(Boolean);
-  const _lpLand={};
-  ev.forEach(e=>{if(!e.visitor_hash)return;const p=_norm(e.path);if(p.indexOf('/lp/')===0)(_lpLand[p]=_lpLand[p]||new Set()).add(e.visitor_hash);});
-  Object.keys(_lpLand).forEach(lp=>{
-    const seg=lp.replace(/^\/lp\//,'');
-    let proj='';_projSlugs.forEach(s=>{if(seg.indexOf(s)===0&&s.length>proj.length)proj=s;});
-    const brochPath=proj?'/'+proj+'/brochure':null;
-    const land=_lpLand[lp],broch=new Set();
-    if(brochPath)ev.forEach(e=>{if(!e.visitor_hash)return;const p=_norm(e.path);if(p.indexOf(brochPath)===0&&land.has(e.visitor_hash))broch.add(e.visitor_hash);});
-    let conv=0;land.forEach(h=>{if(broch.has(h))conv++;});
-    const pr=projs.find(p=>(p.slug||'').toLowerCase()===proj);
-    CONV_DATA.push({name:(pr?pr.name:'Landingspagina')+' · LP '+seg,slug:lp,landingPath:lp,brochurePath:brochPath||'(geen brochure gekoppeld)',landing:land.size,brochure:broch.size,converted:conv,rate:land.size?conv/land.size:null});
+  // ---- Conversie: bezoekers -> aanvraag van de brochure, per project en per pagina ----
+  // Bezoekers = unieke apparaten (visitor_id; visitor_hash wisselt elke dag, dus wie op drie dagen terugkomt zou drie keer
+  // tellen), zonder eigen apparaten (INTERNAL_VIDS) en zonder test- en previewverkeer (anProdSite).
+  // Aanvragen = unieke personen die het aanvraagformulier invulden (lead, geen reservering of dataroom), geteld op de pagina
+  // waar ze het invulden (source_page). Het projecttotaal is de unie: bezoekers van de projectpagina, de brochurepagina en
+  // alle LP's van dat project, tegenover alle personen die voor dat project aanvroegen, ook als die via een andere pagina kwamen.
+  const _np=p=>((p||'').toLowerCase().split('?')[0].split('#')[0].replace(/\/+$/,'')||'/');
+  const _vk=e=>e.visitor_id||e.visitor_hash||null;
+  const _slugs=projs.map(p=>(p.slug||'').toLowerCase()).filter(Boolean);
+  // Pagina's van een project die niet onder /<slug> staan: de Project X-lander is de wachtlijstpagina van The Reload en
+  // /the-dune is de oude naam. Bewust een lijst: pagina's als '/' (de startpagina van elke site) horen bij geen enkel project.
+  const _alias={'/project-x':'the-reload','/the-dune':'the-reload'};
+  // Bij welk project hoort een pad? '/<slug>', '/<slug>/...', '/lp/<slug>...' of een alias; de langste slug wint.
+  const _padProject=p=>{if(_alias[p]&&_slugs.indexOf(_alias[p])>=0)return _alias[p];let b='';_slugs.forEach(s=>{if((p==='/'+s||p.indexOf('/'+s+'/')===0||p.indexOf('/lp/'+s)===0)&&s.length>b.length)b=s;});return b;};
+  // De brochurepagina en haar varianten (/brochure/v2) tellen als een pagina.
+  const _sleutel=(p,s)=>(s&&(p==='/'+s+'/brochure'||p.indexOf('/'+s+'/brochure/')===0))?'/'+s+'/brochure':p;
+  // Bij welk project hoort een lead? Eerst op naam of slug exact (zodat 'MOKA' niet ook 'MOKA 2' raakt), dan ruimer.
+  const _leadProject=l=>{
+    const v=String(l.project||'').toLowerCase().trim();if(!v)return null;
+    return projs.find(p=>(p.name||'').toLowerCase().trim()===v||(p.slug||'').toLowerCase()===v)
+        ||projs.find(p=>anMatchProj(l.project,p.name,p.slug))||null;
+  };
+  const _entry=new Map(),_overig=new Map();      // slug -> Map(sleutel -> {sleutel,vis,ppl}); label -> Set(personen)
+  const _geef=(s,k)=>{let m=_entry.get(s);if(!m){m=new Map();_entry.set(s,m);}let x=m.get(k);if(!x){x={sleutel:k,vis:new Set(),ppl:new Set()};m.set(k,x);}return x;};
+  const _leadPaginas=new Map();                 // slug -> Set(sleutels waar een aanvraag werd gedaan)
+  brochure.forEach(l=>{
+    const pr=_leadProject(l);
+    if(!pr||!pr.slug){const lab=l.project||'(geen project)';(_overig.get(lab)||_overig.set(lab,new Set()).get(lab)).add(anPersoon(l));return;}
+    const s=pr.slug.toLowerCase(),k=l.source_page?_sleutel(_np(l.source_page),s):'';
+    _geef(s,k).ppl.add(anPersoon(l));
+    (_leadPaginas.get(s)||_leadPaginas.set(s,new Set()).get(s)).add(k);
   });
-  CONV_DATA.sort((a,b)=>b.landing-a.landing);
+  ev.forEach(e=>{
+    const vk=_vk(e);if(!vk||!anProdSite(e.site))return;
+    const p=_np(e.path),s=_padProject(p);if(!s)return;
+    const k=_sleutel(p,s);
+    // Alleen pagina's waar je kunt aanvragen: projectpagina, brochurepagina, LP's, de eigen pagina's uit _alias, en een
+    // pagina onder het project waar een aanvraag vandaan kwam. Verder verkeer (camera, dataroom) telt niet als bezoeker.
+    if(p==='/'+s||k==='/'+s+'/brochure'||p.indexOf('/lp/'+s)===0||_alias[p]===s||(_leadPaginas.get(s)&&_leadPaginas.get(s).has(k)))_geef(s,k).vis.add(vk);
+  });
+  const _label=(k,s)=>k===''?'Pagina onbekend':k==='/'?'Startpagina van de site':k==='/'+s?'Projectpagina':k==='/'+s+'/brochure'?'Brochurepagina':k.indexOf('/lp/')===0?'LP '+k.replace(/^\/lp\//,''):_alias[k]===s?'Eigen pagina':k;
+  const _rate=(n,d)=>d?Math.min(1,n/d):null;
+  CONV_DATA=projs.map(pr=>{
+    const s=(pr.slug||'').toLowerCase();if(!s)return null;
+    const alleVis=new Set(),allePpl=new Set();
+    const pages=[...(_entry.get(s)||new Map()).values()].map(x=>{
+      x.vis.forEach(h=>alleVis.add(h));x.ppl.forEach(h=>allePpl.add(h));
+      return {sleutel:x.sleutel,label:_label(x.sleutel,s),visitors:x.vis.size,requests:x.ppl.size,rate:_rate(x.ppl.size,x.vis.size)};
+    }).sort((a,b)=>b.visitors-a.visitors||b.requests-a.requests);
+    return {name:pr.name,slug:s,visitors:alleVis.size,requests:allePpl.size,rate:_rate(allePpl.size,alleVis.size),pages,_vis:alleVis,_ppl:allePpl};
+  }).filter(r=>r&&(r.visitors||r.requests)).sort((a,b)=>b.visitors-a.visitors);
+  if(ANALYTICS_CONVPAGE&&!CONV_DATA.some(c=>c.slug===ANALYTICS_CONVPAGE))ANALYTICS_CONVPAGE='';
+  {
+    const tv=new Set(),tp=new Set();
+    CONV_DATA.forEach(c=>{c._vis.forEach(h=>tv.add(h));c._ppl.forEach(h=>tp.add(h));});
+    _overig.forEach(set=>set.forEach(h=>tp.add(h)));
+    CONV_TOTAAL={visitors:tv.size,requests:tp.size,rate:_rate(tp.size,tv.size),
+      overig:[..._overig.entries()].map(([label,set])=>({label,requests:set.size})).sort((a,b)=>b.requests-a.requests)};
+  }
 
   // ---- render ----
   const kpis=[
@@ -10778,6 +10834,7 @@ async function renderAnalytics(){
     ['Brochure sign-ups',anInt(brochurePeople),'unieke personen · klik hiervoor','signups'],
   ];
   let html='';
+  if(evR.afgekapt)html+=`<div class="an-note" style="background:#fff4e5;border-color:#f3d7a8;color:#9a6200">Let op: in deze periode zijn ${anInt(evR.totaal)} gebeurtenissen vastgelegd en er zijn er ${anInt((evR.data||[]).length)} opgehaald. De cijfers hieronder zijn niet volledig; kies een kortere periode.</div>`;
   if(pageviews===0)html+=`<div class="an-note">📡 Tracking is live. No visits recorded for <b>${esc(rangeLabel.toLowerCase())}</b> yet — this fills in automatically as people visit the site. The funnel below still reflects your leads, calls & sales.</div>`;
   html+='<div class="cards">'+kpis.map(k=>{const g=k[3]?` data-go="${k[3]}" style="cursor:pointer"`:'';return `<div class="stat"${g}><div class="k">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`;}).join('')+'</div>';
 
@@ -10792,7 +10849,7 @@ async function renderAnalytics(){
     <div class="rev-row"><div><div class="rk">Contracted / sold value</div><div class="rv">${anMoney(revenue)}</div></div><div><div class="rk">Deposits received</div><div class="rv">${anMoney(deposits)}</div></div><div><div class="rk">Overall visitor→sale</div><div class="rv">${visitors?anPct(Math.min(1,nPurch/visitors)):'—'}</div></div></div></div>`;
 
   const convOpts=[['','Alle projecten']].concat(CONV_DATA.map(c=>[c.slug,c.name])).map(([v,l])=>`<option value="${esc(v)}" ${ANALYTICS_CONVPAGE===v?'selected':''}>${esc(l)}</option>`).join('');
-  html+=`<div class="panel"><div class="panel-head"><div><h3>Conversie: landingspagina → brochure</h3><div class="desc">Welk deel van je paginabezoekers vraagt de brochure aan — dus doorstroomt naar de brochurepagina · ${esc(rangeLabel.toLowerCase())}.</div></div>
+  html+=`<div class="panel"><div class="panel-head"><div><h3>Conversie: bezoekers → aanvraag van de brochure</h3><div class="desc">Welk deel van de bezoekers laat zijn gegevens achter op het aanvraagformulier van de brochure, per project en per pagina · ${esc(rangeLabel.toLowerCase())}.</div></div>
     <div class="toolbar"><select id="conv_page" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px">${convOpts}</select></div></div>
     <div id="conv_body"></div></div>`;
 
@@ -10843,7 +10900,7 @@ async function renderAnalytics(){
   // Conversie per landingspagina = aanvragen ÷ unieke bezoekers van diezelfde pagina.
   const _npath=p=>((p||'').toLowerCase().split('?')[0].split('#')[0].replace(/\/+$/,'')||'/');
   const _visByPath={};
-  ev.forEach(e=>{if(!e.visitor_hash)return;const p=_npath(e.path);(_visByPath[p]=_visByPath[p]||new Set()).add(e.visitor_hash);});
+  ev.forEach(e=>{const vk=e.visitor_id||e.visitor_hash;if(!vk||!anProdSite(e.site))return;const p=_npath(e.path);(_visByPath[p]=_visByPath[p]||new Set()).add(vk);});
   const leadSrcRows=leadSrc.map(c=>{
     const vis=(_visByPath[_npath(c.k)]||new Set()).size;
     const rate=vis?Math.min(1,c.n/vis):null;
@@ -10933,22 +10990,31 @@ async function unmarkKnownVisitor(vid){
   toast('Markering verwijderd','ok');
   renderRecentVisitors();renderLiveVisitors();
 }
-let CONV_DATA=[],ANALYTICS_CONVPAGE='';
+let CONV_DATA=[],CONV_TOTAAL=null,ANALYTICS_CONVPAGE='';
 function drawConvPanel(){
   const box=$('#conv_body');if(!box)return;
   const rows=ANALYTICS_CONVPAGE?CONV_DATA.filter(c=>c.slug===ANALYTICS_CONVPAGE):CONV_DATA;
-  if(!rows.length){box.innerHTML='<div class="empty" style="padding:22px">Nog geen bezoekers op deze pagina in deze periode.</div>';return;}
-  const pctBar=r=>{const p=r.rate==null?0:Math.round(r.rate*100);const col=p>=20?'#0f9d74':p>=8?'#b7791f':'#c2410c';
-    return `<div style="display:flex;align-items:center;gap:10px;min-width:150px"><div style="flex:1;background:#eef0ef;border-radius:6px;height:10px;overflow:hidden"><div style="height:100%;width:${Math.min(100,p)}%;background:${col};border-radius:6px"></div></div><b style="white-space:nowrap;color:${col}">${r.rate==null?'—':p+'%'}</b></div>`;};
-  let h=`<div class="table-wrap"><table><thead><tr><th>Landingspagina</th><th>Bezoekers</th><th>Naar brochure</th><th>Conversie</th></tr></thead><tbody>`;
+  const tot=ANALYTICS_CONVPAGE?null:CONV_TOTAAL;
+  if(!rows.length&&!(tot&&tot.requests)){box.innerHTML='<div class="empty" style="padding:22px">Nog geen bezoekers of aanvragen in deze periode.</div>';return;}
+  // Neutrale balk, geschaald op de beste regel: een vaste drempel (rood onder 8%) zou bij echte aanvraagpercentages alles rood maken.
+  const max=Math.max(0.0001,...rows.flatMap(r=>[r.rate||0].concat(r.pages.map(p=>p.rate||0))),(tot&&tot.rate)||0);
+  const bar=r=>r==null?'<span class="muted">—</span>'
+    :`<div style="display:flex;align-items:center;gap:10px;min-width:150px"><div style="flex:1;background:#eef0ef;border-radius:6px;height:10px;overflow:hidden"><div style="height:100%;width:${Math.max(2,Math.round(r/max*100))}%;background:#0f9d74;border-radius:6px"></div></div><b style="white-space:nowrap;min-width:40px;text-align:right">${anPct(r)}</b></div>`;
+  // Bij minder dan 100 bezoekers zegt een percentage weinig: een aanvraag meer of minder verschuift het sterk.
+  const weinig=v=>v>0&&v<100?'<div class="muted" style="font-size:11px">weinig bezoekers, met voorzichtigheid lezen</div>':'';
+  let h=`<div class="table-wrap" style="max-height:none"><table><thead><tr><th>Project en pagina</th><th>Bezoekers</th><th>Aanvragen</th><th>Conversie</th></tr></thead><tbody>`;
   rows.forEach(r=>{
-    h+=`<tr><td><b>${esc(r.name)}</b><div class="muted" style="font-size:12px">${esc(r.landingPath||('/'+r.slug))} → ${esc(r.brochurePath||('/'+r.slug+'/brochure'))}</div></td>`
-     +`<td style="font-weight:650">${anInt(r.landing)}</td>`
-     +`<td style="font-weight:650">${anInt(r.converted)}</td>`
-     +`<td>${pctBar(r)}</td></tr>`;
+    h+=`<tr style="background:#f6f8f6"><td><b>${esc(r.name)}</b><div class="muted" style="font-size:12px">totaal van het project</div></td><td style="font-weight:700">${anInt(r.visitors)}</td><td style="font-weight:700">${anInt(r.requests)}</td><td>${bar(r.rate)}${weinig(r.visitors)}</td></tr>`;
+    r.pages.forEach(p=>{
+      h+=`<tr><td style="padding-left:26px">${esc(p.label)}${p.sleutel&&p.sleutel!==p.label?`<div class="muted" style="font-size:12px">${esc(p.sleutel)}</div>`:''}</td><td>${p.visitors?anInt(p.visitors):'<span class="muted">—</span>'}</td><td>${anInt(p.requests)}</td><td>${bar(p.rate)}${weinig(p.visitors)}</td></tr>`;
+    });
   });
+  if(tot){
+    tot.overig.forEach(o=>{h+=`<tr><td><b>Zonder projectvoorkeur</b><div class="muted" style="font-size:12px">${esc(o.label)}</div></td><td><span class="muted">—</span></td><td>${anInt(o.requests)}</td><td><span class="muted">—</span></td></tr>`;});
+    h+=`<tr style="border-top:2px solid var(--line)"><td><b>Alle projecten samen</b></td><td style="font-weight:700">${anInt(tot.visitors)}</td><td style="font-weight:700">${anInt(tot.requests)}</td><td>${bar(tot.rate)}</td></tr>`;
+  }
   h+='</tbody></table></div>';
-  h+=`<div class="rev-row"><span class="muted" style="font-size:12px">"Naar brochure" = unieke bezoekers die de landings- of projectpagina bekeken én op de brochurepagina kwamen (dus de brochure aanvroegen). Losse landingspagina's (/lp/...) staan hier ook bij.</span></div>`;
+  h+=`<div class="rev-row"><span class="muted" style="font-size:12px"><b>Bezoekers</b> = unieke apparaten die in deze periode op de pagina kwamen (ook als ze op meerdere dagen terugkomen), zonder jullie eigen apparaten en zonder test- en previewverkeer. <b>Aanvragen</b> = unieke personen die op het aanvraagformulier van de brochure hun gegevens achterlieten, geteld op de pagina waar ze het invulden; wie twee keer aanvraagt telt een keer. Het projecttotaal zet de bezoekers van de projectpagina, de brochurepagina en alle LP's van dat project (en elke andere pagina waar een aanvraag vandaan kwam) tegenover alle personen die voor dat project aanvroegen, ook als die via een andere pagina kwamen. Reserveringen en dataroom-aanvragen tellen niet mee.</span></div>`;
   box.innerHTML=h;
 }
 /* Resolve Meta campaign/ad IDs -> names (shared cache), for the Bron columns */
