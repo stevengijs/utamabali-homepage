@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl" data-version="v14">
+<html lang="nl" data-version="v15">
 <head>
   <script src="/t.js" defer></script>
   <script src="/webinar-wa-nummer.js"></script>
@@ -297,6 +297,20 @@ fbq('track','PageView');
                 sr.querySelectorAll('label').forEach(function(l){
                   if(/Mobiel nummer/.test(l.textContent) && !l.hasAttribute('data-utama')) l.setAttribute('data-utama', 'phone');
                 });
+                /* Vangnet (Steven, 11 nov): een klik op "No thanks, I'll use email reminders" (of de Nederlandse
+                   variant) in het WebinarGeek-formulier stuurt altijd door naar de bedankpagina, wat WebinarGeek
+                   zelf ook doet. De eigen afhandeling van WebinarGeek loopt gewoon door. */
+                if(!sr.__utamaSkip){
+                  sr.__utamaSkip = true;
+                  sr.addEventListener('click', function(ev){
+                    var el = ev.target && ev.target.closest ? ev.target.closest('button, a, [role="button"]') : null;
+                    if(!el) return;
+                    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+                    if(/no,? thanks.*e-?mail reminders|nee,? bedankt.*e-?mail/i.test(t)){
+                      setTimeout(function(){ window.location.assign('/webinar-nov-15/thanks/'); }, 200);
+                    }
+                  }, true);
+                }
               }
               var armed = false;
               function arm(){
