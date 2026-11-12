@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl" data-version="v18" data-taal-pagina="nl">
+<html lang="nl" data-version="v19" data-taal-pagina="nl">
 <head>
   <script src="/t.js" defer></script>
   <script src="/webinar-taal.js"></script>
@@ -83,13 +83,33 @@ fbq('track','PageView');
   function isInschrijving(url, method){
     return /webinargeek\.com/.test(url) && /\/subscriptions(\?|$)/.test(url) && String(method || 'GET').toUpperCase() === 'POST';
   }
+  /* Altijd Nederlandse tijd (Steven, 12 november). WebinarGeek toont datum en tijd in mails, op de wachtpagina
+     en in de agenda in de tijdzone die de browser bij de inschrijving meestuurt. Wie vanuit Bali, Spanje of
+     elders inschrijft, zou dus 20:00 WITA of 13:00 CET zien. We zetten de tijdzone van elke inschrijving
+     daarom op Europe/Amsterdam. Lukt het lezen van het verzoek niet, dan gaat het verzoek ongewijzigd door. */
+  function nlTijdzone(init){
+    try{
+      if(init && typeof init.body === 'string'){
+        var d = JSON.parse(init.body);
+        if(d && d.subscription && typeof d.subscription === 'object'){
+          d.subscription.time_zone = 'Europe/Amsterdam';
+          var kopie = {};
+          for(var k in init){ kopie[k] = init[k]; }
+          kopie.body = JSON.stringify(d);
+          return kopie;
+        }
+      }
+    }catch(e){}
+    return init;
+  }
   var origineel = window.fetch;
   if(origineel){
     window.fetch = function(input, init){
       var url = typeof input === 'string' ? input : (input && input.url) || '';
       var method = (init && init.method) || (input && input.method) || 'GET';
-      var p = origineel.apply(this, arguments);
-      if(isInschrijving(String(url), method)){
+      var inschr = isInschrijving(String(url), method);
+      var p = inschr ? origineel.call(this, input, nlTijdzone(init)) : origineel.apply(this, arguments);
+      if(inschr){
         /* Na inschrijving stuurt WebinarGeek door naar het adres uit de instellingen van het embed. Dat hoort
            stap 2 te zijn: /webinar-nov-15/step2/. Staat daar nog een ouder adres (bali-bedankt of de bedankpagina),
            dan vervangen we dat hier in het antwoord, voordat het formulier het gebruikt. */
