@@ -1072,7 +1072,7 @@
   .pipe-chip.crm{background:#eff6ff;color:#1d4ed8;cursor:pointer}
   .pipe-chip.budget{background:#fffbeb;color:#b45309}
   .pipe-chip.tl{background:#f1f5f9;color:#475569}
-  .pipe-chip.herk{background:#fef2f2;color:#b91c1c}
+  .pipe-chip.herk{background:#fef2f2;color:#b91c1c;max-width:100%;overflow-wrap:anywhere}
   .pipe-chip.herk-onb{background:#f1f5f9;color:#64748b;font-weight:500}
   .pipe-wa{width:24px;height:24px;border-radius:50%;background:#25D366;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;text-decoration:none}
   .pipe-wa:hover{filter:brightness(.94)}
@@ -1788,7 +1788,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-11-13-herkomst-webinarleads';
+const APP_VERSIE='2026-11-13-herkomst-webinarleads-2';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -2262,24 +2262,43 @@ function chanClass(c){c=String(c||'').toLowerCase();return ['direct','organic','
    (formulier op de site) hebben ze in de kolommen utm_*, de funnel van
    september bewaarde ze in antwoorden. Steven, 13 november 2026: bij
    webinarleads leek de herkomst altijd leeg, terwijl alles uit advertenties
-   komt. Geen tags in de link = onbekend, nooit een gok. */
+   komt. Geen tags in de link = onbekend, nooit een gok.
+   De tags komen uit een link die iedereen kan maken, en via het openbare
+   eindpunt wg-register komt de ruwe utm-JSON ongecontroleerd in antwoorden
+   (elk type, elke lengte). Daarom telt alleen tekst of een getal, vallen
+   onzichtbare tekens weg en wordt elke waarde op 120 tekens afgekapt (review
+   van 13 november: een object als waarde liet de hele lijst vastlopen). */
+function webTag(v){
+  if(typeof v!=='string'&&typeof v!=='number')return '';
+  let s='';
+  for(const ch of String(v)){
+    const c=ch.codePointAt(0);
+    if(c<32||c===127||c===0xAD||(c>=0x200B&&c<=0x200F)||(c>=0x2028&&c<=0x202E)||(c>=0x2060&&c<=0x206F)||c===0xFEFF)continue;
+    s+=ch;if(s.length>=120)break;
+  }
+  return s.trim();
+}
 function webHerkomst(w){
   if(!w)return null;
   const a=(w.antwoorden&&typeof w.antwoorden==='object')?w.antwoorden:{};
-  const g=k=>String(w['utm_'+k]||a['utm_'+k]||'').trim();
+  const g=k=>webTag(w['utm_'+k])||webTag(a['utm_'+k]);
   const h={src:g('source'),med:g('medium'),camp:g('campaign'),cont:g('content'),term:g('term')};
   if(!h.src&&!h.med&&!h.camp&&!h.cont&&!h.term)return null;
   const s=h.src.toLowerCase();
   h.meta=/^(fb|facebook|ig|instagram|meta)$/.test(s);
-  h.paid=/^(paid|cpc|ppc|paid[-_ ]?social)$/i.test(h.med)||(h.meta&&!h.med);
-  h.kanaal=h.paid?'paid':(/mail/i.test(h.med)?'email':((h.src||h.camp)?'campaign':'direct'));
+  h.paid=/^(paid|cpc|ppc|paid[-_ ]?social)$/i.test(h.med);
+  // Een link met tags is nooit "direct": zonder bewijs van betaald of e-mail is het een getagde campagnelink.
+  h.kanaal=h.paid?'paid':(/mail/i.test(h.med)?'email':'campaign');
   return h;
 }
-function webHerkomstLabel(h){
+function webPlat(h){
   const s=h.src.toLowerCase();
-  const plat=!h.meta?h.src:(/^(ig|instagram)$/.test(s)?'Instagram':/^(fb|facebook)$/.test(s)?'Facebook':'Meta');
-  if(!plat)return h.paid?'Advertentie':'Campagne';
-  return h.paid?plat+'-advertentie':plat;
+  return !h.meta?h.src.slice(0,24):(/^(ig|instagram)$/.test(s)?'Instagram':/^(fb|facebook)$/.test(s)?'Facebook':'Meta');
+}
+function webHerkomstLabel(h){
+  const plat=webPlat(h);
+  if(!plat)return h.paid?'Ad':'Campagne';
+  return h.paid?plat+' ad':plat;
 }
 function webHerkomstTitel(h){
   const d=[['utm_source',h.src],['utm_medium',h.med],['utm_campaign',h.camp],['utm_content',h.cont],['utm_term',h.term]].filter(x=>x[1]).map(x=>x[0]+'='+x[1]).join(', ');
@@ -2287,16 +2306,16 @@ function webHerkomstTitel(h){
 }
 // Compact: platform en advertentie, voor de chip op het webinarbord.
 function webHerkomstKort(h){
-  const s=h.src.toLowerCase();
-  const plat=!h.meta?h.src:(/^(ig|instagram)$/.test(s)?'Instagram':/^(fb|facebook)$/.test(s)?'Facebook':'Meta');
-  return [plat,h.cont||h.camp].filter(Boolean).join(' · ')||'Campagne';
+  return [webPlat(h),h.cont||h.camp].filter(Boolean).join(' · ')||'Campagne';
 }
-// Cel in de lijst: kleur naar kanaal, daaronder wat de tags zeggen (advertentie en campagne).
+// Cel in de lijst: kleur naar kanaal, daaronder de advertentie (of de campagne als die ontbreekt); alle tags in de tooltip.
+// Korte badge en een tweede regel die mag omslaan (td heeft overal nowrap): de kolom blijft smal, zodat de lijst op een
+// laptopscherm niet breder wordt dan voor deze wijziging.
 function webHerkomstCel(w){
   const h=webHerkomst(w);
-  if(!h)return '<span class="muted" title="De aanmeldlink bevatte geen tags (utm), dus de bron is onbekend.">Onbekend</span>';
-  const wat=[h.cont,h.camp].filter(Boolean).join(' · ');
-  return `<span class="src-badge ${chanClass(h.kanaal)}" title="${esc(webHerkomstTitel(h))}">${esc(webHerkomstLabel(h))}</span>${wat?` <span class="muted" style="font-size:12px">${esc(wat)}</span>`:''}`;
+  if(!h)return '<span class="muted" style="cursor:help;border-bottom:1px dotted" title="Er zijn geen tags (utm) vastgelegd bij deze aanmelding, dus de bron is onbekend.">Onbekend</span>';
+  const wat=h.cont||h.camp;
+  return `<div style="line-height:1.35" title="${esc(webHerkomstTitel(h))}"><span class="src-badge ${chanClass(h.kanaal)}">${esc(webHerkomstLabel(h))}</span>${wat?`<div class="muted" style="font-size:12px;white-space:normal;overflow-wrap:anywhere;max-width:220px">${esc(wat)}</div>`:''}</div>`;
 }
 // De herkomst van de eerste aanmelding die tags heeft (eerste aanraking), of null.
 function webHerkomstEerste(webs){
@@ -13575,10 +13594,10 @@ async function openPerson(p){
       const ids=[_attr.utm_campaign,_attr.utm_content,_attr.utm_term].map(x=>String(x||'')).filter(x=>/^\d{6,}$/.test(x));
       hadIds=ids.length>0;
       if(hadIds&&sb.functions&&sb.functions.invoke){
-        try{const {data}=await sb.functions.invoke('meta-names',{body:{ids}});if(data&&data.names){nm=data.names;gotNames=Object.keys(nm).length>0;}}catch(e){}
+        try{const aanroep=sb.functions.invoke('meta-names',{body:{ids}});const {data}=await (_attrWeb?Promise.race([aanroep,new Promise(r=>setTimeout(()=>r({data:null}),2500))]):aanroep);if(data&&data.names){nm=data.names;gotNames=Object.keys(nm).length>0;}}catch(e){}
       }
     }
-    const show=v=>{const s=String(v||'');return nm[s]||s;};
+    const show=v=>{const s=String(v||'');return (Object.prototype.hasOwnProperty.call(nm,s)&&nm[s])||s;};
     // Distinguish Facebook vs Instagram: utm_source (fb/ig) is authoritative; referrer host is a fallback.
     const rh=(_attr.referrer_host||'').toLowerCase();
     const metaPlat=!isMeta?'':(/^(ig|instagram)$/.test(srcRaw)?'Instagram':/^(fb|facebook)$/.test(srcRaw)?'Facebook':/instagram/.test(rh)?'Instagram':/facebook/.test(rh)?'Facebook':'');
@@ -13592,7 +13611,7 @@ async function openPerson(p){
     if(_attr.utm_term)_attrBits.push([isMeta?'Advertentieset':'Zoekterm',show(_attr.utm_term)]);
     if(!_attr.utm_source&&_attr.referrer_host)_attrBits.push(['Verwijzer',_attr.referrer_host]);
     _attrHead=_attr.utm_campaign?show(_attr.utm_campaign):(_attr.utm_source?(isMeta?'Meta':_attr.utm_source):'');
-    if(_attrChan==='paid'&&!_attr.utm_campaign&&!_attr.utm_source)_attrNote='Herkend als advertentieklik (ad-click-id in de URL), maar er zijn geen campagne-tags meegegeven. Voeg <code>utm_campaign</code>/<code>utm_content</code> toe aan je advertentie-links om te zien wélke advertentie precies.';
+    if(_attrChan==='paid'&&!_attr.utm_campaign&&!_attr.utm_source&&!_attrWeb)_attrNote='Herkend als advertentieklik (ad-click-id in de URL), maar er zijn geen campagne-tags meegegeven. Voeg <code>utm_campaign</code>/<code>utm_content</code> toe aan je advertentie-links om te zien wélke advertentie precies.';
     else if(isMeta&&hadIds&&!gotNames&&!_attrWeb)_attrNote='Dit zijn Meta’s campagne-/advertentie-<b>ID’s</b>. Naam-vertaling staat nog uit — zie mijn bericht om die aan te zetten (of tag je ad-links met namen).';
     if(_attrWeb)_attrNote=(_attrNote?_attrNote+'<br>':'')+'Bron uit de link waarmee ze zich voor het webinar aanmeldden (de tags in de link), niet uit een bezoek aan de site.';
   }
@@ -13640,14 +13659,14 @@ async function openPerson(p){
     body+=_sec('Webinar',`<div style="display:flex;flex-direction:column;gap:8px">`+webs.map(w=>{
       const sx=sess[w.session_id]||{};const a=w.antwoorden||{};
       let d='';try{if(sx.starts_at)d=new Date(sx.starts_at).toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Amsterdam'});}catch(e){}
-      const kw=a.gekwalificeerd?(String(a.gekwalificeerd).toLowerCase()==='ja'?'<span class="badge green" title="Volgens de vragen in de aanmeldfunnel">gekwalificeerd</span>':'<span class="badge grey" title="Volgens de vragen in de aanmeldfunnel">niet gekwalificeerd</span>'):'';
+      const kw=webTag(a.gekwalificeerd)?(webTag(a.gekwalificeerd).toLowerCase()==='ja'?'<span class="badge green" title="Volgens de vragen in de aanmeldfunnel">gekwalificeerd</span>':'<span class="badge grey" title="Volgens de vragen in de aanmeldfunnel">niet gekwalificeerd</span>'):'';
       const gekeken=w.attended?`<span class="badge green">gekeken${w.watch_minutes?' · '+w.watch_minutes+' min':''}</span>`:'<span class="badge grey">nog niet gekeken</span>';
       const hw=webHerkomst(w);
-      const via=hw?[hw.src?('via '+hw.src):'',hw.camp,hw.cont?('advertentie '+hw.cont):'',a.variant?('variant '+a.variant):''].filter(Boolean).join(' · '):'';
-      const bron=(w.raw_payload&&w.raw_payload.entity&&w.raw_payload.entity.registration_source)||(w.raw_payload&&w.raw_payload.page)||'';
+      const via=[hw&&hw.src?('via '+hw.src):'',hw&&hw.camp,hw&&hw.cont?('advertentie '+hw.cont):'',hw&&!hw.src&&!hw.camp&&!hw.cont?[hw.med,hw.term].filter(Boolean).join(' · '):'',webTag(a.variant)?('variant '+webTag(a.variant)):''].filter(Boolean).join(' · ');
+      const bron=webTag((w.raw_payload&&w.raw_payload.entity&&w.raw_payload.entity.registration_source)||(w.raw_payload&&w.raw_payload.page)||'');
       return `<div style="border:1px solid var(--line);border-radius:10px;padding:9px 12px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600">🎥 ${esc(sx.title||'Webinar')}</span>${d?`<span class="muted" style="font-size:12px">${esc(d)}</span>`:''}<span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${kw}${gekeken}</span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-top:8px">${feit('Budget',w.budget)}${feit('Termijn',w.horizon)}${feit('Aangemeld op',fmtDateTime(w.created_at))}${feit('Herkomst',via||'Onbekend, geen tags in de aanmeldlink')}${feit('Aanmelding via',bron==='api'?'funnel (API)':bron==='registration_page'?'registratiepagina':bron==='embed_form'?'formulier op de site':bron)}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-top:8px">${feit('Budget',w.budget)}${feit('Termijn',w.horizon)}${feit('Aangemeld op',fmtDateTime(w.created_at))}${feit('Herkomst',via||'Onbekend, geen tags vastgelegd')}${feit('Aanmelding via',bron==='api'?'funnel (API)':bron==='registration_page'?'registratiepagina':bron==='embed_form'?'formulier op de site':bron)}</div>
         ${(w.budget||w.horizon)?'':`<div class="muted" style="font-size:12px;margin-top:6px">Geen antwoorden meegestuurd: aangemeld zonder de funnelvragen.</div>`}
       </div>`;
     }).join('')+`</div>`);
@@ -13731,7 +13750,7 @@ async function openPerson(p){
     }).join(''):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
   if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-ghost btn-sm" id="newResv">+ Nieuwe reservering</button></div>`;
   body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',_hint('De ITP + €5.000-aanbetaling die je van een aanvraag maakt. Hier open, verstuur en bevestig je alles.')+resvHtml);
-  body+=_sec('Webinar-registraties ('+webs.length+')',_mt(['Aanwezig','Budget','Horizon','Call geboekt','Herkomst','Datum'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),webHerkomstCel(x),fmtDateTime(x.created_at)])));
+  {const wt=_mt(['Aanwezig','Budget','Horizon','Call geboekt','Herkomst','Datum'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),webHerkomstCel(x),fmtDateTime(x.created_at)]));body+=_sec('Webinar-registraties ('+webs.length+')',webs.length?'<div style="overflow-x:auto">'+wt+'</div>':wt);}
 
   // ----- interactive dataroom access -----
   const manageDr=canEdit('portal')||canEdit('leads');
@@ -13766,13 +13785,13 @@ async function openPerson(p){
     let inner;
     if(_attr){
       const human={direct:'Directe link — typte de URL in of kwam via een bookmark',organic:'Organisch — via een zoekmachine (Google e.d.)',social:'Social media',paid:'Betaalde advertentie',referral:'Verwijzing vanaf een andere website',campaign:'Getagde campagnelink',email:'Via een e-mail',internal:'Interne link'}[_attrChan]||_attrChan;
-      const rows=_attrBits.map(b=>`<tr><td class="muted" style="white-space:nowrap;padding:2px 14px 2px 0;vertical-align:top">${esc(b[0])}</td><td style="padding:2px 0"><b>${esc(b[1])}</b></td></tr>`).join('');
+      const rows=_attrBits.map(b=>`<tr><td class="muted" style="white-space:nowrap;padding:2px 14px 2px 0;vertical-align:top">${esc(b[0])}</td><td style="padding:2px 0;white-space:normal;overflow-wrap:anywhere"><b>${esc(b[1])}</b></td></tr>`).join('');
       const note=_attrNote?`<div class="muted" style="font-size:12px;margin-top:8px">${_attrNote}</div>`:'';
       const src=_attr.referrer_host&&!_attrBits.some(b=>b[0]==='Verwijzer')?`<div class="muted" style="font-size:12px;margin-top:6px">Eerste pagina: <b>${esc((_attr.path||'/').split('?')[0])}</b></div>`:'';
       inner=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:${rows?'10px':'2px'}"><span class="src-badge ${chanClass(_attrChan)}" style="font-size:12px">${esc(_attrLabel)}</span><span style="font-size:13px">${esc(human)}</span></div>${rows?`<table style="font-size:13px;border-collapse:collapse">${rows}</table>`:''}${src}${note}`;
     }else{
-      inner=webs.length
-        ?'<div class="muted" style="font-size:13px">Aangemeld voor een webinar, maar de aanmeldlink bevatte geen tags (utm), dus de marketingbron is onbekend. Een aanmelding via een getagde advertentielink draagt die tags wel.</div>'
+      inner=(webs.length&&!leads.length)
+        ?'<div class="muted" style="font-size:13px">Aangemeld voor een webinar, maar er zijn geen tags (utm) vastgelegd, dus de marketingbron is onbekend. Een aanmelding via een getagde advertentielink draagt die tags wel.</div>'
         :'<div class="muted" style="font-size:13px">Deze lead vulde een formulier in op de site, maar er is geen webverkeer-sessie aan gekoppeld — de marketingbron (bijv. Meta-ad, Google, direct) is daardoor onbekend. Dit gebeurt bij leads van vóór de tracking, of als de sessie niet meegestuurd werd.</div>';
     }
     body+=_sec('Herkomst (marketing)',inner);
@@ -14449,12 +14468,17 @@ async function pipeLoadEnrichment(){
   try{
     const emails=[...new Set((ctR.data||[]).map(ct=>(ct.email||'').toLowerCase()).filter(Boolean))];
     if(emails.length){
-      const {data:wb}=await sb.from('webinar_registrations').select('email,budget,horizon,created_at,utm_source,utm_medium,utm_campaign,utm_content,utm_term,antwoorden').in('email',emails).order('created_at',{ascending:false});
+      // De tags en antwoorden haal je alleen op voor een webinarbord, waar de kaart ze toont.
+      const webBord=/webinar/i.test((PIPE.cur&&PIPE.cur.name)||'');
+      const {data:wb}=await sb.from('webinar_registrations').select(webBord?'email,session_id,budget,horizon,created_at,utm_source,utm_medium,utm_campaign,utm_content,utm_term,antwoorden':'email,budget,horizon,created_at').in('email',emails).order('created_at',{ascending:false});
       const byMail={};(wb||[]).forEach(w=>{const e=(w.email||'').toLowerCase();if(!byMail[e]&&(w.budget||w.horizon))byMail[e]=w;});
       (ctR.data||[]).forEach(ct=>{const w=byMail[(ct.email||'').toLowerCase()];if(!w)return;const e=PIPE.enrich[ct.id];if(!e.budget&&w.budget)e.budget=w.budget;if(!e.timeline&&w.horizon)e.timeline=w.horizon;});
-      // Herkomst per aanmelding: de eerste aanmelding met tags, anders is de bron onbekend.
-      const perMail={};(wb||[]).forEach(w=>{const e=(w.email||'').toLowerCase();if(!e)return;(perMail[e]||(perMail[e]=[])).push(w);});
-      (ctR.data||[]).forEach(ct=>{const lijst=perMail[(ct.email||'').toLowerCase()];if(!lijst||!PIPE.enrich[ct.id])return;PIPE.enrich[ct.id].herkomst=webHerkomstEerste(lijst);PIPE.enrich[ct.id].webAangemeld=true;});
+      // Herkomst per aanmelding, afgebakend op het webinar van dit bord: de eerste aanmelding met tags, anders is de bron onbekend.
+      if(webBord){
+        const sid=(PIPE.cur&&PIPE.cur.webinar_session_id)||null;
+        const perMail={};(wb||[]).forEach(w=>{const e=(w.email||'').toLowerCase();if(!e)return;if(sid&&w.session_id&&w.session_id!==sid)return;(perMail[e]||(perMail[e]=[])).push(w);});
+        (ctR.data||[]).forEach(ct=>{try{const lijst=perMail[(ct.email||'').toLowerCase()];if(!lijst||!PIPE.enrich[ct.id])return;PIPE.enrich[ct.id].herkomst=webHerkomstEerste(lijst);PIPE.enrich[ct.id].webAangemeld=true;}catch(e){}});
+      }
     }
   }catch(e){}
   // Chat activity per contact: latest message time + which channels are in play.
@@ -14539,7 +14563,7 @@ function pipeCardHtml(c){
   const warm=c.contact_id?warmthBadgeId(c.contact_id):'';
   const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(pipeCardName(c,en))}</div>${warm}</div>`;
   // Alleen op een webinarbord: waar de aanmelding vandaan kwam (tags in de aanmeldlink).
-  const herk=(en.webAangemeld&&PIPE.cur&&/webinar/i.test(PIPE.cur.name||''))?(en.herkomst?`<span class="pipe-chip herk" title="${esc(webHerkomstTitel(en.herkomst))}">${esc(webHerkomstKort(en.herkomst))}</span>`:`<span class="pipe-chip herk-onb" title="De aanmeldlink bevatte geen tags (utm), dus de bron is onbekend.">Herkomst onbekend</span>`):'';
+  const herk=(en.webAangemeld&&PIPE.cur&&/webinar/i.test(PIPE.cur.name||''))?(en.herkomst?`<span class="pipe-chip herk" title="${esc(webHerkomstTitel(en.herkomst))}">${esc(webHerkomstKort(en.herkomst))}</span>`:`<span class="pipe-chip herk-onb" title="Er zijn geen tags (utm) vastgelegd bij deze aanmelding, dus de bron is onbekend.">Herkomst onbekend</span>`):'';
   const chips=`${proj}${herk}${budget}${tl}${task}`;
   const foot=(crm||wa||who||val||chat)?`<div class="pipe-card-foot"><span style="display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap">${val}${crm}${chat}</span><span class="pipe-foot-right">${wa}${who}</span></div>`:'';
   return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}">${titleRow}${chips.trim()?`<div class="pipe-card-chips">${chips}</div>`:''}${foot}</div>`;
