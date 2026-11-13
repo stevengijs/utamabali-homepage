@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="nl" data-version="l2-v8" data-taal-pagina="nl">
+<head>
+<!-- LANDER 2, een proefopstelling (13 november 2026, op verzoek van de Ads manager, order van Steven): het uiterlijk en de tekst van de lander
+     zoals die op dag 1 (di 10 november) stond, commit a7c33da (v8), om te toetsen of die beter converteerde dan /webinar-nov-15/ (v20).
+     Verschillen met v8, bewust en alleen deze: (1) de aanmelding loopt zoals nu: tijdzone Europe/Amsterdam en doorsturen naar
+     /webinar-nov-15/step2/ (v19 en stap 2), zonder telefoonveld; (2) feiten van nu: de FAQ zonder Bali-tijd (v20) en het Belangrijk-blok
+     met de risicozin; (3) de knoppen springen naar het formulier zelf (v10) en de knop past op smalle telefoons (v17, alleen de breedte): dat zijn fouten,
+     geen vormgeving; (4) noindex en een eigen pad voor de meting. Meting: page = /webinar2-nov-15/, version = l2-v8; stap 2 en de
+     bedankpagina zijn gedeeld met /webinar-nov-15/ en taggen met dezelfde version. Wijzig deze pagina niet zonder de Ads manager. -->
+  <script src="/t.js" defer></script>
+  <script src="/webinar-taal.js"></script>
+  <script src="/webinar-wa-nummer.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google" content="notranslate">
+<meta name="robots" content="noindex, nofollow">
+<title>Live webinar · Hoe kan het rendement van vastgoed op Bali zo hoog zijn? | UTAMA</title>
+<link rel="canonical" href="https://www.utamabali.com/webinar2-nov-15/">
+<meta name="description" content="Live webinar, zondag 15 november, 13:00 uur (Nederlandse tijd). Hoe kan het rendement van vastgoed op Bali zo hoog zijn? De rekensom van bruto naar netto en de vragen die je elke ontwikkelaar stelt.">
+<meta property="og:title" content="Live webinar · Hoe kan het rendement van vastgoed op Bali zo hoog zijn?">
+<meta property="og:description" content="Live webinar, zondag 15 november, 13:00 uur (Nederlandse tijd). Hoe kan het rendement van vastgoed op Bali zo hoog zijn? De rekensom van bruto naar netto en de vragen die je elke ontwikkelaar stelt.">
+<meta property="og:image" content="https://www.utamabali.com/webinar2-nov-15/assets/hero.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/png" sizes="192x192" href="/webinar2-nov-15/assets/icon192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/webinar2-nov-15/webinar.css">
+<!-- Meta Pixel: dezelfde dataset als /webinar/bali ("Claude Utama Site + MOKA Perspective", 419037194248722).
+     PageView op elke pagina; CompleteRegistration en Lead bij een gelukte inschrijving (zie hieronder). -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','419037194248722');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=419037194248722&ev=PageView&noscript=1"></noscript>
+<script>
+/* Conversiemeting (eigen, los van Meta). De eerste paginaweergave per bezoek en elke inschrijving gaan
+   met de paginaversie (data-version op <html>) naar de tabel webinar_lander_events (Supabase, investor
+   portal). Zo zien we per wijziging wat de conversie doet. Logboek: brein, 30-sales-marketing/
+   webinar-lander-conversie-log.md. Regel: bij elke wijziging aan deze pagina data-version ophogen
+   en een regel in het logboek zetten. */
+(function(){
+  var PAGE = '/webinar2-nov-15/';
+  var URL = 'https://gcpachivrwalsneuvlsa.supabase.co/rest/v1/webinar_lander_events';
+  var KEY = 'sb_publishable_P6qb3M4xQnPJGZkM-WFWdg_E9swz7Zn';
+  var versie = document.documentElement.getAttribute('data-version') || 'v0';
+  function nieuwSid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+  var sid;
+  try{
+    sid = sessionStorage.getItem('utama_sid');
+    if(!sid){ sid = nieuwSid(); sessionStorage.setItem('utama_sid', sid); }
+    sessionStorage.setItem('utama_versie', versie);
+  }catch(e){ sid = nieuwSid(); }
+  var q = new URLSearchParams(window.location.search);
+  function stuur(event){
+    try{
+      fetch(URL, {method:'POST', keepalive:true,
+        headers:{'apikey':KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal'},
+        body: JSON.stringify({page:PAGE, event:event, version:versie, sid:sid,
+          utm_source:q.get('utm_source'), utm_medium:q.get('utm_medium'),
+          utm_campaign:q.get('utm_campaign'), utm_content:q.get('utm_content'),
+          referrer:(document.referrer || '').slice(0,300),
+          device: window.matchMedia('(max-width:899px)').matches ? 'mobiel' : 'desktop'})
+      }).catch(function(){});
+    }catch(e){}
+  }
+  window.utamaTrack = stuur;
+  try{
+    if(sessionStorage.getItem('utama_view_' + PAGE) !== '1'){ sessionStorage.setItem('utama_view_' + PAGE, '1'); stuur('view'); }
+  }catch(e){ stuur('view'); }
+})();
+</script>
+<script>
+/* Inschrijving meten. Het WebinarGeek-formulier draait in deze pagina en maakt een inschrijving aan
+   met een POST naar .../subscriptions. Gaat die goed, dan CompleteRegistration en Lead, één keer per
+   bezoek (sessionStorage), zodat de bedankpagina hem niet nog eens telt. */
+(function(){
+  var KEY = 'utama_webinar_inschrijving';
+  function al(){ try{ return sessionStorage.getItem(KEY) === '1'; }catch(e){ return false; } }
+  function meld(){
+    if(al()) return;
+    try{ sessionStorage.setItem(KEY, '1'); }catch(e){}
+    if(window.utamaTrack) utamaTrack('register');
+    if(window.fbq){
+      fbq('track', 'CompleteRegistration', {content_name: 'Webinar 15 november'});
+      fbq('track', 'Lead', {content_name: 'Webinar 15 november'});
+    }
+  }
+  function isInschrijving(url, method){
+    return /webinargeek\.com/.test(url) && /\/subscriptions(\?|$)/.test(url) && String(method || 'GET').toUpperCase() === 'POST';
+  }
+  /* Altijd Nederlandse tijd (Steven, 12 november). WebinarGeek toont datum en tijd in mails, op de wachtpagina
+     en in de agenda in de tijdzone die de browser bij de inschrijving meestuurt. Wie vanuit Bali, Spanje of
+     elders inschrijft, zou dus 20:00 WITA of 13:00 CET zien. We zetten de tijdzone van elke inschrijving
+     daarom op Europe/Amsterdam. Lukt het lezen van het verzoek niet, dan gaat het verzoek ongewijzigd door. */
+  function nlTijdzone(init){
+    try{
+      if(init && typeof init.body === 'string'){
+        var d = JSON.parse(init.body);
+        if(d && d.subscription && typeof d.subscription === 'object'){
+          d.subscription.time_zone = 'Europe/Amsterdam';
+          var kopie = {};
+          for(var k in init){ kopie[k] = init[k]; }
+          kopie.body = JSON.stringify(d);
+          return kopie;
+        }
+      }
+    }catch(e){}
+    return init;
+  }
+  var origineel = window.fetch;
+  if(origineel){
+    window.fetch = function(input, init){
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      var method = (init && init.method) || (input && input.method) || 'GET';
+      var inschr = isInschrijving(String(url), method);
+      var p = inschr ? origineel.call(this, input, nlTijdzone(init)) : origineel.apply(this, arguments);
+      if(inschr){
+        /* Na inschrijving stuurt WebinarGeek door naar het adres uit de instellingen van het embed. Dat hoort
+           stap 2 te zijn: /webinar-nov-15/step2/. Staat daar nog een ouder adres (bali-bedankt of de bedankpagina),
+           dan vervangen we dat hier in het antwoord, voordat het formulier het gebruikt. */
+        return p.then(function(r){
+          if(r && r.ok) meld();
+          return r.clone().text().then(function(t){
+            var NAAR = '/webinar-nov-15/step2/';
+            var nieuw = t.split('/webinar/bali-bedankt').join(NAAR).split('\\/webinar\\/bali-bedankt').join('\\/webinar-nov-15\\/step2\\/').split('/webinar-nov-15/thanks/').join(NAAR).split('\\/webinar-nov-15\\/thanks\\/').join('\\/webinar-nov-15\\/step2\\/');
+            if(nieuw === t) return r;
+            return new Response(nieuw, {status: r.status, statusText: r.statusText, headers: r.headers});
+          }).catch(function(){ return r; });
+        });
+      }
+      return p;
+    };
+  }
+})();
+</script>
+<!-- CONFIG · datum of tijd wijzigen? Pas aan: (1) alle teksten met de webinardatum en "13:00 uur",
+     (2) data-target hieronder in de countdown, (3) de agenda-links op /webinar-nov-15/thanks/,
+     (4) de datum naast de knop in de bovenbalk (nav-when).
+     Opbouw (Steven, 4 november 2026): alleen de bovenbalk en het aanmeldblok, leads landen direct op het
+     formulier. De uitgebreide lander (hero, programma, host, FAQ) staat in git: commit f4fe7f9. -->
+</head>
+<body>
+
+<nav>
+  <div class="wrap row">
+    <a href="https://www.utamabali.com" class="brand">UTAMA</a>
+    <div class="nav-cta">
+      <span class="nav-when"><span class="nw-long">Zondag 15 november · 13:00 uur · 60 minuten</span><span class="nw-short">Zo 15 nov · 13:00 · 60 min</span></span>
+      <a href="#formulier" class="btn nav-btn"><span class="nb-main">Reserveer je gratis plek ↓</span><span class="nb-sub">Zo 15 nov · 13:00 · 60 min</span></a>
+    </div>
+  </div>
+</nav>
+
+<section class="gate-sec" id="aanmelden">
+  <div class="wrap">
+    <div class="gate-card">
+      <div class="gate-grid">
+        <div class="gate-head">
+          <div class="gate-intro">
+            <img class="gate-avatar" src="/webinar2-nov-15/assets/steven.jpg" alt="Steven Gijsman, oprichter UTAMA" width="84" height="84">
+            <span class="live-badge"><span class="live-dot"></span>Live webinar</span>
+            <span class="gate-when">Gratis · Zondag 15 november<span class="when-sep"> · </span><span class="when-time">13:00 uur</span></span>
+          </div>
+          <h1>Hoe kan het rendement van vastgoed op Bali zo hoog zijn?</h1>
+          <script>
+            /* Kop wisselt mee met de ad (message match). De ad-links dragen utm_content=video-a/b/c
+               (zie het brein: maison-webinar-ads-2026-11-15). Zonder of met een onbekende waarde
+               blijft de rendementskop staan. Subkop, 7 punten, formulier en FAQ zijn voor alle hooks gelijk. */
+            (function(){
+              /* Live ads (10 nov): stilstaand, toets, rekensom. 'toets' houdt de rendementskop (sluit aan op
+                 de ad-kop "Hoe kan dit zo hoog zijn?"). */
+              var koppen = {
+                'stilstaand':'Je geld staat stil. Is vastgoed op Bali een slim alternatief?',
+                'video-a':   'Je geld staat stil. Is vastgoed op Bali een slim alternatief?',
+                'spaargeld': 'Je geld staat stil. Is vastgoed op Bali een slim alternatief?',
+                'rekensom':  'Wat ontbreekt er in de rekensom van een villa op Bali?',
+                'video-b':   'Dubai, Spanje of Bali: waar levert vastgoed echt wat op?',
+                'buitenland':'Dubai, Spanje of Bali: waar levert vastgoed echt wat op?'
+              };
+              try{
+                var hook = (new URLSearchParams(window.location.search).get('utm_content') || '').trim().toLowerCase();
+                var kop = koppen[hook];
+                if(kop){
+                  var h1 = document.currentScript.previousElementSibling;
+                  if(h1 && h1.tagName === 'H1'){ h1.textContent = kop; h1.setAttribute('data-hook', hook); }
+                }
+              }catch(e){}
+            })();
+          </script>
+          <p class="gate-sub">In Nederland doet vastgoed zo'n 3%. Op Bali zie je 12% tot 17% voorbijkomen. Hoe kan dat? De rekensom van bruto naar netto en de vragen die je elke ontwikkelaar stelt. Live, voor wie spaargeld, overwaarde of geld in de holding heeft dat stilstaat en vanaf €135K kan investeren.</p>
+        </div>
+        <div class="gate-side">
+          <img class="gate-avatar gate-avatar-desk" src="/webinar2-nov-15/assets/steven.jpg" alt="" width="84" height="84" aria-hidden="true">
+        <div class="gate-form" id="formulier">
+          <h2>Reserveer je gratis webinar plek.</h2>
+          <div class="eyebrow chips" aria-label="Praktisch"><span id="gateChip"><span class="chip-day">Zondag 15 november</span><span class="chip-sep" aria-hidden="true">·</span><span class="chip-time">13:00 NL-tijd</span></span></div>
+          <script>
+            /* Datumblok: één regel als dag en tijd naast elkaar passen, anders twee gecentreerde regels zonder punt ertussen. */
+            (function(){
+              var chip = document.getElementById('gateChip'); if(!chip) return;
+              var d = chip.querySelector('.chip-day'), t = chip.querySelector('.chip-time'); if(!d || !t) return;
+              function check(){ chip.classList.remove('stacked'); if(t.offsetTop > d.offsetTop) chip.classList.add('stacked'); }
+              check(); window.addEventListener('resize', check);
+              if(document.fonts && document.fonts.ready) document.fonts.ready.then(check);
+            })();
+          </script>
+          <!-- WEBINARGEEK_EMBED:START
+     Het insluitformulier, zodat mensen zich hier aanmelden en niet worden
+     doorgestuurd naar een pagina van WebinarGeek.
+
+     Ander webinar? Dan hoeft alleen "identifier" hieronder te veranderen. De
+     sleutel mw_SdX1utPeoR8 is enkel een naamruimte voor dit ene snippet en mag
+     blijven staan; het script eronder gebruikt dezelfde naam.
+
+     De identifier staat in de bron van de registratiepagina van het webinar
+     zelf, in het blok dat begint met {"project":"registration". Bekend:
+           10 september (test)  2afd8ac5-3048-4b59-84be-3d7f4dbc198a
+           30 september 12:00   485d1563-627b-4e1e-96b3-8f029543aa42 (webinar 606052, was eerst 22 september)
+           25 oktober 14:00     2ad6ec8a-f591-4268-8427-546f734c3f23 (webinar 624120, uitzending 7005843)
+           8 november 14:00     43069405-2b08-4c84-95da-64afbae5f43b (eigen webinar 628341, uitzending 7063505,
+                                episode 665986; exacte kopie van 25 oktober, Steven 4 november)
+           15 november 13:00    c8bbcda5-5f93-4014-8e47-958655df0654 (eigen webinar, episode 667562; kopie van
+                                8 november in WebinarGeek, 9 november. 13:00 Nederlandse tijd. Doorstuur-URL na
+                                aanmelding in WebinarGeek: /webinar-nov-15/thanks/)
+     Wissel je van webinar, pas dan ook de datums en de knop hieronder aan. -->
+          <div id="mw_SdX1utPeoR8_webinargeek" style="max-width:560px;margin:0 auto"></div>
+          <script>
+            (function(w,d,stn,sa,gn,se,fse){w[gn]=w[gn]||function(){(w[gn].q = w[gn].q||[]).push(arguments)};
+            se=d.createElement(stn);fse=d.getElementsByTagName(stn)[0];se.id=gn;se.async=1;
+            se.src=sa+"?t="+new Date().toISOString().slice(0, -9);fse.parentNode.insertBefore(se, fse);
+            })(window, document, "script", "https://malong.webinargeek.com/malong.embed.js", "mw_SdX1utPeoR8");
+            var wgOpties = {
+              project: "registration",
+              identifier: "c8bbcda5-5f93-4014-8e47-958655df0654",
+              shape: "inline",
+              theme: "light",
+              embedAccentColor: "#099a0b",
+              embedSecondaryColor: "#000000",
+              hiddenSections: [
+                  "logo",
+                  "title",
+                  "date"
+              ],
+              transparentBackground: true
+            };
+            /* Bron per aanmelding: het ingesloten formulier leest de utm-tags niet van dit adres
+               maar uit zijn eigen opties (malong.embed.js: utmTags). Geef ze dus door, dan staan
+               ze in de WebinarGeek-payload en schrijft webinargeek-webhook v8 ze weg. */
+            try {
+              var wgQuery = new URLSearchParams(window.location.search);
+              ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach(function(k){
+                var v = wgQuery.get(k);
+                if(v) wgOpties[k] = v.slice(0, 200);
+              });
+            } catch(e) {}
+            mw_SdX1utPeoR8("init", wgOpties);
+          </script>
+          <a id="gateFallback" class="btn lg" style="width:100%;max-width:420px;justify-content:center" href="https://utama.webinargeek.com/hoe-kan-het-rendement-van-vastgoed-op-bali-zo-hoog-zijn">Reserveer je gratis plek →</a>
+          <p class="gate-form-note">Je link komt direct per e-mail. Deuren open om 12:45 uur.</p>
+          <div class="replay-box" role="note">
+            <span class="replay-icon" aria-hidden="true">&#9654;</span>
+            <p><strong class="replay-kop">Kun je zondag niet live kijken?</strong> <strong>Meld je toch aan.</strong> Je krijgt de opname in je mail en kunt 72 uur terugkijken.</p>
+          </div>
+          <script>
+            /* Toon de knop alleen zolang het embed-formulier nog niet rendert.
+               Robuust: kijkt naar de hele aanmeldkaart (iframe of gevulde slot),
+               via observer én een korte polling-fallback. */
+            (function(){
+              var card = document.querySelector('.gate-card');
+              var btn = document.getElementById('gateFallback');
+              if(!card || !btn) return;
+              function paintEmbed(){
+                /* Forceer de UTAMA-knopkleur in het formulier; WebinarGeek stuurt
+                   de accentkleur anders bij naar goudbruin. */
+                var slot = document.getElementById('mw_SdX1utPeoR8_webinargeek');
+                if(slot && slot.shadowRoot && !slot.shadowRoot.getElementById('utamaEmbedStyle')){
+                  var st = document.createElement('style');
+                  st.id = 'utamaEmbedStyle';
+                  st.textContent = '.PhoneInput{display:none !important} /* Knop op de breedte van de velden: WebinarGeek geeft hem min-width max-content, dat is op een smalle telefoon breder dan het formulier (v17). Hoogte en letter blijven zoals op dag 1. */ div button[type="submit"]{min-width:0 !important;width:100% !important;max-width:100% !important;box-sizing:border-box !important;margin:0 !important} button[type="submit"]{background:#099a0b !important;border-color:#099a0b !important;color:#fff !important;font-family:"Inter",ui-sans-serif,system-ui,sans-serif !important;font-size:17px !important;font-weight:800 !important;padding:16px 14px !important;min-height:60px !important;box-sizing:border-box !important;text-align:center !important;border-radius:8px !important;width:100% !important;max-width:none !important;justify-content:center !important;cursor:pointer !important;transition:filter .15s ease !important} button[type="submit"]:hover{filter:brightness(1.08) !important} button[type="submit"] > span{display:none !important} button[type="submit"]::after{content:"Reserveer mijn gratis plek" !important;position:static !important;inset:auto !important;width:auto !important;height:auto !important;transform:none !important;background:none !important;opacity:1 !important;visibility:visible !important;font-size:17px !important;font-weight:800 !important;line-height:1.2 !important;white-space:normal !important;text-align:center !important;color:#fff !important} button[type="submit"]::before{display:none !important} button[type="submit"]{overflow:hidden !important;line-height:1.2 !important} a{color:#17140F !important} label{font-weight:700 !important;color:#17140F !important} label[data-utama="phone"]{font-size:0 !important;line-height:0 !important} label[data-utama="phone"] *{display:none !important} label[data-utama="phone"]::before{content:"Mobiel nummer* (optioneel). ";font-size:16px;line-height:24px;font-weight:700} label[data-utama="phone"]::after{content:"Alleen voor een WhatsApp-herinnering vlak voor de start. Laat leeg als je het niet wilt invullen.";font-size:16px;line-height:24px;font-weight:400}';
+                  slot.shadowRoot.appendChild(st);
+                }
+              }
+              function embedRendered(){
+                var slot = document.getElementById('mw_SdX1utPeoR8_webinargeek');
+                if(!slot) return false;
+                paintEmbed();
+                if(slot.childElementCount > 0) return true;
+                /* WebinarGeek rendert het formulier in een shadow root op de slot-div */
+                if(slot.shadowRoot && slot.shadowRoot.childElementCount > 0) return true;
+                return !!card.querySelector('iframe');
+              }
+              var obs = null;
+              function hide(){
+                btn.style.display = 'none';
+                if(obs) obs.disconnect();
+                if(timer) clearInterval(timer);
+              }
+              function check(){ if(embedRendered()) hide(); }
+              obs = new MutationObserver(check);
+              obs.observe(card, {childList: true, subtree: true});
+              var tries = 0;
+              var timer = setInterval(function(){
+                tries++;
+                check();
+                if(tries > 60) clearInterval(timer);
+              }, 500);
+              check();
+            })();
+          </script>
+          <script>
+            /* Formulier bijsturen zodra WebinarGeek het in de shadow root heeft gezet, en bij elke
+               hertekening opnieuw: (1) telefoonveld standaard op Nederland (+31), WebinarGeek kiest
+               anders het land van de bezoeker; (2) WebinarGeek plakt " (optioneel)" achter elk
+               niet-verplicht veld, ons label zegt dat al zelf, dus de tweede gaat weg. */
+            (function(){
+              var slot = document.getElementById('mw_SdX1utPeoR8_webinargeek');
+              if(!slot) return;
+              function fixForm(){
+                var sr = slot.shadowRoot;
+                if(!sr) return;
+                /* Telefoonveld is verborgen (v9). Het land NIET meer op NL zetten: dat zet de waarde op '+31',
+                   een onvolledig nummer, en de verborgen validatie 'Ongeldig telefoonnummer' blokkeert dan het versturen. */
+                /* Label van het telefoonveld: alleen markeren. De tekst zelf komt uit CSS (zie
+                   utamaEmbedStyle), want WebinarGeek zet de labeltekst bij elke hertekening terug
+                   en plakt er " (optioneel)" achter. Tekst aanpassen in de DOM gaf dubbele regels. */
+                sr.querySelectorAll('label').forEach(function(l){
+                  if(/Mobiel nummer/.test(l.textContent) && !l.hasAttribute('data-utama')) l.setAttribute('data-utama', 'phone');
+                });
+              }
+              var armed = false;
+              function arm(){
+                if(!slot.shadowRoot) return false;
+                if(armed) return true;
+                armed = true;
+                fixForm();
+                new MutationObserver(fixForm).observe(slot.shadowRoot, {childList: true, subtree: true, characterData: true});
+                return true;
+              }
+              if(!arm()){
+                var tries = 0;
+                var t = setInterval(function(){ tries++; if(arm() || tries > 100) clearInterval(t); }, 300);
+              }
+            })();
+          </script>
+          <!-- WEBINARGEEK_EMBED:END -->
+        </div>
+        </div><!-- /gate-side -->
+        <div class="gate-more">
+          <h3 class="steps-title">Dit is wat ik ga uitleggen</h3>
+          <ul class="steps" aria-label="De 7 onderwerpen">
+            <li><strong>Eigendom.</strong> Je koopt geen grond, maar leasehold. Wat dat betekent, en welke clausule bepaalt of je villa over 25 jaar nog waarde heeft.</li>
+            <li><strong>Verhuur.</strong> Op een groot deel van Bali mag je niet per nacht verhuren. Hoe je dat checkt vóór je tekent.</li>
+            <li><strong>Netto rendement.</strong> Van bruto nachtprijs naar wat er op je Nederlandse rekening landt, inclusief de kosten die in bijna elke rekensom ontbreken.</li>
+            <li><strong>Beheer op afstand.</strong> Wie je gasten regelt als jij in Nederland zit, wat dat kost, en hoeveel weken je er zelf kunt verblijven.</li>
+            <li><strong>De ontwikkelaar.</strong> De 3 checks voordat je één euro overmaakt. Wie ze overslaat, merkt het pas bij vertraging.</li>
+            <li><strong>Belasting.</strong> Indonesië, Nederland of allebei? En waarom privé of via je holding uitmaakt vóór je tekent.</li>
+            <li><strong>Exit.</strong> Aan wie verkoop je straks, en met winst? De vraag die bijna niemand vooraf stelt.</li>
+          </ul>
+          <p class="steps-outro">Dit zijn de vragen die ervaren investeerders stellen voordat ze tekenen. Na zondag stel jij ze ook.</p>
+          <div class="hosts">
+            <div class="host">
+              <img src="/webinar2-nov-15/assets/steven.jpg" alt="Steven Gijsman">
+              <div><b>Steven Gijsman</b><span>Oprichter UTAMA · host</span></div>
+            </div>
+            <div class="host">
+              <img src="/webinar2-nov-15/assets/ashley.jpg" alt="Ashley">
+              <div><b>Ashley</b><span>Sales manager UTAMA · cohost</span></div>
+            </div>
+          </div>
+          <p class="trust">Ik woon en werk op Bali en bouw er zelf villa's. Je krijgt de stappen die ik bij elk project zelf doorloop, zonder verkooppraatje.</p>
+          <div class="cd-label" id="cdLabel">Het <u>webinar</u> start over</div>
+          <div class="countdown" id="countdown" data-target="2026-11-15T13:00:00+01:00">
+            <div class="cd-cell"><b id="cdD">0</b><span>dagen</span></div>
+            <div class="cd-cell"><b id="cdH">0</b><span>uur</span></div>
+            <div class="cd-cell"><b id="cdM">0</b><span>min</span></div>
+            <div class="cd-cell"><b id="cdS">0</b><span>sec</span></div>
+          </div>
+          <p class="cd-when">Zondag 15 november om 13:00 uur <strong>Nederlandse tijd</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="story-sec" id="verhaal">
+  <div class="wrap">
+    <div class="story">
+      <img src="/webinar2-nov-15/assets/founder.jpg" alt="Steven Gijsman met helm op de bouwplaats van een UTAMA-villa op Bali, met rijstvelden op de achtergrond" loading="lazy">
+      <div class="story-text">
+        <h2>Herken je dit?</h2>
+        <p>Je hebt geld dat stilstaat: spaargeld, overwaarde of winst in je holding. Sparen levert weinig op, vastgoed in Nederland doet zo'n 3%. En dan zie je Bali voorbijkomen met rendementen waar je van gaat twijfelen.</p>
+        <p>Je wilt wel, maar wie vertrouw je op twaalfduizend kilometer afstand? Je leest over leasehold, verhuurverboden en bouw die uitloopt. En niemand laat je de hele rekensom zien.</p>
+        <p>Ik ken dat. Ik verkocht mijn bedrijf en mijn huis in Nederland, en het geld stond stil. Op Bali runde ik tijdens corona een boutiquehotel, kocht daarna een renovatieproject als eerste eigen bouw, en leerde in vijftien maanden met vallen en opstaan hoe het hier werkt. Nu bouw ik met een eigen team en loop ik bij elk project dezelfde 7 stappen door.</p>
+        <p>Zondag laat ik je de hele som zien, van bruto nachtprijs tot wat er op je rekening belandt. Daarna beslis jij zelf.</p>
+        <a href="#formulier" class="btn story-btn">Reserveer je gratis plek ↑</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pane" id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Veelgestelde vragen</div>
+      <h2>Goed om te weten.</h2>
+    </div>
+    <div class="faq" style="margin:0 auto">
+      <details>
+        <summary>Wat kost het webinar?</summary>
+        <p>Niets. Het webinar is gratis en online. Je hebt alleen een telefoon, tablet of laptop met internet nodig.</p>
+      </details>
+      <details>
+        <summary>Hoe lang duurt het?</summary>
+        <p>60 minuten, zondag 15 november om 13:00 uur Nederlandse tijd. De deuren gaan open om 12:45 uur. Aan het eind is er ruimte voor je vragen.</p>
+      </details>
+      <details>
+        <summary>Ik oriënteer me nog. Is dit dan iets voor mij?</summary>
+        <p>Ja. Dit webinar is voor iedereen die wil weten of investeren in vastgoed op Bali iets voor hem of haar is. Beginner of ervaren, al op Bali geïnvesteerd of nog niet: allemaal goed.</p>
+      </details>
+      <details>
+        <summary>Wordt er iets verkocht tijdens het webinar?</summary>
+        <p>Het uur gaat over de 7 stappen, niet over een aanbod. Aan het eind laat ik kort zien waar wij aan werken, zodat je ziet hoe de stappen er in de praktijk uitzien. Je hoeft niets te beslissen.</p>
+      </details>
+      <details>
+        <summary>Kan ik vragen stellen?</summary>
+        <p>Ja, live. Je stelt je vraag via de chat of de Q&amp;A-knop. Ik beantwoord je vragen aan het eind van het webinar.</p>
+      </details>
+      <details>
+        <summary>Krijg ik een opname als ik niet live kan?</summary>
+        <p>Ja. Meld je gewoon aan, dan krijg je na afloop de replay per e-mail en kun je 72 uur terugkijken. Live kun je wel je eigen vragen stellen, dus kom als het kan.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="afm-note" style="margin-top:26px"><strong>Belangrijk:</strong> je persoonlijke deelnamelink en de herinneringen komen per e-mail. Houd je inbox in de gaten, en check ook je spamfolder. Uitschrijven kan altijd met één klik. Dit is geen fiscaal, juridisch of beleggingsadvies, en investeren brengt risico's met zich mee.</div>
+</div>
+
+<footer>
+  <div class="wrap frow">
+    <div>UTAMA · Boutique vastgoedontwikkeling op Bali</div>
+    <div>
+      <a href="https://www.utamabali.com">utamabali.com</a> &nbsp;·&nbsp;
+      <a href="https://www.instagram.com/stevenbalivillas/" target="_blank" rel="noopener">Instagram</a> &nbsp;·&nbsp;
+      <a href="https://wa.me/31624845014" target="_blank" rel="noopener">WhatsApp</a> &nbsp;·&nbsp;
+      <a href="mailto:steven@utamabali.com">steven@utamabali.com</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  /* countdown */
+  var box = document.getElementById('countdown');
+  if(box){
+    var target = new Date(box.getAttribute('data-target')).getTime();
+    var ids = {d:'cdD',h:'cdH',m:'cdM',s:'cdS'};
+    function tick(){
+      var diff = target - Date.now();
+      if(diff <= 0){
+        document.getElementById('cdLabel').innerHTML = 'Het <u>webinar</u> is begonnen';
+        box.style.display = 'none';
+        return;
+      }
+      var d = Math.floor(diff/864e5), h = Math.floor(diff%864e5/36e5),
+          m = Math.floor(diff%36e5/6e4), s = Math.floor(diff%6e4/1e3);
+      document.getElementById(ids.d).textContent = d;
+      document.getElementById(ids.h).textContent = h;
+      document.getElementById(ids.m).textContent = m;
+      document.getElementById(ids.s).textContent = s;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  }
+})();
+</script>
+
+</body>
+</html>
