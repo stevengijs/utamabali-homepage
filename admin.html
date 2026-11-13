@@ -1072,6 +1072,8 @@
   .pipe-chip.crm{background:#eff6ff;color:#1d4ed8;cursor:pointer}
   .pipe-chip.budget{background:#fffbeb;color:#b45309}
   .pipe-chip.tl{background:#f1f5f9;color:#475569}
+  .pipe-chip.herk{background:#fef2f2;color:#b91c1c}
+  .pipe-chip.herk-onb{background:#f1f5f9;color:#64748b;font-weight:500}
   .pipe-wa{width:24px;height:24px;border-radius:50%;background:#25D366;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;text-decoration:none}
   .pipe-wa:hover{filter:brightness(.94)}
   /* card detail drawer */
@@ -1786,7 +1788,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    versie: zo miste Steven op 29 augustus het hele campagne-overzicht terwijl
    het al een dag live stond. Daarom checkt de pagina nu af en toe zelf of er
    een nieuwere versie is, en zegt het erbij in plaats van stil oud te blijven. */
-const APP_VERSIE='2026-11-11-conversie-aanvragen-flowkeuze';
+const APP_VERSIE='2026-11-13-herkomst-webinarleads';
 let _versieLaatst=0;
 async function versieCheck(){
   if(Date.now()-_versieLaatst < 10*60*1000) return;
@@ -1915,7 +1917,9 @@ const RES = {
   /* ---- WEBINAR PAGE ---- */
   webinar_regs:{page:'webinars', table:'webinar_registrations', title:'Webinar registrations', single:'Registration', noCreate:true, readOnly:true,
     desc:'People who signed up via WebinarGeek — synced automatically, view only.',
-    cols:['name','email','whatsapp','attended','budget','horizon','created_at'],
+    cols:['name','email','whatsapp','herkomst','attended','budget','horizon','created_at'],
+    // Herkomst uit de tags van de aanmeldlink (utm_*), zie webHerkomst().
+    virt:{herkomst:{label:'Herkomst',fmt:r=>webHerkomstCel(r)}},
     fields:[
       {k:'name',label:'Name',type:'text'},
       {k:'email',label:'Email',type:'text',req:true},
@@ -1931,6 +1935,8 @@ const RES = {
       {k:'utm_source',label:'UTM source',type:'text'},
       {k:'utm_medium',label:'UTM medium',type:'text'},
       {k:'utm_campaign',label:'UTM campaign',type:'text'},
+      {k:'utm_content',label:'UTM content (Meta: de advertentie)',type:'text'},
+      {k:'utm_term',label:'UTM term (Meta: de advertentieset)',type:'text'},
       {k:'watch_url',label:'Watch URL',type:'text'},
       {k:'session_id',label:'Session ID',type:'text'},
       TS('created_at'),
@@ -2250,6 +2256,60 @@ function bijlHtml(list){
   }).join('')}</div>`;
 }
 function chanClass(c){c=String(c||'').toLowerCase();return ['direct','organic','social','paid','referral','campaign','email','internal'].includes(c)?c:'other';}
+/* Herkomst van een webinaraanmelding. Webinarleads hebben geen formulier op de
+   site en dus geen websitesessie (leads.ua_session), maar de link waarmee ze
+   zich aanmeldden draagt de advertentietags: de aanmeldingen van november
+   (formulier op de site) hebben ze in de kolommen utm_*, de funnel van
+   september bewaarde ze in antwoorden. Steven, 13 november 2026: bij
+   webinarleads leek de herkomst altijd leeg, terwijl alles uit advertenties
+   komt. Geen tags in de link = onbekend, nooit een gok. */
+function webHerkomst(w){
+  if(!w)return null;
+  const a=(w.antwoorden&&typeof w.antwoorden==='object')?w.antwoorden:{};
+  const g=k=>String(w['utm_'+k]||a['utm_'+k]||'').trim();
+  const h={src:g('source'),med:g('medium'),camp:g('campaign'),cont:g('content'),term:g('term')};
+  if(!h.src&&!h.med&&!h.camp&&!h.cont&&!h.term)return null;
+  const s=h.src.toLowerCase();
+  h.meta=/^(fb|facebook|ig|instagram|meta)$/.test(s);
+  h.paid=/^(paid|cpc|ppc|paid[-_ ]?social)$/i.test(h.med)||(h.meta&&!h.med);
+  h.kanaal=h.paid?'paid':(/mail/i.test(h.med)?'email':((h.src||h.camp)?'campaign':'direct'));
+  return h;
+}
+function webHerkomstLabel(h){
+  const s=h.src.toLowerCase();
+  const plat=!h.meta?h.src:(/^(ig|instagram)$/.test(s)?'Instagram':/^(fb|facebook)$/.test(s)?'Facebook':'Meta');
+  if(!plat)return h.paid?'Advertentie':'Campagne';
+  return h.paid?plat+'-advertentie':plat;
+}
+function webHerkomstTitel(h){
+  const d=[['utm_source',h.src],['utm_medium',h.med],['utm_campaign',h.camp],['utm_content',h.cont],['utm_term',h.term]].filter(x=>x[1]).map(x=>x[0]+'='+x[1]).join(', ');
+  return 'Tags in de aanmeldlink: '+d;
+}
+// Compact: platform en advertentie, voor de chip op het webinarbord.
+function webHerkomstKort(h){
+  const s=h.src.toLowerCase();
+  const plat=!h.meta?h.src:(/^(ig|instagram)$/.test(s)?'Instagram':/^(fb|facebook)$/.test(s)?'Facebook':'Meta');
+  return [plat,h.cont||h.camp].filter(Boolean).join(' · ')||'Campagne';
+}
+// Cel in de lijst: kleur naar kanaal, daaronder wat de tags zeggen (advertentie en campagne).
+function webHerkomstCel(w){
+  const h=webHerkomst(w);
+  if(!h)return '<span class="muted" title="De aanmeldlink bevatte geen tags (utm), dus de bron is onbekend.">Onbekend</span>';
+  const wat=[h.cont,h.camp].filter(Boolean).join(' · ');
+  return `<span class="src-badge ${chanClass(h.kanaal)}" title="${esc(webHerkomstTitel(h))}">${esc(webHerkomstLabel(h))}</span>${wat?` <span class="muted" style="font-size:12px">${esc(wat)}</span>`:''}`;
+}
+// De herkomst van de eerste aanmelding die tags heeft (eerste aanraking), of null.
+function webHerkomstEerste(webs){
+  const asc=(webs||[]).slice().sort((x,y)=>new Date(x.created_at)-new Date(y.created_at));
+  for(const w of asc){const h=webHerkomst(w);if(h){h.at=w.created_at;return h;}}
+  return null;
+}
+// Diezelfde herkomst in de vorm van een analytics-event (de velden die openPerson
+// uit de websitesessie haalt), voor het blok Herkomst in het contactscherm.
+function webAttr(webs){
+  const h=webHerkomstEerste(webs);
+  return h?{channel:h.kanaal,utm_source:h.src,utm_medium:h.med,utm_campaign:h.camp,utm_content:h.cont,utm_term:h.term,referrer_host:'',path:'',created_at:h.at}:null;
+}
 function money(v){if(v==null||v==='')return '—';return '€'+Number(v).toLocaleString('nl-NL');}
 function fmtDate(v){if(!v)return '—';const d=new Date(v);return d.toLocaleDateString('nl-NL',{day:'2-digit',month:'short',year:'numeric'});}
 function fmtDateTime(v){if(!v)return '—';const d=new Date(v);return d.toLocaleString('nl-NL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
@@ -13498,6 +13558,9 @@ async function openPerson(p){
     // attributie (first touch): vroegste event met campagne/bron/niet-direct kanaal, anders het allereerste event
     _attr=evs.find(e=>e.utm_campaign||e.utm_source||(e.channel&&!['direct','internal'].includes((e.channel||'').toLowerCase())))||evs[0]||null;
   }
+  // Webinarleads hebben geen websitesessie: dan is de herkomst die van de aanmeldlink.
+  let _attrWeb=false;
+  if(!_attr){const wa=webAttr(webs);if(wa){_attr=wa;_attrWeb=true;}}
   if(!_loc){const c=_countryFromPhone(p.phone);if(c){_loc=c;_locSrc='phone';}}
   // build attribution labels (Meta-aware: resolve campaign/adset/ad IDs to names)
   let _attrChan='',_attrLabel='',_attrBits=[],_attrHead='',_attrNote='';
@@ -13530,7 +13593,8 @@ async function openPerson(p){
     if(!_attr.utm_source&&_attr.referrer_host)_attrBits.push(['Verwijzer',_attr.referrer_host]);
     _attrHead=_attr.utm_campaign?show(_attr.utm_campaign):(_attr.utm_source?(isMeta?'Meta':_attr.utm_source):'');
     if(_attrChan==='paid'&&!_attr.utm_campaign&&!_attr.utm_source)_attrNote='Herkend als advertentieklik (ad-click-id in de URL), maar er zijn geen campagne-tags meegegeven. Voeg <code>utm_campaign</code>/<code>utm_content</code> toe aan je advertentie-links om te zien wélke advertentie precies.';
-    else if(isMeta&&hadIds&&!gotNames)_attrNote='Dit zijn Meta’s campagne-/advertentie-<b>ID’s</b>. Naam-vertaling staat nog uit — zie mijn bericht om die aan te zetten (of tag je ad-links met namen).';
+    else if(isMeta&&hadIds&&!gotNames&&!_attrWeb)_attrNote='Dit zijn Meta’s campagne-/advertentie-<b>ID’s</b>. Naam-vertaling staat nog uit — zie mijn bericht om die aan te zetten (of tag je ad-links met namen).';
+    if(_attrWeb)_attrNote=(_attrNote?_attrNote+'<br>':'')+'Bron uit de link waarmee ze zich voor het webinar aanmeldden (de tags in de link), niet uit een bezoek aan de site.';
   }
   let body=`<div style="background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
@@ -13543,7 +13607,7 @@ async function openPerson(p){
           ${p.referral_code?`<span class="badge green">ref: ${esc(p.referral_code)}</span>`:''}
           ${p.locale?`<span class="badge grey">${esc(p.locale)}</span>`:''}
           ${_loc?`<span class="badge grey" title="${_locSrc==='ip'?'Locatie bepaald uit het IP-adres van hun websitebezoek (analytics).':'Land geschat uit de landcode van het telefoonnummer. Er is geen websitebezoek (IP-sessie) aan deze lead gekoppeld, dus de exacte plaats is onbekend.'}">📍 ${esc(_loc)}${_locSrc==='phone'?' · land geschat via telefoon':''}</span>`:''}
-          ${_attr?`<span class="src-badge ${chanClass(_attrChan)}" title="Hoe deze lead binnenkwam (eerste bezoek)">${esc(_attrLabel)}${_attrHead?' · '+esc(_attrHead):''}</span>`:''}
+          ${_attr?`<span class="src-badge ${chanClass(_attrChan)}" title="${_attrWeb?'Hoe deze lead binnenkwam (de link van de webinaraanmelding)':'Hoe deze lead binnenkwam (eerste bezoek)'}">${esc(_attrLabel)}${_attrHead?' · '+esc(_attrHead):''}</span>`:''}
         </div>
       </div>
       <div class="row-actions" style="display:flex;flex-wrap:wrap;gap:8px;row-gap:8px">
@@ -13578,11 +13642,12 @@ async function openPerson(p){
       let d='';try{if(sx.starts_at)d=new Date(sx.starts_at).toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Amsterdam'});}catch(e){}
       const kw=a.gekwalificeerd?(String(a.gekwalificeerd).toLowerCase()==='ja'?'<span class="badge green" title="Volgens de vragen in de aanmeldfunnel">gekwalificeerd</span>':'<span class="badge grey" title="Volgens de vragen in de aanmeldfunnel">niet gekwalificeerd</span>'):'';
       const gekeken=w.attended?`<span class="badge green">gekeken${w.watch_minutes?' · '+w.watch_minutes+' min':''}</span>`:'<span class="badge grey">nog niet gekeken</span>';
-      const via=[w.utm_source?('via '+w.utm_source):'',w.utm_campaign,a.utm_content?('advertentie '+a.utm_content):'',a.variant?('variant '+a.variant):''].filter(Boolean).join(' · ');
+      const hw=webHerkomst(w);
+      const via=hw?[hw.src?('via '+hw.src):'',hw.camp,hw.cont?('advertentie '+hw.cont):'',a.variant?('variant '+a.variant):''].filter(Boolean).join(' · '):'';
       const bron=(w.raw_payload&&w.raw_payload.entity&&w.raw_payload.entity.registration_source)||(w.raw_payload&&w.raw_payload.page)||'';
       return `<div style="border:1px solid var(--line);border-radius:10px;padding:9px 12px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600">🎥 ${esc(sx.title||'Webinar')}</span>${d?`<span class="muted" style="font-size:12px">${esc(d)}</span>`:''}<span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${kw}${gekeken}</span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-top:8px">${feit('Budget',w.budget)}${feit('Termijn',w.horizon)}${feit('Aangemeld op',fmtDateTime(w.created_at))}${feit('Herkomst',via)}${feit('Aanmelding via',bron==='api'?'funnel (API)':bron==='registration_page'?'registratiepagina':bron==='embed_form'?'formulier op de site':bron)}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-top:8px">${feit('Budget',w.budget)}${feit('Termijn',w.horizon)}${feit('Aangemeld op',fmtDateTime(w.created_at))}${feit('Herkomst',via||'Onbekend, geen tags in de aanmeldlink')}${feit('Aanmelding via',bron==='api'?'funnel (API)':bron==='registration_page'?'registratiepagina':bron==='embed_form'?'formulier op de site':bron)}</div>
         ${(w.budget||w.horizon)?'':`<div class="muted" style="font-size:12px;margin-top:6px">Geen antwoorden meegestuurd: aangemeld zonder de funnelvragen.</div>`}
       </div>`;
     }).join('')+`</div>`);
@@ -13666,7 +13731,7 @@ async function openPerson(p){
     }).join(''):'<div class="muted" style="font-size:13px">Nog geen reservering.</div>';
   if(manageResv)resvHtml+=`<div style="margin-top:10px"><button class="btn btn-ghost btn-sm" id="newResv">+ Nieuwe reservering</button></div>`;
   body+=_sec('Reserveringen & aanbetaling ('+resvs.length+')',_hint('De ITP + €5.000-aanbetaling die je van een aanvraag maakt. Hier open, verstuur en bevestig je alles.')+resvHtml);
-  body+=_sec('Webinar-registraties ('+webs.length+')',_mt(['Aanwezig','Budget','Horizon','Call geboekt','Datum'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),fmtDateTime(x.created_at)])));
+  body+=_sec('Webinar-registraties ('+webs.length+')',_mt(['Aanwezig','Budget','Horizon','Call geboekt','Herkomst','Datum'],webs.map(x=>[boolBadge(x.attended),esc(x.budget||'—'),esc(x.horizon||'—'),boolBadge(x.call_booked),webHerkomstCel(x),fmtDateTime(x.created_at)])));
 
   // ----- interactive dataroom access -----
   const manageDr=canEdit('portal')||canEdit('leads');
@@ -13706,7 +13771,9 @@ async function openPerson(p){
       const src=_attr.referrer_host&&!_attrBits.some(b=>b[0]==='Verwijzer')?`<div class="muted" style="font-size:12px;margin-top:6px">Eerste pagina: <b>${esc((_attr.path||'/').split('?')[0])}</b></div>`:'';
       inner=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:${rows?'10px':'2px'}"><span class="src-badge ${chanClass(_attrChan)}" style="font-size:12px">${esc(_attrLabel)}</span><span style="font-size:13px">${esc(human)}</span></div>${rows?`<table style="font-size:13px;border-collapse:collapse">${rows}</table>`:''}${src}${note}`;
     }else{
-      inner='<div class="muted" style="font-size:13px">Deze lead vulde een formulier in op de site, maar er is geen webverkeer-sessie aan gekoppeld — de marketingbron (bijv. Meta-ad, Google, direct) is daardoor onbekend. Dit gebeurt bij leads van vóór de tracking, of als de sessie niet meegestuurd werd.</div>';
+      inner=webs.length
+        ?'<div class="muted" style="font-size:13px">Aangemeld voor een webinar, maar de aanmeldlink bevatte geen tags (utm), dus de marketingbron is onbekend. Een aanmelding via een getagde advertentielink draagt die tags wel.</div>'
+        :'<div class="muted" style="font-size:13px">Deze lead vulde een formulier in op de site, maar er is geen webverkeer-sessie aan gekoppeld — de marketingbron (bijv. Meta-ad, Google, direct) is daardoor onbekend. Dit gebeurt bij leads van vóór de tracking, of als de sessie niet meegestuurd werd.</div>';
     }
     body+=_sec('Herkomst (marketing)',inner);
   }
@@ -14382,9 +14449,12 @@ async function pipeLoadEnrichment(){
   try{
     const emails=[...new Set((ctR.data||[]).map(ct=>(ct.email||'').toLowerCase()).filter(Boolean))];
     if(emails.length){
-      const {data:wb}=await sb.from('webinar_registrations').select('email,budget,horizon,created_at').in('email',emails).order('created_at',{ascending:false});
+      const {data:wb}=await sb.from('webinar_registrations').select('email,budget,horizon,created_at,utm_source,utm_medium,utm_campaign,utm_content,utm_term,antwoorden').in('email',emails).order('created_at',{ascending:false});
       const byMail={};(wb||[]).forEach(w=>{const e=(w.email||'').toLowerCase();if(!byMail[e]&&(w.budget||w.horizon))byMail[e]=w;});
       (ctR.data||[]).forEach(ct=>{const w=byMail[(ct.email||'').toLowerCase()];if(!w)return;const e=PIPE.enrich[ct.id];if(!e.budget&&w.budget)e.budget=w.budget;if(!e.timeline&&w.horizon)e.timeline=w.horizon;});
+      // Herkomst per aanmelding: de eerste aanmelding met tags, anders is de bron onbekend.
+      const perMail={};(wb||[]).forEach(w=>{const e=(w.email||'').toLowerCase();if(!e)return;(perMail[e]||(perMail[e]=[])).push(w);});
+      (ctR.data||[]).forEach(ct=>{const lijst=perMail[(ct.email||'').toLowerCase()];if(!lijst||!PIPE.enrich[ct.id])return;PIPE.enrich[ct.id].herkomst=webHerkomstEerste(lijst);PIPE.enrich[ct.id].webAangemeld=true;});
     }
   }catch(e){}
   // Chat activity per contact: latest message time + which channels are in play.
@@ -14468,7 +14538,9 @@ function pipeCardHtml(c){
   const who=c.assignee?`<span class="pipe-av" style="background:${esc(pipeAvKleur(c.assignee))}" title="Eigenaar: ${esc(pipeTeamName(c.assignee))}">${esc(pipeInitials(c.assignee))}</span>`:'';
   const warm=c.contact_id?warmthBadgeId(c.contact_id):'';
   const titleRow=`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px"><div class="pipe-card-title" style="margin:0;flex:1">${esc(pipeCardName(c,en))}</div>${warm}</div>`;
-  const chips=`${proj}${budget}${tl}${task}`;
+  // Alleen op een webinarbord: waar de aanmelding vandaan kwam (tags in de aanmeldlink).
+  const herk=(en.webAangemeld&&PIPE.cur&&/webinar/i.test(PIPE.cur.name||''))?(en.herkomst?`<span class="pipe-chip herk" title="${esc(webHerkomstTitel(en.herkomst))}">${esc(webHerkomstKort(en.herkomst))}</span>`:`<span class="pipe-chip herk-onb" title="De aanmeldlink bevatte geen tags (utm), dus de bron is onbekend.">Herkomst onbekend</span>`):'';
+  const chips=`${proj}${herk}${budget}${tl}${task}`;
   const foot=(crm||wa||who||val||chat)?`<div class="pipe-card-foot"><span style="display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap">${val}${crm}${chat}</span><span class="pipe-foot-right">${wa}${who}</span></div>`:'';
   return `<div class="pipe-card" draggable="true" data-id="${esc(c.id)}">${titleRow}${chips.trim()?`<div class="pipe-card-chips">${chips}</div>`:''}${foot}</div>`;
 }
