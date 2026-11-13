@@ -230,7 +230,7 @@
   var ICOON_OK = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
 
   var TEKST = {
-    kop: 'Link ook op WhatsApp ontvangen?',
+    kop: 'Herinnering ook op WhatsApp ontvangen?',
     intro: 'Dan sturen we je op de dag zelf een herinnering en vlak voor de start je persoonlijke link.',
     mailLabel: 'E-mailadres van je aanmelding',
     telLabel: 'WhatsApp-nummer',
@@ -248,7 +248,7 @@
   /* Tweetalig (NL en EN onder elkaar): zet data-wa-taal="nl-en" op het element. Zonder dat blijft alles Nederlands. */
   function tw(nl, en) { return nl + '\u0001' + en; }
   var TEKST_NL_EN = {
-    kop: tw('Link ook op WhatsApp ontvangen?', 'Get your link on WhatsApp too?'),
+    kop: tw('Herinnering ook op WhatsApp ontvangen?', 'Get your reminder on WhatsApp too?'),
     intro: tw('Dan sturen we je op de dag zelf een herinnering en vlak voor de start je persoonlijke link.', "Then we'll send you a reminder on the day itself and your personal link right before the start."),
     mailLabel: tw('E-mailadres van je aanmelding', 'Email address you signed up with'),
     telLabel: tw('WhatsApp-nummer', 'WhatsApp number'),
