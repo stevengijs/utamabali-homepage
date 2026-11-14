@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl" data-version="v20" data-taal-pagina="nl">
+<html lang="nl" data-version="v21" data-taal-pagina="nl">
 <head>
   <script src="/t.js" defer></script>
   <script src="/webinar-taal.js"></script>
@@ -485,5 +485,39 @@ fbq('track','PageView');
 })();
 </script>
 
+<script>
+/* Relatieve dag (Steven, 14 november): "morgen" of "vandaag" bij de datum, in plaats van alleen "zondag 15 november".
+   De datum komt uit data-target van de countdown, dus bij een nieuw webinar hoeft hier niets te veranderen.
+   Alleen op de dag ervoor en op de dag zelf (Nederlandse datum); op andere dagen blijft de datum staan. */
+(function(){
+  function nlDag(dt){
+    var p = new Intl.DateTimeFormat('en-US', {timeZone:'Europe/Amsterdam', year:'numeric', month:'2-digit', day:'2-digit'}).formatToParts(dt), o = {};
+    p.forEach(function(x){ o[x.type] = x.value; });
+    return o.year + '-' + o.month + '-' + o.day;
+  }
+  function lcEerste(s){ return s.charAt(0).toLowerCase() + s.slice(1); }
+  window.utamaRelatieveDag = function(nu){
+    try{
+      var box = document.getElementById('countdown'); if(!box) return null;
+      var doel = new Date(box.getAttribute('data-target')); if(isNaN(doel)) return null;
+      var diff = Math.round((Date.parse(nlDag(doel) + 'T00:00:00Z') - Date.parse(nlDag(nu || new Date()) + 'T00:00:00Z')) / 86400000);
+      var woord = diff === 1 ? 'Morgen' : (diff === 0 ? 'Vandaag' : null);
+      if(!woord) return null;
+      var q = function(sel){ return document.querySelector(sel); };
+      var el;
+      if((el = q('.live-badge')) && el.lastChild) el.lastChild.textContent = woord + ' · live webinar';
+      if((el = q('.gate-when')) && el.firstChild) el.firstChild.textContent = woord + ', ' + lcEerste(el.firstChild.textContent.replace('Gratis · ', ''));
+      if((el = q('.chip-day'))) el.textContent = woord + ', ' + lcEerste(el.textContent);
+      if((el = q('.nb-sub'))) el.textContent = el.textContent.replace(/^[^·]+/, woord + ' ');
+      if((el = q('.nw-short'))) el.textContent = el.textContent.replace(/^[^·]+/, woord + ' ');
+      if((el = q('.nw-long'))) el.textContent = woord + ', ' + lcEerste(el.textContent);
+      if((el = q('.cd-when')) && el.firstChild) el.firstChild.textContent = woord + ', ' + lcEerste(el.firstChild.textContent);
+      try{ window.dispatchEvent(new Event('resize')); }catch(e){}
+      return woord;
+    }catch(e){ return null; }
+  };
+  window.utamaRelatieveDag();
+})();
+</script>
 </body>
 </html>
